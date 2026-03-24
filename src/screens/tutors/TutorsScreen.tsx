@@ -69,7 +69,7 @@ export default function TutorsScreen() {
       </View>
 
       {/* Subject filters */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterScroll} contentContainerStyle={{ paddingHorizontal: Spacing.xl, gap: Spacing.sm }}>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={[styles.filterScroll, { flexGrow: 0 }]} contentContainerStyle={{ paddingHorizontal: Spacing.xl, gap: Spacing.sm, alignItems: 'center' }}>
         {SUBJECTS.map(s => (
           <TouchableOpacity
             key={s}
@@ -83,7 +83,7 @@ export default function TutorsScreen() {
       </ScrollView>
 
       {/* Mode filters */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterScroll2} contentContainerStyle={{ paddingHorizontal: Spacing.xl, gap: Spacing.sm }}>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={[styles.filterScroll2, { flexGrow: 0 }]} contentContainerStyle={{ paddingHorizontal: Spacing.xl, gap: Spacing.sm, alignItems: 'center' }}>
         {MODES.map(m => (
           <TouchableOpacity
             key={m}
@@ -99,7 +99,7 @@ export default function TutorsScreen() {
       {loading ? (
         <View style={CommonStyles.center}><ActivityIndicator color={Colors.blue} size="large" /></View>
       ) : filtered.length === 0 ? (
-        <EmptyState icon="👨‍🏫" title="No tutors found" subtitle="Try adjusting your search or filters" />
+        <EmptyState icon="👨‍🏫" title="No tutors found" subtitle="Try adjusting your search or filters" style={{ padding: Spacing.xl }} />
       ) : (
         <FlatList
           data={filtered}
@@ -185,12 +185,12 @@ const styles = StyleSheet.create({
   },
   searchIcon: { fontSize: 16 },
   searchInput: { flex: 1, fontSize: Typography.md, color: Colors.text },
-  filterScroll: { marginTop: Spacing.md },
-  filterScroll2: { marginTop: Spacing.sm, marginBottom: Spacing.md },
+  filterScroll: { marginTop: Spacing.md, maxHeight: 44 },
+  filterScroll2: { marginTop: Spacing.sm, marginBottom: Spacing.md, maxHeight: 40 },
   chip: {
     borderWidth: 1.5, borderColor: Colors.border,
     borderRadius: Radius.full, paddingHorizontal: Spacing.md, paddingVertical: 6,
-    backgroundColor: Colors.card,
+    backgroundColor: Colors.card, alignSelf: 'flex-start',
   },
   chipSm: { paddingVertical: 4 },
   chipActive: { borderColor: Colors.blue, backgroundColor: Colors.blueLight },
