@@ -5,10 +5,10 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import { Colors, Typography, Spacing, Radius, CommonStyles } from '../../utils/theme';
-import { EmptyState } from '../../components/common';
-import { useAppStore } from '../../store/appStore';
-import { Scholarship } from '../../types';
+import { Colors, Typography, Spacing, Radius, CommonStyles } from '@/utils/theme';
+import { EmptyState } from '@/components/common';
+import { useAppStore } from '@/store/appStore';
+import { Scholarship } from '@/types';
 import { format } from 'date-fns';
 
 const DEGREE_FILTERS = ['All', 'Undergraduate', 'Masters', 'PhD', 'Fully Funded'];
