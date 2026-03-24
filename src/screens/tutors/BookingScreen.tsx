@@ -6,12 +6,12 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { format, addDays, startOfMonth, getDaysInMonth, getDay } from 'date-fns';
-import { Colors, Typography, Spacing, Radius, CommonStyles } from '../../utils/theme';
-import { Button, Avatar } from '../../components/common';
-import { tutorsService } from '../../services/tutors';
-import { useAuthStore } from '../../store/authStore';
-import { useAppStore } from '../../store/appStore';
-import { Tutor } from '../../types';
+import { Colors, Typography, Spacing, Radius, CommonStyles } from '@/utils/theme';
+import { Button, Avatar } from '@/components/common';
+import { tutorsService } from '@/services/tutors';
+import { useAuthStore } from '@/store/authStore';
+import { useAppStore } from '@/store/appStore';
+import { Tutor } from '@/types';
 
 const TIME_SLOTS = ['9:00 AM','10:00 AM','11:00 AM','12:00 PM','2:00 PM','3:00 PM','4:00 PM','5:00 PM','7:00 PM'];
 const PLATFORM_FEE_RATE = 0.10;

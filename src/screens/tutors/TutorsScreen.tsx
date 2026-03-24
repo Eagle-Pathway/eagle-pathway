@@ -5,10 +5,10 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import { Colors, Typography, Spacing, Radius, CommonStyles } from '../../utils/theme';
-import { Pill, EmptyState, Avatar } from '../../components/common';
-import { tutorsService } from '../../services/tutors';
-import { Tutor } from '../../types';
+import { Colors, Typography, Spacing, Radius, CommonStyles } from '@/utils/theme';
+import { Pill, EmptyState, Avatar } from '@/components/common';
+import { tutorsService } from '@/services/tutors';
+import { Tutor } from '@/types';
 
 const SUBJECTS = ['All', 'Mathematics', 'English', 'Physics', 'Chemistry', 'Biology', 'IELTS Prep', 'History'];
 const MODES = ['All', 'Online', 'In-Person', 'Top Rated'];

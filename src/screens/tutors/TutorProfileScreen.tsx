@@ -5,10 +5,10 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
-import { Colors, Typography, Spacing, Radius, CommonStyles } from '../../utils/theme';
-import { Pill, Avatar, Button } from '../../components/common';
-import { tutorsService } from '../../services/tutors';
-import { Tutor, TutorReview } from '../../types';
+import { Colors, Typography, Spacing, Radius, CommonStyles } from '@/utils/theme';
+import { Pill, Avatar, Button } from '@/components/common';
+import { tutorsService } from '@/services/tutors';
+import { Tutor, TutorReview } from '@/types';
 
 export default function TutorProfileScreen() {
   const { tutorId } = useLocalSearchParams<{ tutorId: string }>();
