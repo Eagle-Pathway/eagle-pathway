@@ -1,9 +1,8 @@
 module.exports = function (api) {
   api.cache(true);
   return {
-    presets: ['babel-preset-expo'],
+    presets: ['babel-preset-expo'], // 👈 this already includes router support
     plugins: [
-      'react-native-reanimated/plugin',
       [
         'module-resolver',
         {
@@ -20,6 +19,7 @@ module.exports = function (api) {
           },
         },
       ],
+      'react-native-reanimated/plugin', // must stay last
     ],
   };
 };
