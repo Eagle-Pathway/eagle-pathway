@@ -17,15 +17,20 @@ export const authService = {
     return data;
   },
 
-  async signUp(fullName: string, phone: string, role: UserRole, email?: string) {
-    const { data, error } = await supabase.auth.signInWithOtp({ phone });
+  async signUp(fullName: string, phone: string, role: UserRole, email: string) {
+    const { error } = await supabase.auth.signInWithOtp({ phone });
     if (error) throw error;
 
-    // Store pending signup data to complete after OTP verification
     return { phone, fullName, role, email };
   },
 
-  async createProfile(userId: string, fullName: string, phone: string, role: UserRole, email?: string) {
+  async createProfile(
+    userId: string,
+    fullName: string,
+    phone: string,
+    role: UserRole,
+    email: string
+  ) {
     const { data, error } = await supabase
       .from('users')
       .insert({
@@ -68,7 +73,9 @@ export const authService = {
   },
 
   async getSession() {
-    const { data: { session } } = await supabase.auth.getSession();
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
     return session;
   },
 
