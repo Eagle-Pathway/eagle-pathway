@@ -7,12 +7,12 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { format } from 'date-fns';
-import { Colors, Typography, Spacing, Radius, CommonStyles } from '../utils/theme';
-import { Button, Avatar, ProgressBar, EmptyState, Pill } from '../components/common';
-import { scholarshipsService } from '../services/scholarships';
-import { useAuthStore } from '../store/authStore';
-import { useAppStore } from '../store/appStore';
-import { Scholarship, Application, PackageTier, Document } from '../types';
+import { Colors, Typography, Spacing, Radius, CommonStyles } from '@/utils/theme';
+import { Button, Avatar, ProgressBar, EmptyState, Pill } from '@/components/common';
+import { scholarshipsService } from '@/services/scholarships';
+import { useAuthStore } from '@/store/authStore';
+import { useAppStore } from '@/store/appStore';
+import { Scholarship, Application, PackageTier, Document } from '@/types';
 
 // ─── SCHOLARSHIP DETAIL ───────────────────────────────────────────────────────
 export function ScholarshipDetailScreen() {

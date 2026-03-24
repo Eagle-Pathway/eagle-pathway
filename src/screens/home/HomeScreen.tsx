@@ -5,10 +5,10 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import { Colors, Typography, Spacing, Radius, CommonStyles } from '../../utils/theme';
-import { ProgressBar, Avatar, SectionTitle } from '../../components/common';
-import { useAuthStore } from '../../store/authStore';
-import { useAppStore } from '../../store/appStore';
+import { Colors, Typography, Spacing, Radius, CommonStyles } from '@/utils/theme';
+import { ProgressBar, Avatar, SectionTitle } from '@/components/common';
+import { useAuthStore } from '@/store/authStore';
+import { useAppStore } from '@/store/appStore';
 import { format } from 'date-fns';
 
 export default function HomeScreen() {
