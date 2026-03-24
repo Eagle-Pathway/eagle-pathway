@@ -68,7 +68,7 @@ export const SectionTitle: React.FC<{ title: string; style?: TextStyle }> = ({ t
 );
 
 // ─── Empty State ──────────────────────────────────────────────────────────────
-export const EmptyState: React.FC<{ icon: string; title: string; subtitle: string }> = ({ icon, title, subtitle }) => (
+export const EmptyState: React.FC<{ icon: string; title: string; subtitle: string; style?: any }> = ({ icon, title, subtitle, style }) => (
   <View style={styles.emptyState}>
     <Text style={styles.emptyIcon}>{icon}</Text>
     <Text style={styles.emptyTitle}>{title}</Text>
