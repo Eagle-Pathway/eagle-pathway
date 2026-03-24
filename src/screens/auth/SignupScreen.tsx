@@ -5,10 +5,10 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import { Colors, Typography, Spacing, Radius } from '../../utils/theme';
-import { Button } from '../../components/common';
-import { useAuthStore } from '../../store/authStore';
-import { UserRole } from '../../types';
+import { Colors, Typography, Spacing, Radius } from '@/utils/theme';
+import { Button } from '@/components/common';
+import { useAuthStore } from '@/store/authStore';
+import { UserRole } from '@/types';
 
 const ROLES: { key: UserRole; label: string; emoji: string }[] = [
   { key: 'student', label: 'Student', emoji: '🎓' },

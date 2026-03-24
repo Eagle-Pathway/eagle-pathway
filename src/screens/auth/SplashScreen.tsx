@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import { Colors, Typography, Spacing, Radius } from '../../utils/theme';
+import { Colors, Typography, Spacing, Radius } from '@/utils/theme';
 
 const { height } = Dimensions.get('window');
 
@@ -29,7 +29,7 @@ export default function SplashScreen() {
             </View>
             <View style={styles.statDivider} />
             <View style={styles.statItem}>
-              <Text style={styles.statNum}>68%</Text>
+              <Text style={styles.statNum}>98%</Text>
               <Text style={styles.statLbl}>Success Rate</Text>
             </View>
           </View>

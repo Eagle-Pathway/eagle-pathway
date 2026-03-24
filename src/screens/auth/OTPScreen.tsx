@@ -5,9 +5,9 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
-import { Colors, Typography, Spacing, Radius } from '../../utils/theme';
-import { Button } from '../../components/common';
-import { useAuthStore } from '../../store/authStore';
+import { Colors, Typography, Spacing, Radius } from '@/utils/theme';
+import { Button } from '@/components/common';
+import { useAuthStore } from '@/store/authStore';
 
 const OTP_LENGTH = 6;
 
