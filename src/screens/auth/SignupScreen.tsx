@@ -25,10 +25,11 @@ export default function SignupScreen() {
 
   const handleContinue = async () => {
     if (!fullName.trim()) return Alert.alert('Error', 'Please enter your full name');
+    if (!email.trim()) return Alert.alert('Error', 'Please enter your email');
     if (!phone.trim()) return Alert.alert('Error', 'Please enter your phone number');
 
     try {
-      await initiateSignup(fullName.trim(), phone.trim(), role, email.trim() || undefined);
+      await initiateSignup(fullName.trim(), phone.trim(), role, email.trim());
       router.push({ pathname: '/(auth)/otp', params: { phone } });
     } catch (e: any) {
       Alert.alert('Error', e.message || 'Failed to send OTP. Please try again.');
@@ -74,7 +75,7 @@ export default function SignupScreen() {
             </View>
 
             <View style={styles.fieldGroup}>
-              <Text style={styles.label}>Email <Text style={styles.optional}>(optional)</Text></Text>
+              <Text style={styles.label}>Email</Text>
               <TextInput
                 style={styles.input}
                 placeholder="your@email.com"
