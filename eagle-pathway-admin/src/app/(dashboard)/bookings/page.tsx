@@ -1,7 +1,8 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
-import { Search, Calendar, User, CreditCard } from 'lucide-react';
+import { Search, Calendar, User, CreditCard, Download, ChevronLeft, ChevronRight } from 'lucide-react';
+import { exportToCSV } from '@/utils/export';
 
 interface Booking {
   id: string;
@@ -36,12 +37,12 @@ export default function BookingsPage() {
 
     if (!error && bData) {
       // Manually fetch users to avoid complex join syntax errors across same table
-      const userIds = [...new Set(bData.flatMap(b => [b.student_id, b.tutor_id]))];
+      const userIds = [...new Set(bData.flatMap((b: any) => [b.student_id, b.tutor_id]))];
       const { data: usersData } = await supabase.from('users').select('id, full_name, email').in('id', userIds);
       
-      const userMap = new Map(usersData?.map(u => [u.id, u]) || []);
+      const userMap = new Map(usersData?.map((u: any) => [u.id, u]) || []);
       
-      const enrichedBookings = bData.map(b => ({
+      const enrichedBookings = bData.map((b: any) => ({
         ...b,
         student: userMap.get(b.student_id),
         tutor: userMap.get(b.tutor_id),
@@ -68,6 +69,19 @@ export default function BookingsPage() {
     b.status?.toLowerCase().includes(search.toLowerCase())
   );
 
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 8;
+  const totalPages = Math.ceil(filtered.length / itemsPerPage);
+  
+  const paginatedBookings = filtered.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search]);
+
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -78,8 +92,8 @@ export default function BookingsPage() {
       </div>
 
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-        <div className="p-4 border-b border-gray-100 bg-gray-50/50">
-           <div className="relative max-w-md">
+        <div className="p-4 border-b border-gray-100 bg-gray-50/50 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+           <div className="relative w-full max-w-md">
              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                <Search className="h-4 w-4 text-gray-400" />
              </div>
@@ -91,6 +105,17 @@ export default function BookingsPage() {
                className="block w-full pl-10 pr-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-brand-blue focus:border-brand-blue"
              />
            </div>
+           
+           <button 
+             onClick={() => exportToCSV(
+               filtered.map(b => ({ ID: b.id, Status: b.status, Payment: b.payment_status, Student: b.student?.full_name, Tutor: b.tutor?.full_name, Date: b.scheduled_at })), 
+               'bookings_export'
+             )}
+             className="flex items-center px-4 py-2 bg-white text-gray-700 border border-gray-200 rounded-lg shadow-sm hover:bg-gray-50 transition-colors text-sm font-medium whitespace-nowrap"
+           >
+             <Download className="w-4 h-4 mr-2 text-gray-500" />
+             Export CSV
+           </button>
         </div>
         
         <div className="overflow-x-auto">
@@ -113,7 +138,7 @@ export default function BookingsPage() {
                   <td colSpan={4} className="px-6 py-10 text-center text-sm text-gray-500">No bookings found.</td>
                 </tr>
               ) : (
-                filtered.map((booking) => (
+                paginatedBookings.map((booking) => (
                   <tr key={booking.id} className="hover:bg-gray-50/50 transition-colors">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="text-sm font-medium text-gray-900 flex items-center">
@@ -151,6 +176,34 @@ export default function BookingsPage() {
             </tbody>
           </table>
         </div>
+        
+        {/* Pagination Controls */}
+        {!loading && filtered.length > 0 && (
+          <div className="px-6 py-4 border-t border-gray-100 bg-gray-50 flex items-center justify-between">
+            <div className="text-sm text-gray-500">
+               Showing <span className="font-medium text-gray-900">{(currentPage - 1) * itemsPerPage + 1}</span> to <span className="font-medium text-gray-900">{Math.min(currentPage * itemsPerPage, filtered.length)}</span> of <span className="font-medium text-gray-900">{filtered.length}</span> bookings
+            </div>
+            <div className="flex items-center space-x-2">
+               <button 
+                 onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                 disabled={currentPage === 1}
+                 className="p-1.5 rounded-lg border border-gray-200 text-gray-500 hover:bg-white hover:text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+               >
+                 <ChevronLeft className="w-5 h-5" />
+               </button>
+               <div className="text-sm font-medium text-gray-700 mx-2">
+                 Page {currentPage} of {totalPages}
+               </div>
+               <button 
+                 onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                 disabled={currentPage === totalPages}
+                 className="p-1.5 rounded-lg border border-gray-200 text-gray-500 hover:bg-white hover:text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+               >
+                 <ChevronRight className="w-5 h-5" />
+               </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
