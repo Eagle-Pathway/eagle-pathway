@@ -9,7 +9,10 @@ import {
   UserCheck, 
   LayoutDashboard, 
   LogOut,
-  Calendar
+  Calendar,
+  Bell,
+  DollarSign,
+  Settings2
 } from 'lucide-react';
 
 export default function Sidebar() {
@@ -22,6 +25,9 @@ export default function Sidebar() {
     { name: 'Tutor Approvals', href: '/tutors', icon: UserCheck },
     { name: 'Scholarships', href: '/scholarships', icon: GraduationCap },
     { name: 'Bookings', href: '/bookings', icon: Calendar },
+    { name: 'Notifications', href: '/notifications', icon: Bell },
+    { name: 'Finance', href: '/finance', icon: DollarSign },
+    { name: 'Settings', href: '/settings', icon: Settings2 },
   ];
 
   const handleLogout = async () => {
