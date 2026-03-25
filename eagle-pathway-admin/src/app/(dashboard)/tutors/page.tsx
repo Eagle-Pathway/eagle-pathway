@@ -1,7 +1,8 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
-import { CheckCircle, XCircle, Search, Shield, ShieldAlert, FileText } from 'lucide-react';
+import { CheckCircle, XCircle, Search, Shield, ShieldAlert, FileText, Download } from 'lucide-react';
+import { exportToCSV } from '@/utils/export';
 
 interface TutorWithUser {
   user_id: string;
@@ -72,8 +73,8 @@ export default function TutorsPage() {
       </div>
 
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-        <div className="p-4 border-b border-gray-100 bg-gray-50/50">
-           <div className="relative max-w-md">
+        <div className="p-4 border-b border-gray-100 bg-gray-50/50 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+           <div className="relative w-full max-w-md">
              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                <Search className="h-4 w-4 text-gray-400" />
              </div>
@@ -85,6 +86,17 @@ export default function TutorsPage() {
                className="block w-full pl-10 pr-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-brand-blue focus:border-brand-blue"
              />
            </div>
+           
+           <button 
+             onClick={() => exportToCSV(
+               filtered.map(t => ({ ID: t.user_id, Name: t.users?.full_name, Phone: t.users?.phone, Email: t.users?.email, Verified: t.is_verified, Rate: t.hourly_rate, Location: t.location })), 
+               'tutors_export'
+             )}
+             className="flex items-center px-4 py-2 bg-white text-gray-700 border border-gray-200 rounded-lg shadow-sm hover:bg-gray-50 transition-colors text-sm font-medium whitespace-nowrap"
+           >
+             <Download className="w-4 h-4 mr-2 text-gray-500" />
+             Export CSV
+           </button>
         </div>
         
         <div className="overflow-x-auto">
