@@ -1,0 +1,151 @@
+'use client';
+import { useState, useEffect } from 'react';
+import { supabase } from '@/lib/supabase';
+import { Plus, Edit2, Trash2, ExternalLink, Search } from 'lucide-react';
+
+interface Scholarship {
+  id: string;
+  title: string;
+  provider: string;
+  amount: string;
+  deadline: string;
+  country: string;
+  degree_level: string;
+  is_active: boolean;
+}
+
+export default function ScholarshipsPage() {
+  const [scholarships, setScholarships] = useState<Scholarship[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
+
+  useEffect(() => {
+    fetchScholarships();
+  }, []);
+
+  const fetchScholarships = async () => {
+    setLoading(true);
+    const { data, error } = await supabase
+      .from('scholarships')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (!error && data) {
+      setScholarships(data);
+    }
+    setLoading(false);
+  };
+
+  const handleDelete = async (id: string) => {
+    if (confirm('Are you sure you want to delete this scholarship?')) {
+      await supabase.from('scholarships').delete().eq('id', id);
+      fetchScholarships();
+    }
+  };
+
+  const toggleStatus = async (id: string, currentStatus: boolean) => {
+    await supabase
+      .from('scholarships')
+      .update({ is_active: !currentStatus })
+      .eq('id', id);
+    fetchScholarships();
+  };
+
+  const filtered = scholarships.filter(s => 
+    (s.title || '').toLowerCase().includes(search.toLowerCase()) || 
+    (s.provider || '').toLowerCase().includes(search.toLowerCase())
+  );
+
+  return (
+    <div className="space-y-6 animate-in fade-in duration-500">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Scholarships</h1>
+          <p className="mt-1 text-sm text-gray-500">Manage available scholarships</p>
+        </div>
+        <button className="flex items-center px-4 py-2 bg-brand-blue text-white rounded-xl shadow-md hover:bg-blue-800 transition-colors text-sm font-medium">
+          <Plus className="w-4 h-4 mr-2" />
+          Add Scholarship
+        </button>
+      </div>
+
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        <div className="p-4 border-b border-gray-100 flex items-center gap-4 bg-gray-50/50">
+           <div className="relative flex-1 max-w-md">
+             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+               <Search className="h-4 w-4 text-gray-400" />
+             </div>
+             <input
+               type="text"
+               placeholder="Search scholarships..."
+               value={search}
+               onChange={(e) => setSearch(e.target.value)}
+               className="block w-full pl-10 pr-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-brand-blue focus:border-brand-blue"
+             />
+           </div>
+        </div>
+        
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Title</th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Provider & Amount</th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Details</th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                <th scope="col" className="relative px-6 py-3"><span className="sr-only">Actions</span></th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {loading ? (
+                <tr>
+                  <td colSpan={5} className="px-6 py-10 text-center text-sm text-gray-500">Loading scholarships...</td>
+                </tr>
+              ) : filtered.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="px-6 py-10 text-center text-sm text-gray-500">No scholarships found.</td>
+                </tr>
+              ) : (
+                filtered.map((scholarship) => (
+                  <tr key={scholarship.id} className="hover:bg-gray-50/50 transition-colors">
+                    <td className="px-6 py-4">
+                      <div className="text-sm font-medium text-gray-900">{scholarship.title}</div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="text-sm text-gray-900">{scholarship.provider}</div>
+                      <div className="text-sm text-gray-500 font-medium text-brand-gold mt-1">{scholarship.amount}</div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="text-sm text-gray-900 bg-gray-100 inline-block px-2 py-1 rounded-md mb-1">{scholarship.degree_level}</div>
+                      <div className="text-sm text-gray-500">{scholarship.country} • Due: {new Date(scholarship.deadline).toLocaleDateString()}</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <button 
+                        onClick={() => toggleStatus(scholarship.id, scholarship.is_active)}
+                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize cursor-pointer transition-colors ${
+                          scholarship.is_active ? 'bg-green-100 text-green-800 hover:bg-green-200' : 'bg-gray-100 text-gray-800 hover:bg-gray-200'
+                        }`}
+                      >
+                        {scholarship.is_active ? 'Active' : 'Inactive'}
+                      </button>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      <div className="flex justify-end space-x-2">
+                        <button className="text-gray-400 hover:text-brand-blue p-1 rounded-md hover:bg-blue-50 transition-colors">
+                          <Edit2 className="h-4 w-4" />
+                        </button>
+                        <button onClick={() => handleDelete(scholarship.id)} className="text-gray-400 hover:text-red-600 p-1 rounded-md hover:bg-red-50 transition-colors">
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}
