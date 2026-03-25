@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Plus, Edit2, Trash2, ExternalLink, Search } from 'lucide-react';
+import ScholarshipForm from '@/components/forms/ScholarshipForm';
 
 interface Scholarship {
   id: string;
@@ -18,6 +19,7 @@ export default function ScholarshipsPage() {
   const [scholarships, setScholarships] = useState<Scholarship[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [isFormOpen, setIsFormOpen] = useState(false);
 
   useEffect(() => {
     fetchScholarships();
@@ -63,11 +65,24 @@ export default function ScholarshipsPage() {
           <h1 className="text-3xl font-bold text-gray-900">Scholarships</h1>
           <p className="mt-1 text-sm text-gray-500">Manage available scholarships</p>
         </div>
-        <button className="flex items-center px-4 py-2 bg-brand-blue text-white rounded-xl shadow-md hover:bg-blue-800 transition-colors text-sm font-medium">
+        <button 
+          onClick={() => setIsFormOpen(true)}
+          className="flex items-center px-4 py-2 bg-brand-blue text-white rounded-xl shadow-md hover:bg-blue-800 transition-colors text-sm font-medium"
+        >
           <Plus className="w-4 h-4 mr-2" />
           Add Scholarship
         </button>
       </div>
+
+      {isFormOpen && (
+        <ScholarshipForm 
+          onClose={() => setIsFormOpen(false)} 
+          onSuccess={() => {
+            setIsFormOpen(false);
+            fetchScholarships();
+          }} 
+        />
+      )}
 
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
         <div className="p-4 border-b border-gray-100 flex items-center gap-4 bg-gray-50/50">
