@@ -18,7 +18,12 @@ const tabStyles = StyleSheet.create({
   labelActive: { color: Colors.blue, fontWeight: Typography.semibold },
 });
 
+import { useAuthStore } from '../../src/store/authStore';
+
 export default function TabLayout() {
+  const { user } = useAuthStore();
+  const isTutor = user?.role?.toLowerCase() === 'tutor';
+
   return (
     <Tabs
       screenOptions={{
@@ -39,22 +44,26 @@ export default function TabLayout() {
           tabBarIcon: ({ focused }) => <TabIcon emoji="🏠" label="Home" focused={focused} />,
         }}
       />
-      <Tabs.Screen
-        name="tutors"
-        options={{
-          tabBarIcon: ({ focused }) => <TabIcon emoji="👨‍🏫" label="Tutors" focused={focused} />,
-        }}
-      />
-      <Tabs.Screen
-        name="scholarships"
-        options={{
-          tabBarIcon: ({ focused }) => <TabIcon emoji="🎓" label="Scholarships" focused={focused} />,
-        }}
-      />
+      {!isTutor && (
+        <Tabs.Screen
+          name="tutors"
+          options={{
+            tabBarIcon: ({ focused }) => <TabIcon emoji="👨‍🏫" label="Tutors" focused={focused} />,
+          }}
+        />
+      )}
+      {!isTutor && (
+        <Tabs.Screen
+          name="scholarships"
+          options={{
+            tabBarIcon: ({ focused }) => <TabIcon emoji="🎓" label="Scholarships" focused={focused} />,
+          }}
+        />
+      )}
       <Tabs.Screen
         name="bookings"
         options={{
-          tabBarIcon: ({ focused }) => <TabIcon emoji="📅" label="Bookings" focused={focused} />,
+          tabBarIcon: ({ focused }) => <TabIcon emoji="📅" label={isTutor ? "Sessions" : "Bookings"} focused={focused} />,
         }}
       />
       <Tabs.Screen
