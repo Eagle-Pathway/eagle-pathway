@@ -88,13 +88,9 @@ export const scholarshipsService = {
     fileUri: string;
     fileName: string;
   }): Promise<Document> {
-    // Read file
-    const fileInfo = await FileSystem.getInfoAsync(params.fileUri);
-    if (!fileInfo.exists) throw new Error('File not found');
-
-    const fileBase64 = await FileSystem.readAsStringAsync(params.fileUri, {
-      encoding: FileSystem.EncodingType.Base64,
-    });
+    // Get blob from file URI
+    const response = await fetch(params.fileUri);
+    const blob = await response.blob();
 
     const filePath = `${params.userId}/${params.documentType}/${Date.now()}_${params.fileName}`;
     const contentType = params.fileName.endsWith('.pdf') ? 'application/pdf' : 'image/jpeg';
@@ -102,7 +98,7 @@ export const scholarshipsService = {
     // Upload to Supabase Storage
     const { error: uploadError } = await supabase.storage
       .from('documents')
-      .upload(filePath, Buffer.from(fileBase64, 'base64'), {
+      .upload(filePath, blob, {
         contentType,
         upsert: false,
       });
@@ -122,7 +118,7 @@ export const scholarshipsService = {
         document_type: params.documentType,
         file_name: params.fileName,
         file_url: publicUrl,
-        file_size: (fileInfo as any).size || 0,
+        file_size: blob.size || 0,
         status: 'pending',
       })
       .select()
