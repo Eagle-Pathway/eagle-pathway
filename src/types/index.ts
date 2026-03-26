@@ -172,6 +172,22 @@ export interface Notification {
   created_at: string;
 }
 
+// ─── TASK ────────────────────────────────────────────────────────────────────
+export type TaskStatus = 'pending' | 'completed' | 'overdue';
+export type TaskType = 'document' | 'sop' | 'payment' | 'session' | 'other';
+
+export interface StudentTask {
+  id: string;
+  student_id: string;
+  application_id?: string;
+  title: string;
+  description?: string;
+  due_date?: string;
+  status: TaskStatus;
+  type: TaskType;
+  created_at: string;
+}
+
 // ─── NAVIGATION TYPES ─────────────────────────────────────────────────────────
 export type RootStackParamList = {
   '(auth)': undefined;
