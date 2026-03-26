@@ -1,5 +1,5 @@
 import { supabase } from './supabase';
-import { Tutor, TutorReview, Booking, SessionType } from '../types';
+import { Tutor, TutorReview, Booking, BookingStatus, SessionType } from '../types';
 
 export const tutorsService = {
   async getTutors(filters?: {
@@ -90,6 +90,23 @@ export const tutorsService = {
     return data as Booking[];
   },
 
+  async getTutorBookings(tutorId: string): Promise<Booking[]> {
+    const { data, error } = await supabase
+      .from('bookings')
+      .select('*, student:users(*)')
+      .eq('tutor_id', tutorId)
+      .order('session_date', { ascending: true });
+    if (error) throw error;
+    return data as Booking[];
+  },
+
+  async updateBookingStatus(bookingId: string, status: BookingStatus): Promise<void> {
+    const { error } = await supabase
+      .from('bookings')
+      .update({ status })
+      .eq('id', bookingId);
+    if (error) throw error;
+  },
   async cancelBooking(bookingId: string): Promise<void> {
     const { error } = await supabase
       .from('bookings')
