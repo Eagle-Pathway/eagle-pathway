@@ -1,0 +1,30 @@
+{
+  "env": {
+    "browser": true,
+    "react-native/react-native": true,
+    "node": true
+  },
+  "extends": [
+    "expo",
+    "eslint:recommended",
+    "plugin:@typescript-eslint/recommended"
+  ],
+  "parser": "@typescript-eslint/parser",
+  "settings": {
+    "import/resolver": {
+      "typescript": {
+        "project": "./tsconfig.json"
+      }
+    }
+  },
+  "plugins": [
+    "@typescript-eslint",
+    "react-native"
+  ],
+  "rules": {
+    "@typescript-eslint/no-explicit-any": "off",
+    "@typescript-eslint/no-unused-vars": "warn",
+    "no-undef": "error"
+  },
+  "root": true
+}
