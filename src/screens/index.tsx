@@ -13,6 +13,7 @@ import { scholarshipsService } from '@/services/scholarships';
 import { useAuthStore } from '@/store/authStore';
 import { useAppStore } from '@/store/appStore';
 import { Scholarship, Application, PackageTier, Document } from '@/types';
+import { openWhatsApp } from '@/utils/linking';
 
 // ─── SCHOLARSHIP DETAIL ───────────────────────────────────────────────────────
 export function ScholarshipDetailScreen() {
@@ -130,23 +131,23 @@ export function PackagesScreen() {
 
   const packages = [
     {
-      tier: 'basic' as PackageTier, name: 'Basic', price: '$75',
-      description: 'Best for: Self-starters who need direction',
-      features: ['University shortlist (3 options)', 'Application checklist', '1 consultation call (45 min)'],
-      excluded: ['SOP writing support', 'Document review', 'Visa preparation'],
+      tier: 'basic' as PackageTier, name: 'Basic Assistance', priceETB: '10,000', priceUSD: '85',
+      description: 'Ideal for self-starters who need a roadmap and initial review.',
+      features: ['University shortlist (3 options)', 'Application checklist', 'Document review (1 round)', '1 consultation call (45 min)'],
+      excluded: ['SOP writing support', 'Visa preparation', 'Post-offer support'],
       featured: false,
     },
     {
-      tier: 'standard' as PackageTier, name: 'Standard', price: '$225',
-      description: 'Best for: Serious applicants who want full guidance',
-      features: ['Everything in Basic', 'Full SOP writing + 3 rounds editing', 'Document review + feedback', '3 consultation calls'],
+      tier: 'standard' as PackageTier, name: 'Standard Full-Cycle', priceETB: '28,000', priceUSD: '225',
+      description: 'Comprehensive guidance for students wanting maximum success.',
+      features: ['Everything in Basic', 'SOP writing + 3 editing rounds', 'Full document review', '3 consultation calls', 'Application management'],
       excluded: ['Visa preparation'],
       featured: true,
     },
     {
-      tier: 'premium' as PackageTier, name: 'Premium', price: '$550',
-      description: 'Best for: Maximum success — we handle everything',
-      features: ['Everything in Standard', 'Full application management', 'Interview preparation & mock sessions', 'Visa application guidance', 'Pre-departure orientation'],
+      tier: 'premium' as PackageTier, name: 'Premium Elite', priceETB: '55,000', priceUSD: '450',
+      description: 'The white-glove service. We handle every detail for you.',
+      features: ['Everything in Standard', 'Visa application guidance', 'Interview preparation (Mock)', 'Scholarship essay support', 'Pre-departure orientation'],
       excluded: [],
       featured: false,
     },
@@ -155,36 +156,63 @@ export function PackagesScreen() {
   return (
     <SafeAreaView style={CommonStyles.screenBg} edges={['top']}>
       <View style={pkgStyles.header}>
-        <TouchableOpacity style={pkgStyles.backBtn} onPress={() => router.back()} activeOpacity={0.8}><Text style={{ fontSize: 20, color: Colors.text }}>←</Text></TouchableOpacity>
-        <Text style={pkgStyles.title}>Choose Your Package</Text>
+        <TouchableOpacity style={pkgStyles.backBtn} onPress={() => router.back()} activeOpacity={0.8}>
+          <Text style={{ fontSize: 20, color: Colors.text }}>←</Text>
+        </TouchableOpacity>
+        <Text style={pkgStyles.title}>Select Package</Text>
       </View>
-      <ScrollView contentContainerStyle={{ padding: Spacing.xl, paddingBottom: 60, gap: Spacing.md }}>
-        <Text style={pkgStyles.intro}>Our consultants have a proven track record. Choose the level of support that's right for you.</Text>
+      <ScrollView contentContainerStyle={{ padding: Spacing.xl, paddingBottom: 60, gap: Spacing.lg }}>
+        <Text style={pkgStyles.intro}>Our consultants have a 92% success rate. Choose the support level that secures your future.</Text>
+        
+        <View style={pkgStyles.currencyToggle}>
+          <Text style={pkgStyles.currencyLabel}>Prices in ETB and USD (Diaspora)</Text>
+        </View>
+
         {packages.map(pkg => (
           <View key={pkg.tier} style={[pkgStyles.card, pkg.featured && pkgStyles.cardFeatured]}>
-            {pkg.featured && <View style={pkgStyles.recommendedBadge}><Text style={pkgStyles.recommendedText}>Most Popular</Text></View>}
-            <Text style={pkgStyles.pkgName}>{pkg.name}</Text>
-            <Text style={pkgStyles.pkgPrice}>{pkg.price} <Text style={pkgStyles.pkgPriceSub}>one-time</Text></Text>
-            <Text style={[pkgStyles.pkgDesc, pkg.featured && { color: '#9a7230' }]}>{pkg.description}</Text>
+            <View style={pkgStyles.cardHeader}>
+              <View style={{ flex: 1 }}>
+                <Text style={pkgStyles.pkgName}>{pkg.name}</Text>
+                <Text style={[pkgStyles.pkgDesc, pkg.featured && { color: Colors.goldDark }]}>{pkg.description}</Text>
+              </View>
+              {pkg.featured && <View style={pkgStyles.recommendedBadge}><Text style={pkgStyles.recommendedText}>Most Popular</Text></View>}
+            </View>
+
+            <View style={pkgStyles.priceContainer}>
+              <View>
+                <Text style={pkgStyles.pkgPrice}>ETB {pkg.priceETB}</Text>
+                <Text style={pkgStyles.pkgPriceUSD}>≈ ${pkg.priceUSD} USD</Text>
+              </View>
+              <View style={pkgStyles.oneTimeBadge}>
+                <Text style={pkgStyles.oneTimeText}>One-time fee</Text>
+              </View>
+            </View>
+
             <View style={pkgStyles.featureList}>
               {pkg.features.map(f => (
                 <View key={f} style={pkgStyles.featureRow}>
-                  <Text style={[pkgStyles.featureIcon, { color: Colors.green }]}>✓</Text>
+                  <View style={[pkgStyles.featureIconCircle, { backgroundColor: Colors.blueLight }]}>
+                    <Text style={{ color: Colors.blue, fontSize: 10, fontWeight: 'bold' }}>✓</Text>
+                  </View>
                   <Text style={pkgStyles.featureText}>{f}</Text>
                 </View>
               ))}
               {pkg.excluded.map(f => (
                 <View key={f} style={pkgStyles.featureRow}>
-                  <Text style={[pkgStyles.featureIcon, { color: Colors.border }]}>✓</Text>
+                  <View style={[pkgStyles.featureIconCircle, { backgroundColor: Colors.grayLight }]}>
+                    <Text style={{ color: Colors.textSecondary, fontSize: 10 }}>×</Text>
+                  </View>
                   <Text style={[pkgStyles.featureText, { color: Colors.textSecondary }]}>{f}</Text>
                 </View>
               ))}
             </View>
+
             <Button
-              title={`Choose ${pkg.name}`}
+              title={pkg.featured ? `Continue with ${pkg.name}` : `Choose ${pkg.name}`}
               variant={pkg.featured ? 'primary' : 'outline'}
               onPress={() => router.push({ pathname: '/apply', params: { scholarshipId, packageTier: pkg.tier } })}
-              style={{ marginTop: Spacing.lg }}
+              style={{ marginTop: Spacing.xl }}
+              fullWidth
             />
           </View>
         ))}
@@ -197,18 +225,24 @@ const pkgStyles = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md, padding: Spacing.xl, backgroundColor: Colors.card, borderBottomWidth: 1, borderBottomColor: Colors.border },
   backBtn: { width: 36, height: 36, backgroundColor: Colors.grayLight, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
   title: { fontSize: Typography['3xl'], fontWeight: Typography.bold, color: Colors.text },
-  intro: { fontSize: Typography.md, color: Colors.textSecondary, lineHeight: 22, marginBottom: Spacing.sm },
+  intro: { fontSize: Typography.sm, color: Colors.textSecondary, lineHeight: 20, marginBottom: Spacing.xs },
+  currencyToggle: { marginBottom: Spacing.md },
+  currencyLabel: { fontSize: Typography.xs, fontWeight: Typography.bold, color: Colors.blue, textTransform: 'uppercase' },
   card: { backgroundColor: Colors.card, borderRadius: Radius['2xl'], padding: Spacing.xl, borderWidth: 1.5, borderColor: Colors.border },
-  cardFeatured: { borderColor: Colors.gold, backgroundColor: Colors.goldLight },
-  recommendedBadge: { backgroundColor: Colors.gold, paddingHorizontal: 12, paddingVertical: 3, borderRadius: Radius.full, alignSelf: 'flex-start', marginBottom: Spacing.md },
-  recommendedText: { fontSize: Typography.xs, fontWeight: Typography.bold, color: Colors.white },
-  pkgName: { fontSize: Typography['2xl'], fontWeight: Typography.bold, color: Colors.text },
-  pkgPrice: { fontSize: 26, fontWeight: Typography.bold, color: Colors.blue, marginVertical: Spacing.xs },
-  pkgPriceSub: { fontSize: Typography.md, color: Colors.textSecondary, fontWeight: Typography.regular },
-  pkgDesc: { fontSize: Typography.sm, color: Colors.textSecondary, marginBottom: Spacing.md },
+  cardFeatured: { borderColor: Colors.gold, backgroundColor: '#fffdf5' },
+  cardHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: Spacing.md },
+  recommendedBadge: { backgroundColor: Colors.gold, paddingHorizontal: 10, paddingVertical: 4, borderRadius: Radius.lg, height: 26 },
+  recommendedText: { fontSize: 10, fontWeight: Typography.bold, color: Colors.white },
+  pkgName: { fontSize: Typography.xl, fontWeight: Typography.bold, color: Colors.text, marginBottom: 4 },
+  pkgDesc: { fontSize: Typography.sm, color: Colors.textSecondary, lineHeight: 18 },
+  priceContainer: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', paddingBottom: Spacing.md, marginBottom: Spacing.md, borderBottomWidth: 1, borderBottomColor: Colors.border },
+  pkgPrice: { fontSize: 28, fontWeight: Typography.bold, color: Colors.text },
+  pkgPriceUSD: { fontSize: Typography.sm, color: Colors.textSecondary, fontWeight: Typography.medium },
+  oneTimeBadge: { backgroundColor: Colors.blueLight, paddingHorizontal: 10, paddingVertical: 4, borderRadius: Radius.lg },
+  oneTimeText: { fontSize: 10, fontWeight: Typography.bold, color: Colors.blue },
   featureList: { gap: Spacing.sm },
-  featureRow: { flexDirection: 'row', gap: Spacing.sm, alignItems: 'center' },
-  featureIcon: { fontSize: Typography.base, fontWeight: Typography.bold, width: 16 },
+  featureRow: { flexDirection: 'row', gap: Spacing.md, alignItems: 'center' },
+  featureIconCircle: { width: 22, height: 22, borderRadius: 11, alignItems: 'center', justifyContent: 'center' },
   featureText: { fontSize: Typography.base, color: Colors.text, flex: 1 },
 });
 
@@ -218,11 +252,11 @@ export function ApplyScreen() {
   const { user } = useAuthStore();
   const { createApplication, loadDocuments, uploadDocument, documents } = useAppStore();
   const [loading, setLoading] = useState(false);
-  const [step, setStep] = useState(2);
+  const [step, setStep] = useState(1);
 
   useEffect(() => { if (user) loadDocuments(user.id); }, [user?.id]);
 
-  const STEPS = ['Info', 'Documents', 'SOP', 'Review'];
+  const STEPS = ['Info', 'Docs', 'SOP', 'Pay', 'Final'];
 
   const handlePickAndUpload = async (docType: string) => {
     try {
@@ -307,11 +341,64 @@ export function ApplyScreen() {
             })}
           </>
         )}
+
+        {step === 4 && (
+          <View style={{ padding: Spacing.xl }}>
+            <Text style={CommonStyles.sectionTitle}>Secure Payment</Text>
+            <Text style={[applyStyles.intro, { marginBottom: Spacing.lg }]}>
+              To begin your {packageTier} consultation, please complete the payment below. A consultant will verify and reach out via WhatsApp.
+            </Text>
+
+            <View style={applyStyles.paymentCard}>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: Spacing.md }}>
+                <Text style={{ fontWeight: 'bold', fontSize: 16 }}>Amount Due</Text>
+                <Text style={{ fontWeight: 'bold', fontSize: 18, color: Colors.blue }}>
+                  {packageTier === 'premium' ? 'ETB 55,000' : packageTier === 'standard' ? 'ETB 28,000' : 'ETB 10,000'}
+                </Text>
+              </View>
+
+              <Text style={applyStyles.paymentLabel}>Select Payment Method</Text>
+              {[
+                { name: 'Telebirr', icon: '📱' },
+                { name: 'Chapa (Card/Transfer)', icon: '💳' },
+                { name: 'CBE Birr / Bank Transfer', icon: '🏦' },
+              ].map(pm => (
+                <TouchableOpacity key={pm.name} style={applyStyles.methodRow} activeOpacity={0.8}>
+                  <Text style={{ fontSize: 18 }}>{pm.icon}</Text>
+                  <Text style={applyStyles.methodName}>{pm.name}</Text>
+                  <View style={applyStyles.radio} />
+                </TouchableOpacity>
+              ))}
+
+              <View style={applyStyles.paymentInfo}>
+                <Text style={{ fontSize: 12, color: Colors.textSecondary }}>
+                  💡 After payment, please keep your reference number or screenshot ready.
+                </Text>
+              </View>
+            </View>
+          </View>
+        )}
+
+        {step === 5 && (
+          <View style={{ padding: Spacing.xl, alignItems: 'center' }}>
+            <Text style={{ fontSize: 60, marginBottom: Spacing.lg }}>🚀</Text>
+            <Text style={applyStyles.title}>Ready to Submit</Text>
+            <Text style={[applyStyles.intro, { textAlign: 'center', marginTop: Spacing.md }]}>
+              All steps are complete! Once you submit, your consultant will start working on your {packageTier} package.
+            </Text>
+            <View style={[CommonStyles.card, { width: '100%', marginTop: Spacing.xl, padding: Spacing.lg }]}>
+              <Text style={{ fontWeight: 'bold', marginBottom: 8 }}>Summary</Text>
+              <Text>• Scholarship: {scholarshipId?.split('-')[0]}</Text>
+              <Text>• Package: {packageTier}</Text>
+              <Text>• Documents: {documents.length} / {requiredDocs.length}</Text>
+            </View>
+          </View>
+        )}
       </ScrollView>
 
       <View style={applyStyles.bottomBar}>
-        <Button title="Save Draft" variant="secondary" onPress={() => {}} style={{ flex: 0.5 }} fullWidth={false} />
-        <Button title="Continue →" variant="primary" onPress={step < 4 ? () => setStep(s => s + 1) : handleSubmit} loading={loading} style={{ flex: 1 }} fullWidth={false} />
+        <Button title={step === 1 ? 'Cancel' : '← Back'} variant="secondary" onPress={() => step > 1 ? setStep(s => s - 1) : router.back()} style={{ flex: 0.5 }} fullWidth={false} />
+        <Button title={step === 5 ? 'Confirm & Submit' : 'Continue →'} variant="primary" onPress={step < 5 ? () => setStep(s => s + 1) : handleSubmit} loading={loading} style={{ flex: 1 }} fullWidth={false} />
       </View>
     </SafeAreaView>
   );
@@ -342,6 +429,13 @@ const applyStyles = StyleSheet.create({
   checkCircle: { width: 20, height: 20, borderRadius: 10, backgroundColor: Colors.greenLight, alignItems: 'center', justifyContent: 'center' },
   crossCircle: { width: 20, height: 20, borderRadius: 10, backgroundColor: Colors.orangeLight, alignItems: 'center', justifyContent: 'center' },
   bottomBar: { padding: Spacing.lg, backgroundColor: Colors.card, borderTopWidth: 1, borderTopColor: Colors.border, flexDirection: 'row', gap: Spacing.sm },
+  paymentCard: { backgroundColor: Colors.card, borderRadius: Radius.xl, padding: Spacing.lg, borderWidth: 1, borderColor: Colors.border, marginTop: Spacing.md },
+  paymentLabel: { fontSize: Typography.sm, fontWeight: Typography.bold, color: Colors.textSecondary, marginBottom: Spacing.sm, marginTop: Spacing.md },
+  methodRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md, paddingVertical: Spacing.md, borderBottomWidth: 1, borderBottomColor: Colors.border },
+  methodName: { fontSize: Typography.base, fontWeight: Typography.semibold, color: Colors.text, flex: 1 },
+  radio: { width: 18, height: 18, borderRadius: 9, borderWidth: 2, borderColor: Colors.border },
+  paymentInfo: { marginTop: Spacing.lg, backgroundColor: Colors.bg, padding: Spacing.md, borderRadius: Radius.md },
+  intro: { fontSize: Typography.sm, color: Colors.textSecondary, lineHeight: 20 },
 });
 
 // ─── APPLICATION TRACKER ─────────────────────────────────────────────────────
@@ -415,6 +509,15 @@ export function TrackerScreen() {
               <View style={trackerStyles.appHeader}>
                 <Text style={trackerStyles.appFlag}>{app.scholarship?.country_flag || '🌍'}</Text>
                 <Text style={trackerStyles.appName}>{app.scholarship?.name || 'Scholarship'}</Text>
+                {app.consultant && (
+                  <TouchableOpacity 
+                    style={trackerStyles.consultantBtn} 
+                    onPress={() => openWhatsApp(app.consultant?.phone || '', `Hi ${app.consultant?.full_name}, I'm checking in on my ${app.scholarship?.name} application.`)}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={{ fontSize: 14 }}>💬</Text>
+                  </TouchableOpacity>
+                )}
                 {app.status === 'accepted' && <View style={trackerStyles.acceptedBadge}><Text style={trackerStyles.acceptedText}>Accepted! 🎉</Text></View>}
               </View>
 
@@ -480,6 +583,14 @@ const trackerStyles = StyleSheet.create({
   timelineContent: { flex: 1, backgroundColor: Colors.card, borderRadius: Radius.xl, padding: Spacing.md, borderWidth: 1, borderColor: Colors.border, marginBottom: 4 },
   timelineTitle: { fontSize: Typography.md, fontWeight: Typography.bold, color: Colors.text },
   timelineSub: { fontSize: Typography.sm, color: Colors.textSecondary, marginTop: 3 },
+  consultantBtn: {
+    width: 32, height: 32,
+    backgroundColor: '#25D366',
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: Spacing.sm,
+  },
 });
 
 // ─── DOCUMENTS ───────────────────────────────────────────────────────────────
@@ -577,13 +688,21 @@ const docStyles = StyleSheet.create({
 // ─── BOOKINGS ────────────────────────────────────────────────────────────────
 export function BookingsScreen() {
   const { user } = useAuthStore();
-  const { bookings, loadBookings, cancelBooking } = useAppStore();
+  const { bookings, loadBookings, loadTutorBookings, updateBookingStatus, cancelBooking } = useAppStore();
   const [activeTab, setActiveTab] = useState<'upcoming' | 'past' | 'cancelled'>('upcoming');
   const [loading, setLoading] = useState(true);
 
+  const isTutor = user?.role?.toLowerCase() === 'tutor';
+
   useEffect(() => {
-    if (user) loadBookings(user.id).finally(() => setLoading(false));
-  }, [user?.id]);
+    if (user) {
+      if (isTutor) {
+        loadTutorBookings(user.id).finally(() => setLoading(false));
+      } else {
+        loadBookings(user.id).finally(() => setLoading(false));
+      }
+    }
+  }, [user?.id, isTutor]);
 
   const filtered = bookings.filter(b => {
     if (activeTab === 'upcoming') return ['pending', 'confirmed'].includes(b.status);
@@ -593,7 +712,7 @@ export function BookingsScreen() {
 
   return (
     <SafeAreaView style={CommonStyles.screenBg} edges={['top']}>
-      <View style={bkgStyles.header}><Text style={bkgStyles.title}>My Bookings</Text></View>
+      <View style={bkgStyles.header}><Text style={bkgStyles.title}>{isTutor ? 'My Sessions' : 'My Bookings'}</Text></View>
       <View style={bkgStyles.tabs}>
         {(['upcoming', 'past', 'cancelled'] as const).map(tab => (
           <TouchableOpacity key={tab} style={[bkgStyles.tab, activeTab === tab && bkgStyles.tabActive]} onPress={() => setActiveTab(tab)} activeOpacity={0.8}>
@@ -604,38 +723,60 @@ export function BookingsScreen() {
       {loading ? (
         <View style={[CommonStyles.flex1, CommonStyles.center]}><ActivityIndicator color={Colors.blue} size="large" /></View>
       ) : filtered.length === 0 ? (
-        <EmptyState icon="📅" title={`No ${activeTab} bookings`} subtitle="Book a session with a tutor to get started" />
+        <EmptyState icon="📅" title={`No ${activeTab} ${isTutor ? 'sessions' : 'bookings'}`} subtitle={isTutor ? "You don't have any sessions in this category yet." : "Book a session with a tutor to get started"} />
       ) : (
         <FlatList
           data={filtered}
           keyExtractor={b => b.id}
           renderItem={({ item: b }) => {
-            const initials = b.tutor?.user?.full_name?.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() || 'T';
+            const displayName = isTutor ? b.student?.full_name : b.tutor?.user?.full_name;
+            const initials = displayName?.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() || (isTutor ? 'S' : 'T');
+            
             return (
               <View style={bkgStyles.card}>
                 <View style={bkgStyles.cardTop}>
                   <Avatar initials={initials} size={44} borderRadius={13} />
                   <View style={{ flex: 1, marginLeft: Spacing.md }}>
-                    <Text style={bkgStyles.name}>{b.tutor?.user?.full_name || 'Tutor'}</Text>
+                    <Text style={bkgStyles.name}>{displayName || 'User'}</Text>
                     <Text style={bkgStyles.sub}>{b.subject} · {b.session_type === 'online' ? 'Online' : 'In-Person'}</Text>
                   </View>
-                  <View style={[bkgStyles.statusPill, { backgroundColor: b.status === 'confirmed' ? Colors.blueLight : Colors.goldLight }]}>
-                    <Text style={[bkgStyles.statusText, { color: b.status === 'confirmed' ? Colors.blue : Colors.goldDark }]}>{b.status.charAt(0).toUpperCase() + b.status.slice(1)}</Text>
+                  <View style={[bkgStyles.statusPill, { backgroundColor: b.status === 'confirmed' ? Colors.blueLight : b.status === 'pending' ? Colors.goldLight : Colors.grayLight }]}>
+                    <Text style={[bkgStyles.statusText, { color: b.status === 'confirmed' ? Colors.blue : b.status === 'pending' ? Colors.goldDark : Colors.textSecondary }]}>{b.status.charAt(0).toUpperCase() + b.status.slice(1)}</Text>
                   </View>
                 </View>
                 <View style={bkgStyles.details}>
-                  <Text style={bkgStyles.detail}>📅 {b.session_date} · {b.session_time}</Text>
+                  <Text style={bkgStyles.detail}>📅 {format(new Date(b.session_date), 'MMM d, yyyy')} · {b.session_time}</Text>
                   <Text style={bkgStyles.detail}>🕐 {b.duration_hours}h</Text>
                   <Text style={bkgStyles.detail}>{b.session_type === 'online' ? '🌐 Zoom' : '🏠 In-Person'}</Text>
                 </View>
+                
                 {activeTab === 'upcoming' && (
                   <View style={bkgStyles.actions}>
-                    <TouchableOpacity style={bkgStyles.btnJoin} onPress={() => b.zoom_link && Linking.openURL(b.zoom_link)} activeOpacity={0.85}>
-                      <Text style={bkgStyles.btnJoinText}>Join Session</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={bkgStyles.btnCancel} onPress={() => Alert.alert('Cancel Booking?', 'Are you sure?', [{ text: 'Cancel', style: 'cancel' }, { text: 'Yes, cancel', style: 'destructive', onPress: () => cancelBooking(b.id) }])} activeOpacity={0.85}>
-                      <Text style={bkgStyles.btnCancelText}>Cancel</Text>
-                    </TouchableOpacity>
+                    {!isTutor ? (
+                      <>
+                        <TouchableOpacity style={bkgStyles.btnJoin} onPress={() => b.zoom_link && Linking.openURL(b.zoom_link)} activeOpacity={0.85}>
+                          <Text style={bkgStyles.btnJoinText}>Join Session</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={bkgStyles.btnCancel} onPress={() => Alert.alert('Cancel Booking?', 'Are you sure?', [{ text: 'Cancel', style: 'cancel' }, { text: 'Yes, cancel', style: 'destructive', onPress: () => cancelBooking(b.id) }])} activeOpacity={0.85}>
+                          <Text style={bkgStyles.btnCancelText}>Cancel</Text>
+                        </TouchableOpacity>
+                      </>
+                    ) : (
+                      <>
+                        {b.status === 'pending' ? (
+                          <TouchableOpacity style={bkgStyles.btnJoin} onPress={() => updateBookingStatus(b.id, 'confirmed' as any)} activeOpacity={0.85}>
+                            <Text style={bkgStyles.btnJoinText}>Accept Request</Text>
+                          </TouchableOpacity>
+                        ) : (
+                          <TouchableOpacity style={bkgStyles.btnJoin} onPress={() => updateBookingStatus(b.id, 'completed' as any)} activeOpacity={0.85}>
+                            <Text style={bkgStyles.btnJoinText}>Mark Completed</Text>
+                          </TouchableOpacity>
+                        )}
+                        <TouchableOpacity style={bkgStyles.btnCancel} onPress={() => updateBookingStatus(b.id, 'cancelled' as any)} activeOpacity={0.85}>
+                          <Text style={bkgStyles.btnCancelText}>Decline/Cancel</Text>
+                        </TouchableOpacity>
+                      </>
+                    )}
                   </View>
                 )}
               </View>
