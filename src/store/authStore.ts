@@ -68,7 +68,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
         set({
           user: {
-            id: 'dev-user',
+            id: '00000000-0000-0000-0000-000000000000',
             full_name: pending?.fullName ?? 'Dev User',
             phone: pending?.phone ?? phone,
             role: pending?.role ?? ('STUDENT' as UserRole),
@@ -118,7 +118,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       if (!user) {
         set({
           user: {
-            id: 'dev-user',
+            id: '00000000-0000-0000-0000-000000000000',
             full_name: 'Dev User',
             phone: '+10000000000',
             role: 'STUDENT' as UserRole,
