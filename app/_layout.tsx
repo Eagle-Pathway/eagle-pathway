@@ -7,10 +7,13 @@ import * as SplashScreen from 'expo-splash-screen';
 import { supabase } from '../src/services/supabase';
 import { useAuthStore } from '../src/store/authStore';
 
+import { useAppStore } from '../src/store/appStore';
+
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   const { setSession, loadProfile, setUser } = useAuthStore();
+  const { subscribeToUpdates, unsubscribeFromUpdates } = useAppStore();
 
   useEffect(() => {
     // Listen for auth changes
@@ -18,8 +21,10 @@ export default function RootLayout() {
       setSession(session);
       if (session) {
         await loadProfile();
+        subscribeToUpdates(session.user.id);
       } else {
         setUser(null);
+        unsubscribeFromUpdates();
       }
       SplashScreen.hideAsync();
     });
@@ -28,13 +33,19 @@ export default function RootLayout() {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       if (session) {
-        loadProfile().finally(() => SplashScreen.hideAsync());
+        loadProfile().finally(() => {
+          subscribeToUpdates(session.user.id);
+          SplashScreen.hideAsync();
+        });
       } else {
         SplashScreen.hideAsync();
       }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      subscription.unsubscribe();
+      unsubscribeFromUpdates();
+    };
   }, []);
 
   return (
