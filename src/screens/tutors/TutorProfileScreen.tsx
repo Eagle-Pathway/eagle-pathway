@@ -9,6 +9,7 @@ import { Colors, Typography, Spacing, Radius, CommonStyles } from '@/utils/theme
 import { Pill, Avatar, Button } from '@/components/common';
 import { tutorsService } from '@/services/tutors';
 import { Tutor, TutorReview } from '@/types';
+import { openWhatsApp } from '@/utils/linking';
 
 export default function TutorProfileScreen() {
   const { tutorId } = useLocalSearchParams<{ tutorId: string }>();
@@ -134,6 +135,13 @@ export default function TutorProfileScreen() {
 
       {/* Bottom CTA */}
       <View style={styles.bottomBar}>
+        <TouchableOpacity 
+          style={styles.whatsappBtn} 
+          onPress={() => openWhatsApp(tutor.user?.phone || '', `Hi ${tutor.user?.full_name}, I saw your profile on Eagle Pathway and I'm interested in your ${tutor.subjects[0]} tutoring.`)}
+          activeOpacity={0.8}
+        >
+          <Text style={{ fontSize: 20 }}>💬</Text>
+        </TouchableOpacity>
         <Button
           title="Check Availability"
           variant="outline"
@@ -176,5 +184,13 @@ const styles = StyleSheet.create({
   reviewName: { fontSize: Typography.base, fontWeight: Typography.semibold, color: Colors.text },
   reviewDate: { fontSize: Typography.sm, color: Colors.textSecondary },
   reviewText: { fontSize: Typography.base, color: Colors.textSecondary, lineHeight: 20 },
+  whatsappBtn: {
+    width: 48, height: 48,
+    backgroundColor: '#25D366', // WhatsApp Green
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: Spacing.sm,
+  },
   bottomBar: { padding: Spacing.lg, backgroundColor: Colors.card, borderTopWidth: 1, borderTopColor: Colors.border, flexDirection: 'row', gap: Spacing.sm },
 });
