@@ -1,8 +1,10 @@
 import { create } from 'zustand';
-import { Scholarship, Application, Booking, Document, Notification, PackageTier, DocumentType } from '../types';
+import { supabase } from '../services/supabase';
 import { scholarshipsService } from '../services/scholarships';
 import { tutorsService } from '../services/tutors';
 import { notificationsService } from '../services/notifications';
+import { tasksService } from '../services/tasks';
+import { Scholarship, Application, Booking, BookingStatus, Document, Notification, StudentTask, PackageTier, DocumentType } from '../types';
 
 interface AppState {
   // Scholarships
@@ -20,10 +22,14 @@ interface AppState {
   notifications: Notification[];
   unreadCount: number;
 
+  // Tasks
+  tasks: StudentTask[];
+
   // Loading
   isLoadingScholarships: boolean;
   isLoadingBookings: boolean;
   isLoadingNotifications: boolean;
+  isLoadingTasks: boolean;
 
   // Actions — Scholarships
   loadScholarships: (filters?: any) => Promise<void>;
@@ -33,7 +39,9 @@ interface AppState {
 
   // Actions — Bookings
   loadBookings: (userId: string) => Promise<void>;
+  loadTutorBookings: (tutorId: string) => Promise<void>;
   cancelBooking: (bookingId: string) => Promise<void>;
+  updateBookingStatus: (bookingId: string, status: BookingStatus) => Promise<void>;
 
   // Actions — Documents
   loadDocuments: (userId: string) => Promise<void>;
@@ -48,6 +56,14 @@ interface AppState {
   // Actions — Notifications
   loadNotifications: (userId: string) => Promise<void>;
   markAllNotificationsRead: (userId: string) => Promise<void>;
+
+  // Actions — Tasks
+  loadTasks: (userId: string) => Promise<void>;
+  toggleTask: (taskId: string, currentStatus: string) => Promise<void>;
+
+  // Realtime
+  subscribeToUpdates: (userId: string) => void;
+  unsubscribeFromUpdates: () => void;
 }
 
 export const useAppStore = create<AppState>((set, get) => ({
@@ -58,9 +74,11 @@ export const useAppStore = create<AppState>((set, get) => ({
   documents: [],
   notifications: [],
   unreadCount: 0,
+  tasks: [],
   isLoadingScholarships: false,
   isLoadingBookings: false,
   isLoadingNotifications: false,
+  isLoadingTasks: false,
 
   loadScholarships: async (filters) => {
     set({ isLoadingScholarships: true });
@@ -106,11 +124,30 @@ export const useAppStore = create<AppState>((set, get) => ({
     }
   },
 
+  loadTutorBookings: async (tutorId) => {
+    set({ isLoadingBookings: true });
+    try {
+      const bookings = await tutorsService.getTutorBookings(tutorId);
+      set({ bookings });
+    } finally {
+      set({ isLoadingBookings: false });
+    }
+  },
+
   cancelBooking: async (bookingId) => {
     await tutorsService.cancelBooking(bookingId);
     set(state => ({
       bookings: state.bookings.map(b =>
         b.id === bookingId ? { ...b, status: 'cancelled' as const } : b
+      ),
+    }));
+  },
+
+  updateBookingStatus: async (bookingId, status) => {
+    await tutorsService.updateBookingStatus(bookingId, status);
+    set(state => ({
+      bookings: state.bookings.map(b =>
+        b.id === bookingId ? { ...b, status } : b
       ),
     }));
   },
@@ -145,5 +182,63 @@ export const useAppStore = create<AppState>((set, get) => ({
       notifications: state.notifications.map(n => ({ ...n, is_read: true })),
       unreadCount: 0,
     }));
+  },
+
+  loadTasks: async (userId) => {
+    set({ isLoadingTasks: true });
+    try {
+      const tasks = await tasksService.getStudentTasks(userId);
+      set({ tasks });
+    } finally {
+      set({ isLoadingTasks: false });
+    }
+  },
+
+  toggleTask: async (taskId, currentStatus) => {
+    try {
+      const nextStatus = currentStatus === 'completed' ? 'pending' : 'completed';
+      await tasksService.updateTaskStatus(taskId, nextStatus as any);
+      set(state => ({
+        tasks: state.tasks.map(t =>
+          t.id === taskId ? { ...t, status: nextStatus as any } : t
+        ),
+      }));
+    } catch (e) {
+      console.error('Error toggling task:', e);
+    }
+  },
+
+  subscribeToUpdates: (userId) => {
+    // Unsubscribe if already subscribed
+    get().unsubscribeFromUpdates();
+
+    const channel = supabase
+      .channel(`student_updates:${userId}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'student_tasks', filter: `student_id=eq.${userId}` },
+        () => get().loadTasks(userId)
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'applications', filter: `student_id=eq.${userId}` },
+        () => get().loadApplications(userId)
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'notifications', filter: `user_id=eq.${userId}` },
+        () => get().loadNotifications(userId)
+      )
+      .subscribe();
+
+    (global as any).supabaseSubscription = channel;
+  },
+
+  unsubscribeFromUpdates: () => {
+    const channel = (global as any).supabaseSubscription;
+    if (channel) {
+      supabase.removeChannel(channel);
+      (global as any).supabaseSubscription = null;
+    }
   },
 }));
