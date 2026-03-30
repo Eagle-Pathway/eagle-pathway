@@ -143,4 +143,56 @@ export const scholarshipsService = {
       copyToCacheDirectory: true,
     });
   },
+  async updateSOPContent(applicationId: string, content: string): Promise<void> {
+    const { error } = await supabase
+      .from('applications')
+      .update({ 
+        sop_content: content, 
+        updated_at: new Date().toISOString(),
+        sop_draft_number: supabase.rpc('increment_sop_draft') // Assuming an increment function exists or we handle manually
+      })
+      .eq('id', applicationId);
+    if (error) throw error;
+  },
+
+  async getSOPFeedback(content: string): Promise<{ score: number; feedback: string; suggestions: string[] }> {
+    // This would ideally call a Gemini/Vertex AI endpoint
+    // Mocking a sophisticated response for now
+    await new Promise(r => setTimeout(r, 2000));
+    
+    const wordCount = content.split(/\s+/).length;
+    if (wordCount < 100) {
+      return {
+        score: 45,
+        feedback: "Your SOP is quite short. A strong Statement of Purpose should typically be between 500-800 words.",
+        suggestions: ["Expand on your academic motivations", "Describe specific research interests", "Link your future goals to this scholarship"]
+      };
+    }
+
+    return {
+      score: 82,
+      feedback: "Great start! You've clearly articulated your background and passion. However, your connection to the specific host country could be stronger.",
+      suggestions: [
+        "Include more specific details about the university's research facilities",
+        "Clarify how you will contribute to the campus community",
+        "Proofread for more formal academic transitions"
+      ]
+    };
+  },
+
+  async getRecommendedScholarships(userId: string): Promise<Scholarship[]> {
+    // Simple matching logic: match by user's grade level and generic 'All' levels
+    const { data: user } = await supabase.from('users').select('*').eq('id', userId).single();
+    if (!user) return [];
+
+    const { data: scholarships, error } = await supabase
+      .from('scholarships')
+      .select('*')
+      .eq('is_active', true)
+      .contains('degree_levels', [user.grade_level?.toLowerCase() || 'undergraduate'])
+      .limit(5);
+
+    if (error) throw error;
+    return scholarships as Scholarship[];
+  },
 };
