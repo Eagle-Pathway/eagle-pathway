@@ -24,17 +24,22 @@ interface AppState {
 
   // Tasks
   tasks: StudentTask[];
+  recommendedScholarships: Scholarship[];
 
   // Loading
   isLoadingScholarships: boolean;
   isLoadingBookings: boolean;
   isLoadingNotifications: boolean;
   isLoadingTasks: boolean;
+  isReviewingSOP: boolean;
 
   // Actions — Scholarships
   loadScholarships: (filters?: any) => Promise<void>;
+  loadRecommendations: (userId: string) => Promise<void>;
   loadApplications: (userId: string) => Promise<void>;
   createApplication: (userId: string, scholarshipId: string, packageTier: PackageTier) => Promise<Application>;
+  updateSOP: (applicationId: string, content: string) => Promise<void>;
+  reviewSOP: (content: string) => Promise<{ score: number; feedback: string; suggestions: string[] }>;
   toggleSaveScholarship: (id: string) => void;
 
   // Actions — Bookings
@@ -75,10 +80,12 @@ export const useAppStore = create<AppState>((set, get) => ({
   notifications: [],
   unreadCount: 0,
   tasks: [],
+  recommendedScholarships: [],
   isLoadingScholarships: false,
   isLoadingBookings: false,
   isLoadingNotifications: false,
   isLoadingTasks: false,
+  isReviewingSOP: false,
 
   loadScholarships: async (filters) => {
     set({ isLoadingScholarships: true });
@@ -87,6 +94,15 @@ export const useAppStore = create<AppState>((set, get) => ({
       set({ scholarships });
     } finally {
       set({ isLoadingScholarships: false });
+    }
+  },
+
+  loadRecommendations: async (userId) => {
+    try {
+      const recommended = await scholarshipsService.getRecommendedScholarships(userId);
+      set({ recommendedScholarships: recommended });
+    } catch (e) {
+      console.error('Error loading recommendations:', e);
     }
   },
 
@@ -103,6 +119,24 @@ export const useAppStore = create<AppState>((set, get) => ({
     });
     set(state => ({ applications: [application, ...state.applications] }));
     return application;
+  },
+
+  updateSOP: async (applicationId, content) => {
+    await scholarshipsService.updateSOPContent(applicationId, content);
+    set(state => ({
+      applications: state.applications.map(a => 
+        a.id === applicationId ? { ...a, sop_content: content } : a
+      )
+    }));
+  },
+
+  reviewSOP: async (content) => {
+    set({ isReviewingSOP: true });
+    try {
+      return await scholarshipsService.getSOPFeedback(content);
+    } finally {
+      set({ isReviewingSOP: false });
+    }
   },
 
   toggleSaveScholarship: (id) => {
