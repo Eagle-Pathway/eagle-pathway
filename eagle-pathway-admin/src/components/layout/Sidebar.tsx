@@ -12,7 +12,10 @@ import {
   Calendar,
   Bell,
   DollarSign,
-  Settings2
+  Settings2,
+  FileText,
+  Briefcase,
+  MessageSquare
 } from 'lucide-react';
 
 export default function Sidebar() {
@@ -23,9 +26,12 @@ export default function Sidebar() {
     { name: 'Overview', href: '/overview', icon: LayoutDashboard },
     { name: 'Users', href: '/users', icon: Users },
     { name: 'Tutor Approvals', href: '/tutors', icon: UserCheck },
+    { name: 'Documents', href: '/documents', icon: FileText },
+    { name: 'Applications', href: '/applications', icon: Briefcase },
     { name: 'Scholarships', href: '/scholarships', icon: GraduationCap },
     { name: 'Bookings', href: '/bookings', icon: Calendar },
     { name: 'Notifications', href: '/notifications', icon: Bell },
+    { name: 'Chat', href: '/chat', icon: MessageSquare },
     { name: 'Finance', href: '/finance', icon: DollarSign },
     { name: 'Settings', href: '/settings', icon: Settings2 },
   ];
