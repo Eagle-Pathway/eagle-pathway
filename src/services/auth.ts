@@ -67,6 +67,27 @@ export const authService = {
     return data as User;
   },
 
+  async uploadAvatar(userId: string, fileUri: string, fileName: string): Promise<string> {
+    const response = await fetch(fileUri);
+    const blob = await response.blob();
+    const filePath = `${userId}/avatar_${Date.now()}_${fileName}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('avatars')
+      .upload(filePath, blob, {
+        contentType: 'image/jpeg',
+        upsert: true,
+      });
+    if (uploadError) throw uploadError;
+
+    const { data: { publicUrl } } = supabase.storage
+      .from('avatars')
+      .getPublicUrl(filePath);
+
+    await this.updateProfile(userId, { avatar_url: publicUrl });
+    return publicUrl;
+  },
+
   async signOut() {
     const { error } = await supabase.auth.signOut();
     if (error) throw error;
