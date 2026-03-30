@@ -21,6 +21,7 @@ interface AuthState {
   verifyOtp: (phone: string, token: string) => Promise<void>;
   loadProfile: () => Promise<void>;
   updateProfile: (updates: Partial<User>) => Promise<void>;
+  uploadAvatar: (fileUri: string, fileName: string) => Promise<void>;
   signOut: () => Promise<void>;
 }
 
@@ -150,6 +151,18 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     try {
       const updated = await authService.updateProfile(user.id, updates);
       set({ user: updated });
+    } finally {
+      set({ isLoading: false });
+    }
+  },
+
+  uploadAvatar: async (fileUri, fileName) => {
+    const { user } = get();
+    if (!user) return;
+    set({ isLoading: true });
+    try {
+      const publicUrl = await authService.uploadAvatar(user.id, fileUri, fileName);
+      set({ user: { ...user, avatar_url: publicUrl } });
     } finally {
       set({ isLoading: false });
     }
