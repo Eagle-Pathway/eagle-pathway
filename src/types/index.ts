@@ -88,6 +88,7 @@ export interface Scholarship {
   fields_of_study?: string[];
   eagle_success_rate?: number;
   website_url?: string;
+  image_url?: string;
   is_active: boolean;
   created_at: string;
 }
