@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import {
   View, Text, ScrollView, TextInput, TouchableOpacity,
-  StyleSheet, FlatList, ActivityIndicator,
+  StyleSheet, FlatList, ActivityIndicator, Image
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -21,16 +21,15 @@ export default function ScholarshipsScreen() {
   useEffect(() => { loadScholarships(); }, []);
 
   const filtered = scholarships.filter(s => {
-    const matchSearch = !search || s.name.toLowerCase().includes(search.toLowerCase()) || s.country.toLowerCase().includes(search.toLowerCase());
+    const matchSearch = !search || (s.name || '').toLowerCase().includes(search.toLowerCase()) || (s.country || '').toLowerCase().includes(search.toLowerCase());
     const matchFilter = activeFilter === 'All' ||
       (activeFilter === 'Fully Funded' && s.funding_type === 'fully_funded') ||
-      s.degree_levels.some(d => d.toLowerCase() === activeFilter.toLowerCase());
+      (s.degree_levels && s.degree_levels.some(d => d.toLowerCase() === activeFilter.toLowerCase()));
     return matchSearch && matchFilter;
   });
 
   return (
     <SafeAreaView style={CommonStyles.screenBg} edges={['top']}>
-      {/* Hero */}
       <View style={styles.hero}>
         <View style={styles.heroTop}>
           <View>
@@ -89,7 +88,7 @@ export default function ScholarshipsScreen() {
 }
 
 function ScholarshipCard({ scholarship: s, isSaved, onSave }: { scholarship: Scholarship; isSaved: boolean; onSave: () => void }) {
-  const isDeadlineSoon = new Date(s.deadline) < new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+  const isDeadlineSoon = s.deadline ? new Date(s.deadline) < new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) : false;
 
   return (
     <TouchableOpacity
@@ -97,9 +96,12 @@ function ScholarshipCard({ scholarship: s, isSaved, onSave }: { scholarship: Sch
       onPress={() => router.push({ pathname: '/scholarship-detail', params: { scholarshipId: s.id } })}
       activeOpacity={0.9}
     >
+      {s.image_url ? (
+        <Image source={{ uri: s.image_url }} style={styles.cardImage} />
+      ) : null}
       <View style={styles.cardTop}>
         <View style={{ flexDirection: 'row', gap: Spacing.md, flex: 1, alignItems: 'flex-start' }}>
-          <View style={styles.flagBox}><Text style={{ fontSize: 22 }}>{s.country_flag}</Text></View>
+          <View style={styles.flagBox}><Text style={{ fontSize: 22 }}>{s.country_flag || '🌍'}</Text></View>
           <View style={{ flex: 1 }}>
             <Text style={styles.schName} numberOfLines={2}>{s.name}</Text>
             <Text style={styles.schOrg} numberOfLines={1}>{s.organization}</Text>
@@ -110,12 +112,14 @@ function ScholarshipCard({ scholarship: s, isSaved, onSave }: { scholarship: Sch
         </TouchableOpacity>
       </View>
       <View style={styles.cardMeta}>
-        <View style={[styles.metaPill, { backgroundColor: Colors.redLight }]}>
-          <Text style={[styles.metaText, { color: Colors.red }]}>
-            {isDeadlineSoon ? '⚡ ' : ''}Deadline: {format(new Date(s.deadline), 'MMM d, yyyy')}
-          </Text>
-        </View>
-        {s.degree_levels.slice(0, 2).map(d => (
+        {s.deadline && (
+          <View style={[styles.metaPill, { backgroundColor: Colors.redLight }]}>
+            <Text style={[styles.metaText, { color: Colors.red }]}>
+              {isDeadlineSoon ? '⚡ ' : ''}Deadline: {format(new Date(s.deadline), 'MMM d')}
+            </Text>
+          </View>
+        )}
+        {s.degree_levels && s.degree_levels.slice(0, 2).map(d => (
           <View key={d} style={[styles.metaPill, { backgroundColor: Colors.blueLight }]}>
             <Text style={[styles.metaText, { color: Colors.blue }]}>{d.charAt(0).toUpperCase() + d.slice(1)}</Text>
           </View>
@@ -142,12 +146,13 @@ const styles = StyleSheet.create({
   filterChipActive: { borderColor: 'rgba(255,255,255,0.5)', backgroundColor: 'rgba(255,255,255,0.15)' },
   filterChipText: { fontSize: Typography.sm, fontWeight: Typography.semibold, color: 'rgba(255,255,255,0.7)' },
   filterChipTextActive: { color: Colors.white },
-  card: { marginHorizontal: Spacing.xl, marginBottom: Spacing.md, backgroundColor: Colors.card, borderRadius: Radius['2xl'], padding: Spacing.lg, borderWidth: 1, borderColor: Colors.border },
+  card: { marginHorizontal: Spacing.xl, marginBottom: Spacing.md, backgroundColor: Colors.card, borderRadius: Radius['2xl'], padding: Spacing.lg, borderWidth: 1, borderColor: Colors.border, overflow: 'hidden' },
+  cardImage: { width: '120%', height: 140, marginHorizontal: '-10%', marginTop: '-10%', marginBottom: Spacing.md },
   cardTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: Spacing.md },
-  flagBox: { width: 40, height: 40, borderRadius: 12, backgroundColor: Colors.grayLight, alignItems: 'center', justifyContent: 'center' },
+  flagBox: { width: 40, height: 40, borderRadius: 12, backgroundColor: Colors.bg, alignItems: 'center', justifyContent: 'center' },
   schName: { fontSize: Typography.lg, fontWeight: Typography.bold, color: Colors.text, marginBottom: 3 },
   schOrg: { fontSize: Typography.sm, color: Colors.textSecondary },
-  saveBtn: { width: 32, height: 32, backgroundColor: Colors.grayLight, borderRadius: 9, alignItems: 'center', justifyContent: 'center' },
+  saveBtn: { width: 32, height: 32, backgroundColor: Colors.bg, borderRadius: 9, alignItems: 'center', justifyContent: 'center' },
   cardMeta: { flexDirection: 'row', gap: Spacing.sm, flexWrap: 'wrap' },
   metaPill: { paddingHorizontal: Spacing.sm, paddingVertical: 3, borderRadius: 6 },
   metaText: { fontSize: Typography.sm, fontWeight: Typography.semibold },
