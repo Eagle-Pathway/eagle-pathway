@@ -83,9 +83,12 @@ export const LoadingScreen: React.FC = () => (
   </View>
 );
 
+import { Image } from 'react-native';
+
 // ─── Avatar ───────────────────────────────────────────────────────────────────
 interface AvatarProps {
   initials: string;
+  imageUri?: string;
   size?: number;
   color?: string;
   textColor?: string;
@@ -94,16 +97,20 @@ interface AvatarProps {
 }
 
 export const Avatar: React.FC<AvatarProps> = ({
-  initials, size = 44, color = Colors.blue,
+  initials, imageUri, size = 44, color = Colors.blue,
   textColor = Colors.white, borderRadius = 13, style,
 }) => (
   <View style={[
     { width: size, height: size, borderRadius, backgroundColor: color,
-      alignItems: 'center', justifyContent: 'center' }, style
+      alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }, style
   ]}>
-    <Text style={{ color: textColor, fontWeight: Typography.bold, fontSize: size * 0.32 }}>
-      {initials}
-    </Text>
+    {imageUri ? (
+      <Image source={{ uri: imageUri }} style={{ width: size, height: size }} />
+    ) : (
+      <Text style={{ color: textColor, fontWeight: Typography.bold, fontSize: size * 0.32 }}>
+        {initials}
+      </Text>
+    )}
   </View>
 );
 
