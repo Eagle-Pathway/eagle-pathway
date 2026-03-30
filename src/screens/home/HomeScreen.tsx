@@ -31,6 +31,7 @@ export default function HomeScreen() {
       tasks.push(loadBookings(user.id));
       tasks.push(loadApplications(user.id));
       tasks.push(loadTasks(user.id));
+      tasks.push(useAppStore.getState().loadRecommendations(user.id));
     }
     await Promise.all(tasks);
   };
@@ -207,6 +208,30 @@ export default function HomeScreen() {
             <ProgressBar progress={readinessScore} color={Colors.gold} height={5} style={{ marginTop: 8 }} />
           </View>
         </TouchableOpacity>
+
+        {/* Recommended Scholarships */}
+        {useAppStore.getState().recommendedScholarships.length > 0 && (
+          <>
+            <SectionTitle title="Recommended for You" />
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: Spacing.xl, gap: Spacing.md }}>
+              {useAppStore.getState().recommendedScholarships.map(s => (
+                <TouchableOpacity 
+                  key={s.id} 
+                  style={styles.recCard}
+                  onPress={() => router.push({ pathname: '/scholarship-detail', params: { scholarshipId: s.id } })}
+                  activeOpacity={0.9}
+                >
+                  <View style={styles.recFlag}><Text style={{ fontSize: 24 }}>{s.country_flag}</Text></View>
+                  <Text style={styles.recName} numberOfLines={1}>{s.name}</Text>
+                  <Text style={styles.recOrg} numberOfLines={1}>{s.organization}</Text>
+                  <View style={styles.recPill}>
+                    <Text style={styles.recPillText}>{s.funding_type === 'fully_funded' ? 'Fully Funded' : 'Partial'}</Text>
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </>
+        )}
 
         {/* Action Items */}
         {pendingTasks.length > 0 && (
@@ -445,4 +470,10 @@ const styles = StyleSheet.create({
   taskSub: { fontSize: Typography.xs, color: Colors.textSecondary },
   viewAllTasks: { alignItems: 'center', paddingVertical: Spacing.sm },
   viewAllTasksText: { fontSize: Typography.sm, fontWeight: Typography.semibold, color: Colors.blue },
+  recCard: { width: 160, backgroundColor: Colors.card, borderRadius: Radius.xl, padding: Spacing.md, borderWidth: 1, borderColor: Colors.border, marginBottom: Spacing.sm },
+  recFlag: { width: 44, height: 44, borderRadius: 12, backgroundColor: Colors.bg, alignItems: 'center', justifyContent: 'center', marginBottom: 8 },
+  recName: { fontSize: Typography.sm, fontWeight: Typography.bold, color: Colors.text },
+  recOrg: { fontSize: Typography.xs, color: Colors.textSecondary, marginTop: 2 },
+  recPill: { marginTop: 8, backgroundColor: Colors.blueLight, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, alignSelf: 'flex-start' },
+  recPillText: { fontSize: 9, fontWeight: 'bold', color: Colors.blue },
 });
