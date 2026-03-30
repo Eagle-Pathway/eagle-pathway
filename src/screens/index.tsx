@@ -252,7 +252,7 @@ export function ApplyScreen() {
   const { user } = useAuthStore();
   const { createApplication, loadDocuments, uploadDocument, documents } = useAppStore();
   const [loading, setLoading] = useState(false);
-  const [step, setStep] = useState(1);
+  const [step, setStep] = useState<number>(1);
 
   useEffect(() => { if (user) loadDocuments(user.id); }, [user?.id]);
 
@@ -315,6 +315,41 @@ export function ApplyScreen() {
       </View>
 
       <ScrollView contentContainerStyle={{ paddingBottom: 120 }}>
+        {step === 1 && (
+          <View style={{ padding: Spacing.xl }}>
+            <Text style={CommonStyles.sectionTitle}>Verification: Personal Info</Text>
+            <Text style={applyStyles.intro}>
+              Please confirm your profile details. These will be used for your official scholarship application.
+            </Text>
+            
+            <View style={[CommonStyles.card, { marginTop: Spacing.xl, padding: Spacing.lg }]}>
+              <View style={applyStyles.infoRow}>
+                <Text style={applyStyles.infoLabel}>Full Name</Text>
+                <Text style={applyStyles.infoValue}>{user?.full_name}</Text>
+              </View>
+              <View style={applyStyles.infoRow}>
+                <Text style={applyStyles.infoLabel}>Email</Text>
+                <Text style={applyStyles.infoValue}>{user?.email}</Text>
+              </View>
+              <View style={applyStyles.infoRow}>
+                <Text style={applyStyles.infoLabel}>Current Level</Text>
+                <Text style={applyStyles.infoValue}>{user?.grade_level || 'Not set'}</Text>
+              </View>
+              <View style={applyStyles.infoRow}>
+                <Text style={applyStyles.infoLabel}>City</Text>
+                <Text style={applyStyles.infoValue}>{user?.city || 'Not set'}</Text>
+              </View>
+            </View>
+
+            <TouchableOpacity 
+              style={{ marginTop: Spacing.lg, alignSelf: 'center' }}
+              onPress={() => router.push('/(tabs)/profile')}
+            >
+              <Text style={{ color: Colors.blue, fontWeight: 'bold' }}>✏️ Edit Profile Info</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
         {step === 2 && (
           <>
             <View style={applyStyles.successBanner}>
@@ -340,6 +375,48 @@ export function ApplyScreen() {
               );
             })}
           </>
+        )}
+
+        {step === 3 && (
+          <View style={{ padding: Spacing.xl }}>
+            <Text style={CommonStyles.sectionTitle}>Statement of Purpose (SOP)</Text>
+            <Text style={applyStyles.intro}>
+              Your SOP is the most critical part of your application. Write it below, or paste your draft to get instant AI feedback.
+            </Text>
+            
+            <TextInput
+              style={applyStyles.sopInput}
+              multiline
+              placeholder="Start writing your statement of purpose here..."
+              value={useAppStore.getState().applications.find(a => a.scholarship_id === scholarshipId)?.sop_content || ''}
+              onChangeText={(txt) => {
+                const app = useAppStore.getState().applications.find(a => a.scholarship_id === scholarshipId);
+                if (app) useAppStore.getState().updateSOP(app.id, txt);
+              }}
+              textAlignVertical="top"
+            />
+
+            <Button 
+              title="✨ Get AI Feedback" 
+              variant="outline" 
+              onPress={async () => {
+                const content = useAppStore.getState().applications.find(a => a.scholarship_id === scholarshipId)?.sop_content;
+                if (!content || content.length < 50) {
+                  Alert.alert('Too short', 'Please write at least 50 characters to get meaningful feedback.');
+                  return;
+                }
+                const result = await useAppStore.getState().reviewSOP(content);
+                Alert.alert(`AI Score: ${result.score}/100`, result.feedback + '\n\n' + result.suggestions.map(s => '• ' + s).join('\n'));
+              }}
+              loading={useAppStore.getState().isReviewingSOP}
+              style={{ marginTop: Spacing.md }}
+            />
+            
+            <View style={applyStyles.aiTip}>
+              <Text style={applyStyles.aiTipTitle}>💡 Pro Tip</Text>
+              <Text style={applyStyles.aiTipText}>Consultants recommend focusing on your "Why" — why this program, why this country, and why now?</Text>
+            </View>
+          </View>
         )}
 
         {step === 4 && (
@@ -436,6 +513,13 @@ const applyStyles = StyleSheet.create({
   radio: { width: 18, height: 18, borderRadius: 9, borderWidth: 2, borderColor: Colors.border },
   paymentInfo: { marginTop: Spacing.lg, backgroundColor: Colors.bg, padding: Spacing.md, borderRadius: Radius.md },
   intro: { fontSize: Typography.sm, color: Colors.textSecondary, lineHeight: 20 },
+  infoRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: Colors.border },
+  infoLabel: { color: Colors.textSecondary, fontSize: Typography.sm },
+  infoValue: { color: Colors.text, fontWeight: 'bold', fontSize: Typography.base },
+  sopInput: { minHeight: 250, backgroundColor: Colors.white, borderRadius: Radius.lg, padding: Spacing.md, borderWidth: 1, borderColor: Colors.border, marginTop: Spacing.lg, fontSize: Typography.base, color: Colors.text, textAlignVertical: 'top' },
+  aiTip: { marginTop: Spacing.xl, backgroundColor: Colors.goldLight, padding: Spacing.md, borderRadius: Radius.lg, borderWidth: 1, borderColor: '#e8d5a0' },
+  aiTipTitle: { fontWeight: 'bold', color: '#7a5c1e', marginBottom: 4 },
+  aiTipText: { fontSize: 12, color: '#9a7230', lineHeight: 18 },
 });
 
 // ─── APPLICATION TRACKER ─────────────────────────────────────────────────────
@@ -1002,9 +1086,27 @@ const notifStyles = StyleSheet.create({
 
 // ─── PROFILE ─────────────────────────────────────────────────────────────────
 export function ProfileScreen() {
-  const { user, signOut } = useAuthStore();
+  const { user, signOut, uploadAvatar } = useAuthStore();
   const { applications, documents, unreadCount } = useAppStore();
+  const [uploading, setUploading] = useState(false);
+
   const initials = user?.full_name?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || 'EP';
+
+  const handlePickAvatar = async () => {
+    try {
+      const result = await scholarshipsService.pickDocument();
+      if (result.canceled || !result.assets?.[0] || !user) return;
+      
+      setUploading(true);
+      const asset = result.assets[0];
+      await uploadAvatar(asset.uri, asset.name || 'avatar.jpg');
+      Alert.alert('Success', 'Profile picture updated! ✨');
+    } catch (e: any) {
+      Alert.alert('Error', e.message || 'Failed to update avatar');
+    } finally {
+      setUploading(false);
+    }
+  };
 
   const handleSignOut = () => {
     Alert.alert('Sign Out', 'Are you sure you want to sign out?', [
@@ -1026,7 +1128,23 @@ export function ProfileScreen() {
   return (
     <SafeAreaView style={CommonStyles.screenBg} edges={['top']}>
       <View style={profStyles.hero}>
-        <Avatar initials={initials} size={80} borderRadius={24} color={Colors.gold} style={{ marginBottom: Spacing.md, borderWidth: 3, borderColor: 'rgba(255,255,255,0.3)' }} />
+        <TouchableOpacity onPress={handlePickAvatar} disabled={uploading} activeOpacity={0.8}>
+          <Avatar 
+            initials={initials} 
+            imageUri={user?.avatar_url}
+            size={90} 
+            borderRadius={30} 
+            color={Colors.gold} 
+            style={{ marginBottom: Spacing.md, borderWidth: 3, borderColor: 'rgba(255,255,255,0.3)' }} 
+          />
+          <View style={profStyles.editBadge}>
+            {uploading ? (
+              <ActivityIndicator size="small" color={Colors.white} />
+            ) : (
+              <Text style={{ fontSize: 12 }}>✏️</Text>
+            )}
+          </View>
+        </TouchableOpacity>
         <Text style={profStyles.name}>{user?.full_name || 'Student'}</Text>
         <Text style={profStyles.role}>{user?.role?.charAt(0).toUpperCase()}{user?.role?.slice(1) || 'Student'}</Text>
         <View style={profStyles.badges}>
@@ -1075,6 +1193,7 @@ const profStyles = StyleSheet.create({
   menuBadgeText: { fontSize: Typography.sm, fontWeight: Typography.bold },
   menuArrow: { fontSize: Typography.xl, color: Colors.textSecondary },
   version: { textAlign: 'center', fontSize: Typography.sm, color: Colors.textSecondary, padding: Spacing.xl },
+  editBadge: { position: 'absolute', bottom: 15, right: -5, backgroundColor: Colors.blue, width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: Colors.blueDark },
 });
 
 // ─── SETTINGS ────────────────────────────────────────────────────────────────
