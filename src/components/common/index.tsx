@@ -144,6 +144,8 @@ export const Card: React.FC<{ children: React.ReactNode; style?: ViewStyle; onPr
   return <View style={[CommonStyles.card, style]}>{children}</View>;
 };
 
+export { StatusTimeline } from './StatusTimeline';
+
 // ─── Styles ───────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
   btn: {
