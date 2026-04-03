@@ -10,6 +10,7 @@ import { ProgressBar, Avatar, SectionTitle } from '@/components/common';
 import { useAuthStore } from '@/store/authStore';
 import { useAppStore } from '@/store/appStore';
 import { format } from 'date-fns';
+import { openWhatsApp } from '@/utils/linking';
 
 export default function HomeScreen() {
   const { user } = useAuthStore();
@@ -142,6 +143,9 @@ export default function HomeScreen() {
     a => !['accepted', 'rejected'].includes(a.status)
   );
 
+  const premiumApp = applications.find(a => a.package_tier === 'premium' || a.package_tier === 'standard');
+  const assignedConsultant = premiumApp?.consultant;
+
   const readinessScore = React.useMemo(() => {
     if (!user) return 0;
     let score = 0;
@@ -199,15 +203,41 @@ export default function HomeScreen() {
           </View>
         </View>
 
+        {/* Premium Consultant Card */}
+        {assignedConsultant && (
+          <TouchableOpacity 
+            style={styles.premiumCard} 
+            onPress={() => openWhatsApp(assignedConsultant.phone || '', `Hi ${assignedConsultant.full_name}, I'm your premium student ${firstName}. I have a question about my ${premiumApp?.scholarship?.name} application.`)}
+            activeOpacity={0.9}
+          >
+            <View style={styles.premiumContent}>
+              <View style={styles.premiumHeader}>
+                <View style={styles.vipBadge}><Text style={styles.vipBadgeText}>VIP CONSULTANT</Text></View>
+                <Text style={styles.premiumTitle}>Direct Support Active</Text>
+              </View>
+              <View style={styles.consultantRow}>
+                <Avatar initials={assignedConsultant.full_name[0]} imageUri={assignedConsultant.avatar_url} size={50} borderRadius={15} />
+                <View style={{ flex: 1, marginLeft: Spacing.md }}>
+                  <Text style={styles.consultantName}>{assignedConsultant.full_name}</Text>
+                  <Text style={styles.consultantSub}>Senior Scholarship Consultant</Text>
+                </View>
+                <View style={styles.waIcon}><Text style={{ fontSize: 20 }}>💬</Text></View>
+              </View>
+            </View>
+          </TouchableOpacity>
+        )}
+
         {/* Readiness banner */}
-        <TouchableOpacity style={styles.readinessBanner} onPress={() => router.push('/progress')} activeOpacity={0.9}>
-          <View style={styles.readinessIconWrap}><Text style={{ fontSize: 20 }}>⭐</Text></View>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.readinessTitle}>Scholarship Readiness: {readinessScore}%</Text>
-            <Text style={styles.readinessSub}>Tap to view your progress and complete tasks</Text>
-            <ProgressBar progress={readinessScore} color={Colors.gold} height={5} style={{ marginTop: 8 }} />
-          </View>
-        </TouchableOpacity>
+        {!assignedConsultant && (
+          <TouchableOpacity style={styles.readinessBanner} onPress={() => router.push('/progress')} activeOpacity={0.9}>
+            <View style={styles.readinessIconWrap}><Text style={{ fontSize: 20 }}>⭐</Text></View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.readinessTitle}>Scholarship Readiness: {readinessScore}%</Text>
+              <Text style={styles.readinessSub}>Tap to view your progress and complete tasks</Text>
+              <ProgressBar progress={readinessScore} color={Colors.gold} height={5} style={{ marginTop: 8 }} />
+            </View>
+          </TouchableOpacity>
+        )}
 
         {/* Recommended Scholarships */}
         {useAppStore.getState().recommendedScholarships.length > 0 && (
@@ -395,6 +425,21 @@ const styles = StyleSheet.create({
   },
   quickCardLabel: { fontSize: 11, fontWeight: Typography.semibold, color: 'rgba(255,255,255,0.9)' },
   quickCardSub: { fontSize: 10, color: 'rgba(255,255,255,0.5)', marginTop: 2 },
+  premiumCard: {
+    marginHorizontal: Spacing.xl, marginTop: Spacing.lg,
+    backgroundColor: '#0f172a', borderRadius: Radius['2xl'],
+    padding: Spacing.lg, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)',
+    overflow: 'hidden',
+  },
+  premiumContent: { gap: Spacing.md },
+  premiumHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  vipBadge: { backgroundColor: Colors.gold, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6 },
+  vipBadgeText: { fontSize: 9, fontWeight: 'bold', color: Colors.blueDark },
+  premiumTitle: { fontSize: 13, fontWeight: 'bold', color: 'rgba(255,255,255,0.6)', letterSpacing: 0.5 },
+  consultantRow: { flexDirection: 'row', alignItems: 'center' },
+  consultantName: { fontSize: Typography.lg, fontWeight: Typography.bold, color: Colors.white },
+  consultantSub: { fontSize: 12, color: 'rgba(255,255,255,0.5)', marginTop: 2 },
+  waIcon: { width: 44, height: 44, borderRadius: 22, backgroundColor: 'rgba(255,255,255,0.08)', alignItems: 'center', justifyContent: 'center' },
   readinessBanner: {
     marginHorizontal: Spacing.xl, marginTop: Spacing.lg,
     backgroundColor: Colors.goldLight,
