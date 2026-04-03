@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { Stack } from 'expo-router';
+import { Stack, router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -8,6 +8,7 @@ import { supabase } from '../src/services/supabase';
 import { useAuthStore } from '../src/store/authStore';
 
 import { useAppStore } from '../src/store/appStore';
+import { notificationsService } from '../src/services/notifications';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -35,6 +36,9 @@ export default function RootLayout() {
       if (session) {
         loadProfile().finally(() => {
           subscribeToUpdates(session.user.id);
+          notificationsService.requestPermission().then(granted => {
+            if (granted) notificationsService.registerPushToken(session.user.id);
+          });
           SplashScreen.hideAsync();
         });
       } else {
@@ -42,9 +46,23 @@ export default function RootLayout() {
       }
     });
 
+    // Listeners
+    const notificationListener = notificationsService.addNotificationListener(notification => {
+      console.log('Notification received:', notification);
+    });
+
+    const responseListener = notificationsService.addResponseListener(response => {
+      const data = response.notification.request.content.data;
+      if (data?.url && typeof data.url === 'string') {
+        router.push(data.url as any);
+      }
+    });
+
     return () => {
       subscription.unsubscribe();
       unsubscribeFromUpdates();
+      notificationListener.remove();
+      responseListener.remove();
     };
   }, []);
 
