@@ -554,6 +554,50 @@ export function TrackerScreen() {
 
   const active = applications.filter(a => !['accepted', 'rejected'].includes(a.status));
   const completed = applications.filter(a => ['accepted', 'rejected'].includes(a.status));
+  const [selectedApp, setSelectedApp] = useState<Application | null>(null);
+
+  if (selectedApp) {
+    return (
+      <SafeAreaView style={CommonStyles.screenBg} edges={['top']}>
+        <View style={trackerStyles.detailHeader}>
+          <TouchableOpacity style={trackerStyles.backBtn} onPress={() => setSelectedApp(null)} activeOpacity={0.8}>
+            <Text style={{ fontSize: 20 }}>←</Text>
+          </TouchableOpacity>
+          <Text style={trackerStyles.detailTitle}>Application Status</Text>
+        </View>
+        <ScrollView contentContainerStyle={{ paddingBottom: 60 }}>
+          <View style={trackerStyles.summaryCard}>
+            <Text style={trackerStyles.summaryFlag}>{selectedApp.scholarship?.country_flag}</Text>
+            <Text style={trackerStyles.summaryName}>{selectedApp.scholarship?.name}</Text>
+            <Text style={trackerStyles.summaryOrg}>{selectedApp.scholarship?.organization}</Text>
+            <View style={trackerStyles.badgeRow}>
+              <Pill label={selectedApp.package_tier.toUpperCase()} variant="gold" />
+              <Pill label={selectedApp.status.replace('_', ' ').toUpperCase()} variant="blue" />
+            </View>
+          </View>
+
+          <StatusTimeline currentStatus={selectedApp.status} updatedAt={selectedApp.updated_at} />
+
+          {selectedApp.notes && (
+            <View style={trackerStyles.notesBox}>
+              <Text style={trackerStyles.notesTitle}>Consultant Feedback</Text>
+              <Text style={trackerStyles.notesText}>{selectedApp.notes}</Text>
+            </View>
+          )}
+
+          {selectedApp.consultant && (
+            <View style={{ padding: Spacing.xl }}>
+              <Button 
+                title="Message Consultant" 
+                variant="primary" 
+                onPress={() => openWhatsApp(selectedApp.consultant?.phone || '', `Hi ${selectedApp.consultant?.full_name}, I'm checking in on my ${selectedApp.scholarship?.name} application.`)} 
+              />
+            </View>
+          )}
+        </ScrollView>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={CommonStyles.screenBg} edges={['top']}>
@@ -589,51 +633,30 @@ export function TrackerScreen() {
       ) : (
         <ScrollView contentContainerStyle={{ padding: Spacing.xl, paddingBottom: 100 }}>
           {[...active, ...completed].map(app => (
-            <View key={app.id} style={{ marginBottom: Spacing.xl }}>
+            <TouchableOpacity key={app.id} style={{ marginBottom: Spacing.xl }} onPress={() => setSelectedApp(app)} activeOpacity={0.9}>
               <View style={trackerStyles.appHeader}>
                 <Text style={trackerStyles.appFlag}>{app.scholarship?.country_flag || '🌍'}</Text>
                 <Text style={trackerStyles.appName}>{app.scholarship?.name || 'Scholarship'}</Text>
                 {app.consultant && (
-                  <TouchableOpacity 
-                    style={trackerStyles.consultantBtn} 
-                    onPress={() => openWhatsApp(app.consultant?.phone || '', `Hi ${app.consultant?.full_name}, I'm checking in on my ${app.scholarship?.name} application.`)}
-                    activeOpacity={0.8}
-                  >
-                    <Text style={{ fontSize: 14 }}>💬</Text>
-                  </TouchableOpacity>
+                  <View style={trackerStyles.consultantBtn}>
+                    <Text style={{ fontSize: 13 }}>💬</Text>
+                  </View>
                 )}
-                {app.status === 'accepted' && <View style={trackerStyles.acceptedBadge}><Text style={trackerStyles.acceptedText}>Accepted! 🎉</Text></View>}
+                {app.status === 'accepted' && <Pill label="ACCEPTED! 🎉" variant="green" />}
               </View>
 
-              {app.status === 'accepted' ? (
-                <View style={trackerStyles.acceptedBox}>
-                  <Text style={{ fontSize: 32, marginBottom: 8 }}>🎉</Text>
-                  <Text style={trackerStyles.acceptedTitle}>Congratulations!</Text>
-                  <Text style={trackerStyles.acceptedBody}>You received an offer — check your email for details</Text>
+              <View style={trackerStyles.statusSection}>
+                <Text style={trackerStyles.statusLabel}>Current Status</Text>
+                <View style={trackerStyles.statusPills}>
+                  <Pill label={app.status.replace('_', ' ').toUpperCase()} variant={app.status === 'accepted' ? 'green' : app.status === 'rejected' ? 'red' : 'blue'} />
+                  <Pill label={app.package_tier.toUpperCase()} variant="gold" />
                 </View>
-              ) : (
-                STATUS_STEPS.map((stepStatus, i) => {
-                  const currentIdx = STATUS_STEPS.indexOf(app.status as any);
-                  const isDone = i < currentIdx;
-                  const isActive = i === currentIdx;
-                  const isPending = i > currentIdx;
-                  return (
-                    <View key={stepStatus} style={trackerStyles.timelineItem}>
-                      <View style={trackerStyles.timelineLeft}>
-                        <View style={[trackerStyles.dot, isDone && { backgroundColor: Colors.green }, isActive && { backgroundColor: Colors.gold }, isPending && { backgroundColor: Colors.border }]} />
-                        {i < STATUS_STEPS.length - 1 && <View style={[trackerStyles.line, isDone && { backgroundColor: Colors.green }]} />}
-                      </View>
-                      <View style={[trackerStyles.timelineContent, isActive && { borderColor: Colors.gold }, isDone && { borderColor: Colors.green }]}>
-                        <Text style={trackerStyles.timelineTitle}>{STATUS_LABELS[stepStatus]}</Text>
-                        <Text style={trackerStyles.timelineSub}>
-                          {isDone ? 'Completed' : isActive ? 'Currently in progress' : 'Waiting'}
-                        </Text>
-                      </View>
-                    </View>
-                  );
-                })
-              )}
-            </View>
+              </View>
+              <View style={trackerStyles.footerRow}>
+                <Text style={trackerStyles.footerTxt}>Last update: {new Date(app.updated_at).toLocaleDateString()}</Text>
+                <Text style={[trackerStyles.footerTxt, { color: Colors.blue, fontWeight: 'bold' }]}>View Details ›</Text>
+              </View>
+            </TouchableOpacity>
           ))}
         </ScrollView>
       )}
@@ -642,39 +665,38 @@ export function TrackerScreen() {
 }
 
 const trackerStyles = StyleSheet.create({
-  hero: { backgroundColor: Colors.blueDark, padding: Spacing.xl, paddingBottom: Spacing['2xl'] },
-  heroTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: Spacing.lg },
-  heroLabel: { fontSize: Typography.base, color: 'rgba(255,255,255,0.6)' },
-  heroTitle: { fontSize: Typography['4xl'], fontWeight: Typography.bold, color: Colors.white },
-  newBtn: { backgroundColor: 'rgba(255,255,255,0.12)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.15)', borderRadius: 10, paddingHorizontal: Spacing.md, paddingVertical: 8 },
-  newBtnText: { fontSize: Typography.sm, fontWeight: Typography.semibold, color: Colors.white },
-  statsRow: { flexDirection: 'row', gap: Spacing.sm },
-  stat: { flex: 1, backgroundColor: 'rgba(255,255,255,0.1)', borderRadius: Radius.lg, padding: Spacing.md, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', alignItems: 'center' },
-  statNum: { fontSize: Typography['3xl'], fontWeight: Typography.bold, color: Colors.white },
-  statLbl: { fontSize: Typography.xs, color: 'rgba(255,255,255,0.55)', marginTop: 2 },
-  appHeader: { flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, marginBottom: Spacing.md },
-  appFlag: { fontSize: 20 },
-  appName: { fontSize: Typography.md, fontWeight: Typography.bold, color: Colors.text, flex: 1 },
-  acceptedBadge: { backgroundColor: Colors.greenLight, paddingHorizontal: 8, paddingVertical: 3, borderRadius: Radius.full },
-  acceptedText: { fontSize: Typography.sm, fontWeight: Typography.semibold, color: Colors.green },
-  acceptedBox: { backgroundColor: Colors.greenLight, borderRadius: Radius.xl, padding: Spacing.lg, borderWidth: 1, borderColor: '#86efac', alignItems: 'center' },
-  acceptedTitle: { fontSize: Typography.xl, fontWeight: Typography.bold, color: '#166534' },
-  acceptedBody: { fontSize: Typography.base, color: '#16a34a', marginTop: 4, textAlign: 'center' },
-  timelineItem: { flexDirection: 'row', gap: Spacing.md, marginBottom: 4 },
-  timelineLeft: { alignItems: 'center', flexShrink: 0 },
-  dot: { width: 16, height: 16, borderRadius: 8, marginTop: 3 },
-  line: { width: 2, flex: 1, backgroundColor: Colors.border, minHeight: 24, marginVertical: 4 },
-  timelineContent: { flex: 1, backgroundColor: Colors.card, borderRadius: Radius.xl, padding: Spacing.md, borderWidth: 1, borderColor: Colors.border, marginBottom: 4 },
-  timelineTitle: { fontSize: Typography.md, fontWeight: Typography.bold, color: Colors.text },
-  timelineSub: { fontSize: Typography.sm, color: Colors.textSecondary, marginTop: 3 },
-  consultantBtn: {
-    width: 32, height: 32,
-    backgroundColor: '#25D366',
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: Spacing.sm,
-  },
+  hero: { backgroundColor: Colors.blueDark, padding: Spacing.xl, paddingBottom: Spacing['3xl'] },
+  heroTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.xl },
+  heroLabel: { fontSize: Typography.sm, fontWeight: Typography.bold, color: 'rgba(255,255,255,0.6)', letterSpacing: 1, textTransform: 'uppercase' },
+  heroTitle: { fontSize: Typography['4xl'], fontWeight: Typography.bold, color: Colors.white, marginTop: 4 },
+  newBtn: { backgroundColor: Colors.gold, paddingHorizontal: 16, paddingVertical: 10, borderRadius: Radius.lg },
+  newBtnText: { color: Colors.white, fontWeight: Typography.bold, fontSize: Typography.sm },
+  statsRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: Spacing.sm },
+  stat: { gap: 4 },
+  statNum: { fontSize: Typography['2xl'], fontWeight: Typography.bold, color: Colors.white },
+  statLbl: { fontSize: Typography.xs, color: 'rgba(255,255,255,0.6)', fontWeight: Typography.medium },
+  appHeader: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md, padding: Spacing.lg, backgroundColor: Colors.card, borderTopLeftRadius: Radius.xl, borderTopRightRadius: Radius.xl, borderBottomWidth: 1, borderBottomColor: Colors.border },
+  appName: { fontSize: Typography.lg, fontWeight: Typography.bold, color: Colors.text, flex: 1 },
+  appFlag: { fontSize: 24 },
+  consultantBtn: { width: 32, height: 32, backgroundColor: Colors.blueLight, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
+  statusSection: { padding: Spacing.lg, paddingBottom: Spacing.xl, backgroundColor: Colors.card, borderBottomWidth: 1, borderBottomColor: Colors.border },
+  statusLabel: { fontSize: Typography.xs, fontWeight: Typography.bold, color: Colors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: Spacing.md },
+  statusPills: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm },
+  footerRow: { flexDirection: 'row', justifyContent: 'space-between', padding: Spacing.md, backgroundColor: Colors.grayLight, borderBottomLeftRadius: Radius.xl, borderBottomRightRadius: Radius.xl },
+  footerTxt: { fontSize: 11, color: Colors.textSecondary },
+
+  // Detail Styles
+  detailHeader: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md, padding: Spacing.xl, backgroundColor: Colors.card, borderBottomWidth: 1, borderBottomColor: Colors.border },
+  detailTitle: { fontSize: Typography.xl, fontWeight: Typography.bold, color: Colors.text },
+  backBtn: { width: 36, height: 36, backgroundColor: Colors.grayLight, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+  summaryCard: { padding: Spacing.xl, alignItems: 'center', backgroundColor: Colors.white, borderBottomWidth: 1, borderBottomColor: Colors.border },
+  summaryFlag: { fontSize: 48, marginBottom: Spacing.sm },
+  summaryName: { fontSize: Typography['2xl'], fontWeight: Typography.bold, color: Colors.text, textAlign: 'center' },
+  summaryOrg: { fontSize: Typography.base, color: Colors.textSecondary, marginBottom: Spacing.md },
+  badgeRow: { flexDirection: 'row', gap: Spacing.sm },
+  notesBox: { margin: Spacing.xl, padding: Spacing.lg, backgroundColor: Colors.goldLight, borderRadius: Radius.xl, borderWidth: 1, borderColor: '#e8d5a0' },
+  notesTitle: { fontWeight: 'bold', color: '#7a5c1e', marginBottom: 8, fontSize: Typography.base },
+  notesText: { fontSize: Typography.md, color: '#9a7230', lineHeight: 22 },
 });
 
 // ─── DOCUMENTS ───────────────────────────────────────────────────────────────
