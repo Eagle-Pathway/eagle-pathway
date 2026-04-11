@@ -44,22 +44,20 @@ export default function TabLayout() {
           tabBarIcon: ({ focused }) => <TabIcon emoji="🏠" label="Home" focused={focused} />,
         }}
       />
-      {!isTutor && (
-        <Tabs.Screen
-          name="tutors"
-          options={{
-            tabBarIcon: ({ focused }) => <TabIcon emoji="👨‍🏫" label="Tutors" focused={focused} />,
-          }}
-        />
-      )}
-      {!isTutor && (
-        <Tabs.Screen
-          name="scholarships"
-          options={{
-            tabBarIcon: ({ focused }) => <TabIcon emoji="🎓" label="Scholarships" focused={focused} />,
-          }}
-        />
-      )}
+      <Tabs.Screen
+        name="tutors"
+        options={{
+          tabBarIcon: ({ focused }) => <TabIcon emoji="👨‍🏫" label="Tutors" focused={focused} />,
+          href: isTutor ? null : '/(tabs)/tutors',
+        }}
+      />
+      <Tabs.Screen
+        name="scholarships"
+        options={{
+          tabBarIcon: ({ focused }) => <TabIcon emoji="🎓" label="Scholarships" focused={focused} />,
+          href: isTutor ? null : '/(tabs)/scholarships',
+        }}
+      />
       <Tabs.Screen
         name="bookings"
         options={{
