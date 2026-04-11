@@ -20,21 +20,51 @@ export default function SignupScreen() {
   const [fullName, setFullName] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [role, setRole] = useState<UserRole>('student');
-  const { initiateSignup, isLoading } = useAuthStore();
+  const [isSignedUp, setIsSignedUp] = useState(false);
+  const { signUp, isLoading } = useAuthStore();
 
   const handleContinue = async () => {
     if (!fullName.trim()) return Alert.alert('Error', 'Please enter your full name');
     if (!email.trim()) return Alert.alert('Error', 'Please enter your email');
     if (!phone.trim()) return Alert.alert('Error', 'Please enter your phone number');
+    if (password.length < 6) return Alert.alert('Error', 'Password must be at least 6 characters');
+    if (password !== confirmPassword) return Alert.alert('Error', 'Passwords do not match');
 
     try {
-      await initiateSignup(fullName.trim(), phone.trim(), role, email.trim());
-      router.push({ pathname: '/(auth)/otp', params: { phone } });
+      await signUp(email.trim(), password, fullName.trim(), phone.trim(), role);
+      setIsSignedUp(true);
     } catch (e: any) {
-      Alert.alert('Error', e.message || 'Failed to send OTP. Please try again.');
+      Alert.alert('Signup Failed', e.message || 'Please try again.');
     }
   };
+
+  if (isSignedUp) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.successContent}>
+          <View style={styles.successIconWrap}>
+            <Text style={styles.successIcon}>✉️</Text>
+          </View>
+          <Text style={styles.successTitle}>Check your email</Text>
+          <Text style={styles.successSubtitle}>
+            We've sent a verification link to <Text style={{ color: Colors.text, fontWeight: Typography.bold }}>{email}</Text>.
+            Please click the link to activate your account.
+          </Text>
+          <Button 
+            title="Back to Login" 
+            onPress={() => router.replace('/(auth)/login')} 
+            style={{ width: '100%', marginTop: Spacing.xl }} 
+          />
+          <TouchableOpacity style={{ marginTop: Spacing.xl }} onPress={() => setIsSignedUp(false)}>
+            <Text style={{ color: Colors.textSecondary, textDecorationLine: 'underline' }}>Wait, I entered the wrong email</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -63,6 +93,19 @@ export default function SignupScreen() {
             </View>
 
             <View style={styles.fieldGroup}>
+              <Text style={styles.label}>Email Address</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="your@email.com"
+                value={email}
+                onChangeText={setEmail}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                placeholderTextColor={Colors.textSecondary}
+              />
+            </View>
+
+            <View style={styles.fieldGroup}>
               <Text style={styles.label}>Phone Number</Text>
               <TextInput
                 style={styles.input}
@@ -75,14 +118,25 @@ export default function SignupScreen() {
             </View>
 
             <View style={styles.fieldGroup}>
-              <Text style={styles.label}>Email</Text>
+              <Text style={styles.label}>Password</Text>
               <TextInput
                 style={styles.input}
-                placeholder="your@email.com"
-                value={email}
-                onChangeText={setEmail}
-                keyboardType="email-address"
-                autoCapitalize="none"
+                placeholder="••••••••"
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry
+                placeholderTextColor={Colors.textSecondary}
+              />
+            </View>
+
+            <View style={styles.fieldGroup}>
+              <Text style={styles.label}>Confirm Password</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="••••••••"
+                value={confirmPassword}
+                onChangeText={setConfirmPassword}
+                secureTextEntry
                 placeholderTextColor={Colors.textSecondary}
               />
             </View>
@@ -106,7 +160,7 @@ export default function SignupScreen() {
               </View>
             </View>
 
-            <Button title="Send Verification Code" onPress={handleContinue} loading={isLoading} style={{ marginTop: Spacing.sm }} />
+            <Button title="Create Account" onPress={handleContinue} loading={isLoading} style={{ marginTop: Spacing.sm }} />
 
             <View style={styles.dividerRow}>
               <View style={styles.dividerLine} />
@@ -128,6 +182,16 @@ export default function SignupScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.white },
+  successContent: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: Spacing['3xl'] },
+  successIconWrap: { 
+    width: 100, height: 100, borderRadius: 50, 
+    backgroundColor: Colors.blueLight, 
+    alignItems: 'center', justifyContent: 'center', 
+    marginBottom: Spacing.xl 
+  },
+  successIcon: { fontSize: 40 },
+  successTitle: { fontSize: Typography['4xl'], fontWeight: Typography.bold, color: Colors.text, marginBottom: Spacing.md },
+  successSubtitle: { fontSize: Typography.md, color: Colors.textSecondary, textAlign: 'center', lineHeight: 24 },
   backBtn: { padding: Spacing.xl, paddingBottom: 0 },
   backArrow: { fontSize: 24, color: Colors.text },
   header: { padding: Spacing.xl, paddingTop: Spacing.lg },
