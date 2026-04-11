@@ -7,16 +7,18 @@ import { Button } from '../../src/components/common';
 import { useAuthStore } from '../../src/store/authStore';
 
 export default function LoginScreen() {
-  const [phone, setPhone] = useState('');
-  const { sendOtp, isLoading } = useAuthStore();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const { signIn, isLoading } = useAuthStore();
 
   const handleLogin = async () => {
-    if (!phone.trim()) return Alert.alert('Error', 'Please enter your phone number');
+    if (!email.trim()) return Alert.alert('Error', 'Please enter your email');
+    if (!password) return Alert.alert('Error', 'Please enter your password');
     try {
-      await sendOtp(phone.trim());
-      router.push({ pathname: '/(auth)/otp', params: { phone } });
+      await signIn(email.trim(), password);
+      router.replace('/(tabs)/home');
     } catch (e: any) {
-      Alert.alert('Error', e.message || 'Failed to send OTP');
+      Alert.alert('Login Failed', e.message || 'Please check your credentials.');
     }
   };
 
@@ -27,17 +29,35 @@ export default function LoginScreen() {
       </TouchableOpacity>
       <View style={{ padding: Spacing.xl }}>
         <Text style={{ fontSize: 28, fontWeight: Typography.bold, color: Colors.text, marginBottom: 8 }}>Welcome back</Text>
-        <Text style={{ fontSize: 14, color: Colors.textSecondary, marginBottom: Spacing['2xl'] }}>Enter your phone number to sign in</Text>
-        <Text style={{ fontSize: 13, fontWeight: Typography.semibold, color: Colors.text, marginBottom: 6 }}>Phone Number</Text>
-        <TextInput
-          style={{ borderWidth: 1.5, borderColor: Colors.border, borderRadius: Radius.lg, padding: Spacing.md, fontSize: 15, color: Colors.text, backgroundColor: '#fafafa', marginBottom: Spacing.lg }}
-          placeholder="+251 9xx xxx xxxx"
-          value={phone}
-          onChangeText={setPhone}
-          keyboardType="phone-pad"
-          placeholderTextColor={Colors.textSecondary}
-        />
-        <Button title="Send Verification Code" onPress={handleLogin} loading={isLoading} />
+        <Text style={{ fontSize: 14, color: Colors.textSecondary, marginBottom: Spacing['2xl'] }}>Sign in to your Eagle Pathway account</Text>
+        
+        <View style={{ marginBottom: Spacing.lg }}>
+          <Text style={{ fontSize: 13, fontWeight: Typography.semibold, color: Colors.text, marginBottom: 6 }}>Email Address</Text>
+          <TextInput
+            style={{ borderWidth: 1.5, borderColor: Colors.border, borderRadius: Radius.lg, padding: Spacing.md, fontSize: 15, color: Colors.text, backgroundColor: '#fafafa' }}
+            placeholder="your@email.com"
+            value={email}
+            onChangeText={setEmail}
+            keyboardType="email-address"
+            autoCapitalize="none"
+            placeholderTextColor={Colors.textSecondary}
+          />
+        </View>
+
+        <View style={{ marginBottom: Spacing.xl }}>
+          <Text style={{ fontSize: 13, fontWeight: Typography.semibold, color: Colors.text, marginBottom: 6 }}>Password</Text>
+          <TextInput
+            style={{ borderWidth: 1.5, borderColor: Colors.border, borderRadius: Radius.lg, padding: Spacing.md, fontSize: 15, color: Colors.text, backgroundColor: '#fafafa' }}
+            placeholder="••••••••"
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry
+            placeholderTextColor={Colors.textSecondary}
+          />
+        </View>
+
+        <Button title="Sign In" onPress={handleLogin} loading={isLoading} />
+        
         <TouchableOpacity style={{ marginTop: Spacing.lg, alignItems: 'center' }} onPress={() => router.push('/(auth)/signup')}>
           <Text style={{ fontSize: 13, color: Colors.textSecondary }}>Don't have an account? <Text style={{ color: Colors.blue, fontWeight: Typography.semibold }}>Sign Up</Text></Text>
         </TouchableOpacity>
