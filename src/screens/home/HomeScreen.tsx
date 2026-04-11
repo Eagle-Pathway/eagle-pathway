@@ -21,7 +21,23 @@ export default function HomeScreen() {
   } = useAppStore();
   const [refreshing, setRefreshing] = React.useState(false);
 
+  // 1. All Hooks Must Be At The Top
   const isTutor = user?.role?.toLowerCase() === 'tutor';
+
+  const activeApplications = React.useMemo(() => 
+    applications.filter(a => !['accepted', 'rejected'].includes(a.status)),
+    [applications]
+  );
+
+  const readinessScore = React.useMemo(() => {
+    if (!user) return 0;
+    let score = 0;
+    if (activeApplications.length > 0) score += 30;
+    if (bookings.length > 0) score += 20;
+    if (tasks.filter(t => t.status === 'completed').length > 0) score += 10;
+    score += Math.min(applications.length * 10, 20);
+    return Math.min(score + 20, 100);
+  }, [user, activeApplications, bookings, applications, tasks]);
 
   const load = async () => {
     if (!user) return;
@@ -32,7 +48,10 @@ export default function HomeScreen() {
       tasks.push(loadBookings(user.id));
       tasks.push(loadApplications(user.id));
       tasks.push(loadTasks(user.id));
-      tasks.push(useAppStore.getState().loadRecommendations(user.id));
+      const store = useAppStore.getState() as any;
+      if (store.loadRecommendations) {
+        tasks.push(store.loadRecommendations(user.id));
+      }
     }
     await Promise.all(tasks);
   };
@@ -44,6 +63,8 @@ export default function HomeScreen() {
     await load();
     setRefreshing(false);
   };
+
+  if (!user) return null; // Early return for unauthenticated state is okay as long as all hooks were called above
 
   const initials = user?.full_name?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || 'EP';
   const firstName = user?.full_name?.split(' ')[0] || 'there';
@@ -70,6 +91,7 @@ export default function HomeScreen() {
               <View style={styles.heroActions}>
                 <TouchableOpacity style={styles.notifBtn} onPress={() => router.push('/notifications')} activeOpacity={0.8}>
                    <Text style={styles.notifIcon}>🔔</Text>
+                   {unreadCount > 0 && <View style={styles.notifDot}><Text style={styles.notifCount}>{unreadCount}</Text></View>}
                 </TouchableOpacity>
                 <Avatar initials={initials} size={38} borderRadius={11} />
               </View>
@@ -130,7 +152,6 @@ export default function HomeScreen() {
     );
   }
 
-  // Student rendering logic... (omitted for brevity in this replace call, but I'll ensure it stays consistent)
   const upcomingBookings = bookings
     .filter(b => b.status === 'confirmed' || b.status === 'pending')
     .slice(0, 2);
@@ -139,22 +160,8 @@ export default function HomeScreen() {
     .filter(t => t.status === 'pending' || t.status === 'overdue')
     .slice(0, 3);
 
-  const activeApplications = applications.filter(
-    a => !['accepted', 'rejected'].includes(a.status)
-  );
-
   const premiumApp = applications.find(a => a.package_tier === 'premium' || a.package_tier === 'standard');
   const assignedConsultant = premiumApp?.consultant;
-
-  const readinessScore = React.useMemo(() => {
-    if (!user) return 0;
-    let score = 0;
-    if (activeApplications.length > 0) score += 30;
-    if (bookings.length > 0) score += 20;
-    if (tasks.filter(t => t.status === 'completed').length > 0) score += 10;
-    score += Math.min(applications.length * 10, 20);
-    return Math.min(score + 20, 100);
-  }, [user, activeApplications, bookings, applications, tasks]);
 
   return (
     <SafeAreaView style={CommonStyles.screenBg} edges={['top']}>
