@@ -16,9 +16,8 @@ interface AuthState {
   setUser: (user: User | null) => void;
   setSession: (session: any | null) => void;
   setPendingSignup: (data: AuthState['pendingSignup']) => void;
-  sendOtp: (phone: string) => Promise<void>;
-  initiateSignup: (fullName: string, phone: string, role: UserRole, email: string) => Promise<void>;
-  verifyOtp: (phone: string, token: string) => Promise<void>;
+  signUp: (email: string, password: string, fullName: string, phone: string, role: UserRole) => Promise<void>;
+  signIn: (email: string, password: string) => Promise<void>;
   loadProfile: () => Promise<void>;
   updateProfile: (updates: Partial<User>) => Promise<void>;
   uploadAvatar: (fileUri: string, fileName: string) => Promise<void>;
@@ -36,75 +35,44 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   setSession: (session) => set({ session }),
   setPendingSignup: (data) => set({ pendingSignup: data }),
 
-  sendOtp: async (phone) => {
-    if (BYPASS_PHONE_VERIFY) return;
+  signUp: async (email, password, fullName, phone, role) => {
     set({ isLoading: true });
     try {
-      await authService.sendOtp(phone);
-    } finally {
-      set({ isLoading: false });
-    }
-  },
-
-  initiateSignup: async (fullName, phone, role, email) => {
-    set({ isLoading: true });
-    try {
-      if (!email?.trim()) throw new Error('Email is required');
-      set({ pendingSignup: { fullName, phone, role, email: email.trim() } });
-
-      if (BYPASS_PHONE_VERIFY) return;
-
-      await authService.sendOtp(phone);
-    } finally {
-      set({ isLoading: false });
-    }
-  },
-
-  verifyOtp: async (phone, token) => {
-    set({ isLoading: true });
-    try {
-      if (BYPASS_PHONE_VERIFY) {
-        const pending = get().pendingSignup;
-        const email = pending?.email?.trim() || 'dev@test.com';
-
-        set({
-          user: {
-            id: '00000000-0000-0000-0000-000000000000',
-            full_name: pending?.fullName ?? 'Dev User',
-            phone: pending?.phone ?? phone,
-            role: pending?.role ?? ('STUDENT' as UserRole),
-            email,
-          } as User,
-          session: null,
-          isAuthenticated: true,
-          pendingSignup: null,
-        });
-        return;
+      const data = await authService.signUp(email, password, fullName, phone, role);
+      if (data.session) {
+        set({ session: data.session, user: data.user as any, isAuthenticated: true });
       }
+    } finally {
+      set({ isLoading: false });
+    }
+  },
 
-      const data = await authService.verifyOtp(phone, token);
-      if (!data.session) throw new Error('No session after OTP');
-
-      set({ session: data.session });
-
-      // Check if user profile exists
-      try {
-        const profile = await authService.getProfile(data.session.user.id);
-        set({ user: profile, isAuthenticated: true });
-      } catch {
-        // New user — create profile from pending signup
-        const pending = get().pendingSignup;
-        if (!pending) throw new Error('Missing signup data');
-        if (!pending.email?.trim()) throw new Error('Email is required');
-
-        const profile = await authService.createProfile(
-          data.session.user.id,
-          pending.fullName,
-          pending.phone,
-          pending.role,
-          pending.email.trim()
-        );
-        set({ user: profile, isAuthenticated: true, pendingSignup: null });
+  signIn: async (email, password) => {
+    set({ isLoading: true });
+    try {
+      const data = await authService.signIn(email, password);
+      if (data.session) {
+        set({ session: data.session });
+        
+        try {
+          const profile = await authService.getProfile(data.session.user.id);
+          set({ user: profile, isAuthenticated: true });
+        } catch (e) {
+          // Profile doesn't exist, create it from metadata
+          const metadata = data.session.user.user_metadata;
+          if (metadata) {
+            const profile = await authService.createProfile(
+              data.session.user.id,
+              metadata.full_name || 'User',
+              metadata.phone || '',
+              metadata.role || 'student',
+              data.session.user.email || ''
+            );
+            set({ user: profile, isAuthenticated: true });
+          } else {
+            throw new Error('User profile could not be initialized.');
+          }
+        }
       }
     } finally {
       set({ isLoading: false });
@@ -138,7 +106,24 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const profile = await authService.getProfile(session.user.id);
       set({ user: profile, isAuthenticated: true });
     } catch {
-      set({ isAuthenticated: false });
+      // Profile missing - try to create from metadata
+      const metadata = session.user.user_metadata;
+      if (metadata) {
+        try {
+          const profile = await authService.createProfile(
+            session.user.id,
+            metadata.full_name || 'User',
+            metadata.phone || '',
+            metadata.role || 'student',
+            session.user.email || ''
+          );
+          set({ user: profile, isAuthenticated: true });
+        } catch {
+          set({ isAuthenticated: false });
+        }
+      } else {
+        set({ isAuthenticated: false });
+      }
     } finally {
       set({ isLoading: false });
     }
