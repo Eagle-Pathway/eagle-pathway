@@ -8,11 +8,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { format } from 'date-fns';
 import { Colors, Typography, Spacing, Radius, CommonStyles } from '@/utils/theme';
-import { Button, Avatar, ProgressBar, EmptyState, Pill } from '@/components/common';
+import { Button, Avatar, ProgressBar, EmptyState, Pill, StatusTimeline } from '@/components/common';
 import { scholarshipsService } from '@/services/scholarships';
 import { useAuthStore } from '@/store/authStore';
 import { useAppStore } from '@/store/appStore';
-import { Scholarship, Application, PackageTier, Document } from '@/types';
+import { Scholarship, Application, PackageTier, Document, DocumentType } from '@/types';
 import { openWhatsApp } from '@/utils/linking';
 
 // ─── SCHOLARSHIP DETAIL ───────────────────────────────────────────────────────
@@ -258,14 +258,33 @@ export function ApplyScreen() {
 
   const STEPS = ['Info', 'Docs', 'SOP', 'Pay', 'Final'];
 
-  const handlePickAndUpload = async (docType: string) => {
+  const handlePickAndUpload = async (docLabel: string) => {
+    // Map UI labels to database enum document_type
+    const typeMap: Record<string, DocumentType> = {
+      'Degree Certificate': 'degree_certificate',
+      'Official Transcript': 'transcript',
+      'Passport Copy': 'passport',
+      'IELTS Certificate': 'ielts_certificate',
+      'CV / Resume': 'cv',
+      'Reference Letter 1': 'reference_letter',
+      'Reference Letter 2': 'reference_letter',
+    };
+
+    const docType = typeMap[docLabel] || 'other';
+
     try {
       const result = await scholarshipsService.pickDocument();
       if (result.canceled || !result.assets?.[0]) return;
       const asset = result.assets[0];
       if (!user) return;
       Alert.alert('Uploading...', 'Please wait');
-      await uploadDocument({ userId: user.id, applicationId: undefined, documentType: docType as any, fileUri: asset.uri, fileName: asset.name });
+      await uploadDocument({ 
+        userId: user.id, 
+        applicationId: undefined, 
+        documentType: docType, 
+        fileUri: asset.uri, 
+        fileName: asset.name 
+      });
       Alert.alert('Success', 'Document uploaded successfully!');
     } catch (e: any) {
       Alert.alert('Error', e.message || 'Upload failed');
@@ -358,9 +377,20 @@ export function ApplyScreen() {
             </View>
             <Text style={CommonStyles.sectionTitle}>Upload Your Documents</Text>
             {requiredDocs.map(doc => {
-              const uploaded = documents.some(d => d.file_name.toLowerCase().includes(doc.split(' ')[0].toLowerCase()));
+              const typeMap: Record<string, string> = {
+                'Degree Certificate': 'degree_certificate',
+                'Official Transcript': 'transcript',
+                'Passport Copy': 'passport',
+                'IELTS Certificate': 'ielts_certificate',
+                'CV / Resume': 'cv',
+                'Reference Letter 1': 'reference_letter',
+                'Reference Letter 2': 'reference_letter',
+              };
+              const mappedType = typeMap[doc] || 'other';
+              const uploaded = documents.some(d => d.document_type === mappedType);
+
               return (
-                <TouchableOpacity key={doc} style={[applyStyles.docRow, !uploaded && applyStyles.docRowMissing]} onPress={() => !uploaded && handlePickAndUpload(doc.toLowerCase().replace(/ /g, '_'))} activeOpacity={0.8}>
+                <TouchableOpacity key={doc} style={[applyStyles.docRow, !uploaded && applyStyles.docRowMissing]} onPress={() => !uploaded && handlePickAndUpload(doc)} activeOpacity={0.8}>
                   <View style={[applyStyles.docIcon, { backgroundColor: uploaded ? Colors.blueLight : Colors.orangeLight }]}>
                     <Text style={{ fontSize: 16 }}>{uploaded ? '📄' : '📎'}</Text>
                   </View>
