@@ -17,11 +17,40 @@ export const authService = {
     return data;
   },
 
-  async signUp(fullName: string, phone: string, role: UserRole, email: string) {
-    const { error } = await supabase.auth.signInWithOtp({ phone });
-    if (error) throw error;
+  async signUp(email: string, password: string, fullName: string, phone: string, role: string) {
+    const { data, error } = await supabase.auth.signUp({
+      email: email.trim(),
+      password,
+      options: {
+        data: {
+          full_name: fullName.trim(),
+          phone: phone.trim(),
+          role,
+        }
+      }
+    });
 
-    return { phone, fullName, role, email };
+    if (error) throw error;
+    
+    // If auto-confirm is enabled and we have a session, create profile immediately
+    if (data.user && data.session) {
+      try {
+        await this.createProfile(data.user.id, fullName, phone, role as any, email);
+      } catch (e) {
+        console.log('Profile creation failed or already exists:', e);
+      }
+    }
+    
+    return data;
+  },
+
+  async signIn(email: string, password: string) {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: email.trim(),
+      password,
+    });
+    if (error) throw error;
+    return data;
   },
 
   async createProfile(
