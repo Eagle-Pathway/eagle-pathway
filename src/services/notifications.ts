@@ -36,10 +36,16 @@ export const notificationsService = {
   },
 
   async registerPushToken(userId: string): Promise<void> {
-    const token = await Notifications.getExpoPushTokenAsync();
-    await supabase
-      .from('push_tokens')
-      .upsert({ user_id: userId, token: token.data });
+    if (Platform.OS === 'web') return;
+    
+    try {
+      const token = await Notifications.getExpoPushTokenAsync();
+      await supabase
+        .from('push_tokens')
+        .upsert({ user_id: userId, token: token.data });
+    } catch (e) {
+      console.log('Push token registration failed:', e);
+    }
   },
 
   async getNotifications(userId: string): Promise<Notification[]> {
