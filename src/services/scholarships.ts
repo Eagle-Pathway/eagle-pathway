@@ -56,7 +56,7 @@ export const scholarshipsService = {
   async getStudentApplications(studentId: string): Promise<Application[]> {
     const { data, error } = await supabase
       .from('applications')
-      .select('*, scholarship:scholarships(*), consultant:users(*), documents(*)')
+      .select('*, scholarship:scholarships(*), consultant:users!applications_consultant_id_fkey(*), documents(*)')
       .eq('student_id', studentId)
       .order('created_at', { ascending: false });
     if (error) throw error;
@@ -66,7 +66,7 @@ export const scholarshipsService = {
   async getApplicationById(id: string): Promise<Application> {
     const { data, error } = await supabase
       .from('applications')
-      .select('*, scholarship:scholarships(*), consultant:users(*), documents(*)')
+      .select('*, scholarship:scholarships(*), consultant:users!applications_consultant_id_fkey(*), documents(*)')
       .eq('id', id)
       .single();
     if (error) throw error;
@@ -114,7 +114,7 @@ export const scholarshipsService = {
       .from('documents')
       .insert({
         user_id: params.userId,
-        application_id: params.applicationId,
+        application_id: params.applicationId || null,
         document_type: params.documentType,
         file_name: params.fileName,
         file_url: publicUrl,
