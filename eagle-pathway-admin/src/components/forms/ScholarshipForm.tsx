@@ -14,16 +14,17 @@ export default function ScholarshipForm({ onClose, onSuccess }: ScholarshipFormP
   const [error, setError] = useState('');
   
   const [formData, setFormData] = useState({
-    title: '',
-    provider: '',
-    amount: '',
+    name: '',
+    organization: '',
+    funding_details: '',
+    funding_type: 'fully_funded',
     deadline: '',
     country: '',
-    degree_level: 'Undergraduate',
+    country_flag: '🌍',
+    degree_levels: ['undergraduate'] as string[],
     description: '',
     requirements: '',
-    application_url: '',
-    target_audience: 'Ethiopian Students'
+    website_url: ''
   });
 
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -46,7 +47,7 @@ export default function ScholarshipForm({ onClose, onSuccess }: ScholarshipFormP
     const filePath = `scholarship-thumbnails/${fileName}`;
 
     const { error: uploadError } = await supabase.storage
-      .from('scholarship-images')
+      .from('documents') // Shared bucket for all docs
       .upload(filePath, imageFile);
 
     if (uploadError) throw uploadError;
@@ -69,21 +70,20 @@ export default function ScholarshipForm({ onClose, onSuccess }: ScholarshipFormP
         publicImageUrl = await uploadImage() || '';
       }
 
-      const reqArray = formData.requirements.split(',').map(s => s.trim()).filter(Boolean);
-      const audArray = formData.target_audience.split(',').map(s => s.trim()).filter(Boolean);
+      const reqArray = formData.requirements.split('\n').map(s => s.trim()).filter(Boolean);
 
       const { error: insertError } = await supabase.from('scholarships').insert([{
-        title: formData.title,
-        provider: formData.provider,
-        amount: formData.amount,
+        name: formData.name,
+        organization: formData.organization,
+        funding_details: formData.funding_details,
+        funding_type: formData.funding_type,
         deadline: formData.deadline,
         country: formData.country,
-        degree_level: formData.degree_level,
+        country_flag: formData.country_flag,
+        degree_levels: formData.degree_levels,
         description: formData.description,
         requirements: reqArray,
-        application_url: formData.application_url,
-        target_audience: audArray,
-        image_url: publicImageUrl,
+        website_url: formData.website_url,
         is_active: true
       }]);
 
@@ -138,23 +138,35 @@ export default function ScholarshipForm({ onClose, onSuccess }: ScholarshipFormP
 
              <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                <div className="sm:col-span-2">
-                 <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
-                 <input required type="text" name="title" value={formData.title} onChange={handleChange} className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-blue/20 focus:border-brand-blue" />
+                 <label className="block text-sm font-medium text-gray-700 mb-1">Scholarship Name</label>
+                 <input required type="text" name="name" value={formData.name} onChange={handleChange} className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-blue/20 focus:border-brand-blue" />
                </div>
                
                <div>
-                 <label className="block text-sm font-medium text-gray-700 mb-1">Provider</label>
-                 <input required type="text" name="provider" value={formData.provider} onChange={handleChange} className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-blue/20 focus:border-brand-blue" />
+                 <label className="block text-sm font-medium text-gray-700 mb-1">Organization</label>
+                 <input required type="text" name="organization" value={formData.organization} onChange={handleChange} className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-blue/20 focus:border-brand-blue" />
                </div>
 
                <div>
-                 <label className="block text-sm font-medium text-gray-700 mb-1">Amount</label>
-                 <input required type="text" name="amount" value={formData.amount} onChange={handleChange} className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-blue/20 focus:border-brand-blue" />
+                 <label className="block text-sm font-medium text-gray-700 mb-1">Funding Details (e.g. £15,000)</label>
+                 <input required type="text" name="funding_details" value={formData.funding_details} onChange={handleChange} className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-blue/20 focus:border-brand-blue" />
+               </div>
+
+               <div>
+                 <label className="block text-sm font-medium text-gray-700 mb-1">Funding Type</label>
+                 <select name="funding_type" value={formData.funding_type} onChange={handleChange} className="w-full px-4 py-2.5 rounded-xl border border-gray-200 bg-white">
+                   <option value="fully_funded">Fully Funded</option>
+                   <option value="partial">Partial</option>
+                   <option value="stipend_only">Stipend Only</option>
+                 </select>
                </div>
 
                <div>
                  <label className="block text-sm font-medium text-gray-700 mb-1">Country</label>
-                 <input required type="text" name="country" value={formData.country} onChange={handleChange} className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-blue/20 focus:border-brand-blue" />
+                 <div className="flex gap-2">
+                    <input type="text" name="country_flag" value={formData.country_flag} onChange={handleChange} className="w-16 px-2 py-2.5 rounded-xl border border-gray-200 text-center" placeholder="🌍" />
+                    <input required type="text" name="country" value={formData.country} onChange={handleChange} className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200" placeholder="e.g. United Kingdom" />
+                 </div>
                </div>
 
                <div>
@@ -163,18 +175,33 @@ export default function ScholarshipForm({ onClose, onSuccess }: ScholarshipFormP
                </div>
 
                <div>
-                 <label className="block text-sm font-medium text-gray-700 mb-1">Degree Level</label>
-                 <select required name="degree_level" value={formData.degree_level} onChange={handleChange} className="w-full px-4 py-2.5 rounded-xl border border-gray-200 bg-white">
-                   <option>High School</option>
-                   <option>Undergraduate</option>
-                   <option>Masters</option>
-                   <option>PhD</option>
+                 <label className="block text-sm font-medium text-gray-700 mb-1">Degree Levels (Ctrl+Click to multi-select)</label>
+                 <select 
+                    multiple 
+                    name="degree_levels" 
+                    value={formData.degree_levels} 
+                    onChange={(e) => {
+                      const options = e.target.options;
+                      const value = [];
+                      for (let i = 0, l = options.length; i < l; i++) {
+                        if (options[i].selected) {
+                          value.push(options[i].value);
+                        }
+                      }
+                      setFormData(prev => ({ ...prev, degree_levels: value }));
+                    }} 
+                    className="w-full px-4 py-2 rounded-xl border border-gray-200 bg-white min-h-[100px]"
+                 >
+                   <option value="undergraduate">Undergraduate</option>
+                   <option value="masters">Masters</option>
+                   <option value="phd">PhD</option>
+                   <option value="all">All Levels</option>
                  </select>
                </div>
 
                <div className="sm:col-span-2">
-                 <label className="block text-sm font-medium text-gray-700 mb-1">Application URL</label>
-                 <input type="url" name="application_url" value={formData.application_url} onChange={handleChange} className="w-full px-4 py-2.5 rounded-xl border border-gray-200" />
+                 <label className="block text-sm font-medium text-gray-700 mb-1">Website URL</label>
+                 <input type="url" name="website_url" value={formData.website_url} onChange={handleChange} className="w-full px-4 py-2.5 rounded-xl border border-gray-200" />
                </div>
 
                <div className="sm:col-span-2">
@@ -183,8 +210,8 @@ export default function ScholarshipForm({ onClose, onSuccess }: ScholarshipFormP
                </div>
 
                <div className="sm:col-span-2">
-                 <label className="block text-sm font-medium text-gray-700 mb-1">Requirements (comma separated)</label>
-                 <textarea required name="requirements" value={formData.requirements} onChange={handleChange} rows={2} className="w-full px-4 py-2.5 rounded-xl border border-gray-200 resize-none"></textarea>
+                 <label className="block text-sm font-medium text-gray-700 mb-1">Requirements (one per line)</label>
+                 <textarea required name="requirements" value={formData.requirements} onChange={handleChange} rows={4} className="w-full px-4 py-2.5 rounded-xl border border-gray-200 resize-none"></textarea>
                </div>
              </div>
           </form>

@@ -1,13 +1,34 @@
-node_modules/
-.expo/
-dist/
-web-build/
-.env
-*.jks
-*.p8
-*.p12
-*.key
-*.mobileprovision
-*.orig.*
-web-build/
+# Dependencies
+**/node_modules/
+**/dist/
+**/.next/
+**/out/
+**/build/
+**/web-build/
+
+# Expo / React Native
+**/.expo/
+**/*.jks
+**/*.p8
+**/*.p12
+**/*.key
+**/*.mobileprovision
+
+# Environment / Secret
+**/.env
+**/.env.local
+**/.env.*.local
+**/supabase/keys.json
+
+# Logs
+**/npm-debug.log*
+**/yarn-debug.log*
+**/yarn-error.log*
+
+# System Files
 .DS_Store
+Thumbs.db
+
+# Other
+tmp/
+.temp/

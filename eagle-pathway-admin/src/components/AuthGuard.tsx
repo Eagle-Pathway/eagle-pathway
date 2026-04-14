@@ -10,19 +10,48 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
   const { user, setUser, setSession, isLoading, setLoading } = useAuthStore();
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      
       if (session) {
-        setSession(session);
-        setUser({ id: session.user.id, email: session.user.email, role: 'admin' });
+        // Verify admin role in database
+        const { data: profile, error } = await supabase
+          .from('users')
+          .select('role')
+          .eq('id', session.user.id)
+          .single();
+
+        if (profile?.role === 'admin') {
+          setSession(session);
+          setUser({ id: session.user.id, email: session.user.email, role: 'admin' });
+        } else {
+          // Log out if not an admin
+          await supabase.auth.signOut();
+          if (pathname !== '/login') router.push('/login');
+        }
       } else {
         if (pathname !== '/login') router.push('/login');
       }
       setLoading(false);
-    });
+    };
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    checkAuth();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       if (!session && pathname !== '/login') {
         router.push('/login');
+      } else if (session) {
+        // Double check role on state changes too
+        const { data: profile } = await supabase
+          .from('users')
+          .select('role')
+          .eq('id', session.user.id)
+          .single();
+        
+        if (profile?.role !== 'admin' && pathname !== '/login') {
+          await supabase.auth.signOut();
+          router.push('/login');
+        }
       }
     });
 

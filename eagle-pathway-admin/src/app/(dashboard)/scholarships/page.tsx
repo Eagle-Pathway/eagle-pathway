@@ -7,12 +7,13 @@ import { exportToCSV } from '@/utils/export';
 
 interface Scholarship {
   id: string;
-  title: string;
-  provider: string;
-  amount: string;
+  name: string;
+  organization: string;
+  funding_details: string;
   deadline: string;
   country: string;
-  degree_level: string;
+  country_flag: string;
+  degree_levels: string[];
   is_active: boolean;
 }
 
@@ -55,8 +56,8 @@ export default function ScholarshipsPage() {
   };
 
   const filtered = scholarships.filter(s => 
-    (s.title || '').toLowerCase().includes(search.toLowerCase()) || 
-    (s.provider || '').toLowerCase().includes(search.toLowerCase())
+    (s.name || '').toLowerCase().includes(search.toLowerCase()) || 
+    (s.organization || '').toLowerCase().includes(search.toLowerCase())
   );
 
   return (
@@ -133,14 +134,23 @@ export default function ScholarshipsPage() {
                 filtered.map((scholarship) => (
                   <tr key={scholarship.id} className="hover:bg-gray-50/50 transition-colors">
                     <td className="px-6 py-4">
-                      <div className="text-sm font-medium text-gray-900">{scholarship.title}</div>
+                      <div className="flex items-center">
+                        <span className="text-xl mr-3">{scholarship.country_flag}</span>
+                        <div className="text-sm font-medium text-gray-900">{scholarship.name}</div>
+                      </div>
                     </td>
                     <td className="px-6 py-4">
-                      <div className="text-sm text-gray-900">{scholarship.provider}</div>
-                      <div className="text-sm text-gray-500 font-medium text-brand-gold mt-1">{scholarship.amount}</div>
+                      <div className="text-sm text-gray-900">{scholarship.organization}</div>
+                      <div className="text-sm text-gray-500 font-medium text-brand-gold mt-1">{scholarship.funding_details}</div>
                     </td>
                     <td className="px-6 py-4">
-                      <div className="text-sm text-gray-900 bg-gray-100 inline-block px-2 py-1 rounded-md mb-1">{scholarship.degree_level}</div>
+                      <div className="flex flex-wrap gap-1 mb-1">
+                        {scholarship.degree_levels?.map(level => (
+                           <div key={level} className="text-[10px] uppercase font-bold text-gray-600 bg-gray-100 px-1.5 py-0.5 rounded">
+                             {level}
+                           </div>
+                        ))}
+                      </div>
                       <div className="text-sm text-gray-500">{scholarship.country} • Due: {new Date(scholarship.deadline).toLocaleDateString()}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">

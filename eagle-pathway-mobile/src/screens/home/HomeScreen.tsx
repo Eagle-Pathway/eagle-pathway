@@ -15,9 +15,9 @@ import { openWhatsApp } from '@/utils/linking';
 export default function HomeScreen() {
   const { user } = useAuthStore();
   const { 
-    bookings, applications, unreadCount, tasks,
+    bookings, applications, unreadCount, tasks, recommendedScholarships,
     loadBookings, loadTutorBookings, loadApplications, loadNotifications, loadTasks, toggleTask,
-    updateBookingStatus
+    updateBookingStatus, loadRecommendations
   } = useAppStore();
   const [refreshing, setRefreshing] = React.useState(false);
 
@@ -48,10 +48,7 @@ export default function HomeScreen() {
       tasks.push(loadBookings(user.id));
       tasks.push(loadApplications(user.id));
       tasks.push(loadTasks(user.id));
-      const store = useAppStore.getState() as any;
-      if (store.loadRecommendations) {
-        tasks.push(store.loadRecommendations(user.id));
-      }
+      tasks.push(loadRecommendations(user.id));
     }
     await Promise.all(tasks);
   };
@@ -115,10 +112,19 @@ export default function HomeScreen() {
             todaySessions.map(b => (
               <View key={b.id} style={styles.sessionCard}>
                  <Avatar initials={b.student?.full_name?.[0] || 'S'} size={40} />
-                 <View style={{ flex: 1, marginLeft: 12 }}>
-                   <Text style={styles.sessionName}>{b.student?.full_name}</Text>
-                   <Text style={styles.sessionSub}>{b.subject} · {b.session_time}</Text>
-                 </View>
+                <View style={{ flex: 1, marginLeft: 12 }}>
+                  <Text style={styles.sessionName}>{b.student?.full_name}</Text>
+                  <Text style={styles.sessionSub}>
+                    {b.subject} · {(() => {
+                      try {
+                        if (!b.session_time) return 'TBD';
+                        return format(new Date(`2000-01-01T${b.session_time}`), 'h:mm a');
+                      } catch (e) {
+                         return b.session_time;
+                      }
+                    })()}
+                  </Text>
+                </View>
                  <TouchableOpacity style={styles.sessionTime} onPress={() => updateBookingStatus(b.id, 'completed' as any)}>
                    <Text style={styles.sessionTypeBadge}>Complete</Text>
                  </TouchableOpacity>
@@ -134,7 +140,16 @@ export default function HomeScreen() {
               <View key={b.id} style={styles.sessionCard}>
                  <View style={{ flex: 1 }}>
                    <Text style={styles.sessionName}>{b.student?.full_name}</Text>
-                   <Text style={styles.sessionSub}>{b.subject} · {b.session_date}</Text>
+                   <Text style={styles.sessionSub}>
+                     {b.subject} · {(() => {
+                       try {
+                         if (!b.session_date) return 'TBD';
+                         return format(new Date(`${b.session_date}T00:00:00`), 'MMM d');
+                       } catch (e) {
+                         return b.session_date;
+                       }
+                     })()}
+                   </Text>
                  </View>
                  <View style={{ flexDirection: 'row', gap: 8 }}>
                     <TouchableOpacity style={[styles.sessionTime, { backgroundColor: Colors.greenLight }]} onPress={() => updateBookingStatus(b.id, 'confirmed' as any)}>
@@ -247,11 +262,11 @@ export default function HomeScreen() {
         )}
 
         {/* Recommended Scholarships */}
-        {useAppStore.getState().recommendedScholarships.length > 0 && (
+        {recommendedScholarships.length > 0 && (
           <>
             <SectionTitle title="Recommended for You" />
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: Spacing.xl, gap: Spacing.md }}>
-              {useAppStore.getState().recommendedScholarships.map(s => (
+              {recommendedScholarships.map(s => (
                 <TouchableOpacity 
                   key={s.id} 
                   style={styles.recCard}
@@ -328,7 +343,14 @@ export default function HomeScreen() {
                 </View>
                 <View style={styles.sessionTime}>
                   <Text style={styles.sessionTimeText}>
-                    {format(new Date(`${booking.session_date}T${booking.session_time}`), 'MMM d, h:mm a')}
+                    {(() => {
+                      try {
+                        if (!booking.session_date || !booking.session_time) return 'TBD';
+                        return format(new Date(`${booking.session_date}T${booking.session_time}`), 'MMM d, h:mm a');
+                      } catch (e) {
+                        return 'Invalid Date';
+                      }
+                    })()}
                   </Text>
                 </View>
               </TouchableOpacity>
