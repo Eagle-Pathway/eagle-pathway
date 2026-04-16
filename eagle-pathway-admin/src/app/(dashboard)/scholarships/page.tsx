@@ -22,6 +22,7 @@ export default function ScholarshipsPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [editingScholarship, setEditingScholarship] = useState<Scholarship | null>(null);
 
   useEffect(() => {
     fetchScholarships();
@@ -68,7 +69,10 @@ export default function ScholarshipsPage() {
           <p className="mt-1 text-sm text-gray-500">Manage available scholarships</p>
         </div>
         <button 
-          onClick={() => setIsFormOpen(true)}
+          onClick={() => {
+            setEditingScholarship(null);
+            setIsFormOpen(true);
+          }}
           className="flex items-center px-4 py-2 bg-brand-blue text-white rounded-xl shadow-md hover:bg-blue-800 transition-colors text-sm font-medium"
         >
           <Plus className="w-4 h-4 mr-2" />
@@ -78,9 +82,14 @@ export default function ScholarshipsPage() {
 
       {isFormOpen && (
         <ScholarshipForm 
-          onClose={() => setIsFormOpen(false)} 
+          scholarship={editingScholarship}
+          onClose={() => {
+            setIsFormOpen(false);
+            setEditingScholarship(null);
+          }} 
           onSuccess={() => {
             setIsFormOpen(false);
+            setEditingScholarship(null);
             fetchScholarships();
           }} 
         />
@@ -165,7 +174,13 @@ export default function ScholarshipsPage() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <div className="flex justify-end space-x-2">
-                        <button className="text-gray-400 hover:text-brand-blue p-1 rounded-md hover:bg-blue-50 transition-colors">
+                        <button 
+                          onClick={() => {
+                            setEditingScholarship(scholarship);
+                            setIsFormOpen(true);
+                          }}
+                          className="text-gray-400 hover:text-brand-blue p-1 rounded-md hover:bg-blue-50 transition-colors"
+                        >
                           <Edit2 className="h-4 w-4" />
                         </button>
                         <button onClick={() => handleDelete(scholarship.id)} className="text-gray-400 hover:text-red-600 p-1 rounded-md hover:bg-red-50 transition-colors">
