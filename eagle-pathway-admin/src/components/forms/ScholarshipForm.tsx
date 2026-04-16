@@ -5,26 +5,27 @@ import { supabase } from '@/lib/supabase';
 import { X, Loader2, Image as ImageIcon } from 'lucide-react';
 
 interface ScholarshipFormProps {
+  scholarship?: any; // For editing
   onClose: () => void;
   onSuccess: () => void;
 }
 
-export default function ScholarshipForm({ onClose, onSuccess }: ScholarshipFormProps) {
+export default function ScholarshipForm({ scholarship, onClose, onSuccess }: ScholarshipFormProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   
   const [formData, setFormData] = useState({
-    name: '',
-    organization: '',
-    funding_details: '',
-    funding_type: 'fully_funded',
-    deadline: '',
-    country: '',
-    country_flag: '🌍',
-    degree_levels: ['undergraduate'] as string[],
-    description: '',
-    requirements: '',
-    website_url: ''
+    name: scholarship?.name || '',
+    organization: scholarship?.organization || '',
+    funding_details: scholarship?.funding_details || '',
+    funding_type: scholarship?.funding_type || 'fully_funded',
+    deadline: scholarship?.deadline || '',
+    country: scholarship?.country || '',
+    country_flag: scholarship?.country_flag || '🌍',
+    degree_levels: scholarship?.degree_levels || ['undergraduate'],
+    description: scholarship?.description || '',
+    requirements: (scholarship?.requirements || []).join('\n'),
+    website_url: scholarship?.website_url || ''
   });
 
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -71,8 +72,7 @@ export default function ScholarshipForm({ onClose, onSuccess }: ScholarshipFormP
       }
 
       const reqArray = formData.requirements.split('\n').map(s => s.trim()).filter(Boolean);
-
-      const { error: insertError } = await supabase.from('scholarships').insert([{
+      const dataToSave = {
         name: formData.name,
         organization: formData.organization,
         funding_details: formData.funding_details,
@@ -85,9 +85,13 @@ export default function ScholarshipForm({ onClose, onSuccess }: ScholarshipFormP
         requirements: reqArray,
         website_url: formData.website_url,
         is_active: true
-      }]);
+      };
 
-      if (insertError) throw insertError;
+      const { error: saveError } = scholarship?.id 
+        ? await supabase.from('scholarships').update(dataToSave).eq('id', scholarship.id)
+        : await supabase.from('scholarships').insert([dataToSave]);
+
+      if (saveError) throw saveError;
       onSuccess();
     } catch (err: any) {
       setError(err.message || 'Failed to create scholarship');
@@ -100,7 +104,7 @@ export default function ScholarshipForm({ onClose, onSuccess }: ScholarshipFormP
     <div className="fixed inset-0 z-50 flex justify-end bg-gray-900/50 backdrop-blur-sm animate-in fade-in">
       <div className="w-full max-w-xl h-full bg-white shadow-2xl flex flex-col animate-in slide-in-from-right duration-300">
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-           <h2 className="text-xl font-bold text-gray-900">Add Scholarship</h2>
+           <h2 className="text-xl font-bold text-gray-900">{scholarship ? 'Edit Scholarship' : 'Add Scholarship'}</h2>
            <button onClick={onClose} className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors">
               <X className="w-5 h-5" />
            </button>
@@ -222,7 +226,7 @@ export default function ScholarshipForm({ onClose, onSuccess }: ScholarshipFormP
              Cancel
            </button>
            <button form="scholarship-form" type="submit" disabled={loading} className="flex items-center justify-center px-6 py-2.5 text-sm font-medium text-white bg-brand-blue rounded-xl hover:bg-blue-800 transition-colors disabled:opacity-70 min-w-[140px]">
-             {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Save Scholarship'}
+             {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : scholarship ? 'Update Scholarship' : 'Save Scholarship'}
            </button>
         </div>
       </div>
