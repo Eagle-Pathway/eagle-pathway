@@ -11,11 +11,17 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const checkAuth = async () => {
+      // If we already have a verified admin user, we can skip the initial DB check
+      if (user?.role === 'admin') {
+        setLoading(false);
+        return;
+      }
+
       const { data: { session } } = await supabase.auth.getSession();
       
       if (session) {
         // Verify admin role in database
-        const { data: profile, error } = await supabase
+        const { data: profile } = await supabase
           .from('users')
           .select('role')
           .eq('id', session.user.id)
@@ -37,26 +43,33 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
 
     checkAuth();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      if (!session && pathname !== '/login') {
-        router.push('/login');
-      } else if (session) {
-        // Double check role on state changes too
-        const { data: profile } = await supabase
-          .from('users')
-          .select('role')
-          .eq('id', session.user.id)
-          .single();
-        
-        if (profile?.role !== 'admin' && pathname !== '/login') {
-          await supabase.auth.signOut();
-          router.push('/login');
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_OUT' || !session) {
+        setUser(null);
+        setSession(null);
+        if (pathname !== '/login') router.push('/login');
+      } else if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+        // Only verify role if we don't have it or it's a new session
+        if (user?.id !== session.user.id) {
+          const { data: profile } = await supabase
+            .from('users')
+            .select('role')
+            .eq('id', session.user.id)
+            .single();
+          
+          if (profile?.role === 'admin') {
+            setSession(session);
+            setUser({ id: session.user.id, email: session.user.email, role: 'admin' });
+          } else {
+            await supabase.auth.signOut();
+            router.push('/login');
+          }
         }
       }
     });
 
     return () => subscription.unsubscribe();
-  }, [router, setSession, setUser, setLoading, pathname]);
+  }, [router, setSession, setUser, setLoading, pathname, user]);
 
   if (isLoading) {
     return (
