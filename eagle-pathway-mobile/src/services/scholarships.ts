@@ -37,6 +37,7 @@ export const scholarshipsService = {
     studentId: string;
     scholarshipId: string;
     packageTier: PackageTier;
+    sopContent?: string;
   }): Promise<Application> {
     const { data, error } = await supabase
       .from('applications')
@@ -44,12 +45,20 @@ export const scholarshipsService = {
         student_id: params.studentId,
         scholarship_id: params.scholarshipId,
         package_tier: params.packageTier,
-        status: 'personal_info',
+        status: 'submitted',
+        sop_content: params.sopContent || null,
         sop_draft_number: 0,
       })
       .select('*, scholarship:scholarships(*)')
       .single();
     if (error) throw error;
+
+    await supabase
+      .from('documents')
+      .update({ application_id: data.id })
+      .eq('user_id', params.studentId)
+      .is('application_id', null);
+
     return data as Application;
   },
 
