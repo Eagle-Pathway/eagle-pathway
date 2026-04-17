@@ -16,9 +16,4 @@ export const supabase = createClient(supabaseUrl, supabaseKey, {
     detectSessionInUrl: false,
     flowType: 'pkce',
   },
-  global: {
-    headers: isNewKeyFormat
-      ? { 'sb-publishable-key': supabaseKey }
-      : {},
-  },
 });
