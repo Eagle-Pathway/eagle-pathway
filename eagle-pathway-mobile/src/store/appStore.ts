@@ -37,7 +37,7 @@ interface AppState {
   loadScholarships: (filters?: any) => Promise<void>;
   loadRecommendations: (userId: string) => Promise<void>;
   loadApplications: (userId: string) => Promise<void>;
-  createApplication: (userId: string, scholarshipId: string, packageTier: PackageTier) => Promise<Application>;
+  createApplication: (userId: string, scholarshipId: string, packageTier: PackageTier, sopContent?: string) => Promise<Application>;
   updateSOP: (applicationId: string, content: string) => Promise<void>;
   reviewSOP: (content: string) => Promise<{ score: number; feedback: string; suggestions: string[] }>;
   toggleSaveScholarship: (id: string) => void;
@@ -111,11 +111,12 @@ export const useAppStore = create<AppState>((set, get) => ({
     set({ applications });
   },
 
-  createApplication: async (userId, scholarshipId, packageTier) => {
+  createApplication: async (userId, scholarshipId, packageTier, sopContent) => {
     const application = await scholarshipsService.createApplication({
       studentId: userId,
       scholarshipId,
       packageTier,
+      sopContent,
     });
     set(state => ({ applications: [application, ...state.applications] }));
     return application;
