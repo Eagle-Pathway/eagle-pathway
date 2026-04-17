@@ -48,7 +48,7 @@ export default function ScholarshipForm({ scholarship, onClose, onSuccess }: Sch
     const filePath = `scholarship-thumbnails/${fileName}`;
 
     const { error: uploadError } = await supabase.storage
-      .from('documents') // Shared bucket for all docs
+      .from('scholarship-images')
       .upload(filePath, imageFile);
 
     if (uploadError) throw uploadError;
@@ -71,7 +71,7 @@ export default function ScholarshipForm({ scholarship, onClose, onSuccess }: Sch
         publicImageUrl = await uploadImage() || '';
       }
 
-      const reqArray = formData.requirements.split('\n').map(s => s.trim()).filter(Boolean);
+      const reqArray = formData.requirements.split('\n').map((s: string) => s.trim()).filter(Boolean);
       const dataToSave = {
         name: formData.name,
         organization: formData.organization,
@@ -91,10 +91,15 @@ export default function ScholarshipForm({ scholarship, onClose, onSuccess }: Sch
         ? await supabase.from('scholarships').update(dataToSave).eq('id', scholarship.id)
         : await supabase.from('scholarships').insert([dataToSave]);
 
-      if (saveError) throw saveError;
+      if (saveError) {
+        if (saveError.code === '42501') {
+          throw new Error('Permission denied: You do not have permission to manage scholarships. Please ensure the admin RLS policies are applied.');
+        }
+        throw saveError;
+      }
       onSuccess();
     } catch (err: any) {
-      setError(err.message || 'Failed to create scholarship');
+      setError(err.message || 'Failed to save scholarship');
     } finally {
       setLoading(false);
     }
