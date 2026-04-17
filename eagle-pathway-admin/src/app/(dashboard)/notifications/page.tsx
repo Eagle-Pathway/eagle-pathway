@@ -10,9 +10,9 @@ export default function NotificationsPage() {
   
   const [formData, setFormData] = useState({
     title: '',
-    message: '',
+    body: '',
     audience: 'all', // all, student, tutor
-    type: 'announcement'
+    type: 'application_update'
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -44,7 +44,7 @@ export default function NotificationsPage() {
       const notifications = targetUsers.map(u => ({
         user_id: u.id,
         title: formData.title,
-        message: formData.message,
+        body: formData.body,
         type: formData.type,
         is_read: false
       }));
@@ -55,7 +55,7 @@ export default function NotificationsPage() {
       if (insertError) throw insertError;
 
       setSuccess(`Successfully broadcasted to ${targetUsers.length} users! 🎉`);
-      setFormData({ title: '', message: '', audience: 'all', type: 'announcement' });
+      setFormData({ title: '', body: '', audience: 'all', type: 'application_update' });
       
     } catch (err: any) {
       setError(err.message || 'Failed to send broadcast');
@@ -112,7 +112,7 @@ export default function NotificationsPage() {
                <div className="md:col-span-2">
                  <label className="block text-sm font-semibold text-gray-700 mb-1.5">Message Content</label>
                  <textarea 
-                   required name="message" value={formData.message} onChange={handleChange} rows={4} 
+                   required name="body" value={formData.body} onChange={handleChange} rows={4} 
                    className="w-full px-4 py-3 bg-gray-50/50 rounded-xl border border-gray-200 focus:ring-2 focus:ring-purple-600/20 focus:border-purple-600 transition-colors resize-none text-gray-900 placeholder-gray-400" 
                    placeholder="Detailed message that appears when they open the notification..."
                  ></textarea>
@@ -141,16 +141,15 @@ export default function NotificationsPage() {
                    name="type" value={formData.type} onChange={handleChange} 
                    className="w-full px-4 py-3 bg-gray-50/50 rounded-xl border border-gray-200 focus:ring-2 focus:ring-purple-600/20 focus:border-purple-600 appearance-none text-gray-900"
                  >
-                   <option value="announcement">Announcement</option>
-                   <option value="alert">System Alert</option>
-                   <option value="promotion">Promotion / Update</option>
+                   <option value="application_update">General Announcement</option>
+                   <option value="scholarship_alert">Scholarship Alert</option>
                  </select>
                </div>
              </div>
 
              <div className="pt-4 flex justify-end">
                <button 
-                 type="submit" disabled={loading || !formData.title || !formData.message} 
+                 type="submit" disabled={loading || !formData.title || !formData.body} 
                  className="flex items-center justify-center px-8 py-3.5 text-sm font-semibold text-white bg-purple-600 rounded-xl hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-600/50 shadow-lg shadow-purple-600/20 transition-all disabled:opacity-60 disabled:cursor-not-allowed transform active:scale-95 m-1"
                >
                  {loading ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : <Send className="w-4 h-4 mr-2" />}
