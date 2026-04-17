@@ -25,8 +25,13 @@ export function ScholarshipDetailScreen() {
 
   useEffect(() => {
     if (scholarshipId) {
+      setLoading(true);
       scholarshipsService.getScholarshipById(scholarshipId)
         .then(setScholarship)
+        .catch(err => {
+          console.error('Failed to load scholarship:', err);
+          Alert.alert('Error', 'Failed to load scholarship details. Please check your connection.');
+        })
         .finally(() => setLoading(false));
     }
   }, [scholarshipId]);
@@ -253,6 +258,7 @@ export function ApplyScreen() {
   const { createApplication, loadDocuments, uploadDocument, documents } = useAppStore();
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState<number>(1);
+  const [sopContent, setSopContent] = useState('');
 
   useEffect(() => { if (user) loadDocuments(user.id); }, [user?.id]);
 
@@ -295,7 +301,7 @@ export function ApplyScreen() {
     if (!user || !scholarshipId || !packageTier) return;
     setLoading(true);
     try {
-      const app = await createApplication(user.id, scholarshipId, packageTier);
+      const app = await createApplication(user.id, scholarshipId, packageTier, sopContent);
       Alert.alert('Application Started! 🎉', 'Your consultant has been notified and will reach out shortly.', [
         { text: 'View Tracker', onPress: () => router.push('/tracker') },
       ]);
@@ -418,11 +424,8 @@ export function ApplyScreen() {
               style={applyStyles.sopInput}
               multiline
               placeholder="Start writing your statement of purpose here..."
-              value={useAppStore.getState().applications.find(a => a.scholarship_id === scholarshipId)?.sop_content || ''}
-              onChangeText={(txt) => {
-                const app = useAppStore.getState().applications.find(a => a.scholarship_id === scholarshipId);
-                if (app) useAppStore.getState().updateSOP(app.id, txt);
-              }}
+              value={sopContent}
+              onChangeText={setSopContent}
               textAlignVertical="top"
             />
 
@@ -430,8 +433,7 @@ export function ApplyScreen() {
               title="✨ Get AI Feedback" 
               variant="outline" 
               onPress={async () => {
-                const content = useAppStore.getState().applications.find(a => a.scholarship_id === scholarshipId)?.sop_content;
-                if (!content || content.length < 50) {
+                if (!sopContent || sopContent.length < 50) {
                   Alert.alert('Too short', 'Please write at least 50 characters to get meaningful feedback.');
                   return;
                 }
