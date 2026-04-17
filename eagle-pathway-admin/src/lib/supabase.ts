@@ -6,13 +6,7 @@ const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY as string;
 // Supports both new sb_publishable_ keys and legacy eyJ... anon keys
 const isNewKeyFormat = supabaseKey?.startsWith('sb_publishable_');
 
-export const supabase = createClient(supabaseUrl, supabaseKey, {
-  global: {
-    headers: isNewKeyFormat
-      ? { 'sb-publishable-key': supabaseKey }
-      : {},
-  },
-});
+export const supabase = createClient(supabaseUrl, supabaseKey);
 
 // Diagnostic logging for development
 if (typeof window !== 'undefined') {
