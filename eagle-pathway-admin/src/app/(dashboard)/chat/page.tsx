@@ -73,40 +73,51 @@ export default function AdminChatPage() {
     if (!user) return;
     setLoading(true);
     
-    // Fetch unique users involved in messages
-    const { data: rawMessages } = await supabase
-      .from('messages')
-      .select('*, sender:users!messages_sender_id_fkey(id, full_name, email, role), recipient:users!messages_recipient_id_fkey(id, full_name, email, role)')
-      .or(`sender_id.eq.${user.id},recipient_id.eq.${user.id}`)
-      .order('created_at', { ascending: false });
+    try {
+      // Fetch unique users involved in messages
+      const { data: rawMessages, error } = await supabase
+        .from('messages')
+        .select('*, sender:users!messages_sender_id_fkey(id, full_name, email, role), recipient:users!messages_recipient_id_fkey(id, full_name, email, role)')
+        .or(`sender_id.eq.${user.id},recipient_id.eq.${user.id}`)
+        .order('created_at', { ascending: false });
 
-    if (!rawMessages) return;
+      if (error) throw error;
+      if (!rawMessages) return;
 
-    const userMap = new Map<string, UserPreview>();
-    rawMessages.forEach((msg: any) => {
-      const otherUser = msg.sender_id === user.id ? msg.recipient : msg.sender;
-      if (!otherUser) return;
-      if (!userMap.has(otherUser.id)) {
-        userMap.set(otherUser.id, {
-          ...otherUser,
-          last_message: msg.content,
-          last_time: msg.created_at
-        });
-      }
-    });
+      const userMap = new Map<string, UserPreview>();
+      rawMessages.forEach((msg: any) => {
+        const otherUser = msg.sender_id === user.id ? msg.recipient : msg.sender;
+        if (!otherUser) return;
+        if (!userMap.has(otherUser.id)) {
+          userMap.set(otherUser.id, {
+            ...otherUser,
+            last_message: msg.content,
+            last_time: msg.created_at
+          });
+        }
+      });
 
-    setConversations(Array.from(userMap.values()));
-    setLoading(false);
+      setConversations(Array.from(userMap.values()));
+    } catch (err: any) {
+      console.error('Error fetching conversations:', err);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const fetchMessages = async (otherId: string) => {
-    const { data } = await supabase
-      .from('messages')
-      .select('*')
-      .or(`and(sender_id.eq.${user?.id},recipient_id.eq.${otherId}),and(sender_id.eq.${otherId},recipient_id.eq.${user?.id})`)
-      .order('created_at', { ascending: true });
+    try {
+      const { data, error } = await supabase
+        .from('messages')
+        .select('*')
+        .or(`and(sender_id.eq.${user?.id},recipient_id.eq.${otherId}),and(sender_id.eq.${otherId},recipient_id.eq.${user?.id})`)
+        .order('created_at', { ascending: true });
 
-    if (data) setMessages(data);
+      if (error) throw error;
+      if (data) setMessages(data);
+    } catch (err: any) {
+      console.error('Error fetching messages:', err);
+    }
   };
 
   const handleSendMessage = async (e: React.FormEvent) => {
