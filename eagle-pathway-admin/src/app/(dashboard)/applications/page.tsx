@@ -22,12 +22,15 @@ interface Application {
   consultant_id: string | null;
   status: string;
   package_tier: string;
+  notes: string | null;
+  sop_content: string | null;
   created_at: string;
   updated_at: string;
   // Joins
   student?: { full_name: string; email: string };
   scholarship?: { name: string; organization: string };
   consultant?: { full_name: string };
+  documents?: any[];
 }
 
 interface Consultant {
@@ -50,6 +53,9 @@ export default function ApplicationsPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [selectedScholarship, setSelectedScholarship] = useState('all');
+  const [selectedApp, setSelectedApp] = useState<Application | null>(null);
+  const [notesInput, setNotesInput] = useState('');
+  const [savingNotes, setSavingNotes] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -60,7 +66,7 @@ export default function ApplicationsPage() {
     // Fetch applications with joins
     const { data: appData, error: appError } = await supabase
       .from('applications')
-      .select('*, student:users!applications_student_id_fkey(full_name, email), scholarship:scholarships(name, organization), consultant:users!applications_consultant_id_fkey(full_name)')
+      .select('*, student:users!applications_student_id_fkey(full_name, email), scholarship:scholarships(name, organization), consultant:users!applications_consultant_id_fkey(full_name), documents(*)')
       .order('updated_at', { ascending: false });
 
     // Fetch potential consultants (users with role tutor or admin)
@@ -98,7 +104,25 @@ export default function ApplicationsPage() {
 
     if (!error) {
       setApplications(prev => prev.map(app => app.id === appId ? { ...app, status } : app));
+      if (selectedApp?.id === appId) setSelectedApp(prev => prev ? { ...prev, status } : null);
     }
+  };
+
+  const handleSaveNotes = async () => {
+    if (!selectedApp) return;
+    setSavingNotes(true);
+    const { error } = await supabase
+      .from('applications')
+      .update({ notes: notesInput })
+      .eq('id', selectedApp.id);
+      
+    if (!error) {
+      setApplications(prev => prev.map(app => app.id === selectedApp.id ? { ...app, notes: notesInput } : app));
+      setSelectedApp({ ...selectedApp, notes: notesInput });
+    } else {
+      alert('Failed to save notes: ' + error.message);
+    }
+    setSavingNotes(false);
   };
 
   const filtered = applications.filter(app => {
@@ -168,14 +192,20 @@ export default function ApplicationsPage() {
             
             <div className="flex-1 space-y-3 min-h-[500px] bg-gray-50/50 rounded-2xl p-2 border border-dashed border-gray-200">
               {filtered.filter(a => a.status === stage.id).map(app => (
-                <div key={app.id} className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow group">
+                <div key={app.id} 
+                  onClick={(e) => {
+                    if ((e.target as HTMLElement).closest('button') || (e.target as HTMLElement).closest('select')) return;
+                    setSelectedApp(app);
+                    setNotesInput(app.notes || '');
+                  }}
+                  className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow group cursor-pointer"
+                >
                   <div className="flex justify-between items-start mb-2">
                     <span className={`text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded ${
                       app.package_tier === 'premium' ? 'bg-brand-gold/10 text-brand-gold' : 'bg-gray-100 text-gray-500'
                     }`}>
                       {app.package_tier}
                     </span>
-                    <button className="text-gray-300 group-hover:text-gray-500"><MoreVertical className="w-4 h-4" /></button>
                   </div>
                   
                   <h4 className="font-bold text-gray-900 text-sm mb-1">{app.student?.full_name}</h4>
@@ -234,6 +264,108 @@ export default function ApplicationsPage() {
           </div>
         ))}
       </div>
+      {/* Application Detail Modal */}
+      {selectedApp && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/40 backdrop-blur-sm animate-in fade-in zoom-in-95 duration-200">
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-5xl max-h-[90vh] flex flex-col overflow-hidden ring-1 ring-black/5">
+            <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+              <div className="flex items-center gap-4">
+                <div className="h-10 w-10 bg-brand-blue rounded-xl flex items-center justify-center text-white shadow-lg shadow-brand-blue/20">
+                  <Briefcase className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-gray-900">{selectedApp.student?.full_name}</h3>
+                  <p className="text-sm text-gray-500 uppercase tracking-wide font-medium">
+                    {selectedApp.scholarship?.name} · {selectedApp.package_tier} Package
+                  </p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setSelectedApp(null)}
+                className="text-gray-400 hover:text-gray-600 p-2 hover:bg-gray-100 rounded-full transition-all"
+              >
+                <AlertCircle className="w-6 h-6" />
+              </button>
+            </div>
+            
+            <div className="flex-1 overflow-y-auto p-6 bg-gray-50/30 flex flex-col lg:flex-row gap-6">
+              
+              <div className="flex-1 space-y-6">
+                <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
+                  <h4 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
+                    <Filter className="w-4 h-4 text-brand-blue" />
+                    Statement of Purpose (SOP)
+                  </h4>
+                  {selectedApp.sop_content ? (
+                    <div className="bg-gray-50 p-4 rounded-xl text-sm text-gray-700 leading-relaxed max-h-64 overflow-y-auto whitespace-pre-wrap border border-gray-100">
+                      {selectedApp.sop_content}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-gray-400 italic">No SOP submitted yet.</p>
+                  )}
+                </div>
+
+                <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
+                  <h4 className="font-bold text-gray-900 mb-4">Uploaded Documents</h4>
+                  {selectedApp.documents && selectedApp.documents.length > 0 ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {selectedApp.documents.map(doc => (
+                        <a key={doc.id} href={doc.file_url} target="_blank" rel="noreferrer" className="flex items-center gap-3 p-3 rounded-xl border border-gray-100 hover:bg-gray-50 transition-colors">
+                          <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${doc.status === 'approved' ? 'bg-green-100 text-green-600' : 'bg-brand-blue/10 text-brand-blue'}`}>
+                            <CheckCircle2 className="w-4 h-4" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-semibold text-gray-900 truncate">{doc.file_name}</p>
+                            <p className="text-xs text-gray-500 uppercase">{doc.document_type.replace('_', ' ')}</p>
+                          </div>
+                        </a>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-sm text-gray-400 italic">No documents linked to this application.</p>
+                  )}
+                </div>
+              </div>
+
+              <div className="lg:w-96 flex flex-col gap-6">
+                <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
+                  <h4 className="font-bold text-gray-900 mb-4">Consultant Feedback</h4>
+                  <p className="text-xs text-gray-500 mb-2">Leave notes for the student. They will see this in their app.</p>
+                  <textarea 
+                    value={notesInput}
+                    onChange={(e) => setNotesInput(e.target.value)}
+                    className="w-full text-sm p-3 rounded-xl border border-gray-200 focus:ring-brand-blue focus:border-brand-blue min-h-[150px] mb-3"
+                    placeholder="E.g. Your SOP needs more detail on your research..."
+                  />
+                  <button 
+                    onClick={handleSaveNotes}
+                    disabled={savingNotes}
+                    className="w-full py-2 bg-brand-blue text-white rounded-xl text-sm font-bold shadow-sm hover:bg-blue-800 disabled:opacity-50"
+                  >
+                    {savingNotes ? 'Saving...' : 'Save Notes'}
+                  </button>
+                </div>
+
+                <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
+                  <h4 className="font-bold text-gray-900 mb-4">Quick Actions</h4>
+                  <div className="space-y-2">
+                    {STAGES.map(s => (
+                       <button 
+                          key={s.id}
+                          onClick={() => handleUpdateStatus(selectedApp.id, s.id)}
+                          className={`w-full py-2.5 rounded-xl text-sm font-bold text-left px-4 border ${selectedApp.status === s.id ? 'bg-brand-blue text-white border-brand-blue' : 'bg-gray-50 text-gray-600 hover:bg-gray-100 border-transparent'}`}
+                       >
+                          Move to {s.label}
+                       </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+              
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
