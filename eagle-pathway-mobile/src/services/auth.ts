@@ -72,6 +72,19 @@ export const authService = {
       .select()
       .single();
     if (error) throw error;
+    
+    // Automatically initialize tutor profile for tutors
+    if (role === 'tutor') {
+      const { error: tutorError } = await supabase
+        .from('tutors')
+        .insert({
+          user_id: userId,
+          bio: '',
+          is_verified: false,
+        });
+      if (tutorError) console.error('Failed to initialize tutor profile:', tutorError);
+    }
+
     return data as User;
   },
 
