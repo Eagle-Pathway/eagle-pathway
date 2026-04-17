@@ -33,34 +33,51 @@ export default function OverviewPage() {
   useEffect(() => {
     async function fetchStats() {
       setLoading(true);
-      const [
-        usersRes, tutorsRes, scholarshipsRes, bookingsRes,
-        appRes, studentRes, tutorRoleRes, adminRes
-      ] = await Promise.allSettled([
-        supabase.from('users').select('*', { count: 'exact', head: true }),
-        supabase.from('tutors').select('*', { count: 'exact', head: true }).eq('is_verified', false),
-        supabase.from('scholarships').select('*', { count: 'exact', head: true }).eq('is_active', true),
-        supabase.from('bookings').select('*', { count: 'exact', head: true }),
-        supabase.from('applications').select('*', { count: 'exact', head: true }).neq('status', 'accepted'),
-        supabase.from('users').select('*', { count: 'exact', head: true }).eq('role', 'student'),
-        supabase.from('users').select('*', { count: 'exact', head: true }).eq('role', 'tutor'),
-        supabase.from('users').select('*', { count: 'exact', head: true }).eq('role', 'admin')
-      ]);
+      
+      try {
+        const [
+          usersRes, 
+          tutorsRes, 
+          scholarshipsRes, 
+          bookingsRes,
+          appRes,
+          roleCountsRes
+        ] = await Promise.all([
+          supabase.from('users').select('*', { count: 'exact', head: true }),
+          supabase.from('tutors').select('*', { count: 'exact', head: true }).eq('is_verified', false),
+          supabase.from('scholarships').select('*', { count: 'exact', head: true }).eq('is_active', true),
+          supabase.from('bookings').select('*', { count: 'exact', head: true }),
+          supabase.from('applications').select('*', { count: 'exact', head: true }).neq('status', 'accepted'),
+          // Fetch roles in one go for the pie chart
+          supabase.from('users').select('role')
+        ]);
 
-      setCounts({
-        users: usersRes.status === 'fulfilled' ? usersRes.value.count || 0 : 0,
-        tutorsPending: tutorsRes.status === 'fulfilled' ? tutorsRes.value.count || 0 : 0,
-        activeScholarships: scholarshipsRes.status === 'fulfilled' ? scholarshipsRes.value.count || 0 : 0,
-        bookings: bookingsRes.status === 'fulfilled' ? bookingsRes.value.count || 0 : 0,
-        applicationsPending: appRes.status === 'fulfilled' ? appRes.value.count || 0 : 0
-      });
+        const totalUsers = usersRes.count || 0;
+        
+        // Process role data locally to avoid 3 separate count queries
+        const roles = roleCountsRes.data || [];
+        const students = roles.filter(r => r.role === 'student').length;
+        const tutors = roles.filter(r => r.role === 'tutor').length;
+        const admins = roles.filter(r => r.role === 'admin').length;
 
-      setRoleData([
-        { name: 'Students', value: studentRes.status === 'fulfilled' ? studentRes.value.count || 0 : 0 },
-        { name: 'Tutors', value: tutorRoleRes.status === 'fulfilled' ? tutorRoleRes.value.count || 0 : 0 },
-        { name: 'Admins', value: adminRes.status === 'fulfilled' ? adminRes.value.count || 0 : 0 },
-      ]);
-      setLoading(false);
+        setCounts({
+          users: totalUsers,
+          tutorsPending: tutorsRes.count || 0,
+          activeScholarships: scholarshipsRes.count || 0,
+          bookings: bookingsRes.count || 0,
+          applicationsPending: appRes.count || 0
+        });
+
+        setRoleData([
+          { name: 'Students', value: students },
+          { name: 'Tutors', value: tutors },
+          { name: 'Admins', value: admins },
+        ]);
+      } catch (err) {
+        console.error('Error fetching dashboard stats:', err);
+      } finally {
+        setLoading(false);
+      }
     }
     fetchStats();
   }, []);
