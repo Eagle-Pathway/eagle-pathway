@@ -16,6 +16,7 @@
     "@react-navigation/native-stack": "^7.3.16",
     "@supabase/supabase-js": "^2.49.0",
     "babel-plugin-module-resolver": "^5.0.2",
+    "base64-arraybuffer": "^1.0.2",
     "date-fns": "^3.6.0",
     "expo": "^54.0.0",
     "expo-constants": "~18.0.13",
