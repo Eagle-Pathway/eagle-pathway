@@ -84,7 +84,9 @@ export default function ScholarshipForm({ scholarship, onClose, onSuccess }: Sch
         description: formData.description,
         requirements: reqArray,
         website_url: formData.website_url,
-        is_active: true
+        is_active: true,
+        // Persist the uploaded image URL; omit if no new image was selected
+        ...(publicImageUrl ? { image_url: publicImageUrl } : {}),
       };
 
       const { error: saveError } = scholarship?.id 
