@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { User, UserRole } from '../types';
 import { authService } from '../services/auth';
+import { notificationsService } from '../services/notifications';
 
 const BYPASS_PHONE_VERIFY =
   __DEV__ && process.env.EXPO_PUBLIC_BYPASS_PHONE_VERIFY === 'true';
@@ -54,14 +55,15 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       if (data.session) {
         set({ session: data.session });
         
+        let profile;
         try {
-          const profile = await authService.getProfile(data.session.user.id);
+          profile = await authService.getProfile(data.session.user.id);
           set({ user: profile, isAuthenticated: true });
         } catch (e) {
           // Profile doesn't exist, create it from metadata
           const metadata = data.session.user.user_metadata;
           if (metadata) {
-            const profile = await authService.createProfile(
+            profile = await authService.createProfile(
               data.session.user.id,
               metadata.full_name || 'User',
               metadata.phone || '',
@@ -73,6 +75,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
             throw new Error('User profile could not be initialized.');
           }
         }
+
+        // Register push token in the background (non-blocking)
+        const userId = data.session.user.id;
+        notificationsService.requestPermission().then(granted => {
+          if (granted) notificationsService.registerPushToken(userId);
+        }).catch(e => console.log('Push registration skipped:', e));
       }
     } finally {
       set({ isLoading: false });
