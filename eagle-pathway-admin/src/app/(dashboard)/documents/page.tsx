@@ -37,6 +37,7 @@ export default function DocumentsPage() {
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [selectedDoc, setSelectedDoc] = useState<UserDocument | null>(null);
+  const [reviewerNotes, setReviewerNotes] = useState('');
 
   useEffect(() => {
     fetchDocuments();
@@ -58,12 +59,28 @@ export default function DocumentsPage() {
   const handleUpdateStatus = async (id: string, status: 'approved' | 'rejected') => {
     const { error } = await supabase
       .from('documents')
-      .update({ status })
+      .update({ status, reviewer_notes: status === 'rejected' ? reviewerNotes : null })
       .eq('id', id);
 
     if (!error) {
-      setDocuments(prev => prev.map(doc => doc.id === id ? { ...doc, status } : doc));
-      if (selectedDoc?.id === id) setSelectedDoc(null);
+      setDocuments(prev => prev.map(doc => doc.id === id ? { ...doc, status, reviewer_notes: status === 'rejected' ? reviewerNotes : undefined } : doc));
+      
+      // Also send a push notification to the student about the status
+      await supabase.from('notifications').insert({
+        user_id: selectedDoc?.user_id,
+        type: status === 'approved' ? 'document_approved' : 'document_rejected',
+        title: status === 'approved' ? 'Document Approved 🟢' : 'Document Rejected 🔴',
+        body: status === 'approved' 
+          ? `Your ${selectedDoc?.document_type?.replace('_',' ')} has been verified.` 
+          : `Your ${selectedDoc?.document_type?.replace('_',' ')} was rejected. Reason: ${reviewerNotes || 'Please upload a clearer copy.'}`,
+      });
+
+      if (selectedDoc?.id === id) {
+        setSelectedDoc(null);
+        setReviewerNotes('');
+      }
+    } else {
+      alert('Failed to update document status.');
     }
   };
 
@@ -268,7 +285,10 @@ export default function DocumentsPage() {
                 </div>
               </div>
               <button 
-                onClick={() => setSelectedDoc(null)}
+                onClick={() => {
+                  setSelectedDoc(null);
+                  setReviewerNotes('');
+                }}
                 className="text-gray-400 hover:text-gray-600 p-2 hover:bg-gray-100 rounded-full transition-all"
               >
                 <XCircle className="w-7 h-7" />
@@ -317,6 +337,16 @@ export default function DocumentsPage() {
                         </div>
                       ))}
                     </div>
+                  </div>
+
+                  <div className="flex flex-col">
+                    <label className="text-xs font-bold text-gray-600 uppercase tracking-wider block mb-2">Admin Notes (Required for Rejection)</label>
+                    <textarea 
+                      value={reviewerNotes}
+                      onChange={(e) => setReviewerNotes(e.target.value)}
+                      placeholder="E.g., The scan is too blurry to read the university seal..."
+                      className="w-full text-sm border-gray-200 rounded-xl p-3 focus:ring-brand-blue focus:border-brand-blue min-h-[100px] resize-none"
+                    />
                   </div>
                 </div>
                 
