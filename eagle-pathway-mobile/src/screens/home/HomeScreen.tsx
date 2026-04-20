@@ -1,7 +1,7 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity,
-  StyleSheet, RefreshControl,
+  StyleSheet, RefreshControl, Modal, TextInput, ActivityIndicator, Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -16,26 +16,34 @@ export default function HomeScreen() {
   const { user } = useAuthStore();
   const { 
     bookings, applications, unreadCount, tasks, recommendedScholarships,
+    tutorPayouts, tutorProfile, isLoadingPayouts,
     loadBookings, loadTutorBookings, loadApplications, loadNotifications, loadTasks, toggleTask,
-    updateBookingStatus, loadRecommendations
+    updateBookingStatus, loadRecommendations, loadTutorPayouts, submitPayoutRequest
   } = useAppStore();
-  const [refreshing, setRefreshing] = React.useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [isPayoutModalVisible, setIsPayoutModalVisible] = useState(false);
+  const [payoutForm, setPayoutForm] = useState({
+    amount: '',
+    bankName: '',
+    accountNumber: '',
+    accountName: '',
+  });
 
   // 1. All Hooks Must Be At The Top
   const isTutor = user?.role?.toLowerCase() === 'tutor';
 
-  const activeApplications = React.useMemo(() => 
-    applications.filter(a => !['accepted', 'rejected'].includes(a.status)),
+  const activeApplications = useMemo(() => 
+    (applications || []).filter(a => !['accepted', 'rejected'].includes(a.status)),
     [applications]
   );
 
-  const readinessScore = React.useMemo(() => {
+  const readinessScore = useMemo(() => {
     if (!user) return 0;
     let score = 0;
-    if (activeApplications.length > 0) score += 30;
-    if (bookings.length > 0) score += 20;
-    if (tasks.filter(t => t.status === 'completed').length > 0) score += 10;
-    score += Math.min(applications.length * 10, 20);
+    if ((activeApplications || []).length > 0) score += 30;
+    if ((bookings || []).length > 0) score += 20;
+    if ((tasks || []).filter(t => t.status === 'completed').length > 0) score += 10;
+    score += Math.min((applications || []).length * 10, 20);
     return Math.min(score + 20, 100);
   }, [user, activeApplications, bookings, applications, tasks]);
 
@@ -44,6 +52,7 @@ export default function HomeScreen() {
     const tasks = [loadNotifications(user.id)];
     if (isTutor) {
       tasks.push(loadTutorBookings(user.id));
+      tasks.push(loadTutorPayouts(user.id));
     } else {
       tasks.push(loadBookings(user.id));
       tasks.push(loadApplications(user.id));
@@ -73,8 +82,38 @@ export default function HomeScreen() {
   };
 
   if (isTutor) {
-    const todaySessions = bookings.filter(b => b.status === 'confirmed');
-    const pendingSessions = bookings.filter(b => b.status === 'pending');
+    const todaySessions = (bookings || []).filter(b => b.status === 'confirmed');
+    const pendingSessions = (bookings || []).filter(b => b.status === 'pending');
+    
+    // Calculate earnings from profile
+    const earningsGross = (tutorProfile?.hourly_rate || 0) * (tutorProfile?.total_sessions || 0);
+    const earningsNet = earningsGross * 0.85;
+    const pendingPayoutsAmount = (tutorPayouts || []).filter(p => p.status === 'pending' || p.status === 'processing').reduce((sum, p) => sum + (p.amount || 0), 0);
+    const availableBalance = Math.max(0, earningsNet - pendingPayoutsAmount);
+
+    const handlePayoutRequest = async () => {
+      const amt = parseInt(payoutForm.amount);
+      if (!amt || amt <= 0) return Alert.alert('Error', 'Please enter a valid amount');
+      if (amt > availableBalance) return Alert.alert('Error', 'Amount exceeds available balance');
+      if (!payoutForm.bankName || !payoutForm.accountNumber || !payoutForm.accountName) {
+        return Alert.alert('Error', 'Please fill all bank details');
+      }
+
+      try {
+        await submitPayoutRequest({
+          tutorId: tutorProfile?.id || '',
+          amount: amt,
+          bankName: payoutForm.bankName,
+          accountNumber: payoutForm.accountNumber,
+          accountName: payoutForm.accountName,
+        });
+        setIsPayoutModalVisible(false);
+        setPayoutForm({ amount: '', bankName: '', accountNumber: '', accountName: '' });
+        Alert.alert('Success', 'Payout request submitted successfully');
+      } catch (e) {
+        Alert.alert('Error', 'Failed to submit request');
+      }
+    };
 
     return (
       <SafeAreaView style={CommonStyles.screenBg} edges={['top']}>
@@ -95,17 +134,32 @@ export default function HomeScreen() {
             </View>
             <View style={styles.quickCards}>
               <View style={[styles.quickCard, { backgroundColor: '#1e3a8a' }]}>
-                <Text style={styles.quickCardLabel}>Total Earnings</Text>
-                <Text style={[styles.userName, { fontSize: 24 }]}>ETB 14,200</Text>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                  <View>
+                    <Text style={styles.quickCardLabel}>Available Balance</Text>
+                    <Text style={[styles.userName, { fontSize: 22 }]}>ETB {availableBalance.toLocaleString()}</Text>
+                  </View>
+                  <TouchableOpacity 
+                    style={styles.withdrawBtn} 
+                    onPress={() => setIsPayoutModalVisible(true)}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={styles.withdrawBtnText}>Withdraw</Text>
+                  </TouchableOpacity>
+                </View>
+                <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 10, marginTop: 4 }}>
+                  Net earnings (85%) after platform fee
+                </Text>
               </View>
               <View style={styles.quickCard}>
                 <Text style={styles.quickCardLabel}>Rating</Text>
-                <Text style={[styles.userName, { fontSize: 24 }]}>4.9 ⭐</Text>
+                <Text style={[styles.userName, { fontSize: 24 }]}>{tutorProfile?.rating || '5.0'} ⭐</Text>
               </View>
             </View>
           </View>
 
           <SectionTitle title="Today's Sessions" />
+          {/* ... existing session cards logic ... */}
           {todaySessions.length === 0 ? (
             <View style={{ padding: 20, alignItems: 'center' }}><Text style={{ color: Colors.textSecondary }}>No sessions scheduled for today.</Text></View>
           ) : (
@@ -162,7 +216,104 @@ export default function HomeScreen() {
               </View>
             ))
           )}
+
+          {tutorPayouts.length > 0 && (
+            <>
+              <SectionTitle title="Recent Payouts" />
+              {tutorPayouts.slice(0, 3).map(p => (
+                <View key={p.id} style={styles.payoutCard}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.payoutTitle}>ETB {p.amount.toLocaleString()}</Text>
+                    <Text style={styles.payoutSub}>{p.bank_name} · {format(new Date(p.created_at), 'MMM d, yyyy')}</Text>
+                  </View>
+                  <View style={[styles.statusBadge, 
+                    p.status === 'completed' ? styles.statusBadgeDone : 
+                    p.status === 'rejected' ? styles.statusBadgeErr : 
+                    styles.statusBadgePending
+                  ]}>
+                    <Text style={[styles.statusText, 
+                      p.status === 'completed' ? styles.statusTextDone : 
+                      p.status === 'rejected' ? styles.statusTextErr : 
+                      styles.statusTextPending
+                    ]}>
+                      {p.status.toUpperCase()}
+                    </Text>
+                  </View>
+                </View>
+              ))}
+            </>
+          )}
+
+          <View style={{ height: 40 }} />
         </ScrollView>
+
+        {/* Withdraw Modal */}
+        <Modal
+          visible={isPayoutModalVisible}
+          animationType="slide"
+          transparent={true}
+          onRequestClose={() => setIsPayoutModalVisible(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Request Payout</Text>
+                <TouchableOpacity onPress={() => setIsPayoutModalVisible(false)}>
+                  <Text style={{ fontSize: 20 }}>✕</Text>
+                </TouchableOpacity>
+              </View>
+
+              <Text style={styles.modalLabel}>Amount to Withdraw (ETB)</Text>
+              <TextInput
+                style={styles.modalInput}
+                keyboardType="numeric"
+                placeholder="e.g. 5000"
+                value={payoutForm.amount}
+                onChangeText={t => setPayoutForm(f => ({ ...f, amount: t }))}
+              />
+              <Text style={{ fontSize: 12, color: Colors.textSecondary, marginBottom: 16 }}>
+                Maximum available: ETB {availableBalance.toLocaleString()}
+              </Text>
+
+              <Text style={styles.modalLabel}>Bank Name</Text>
+              <TextInput
+                style={styles.modalInput}
+                placeholder="e.g. Commercial Bank of Ethiopia"
+                value={payoutForm.bankName}
+                onChangeText={t => setPayoutForm(f => ({ ...f, bankName: t }))}
+              />
+
+              <Text style={styles.modalLabel}>Account Holder Name</Text>
+              <TextInput
+                style={styles.modalInput}
+                placeholder="Name as it appears on account"
+                value={payoutForm.accountName}
+                onChangeText={t => setPayoutForm(f => ({ ...f, accountName: t }))}
+              />
+
+              <Text style={styles.modalLabel}>Account Number</Text>
+              <TextInput
+                style={styles.modalInput}
+                keyboardType="numeric"
+                placeholder="Enter account number"
+                value={payoutForm.accountNumber}
+                onChangeText={t => setPayoutForm(f => ({ ...f, accountNumber: t }))}
+              />
+
+              <TouchableOpacity 
+                style={[styles.submitBtn, isLoadingPayouts && { opacity: 0.7 }]}
+                onPress={handlePayoutRequest}
+                disabled={isLoadingPayouts}
+              >
+                {isLoadingPayouts ? (
+                  <ActivityIndicator color={Colors.white} />
+                ) : (
+                  <Text style={styles.submitBtnText}>Submit Request</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
       </SafeAreaView>
     );
   }
@@ -276,9 +427,21 @@ export default function HomeScreen() {
                   <View style={styles.recFlag}><Text style={{ fontSize: 24 }}>{s.country_flag}</Text></View>
                   <Text style={styles.recName} numberOfLines={1}>{s.name}</Text>
                   <Text style={styles.recOrg} numberOfLines={1}>{s.organization}</Text>
-                  <View style={styles.recPill}>
-                    <Text style={styles.recPillText}>{s.funding_type === 'fully_funded' ? 'Fully Funded' : 'Partial'}</Text>
+                  <View style={{ flexDirection: 'row', gap: 4, flexWrap: 'wrap' }}>
+                    <View style={styles.recPill}>
+                      <Text style={styles.recPillText}>{s.funding_type === 'fully_funded' ? 'Fully Funded' : 'Partial'}</Text>
+                    </View>
+                    {(s as any).matchScore && (
+                      <View style={[styles.recPill, { backgroundColor: Colors.goldLight }]}>
+                        <Text style={[styles.recPillText, { color: Colors.goldDark }]}>✨ {(s as any).matchScore}% Match</Text>
+                      </View>
+                    )}
                   </View>
+                  {(s as any).matchReason && (
+                    <Text style={{ fontSize: 9, color: Colors.textSecondary, marginTop: 4 }} numberOfLines={1}>
+                      💡 {(s as any).matchReason}
+                    </Text>
+                  )}
                 </TouchableOpacity>
               ))}
             </ScrollView>
@@ -362,9 +525,9 @@ export default function HomeScreen() {
         <SectionTitle title="Your Stats" />
         <View style={styles.statsRow}>
           {[
-            { num: bookings.filter(b => b.status === 'completed').length, label: 'Sessions Done' },
-            { num: applications.length, label: 'Applications' },
-            { num: activeApplications.length, label: 'Active' },
+            { num: (bookings || []).filter(b => b.status === 'completed').length, label: 'Sessions Done' },
+            { num: (applications || []).length, label: 'Applications' },
+            { num: (activeApplications || []).length, label: 'Active' },
           ].map(stat => (
             <View key={stat.label} style={styles.statBox}>
               <Text style={styles.statNum}>{stat.num}</Text>
@@ -447,6 +610,82 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255,255,255,0.1)',
   },
   quickCardIcon: {
+    width: 32, height: 32,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    borderRadius: 8, alignItems: 'center', justifyContent: 'center',
+    marginBottom: 8,
+  },
+  withdrawBtn: {
+    backgroundColor: Colors.gold,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  withdrawBtnText: {
+    color: Colors.white,
+    fontSize: 10,
+    fontWeight: Typography.bold,
+  },
+  payoutCard: {
+    backgroundColor: Colors.white,
+    marginHorizontal: Spacing.xl,
+    marginBottom: Spacing.md,
+    padding: Spacing.md,
+    borderRadius: Radius.lg,
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  payoutTitle: { fontSize: Typography.lg, fontWeight: Typography.bold, color: Colors.text },
+  payoutSub: { fontSize: Typography.sm, color: Colors.textSecondary, marginTop: 2 },
+  statusBadge: { paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 },
+  statusBadgePending: { backgroundColor: Colors.goldLight },
+  statusBadgeDone: { backgroundColor: Colors.greenLight },
+  statusBadgeErr: { backgroundColor: Colors.redLight },
+  statusText: { fontSize: 10, fontWeight: Typography.bold },
+  statusTextPending: { color: Colors.gold },
+  statusTextDone: { color: Colors.green },
+  statusTextErr: { color: Colors.red },
+
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: Colors.white,
+    borderTopLeftRadius: 30,
+    borderTopRightRadius: 30,
+    padding: Spacing.xl,
+    paddingBottom: 40,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  modalTitle: { fontSize: Typography['2xl'], fontWeight: Typography.bold, color: Colors.text },
+  modalLabel: { fontSize: Typography.sm, fontWeight: Typography.semibold, color: Colors.text, marginBottom: 8 },
+  modalInput: {
+    backgroundColor: Colors.grayLight,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: Radius.md,
+    padding: Spacing.md,
+    fontSize: Typography.base,
+    marginBottom: 4,
+  },
+  submitBtn: {
+    backgroundColor: Colors.blueDark,
+    paddingVertical: 16,
+    borderRadius: Radius.xl,
+    alignItems: 'center',
+    marginTop: 10,
+  },
+  submitBtnText: { color: Colors.white, fontSize: Typography.base, fontWeight: Typography.bold },
+  quickCardIconSmall: {
     width: 32, height: 32,
     backgroundColor: 'rgba(255,255,255,0.15)',
     borderRadius: 10, marginBottom: 8,
