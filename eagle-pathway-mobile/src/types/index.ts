@@ -11,6 +11,9 @@ export interface User {
   grade_level?: string;
   city?: string;
   created_at: string;
+  academic_summary?: string;
+  career_goals?: string;
+  interested_subjects?: string[];
 }
 
 // ─── TUTOR ───────────────────────────────────────────────────────────────────
@@ -115,6 +118,12 @@ export interface Application {
   status: ApplicationStatus;
   sop_content?: string;
   sop_draft_number: number;
+  ai_feedback?: {
+    score: number;
+    feedback: string;
+    suggestions: string[];
+    last_reviewed_at: string;
+  };
   notes?: string;
   submitted_at?: string;
   result_at?: string;
