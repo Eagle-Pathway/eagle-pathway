@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuthStore } from '@/store/useAuthStore';
 import { supabase } from '@/lib/supabase';
+import { useState, useEffect } from 'react';
 import { 
   Users, 
   GraduationCap, 
@@ -22,6 +23,38 @@ export default function Sidebar() {
   const pathname = usePathname();
   const { user } = useAuthStore();
 
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    if (user) {
+      fetchUnreadCount();
+      
+      const channel = supabase
+        .channel('sidebar-chat-count')
+        .on(
+          'postgres_changes',
+          { event: '*', table: 'messages', filter: `recipient_id=eq.${user.id}` },
+          () => fetchUnreadCount()
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    }
+  }, [user]);
+
+  const fetchUnreadCount = async () => {
+    if (!user) return;
+    const { count, error } = await supabase
+      .from('messages')
+      .select('*', { count: 'exact', head: true })
+      .eq('recipient_id', user.id)
+      .eq('is_read', false);
+    
+    if (!error) setUnreadCount(count || 0);
+  };
+
   const navigation = [
     { name: 'Overview', href: '/overview', icon: LayoutDashboard },
     { name: 'Users', href: '/users', icon: Users },
@@ -31,7 +64,7 @@ export default function Sidebar() {
     { name: 'Scholarships', href: '/scholarships', icon: GraduationCap },
     { name: 'Bookings', href: '/bookings', icon: Calendar },
     { name: 'Notifications', href: '/notifications', icon: Bell },
-    { name: 'Chat', href: '/chat', icon: MessageSquare },
+    { name: 'Chat', href: '/chat', icon: MessageSquare, badge: unreadCount },
     { name: 'Finance', href: '/finance', icon: DollarSign },
     { name: 'Settings', href: '/settings', icon: Settings2 },
   ];
@@ -68,7 +101,12 @@ export default function Sidebar() {
               }`}
             >
               <Icon className={`mr-3 h-5 w-5 ${isActive ? 'text-brand-blue' : 'text-gray-400 group-hover:text-gray-600'}`} />
-              {item.name}
+              <span className="flex-1">{item.name}</span>
+              {item.badge && item.badge > 0 ? (
+                <span className="ml-2 px-2 py-0.5 bg-red-500 text-white text-[10px] font-bold rounded-full animate-pulse">
+                  {item.badge}
+                </span>
+              ) : null}
             </Link>
           );
         })}
