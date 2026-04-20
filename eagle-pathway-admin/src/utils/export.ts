@@ -15,8 +15,11 @@ export function exportToCSV<T extends object>(data: T[], filename: string) {
         if (typeof value === 'object' && value !== null) {
             value = JSON.stringify(value) as any;
         }
-        // Escape quotes and commas for safe CSV
-        const safeValue = String(value ?? '').replace(/"/g, '""');
+        // Sanitize formula injection: prefix dangerous leading chars with a tab
+        const raw = String(value ?? '');
+        const sanitized = /^[=+\-@\t\r]/.test(raw) ? `\t${raw}` : raw;
+        // Escape embedded quotes and wrap in quotes for CSV
+        const safeValue = sanitized.replace(/"/g, '""');
         return `"${safeValue}"`;
       }).join(',')
     )
