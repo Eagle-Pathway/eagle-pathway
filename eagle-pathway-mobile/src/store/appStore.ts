@@ -4,6 +4,8 @@ import { scholarshipsService } from '../services/scholarships';
 import { tutorsService } from '../services/tutors';
 import { notificationsService } from '../services/notifications';
 import { tasksService } from '../services/tasks';
+import { financeService, PayoutRequest } from '../services/finance';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Scholarship, Application, Booking, BookingStatus, Document, Notification, StudentTask, PackageTier, DocumentType } from '../types';
 
 interface AppState {
@@ -15,12 +17,18 @@ interface AppState {
   // Bookings
   bookings: Booking[];
 
+  // Tutors
+  tutorProfile: Tutor | null;
+
   // Documents
   documents: Document[];
 
   // Notifications
   notifications: Notification[];
   unreadCount: number;
+
+  // Finance
+  tutorPayouts: PayoutRequest[];
 
   // Tasks
   tasks: StudentTask[];
@@ -31,6 +39,7 @@ interface AppState {
   isLoadingBookings: boolean;
   isLoadingNotifications: boolean;
   isLoadingTasks: boolean;
+  isLoadingPayouts: boolean;
   isReviewingSOP: boolean;
 
   // Actions — Scholarships
@@ -39,14 +48,18 @@ interface AppState {
   loadApplications: (userId: string) => Promise<void>;
   createApplication: (userId: string, scholarshipId: string, packageTier: PackageTier, sopContent?: string) => Promise<Application>;
   updateSOP: (applicationId: string, content: string) => Promise<void>;
-  reviewSOP: (content: string) => Promise<{ score: number; feedback: string; suggestions: string[] }>;
+  reviewSOP: (content: string, scholarshipId?: string, studentId?: string) => Promise<{ score: number; feedback: string; suggestions: string[] }>;
   toggleSaveScholarship: (id: string) => void;
+  loadSavedScholarships: () => Promise<void>;
 
   // Actions — Bookings
   loadBookings: (userId: string) => Promise<void>;
   loadTutorBookings: (tutorId: string) => Promise<void>;
   cancelBooking: (bookingId: string) => Promise<void>;
   updateBookingStatus: (bookingId: string, status: BookingStatus) => Promise<void>;
+
+  // Actions — Tutors
+  loadTutorProfile: (userId: string) => Promise<void>;
 
   // Actions — Documents
   loadDocuments: (userId: string) => Promise<void>;
@@ -61,6 +74,17 @@ interface AppState {
   // Actions — Notifications
   loadNotifications: (userId: string) => Promise<void>;
   markAllNotificationsRead: (userId: string) => Promise<void>;
+  markNotificationRead: (notificationId: string) => Promise<void>;
+
+  // Actions — Finance
+  loadTutorPayouts: (userId: string) => Promise<void>;
+  submitPayoutRequest: (params: {
+    tutorId: string;
+    amount: number;
+    bankName: string;
+    accountNumber: string;
+    accountName: string;
+  }) => Promise<void>;
 
   // Actions — Tasks
   loadTasks: (userId: string) => Promise<void>;
@@ -76,15 +100,18 @@ export const useAppStore = create<AppState>((set, get) => ({
   applications: [],
   savedScholarshipIds: [],
   bookings: [],
+  tutorProfile: null,
   documents: [],
   notifications: [],
   unreadCount: 0,
   tasks: [],
   recommendedScholarships: [],
+  tutorPayouts: [],
   isLoadingScholarships: false,
   isLoadingBookings: false,
   isLoadingNotifications: false,
   isLoadingTasks: false,
+  isLoadingPayouts: false,
   isReviewingSOP: false,
 
   loadScholarships: async (filters) => {
@@ -131,10 +158,10 @@ export const useAppStore = create<AppState>((set, get) => ({
     }));
   },
 
-  reviewSOP: async (content) => {
+  reviewSOP: async (content, scholarshipId, studentId) => {
     set({ isReviewingSOP: true });
     try {
-      return await scholarshipsService.getSOPFeedback(content);
+      return await scholarshipsService.getSOPFeedback(content, scholarshipId, studentId);
     } finally {
       set({ isReviewingSOP: false });
     }
@@ -145,8 +172,28 @@ export const useAppStore = create<AppState>((set, get) => ({
       const saved = state.savedScholarshipIds.includes(id)
         ? state.savedScholarshipIds.filter(s => s !== id)
         : [...state.savedScholarshipIds, id];
+        
+      AsyncStorage.setItem('@eagle_saved_scholarships', JSON.stringify(saved)).catch(err => 
+        console.error('Save failed:', err)
+      );
+      
       return { savedScholarshipIds: saved };
     });
+  },
+
+  loadSavedScholarships: async () => {
+    try {
+      const stored = await AsyncStorage.getItem('@eagle_saved_scholarships');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed)) {
+          set({ savedScholarshipIds: parsed });
+        }
+      }
+    } catch (e) {
+      console.error('Failed to load saved scholarships from storage:', e);
+      // Fallback: stay with current empty state or handle corruption
+    }
   },
 
   loadBookings: async (userId) => {
@@ -159,11 +206,15 @@ export const useAppStore = create<AppState>((set, get) => ({
     }
   },
 
-  loadTutorBookings: async (tutorId) => {
+  loadTutorBookings: async (userId) => {
     set({ isLoadingBookings: true });
     try {
-      const bookings = await tutorsService.getTutorBookings(tutorId);
+      const bookings = await tutorsService.getTutorBookings(userId);
       set({ bookings });
+      
+      // Also load profile to get earnings context
+      const { data: tutor } = await supabase.from('tutors').select('*, user:users(*)').eq('user_id', userId).single();
+      if (tutor) set({ tutorProfile: tutor });
     } finally {
       set({ isLoadingBookings: false });
     }
@@ -219,6 +270,19 @@ export const useAppStore = create<AppState>((set, get) => ({
     }));
   },
 
+  markNotificationRead: async (notificationId) => {
+    await notificationsService.markRead(notificationId);
+    set(state => {
+      const isUnread = state.notifications.find(n => n.id === notificationId && !n.is_read);
+      return {
+        notifications: state.notifications.map(n => 
+          n.id === notificationId ? { ...n, is_read: true } : n
+        ),
+        unreadCount: isUnread ? Math.max(0, state.unreadCount - 1) : state.unreadCount,
+      };
+    });
+  },
+
   loadTasks: async (userId) => {
     set({ isLoadingTasks: true });
     try {
@@ -226,6 +290,26 @@ export const useAppStore = create<AppState>((set, get) => ({
       set({ tasks });
     } finally {
       set({ isLoadingTasks: false });
+    }
+  },
+
+  loadTutorPayouts: async (userId) => {
+    set({ isLoadingPayouts: true });
+    try {
+      const payouts = await financeService.getTutorPayouts(userId);
+      set({ tutorPayouts: payouts });
+    } finally {
+      set({ isLoadingPayouts: false });
+    }
+  },
+
+  submitPayoutRequest: async (params) => {
+    set({ isLoadingPayouts: true });
+    try {
+      const newPayout = await financeService.requestPayout(params);
+      set(state => ({ tutorPayouts: [newPayout, ...state.tutorPayouts] }));
+    } finally {
+      set({ isLoadingPayouts: false });
     }
   },
 
