@@ -24,6 +24,7 @@ interface Application {
   package_tier: string;
   notes: string | null;
   sop_content: string | null;
+  consultant_feedback: string | null;
   created_at: string;
   updated_at: string;
   // Joins
@@ -66,7 +67,7 @@ export default function ApplicationsPage() {
     // Fetch applications with joins
     const { data: appData, error: appError } = await supabase
       .from('applications')
-      .select('*, student:users!applications_student_id_fkey(full_name, email), scholarship:scholarships(name, organization), consultant:users!applications_consultant_id_fkey(full_name), documents(*)')
+      .select('*, student:users!applications_student_id_fkey(id, full_name, email), scholarship:scholarships(name, organization), consultant:users!applications_consultant_id_fkey(full_name), documents(*)')
       .order('updated_at', { ascending: false });
 
     // Fetch potential consultants (users with role tutor or admin)
@@ -123,6 +124,31 @@ export default function ApplicationsPage() {
       alert('Failed to save notes: ' + error.message);
     }
     setSavingNotes(false);
+  };
+
+  const handleSaveFeedback = async (appId: string, feedback: string) => {
+    const { error } = await supabase
+      .from('applications')
+      .update({ consultant_feedback: feedback })
+      .eq('id', appId);
+      
+    if (!error) {
+      setApplications(prev => prev.map(app => app.id === appId ? { ...app, consultant_feedback: feedback } : app));
+      if (selectedApp?.id === appId) setSelectedApp(prev => prev ? { ...prev, consultant_feedback: feedback } : null);
+      
+      // Notify student
+      const appData = applications.find(a => a.id === appId);
+      if (appData?.student_id) {
+        await supabase.from('notifications').insert({
+          user_id: appData.student_id,
+          type: 'sop_reviewed',
+          title: 'SOP Feedback Available ✍️',
+          body: `Consultant left some feedback on your ${appData.scholarship?.name} application.`,
+        });
+      }
+    } else {
+      alert('Failed to save feedback: ' + error.message);
+    }
   };
 
   const filtered = applications.filter(app => {
@@ -329,20 +355,38 @@ export default function ApplicationsPage() {
 
               <div className="lg:w-96 flex flex-col gap-6">
                 <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
-                  <h4 className="font-bold text-gray-900 mb-4">Consultant Feedback</h4>
-                  <p className="text-xs text-gray-500 mb-2">Leave notes for the student. They will see this in their app.</p>
+                  <h4 className="font-bold text-gray-900 mb-4">Internal Admin Notes</h4>
+                  <p className="text-xs text-gray-500 mb-2">Internal notes for the admin team only.</p>
                   <textarea 
                     value={notesInput}
                     onChange={(e) => setNotesInput(e.target.value)}
-                    className="w-full text-sm p-3 rounded-xl border border-gray-200 focus:ring-brand-blue focus:border-brand-blue min-h-[150px] mb-3"
-                    placeholder="E.g. Your SOP needs more detail on your research..."
+                    className="w-full text-sm p-3 rounded-xl border border-gray-200 focus:ring-brand-blue focus:border-brand-blue min-h-[100px] mb-3"
+                    placeholder="Internal reference notes..."
                   />
                   <button 
                     onClick={handleSaveNotes}
                     disabled={savingNotes}
-                    className="w-full py-2 bg-brand-blue text-white rounded-xl text-sm font-bold shadow-sm hover:bg-blue-800 disabled:opacity-50"
+                    className="w-full py-2 bg-gray-100 text-gray-600 rounded-xl text-sm font-bold shadow-sm hover:bg-gray-200 disabled:opacity-50 mb-6"
                   >
-                    {savingNotes ? 'Saving...' : 'Save Notes'}
+                    {savingNotes ? 'Saving...' : 'Save Internal Notes'}
+                  </button>
+
+                  <h4 className="font-bold text-gray-900 mb-4 pt-4 border-t border-gray-100">Student Feedback</h4>
+                  <p className="text-xs text-brand-blue mb-2 font-medium">Visible to the student in their app tracker.</p>
+                  <textarea 
+                    value={selectedApp.consultant_feedback || ''}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setSelectedApp({ ...selectedApp, consultant_feedback: val });
+                    }}
+                    className="w-full text-sm p-3 rounded-xl border border-gray-200 focus:ring-brand-blue focus:border-brand-blue min-h-[150px] mb-3"
+                    placeholder="Constructive feedback for the student..."
+                  />
+                  <button 
+                    onClick={() => handleSaveFeedback(selectedApp.id, selectedApp.consultant_feedback || '')}
+                    className="w-full py-2 bg-brand-blue text-white rounded-xl text-sm font-bold shadow-sm hover:bg-blue-800"
+                  >
+                    Send to Student
                   </button>
                 </div>
 
