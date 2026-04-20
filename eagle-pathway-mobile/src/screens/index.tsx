@@ -10,10 +10,10 @@ import { format } from 'date-fns';
 import { Colors, Typography, Spacing, Radius, CommonStyles } from '@/utils/theme';
 import { Button, Avatar, ProgressBar, EmptyState, Pill, StatusTimeline } from '@/components/common';
 import { scholarshipsService } from '@/services/scholarships';
+import { paymentsService } from '@/services/payments';
 import { useAuthStore } from '@/store/authStore';
 import { useAppStore } from '@/store/appStore';
-import { Scholarship, Application, PackageTier, Document, DocumentType } from '@/types';
-import { openWhatsApp } from '@/utils/linking';
+import { useChatStore } from '@/store/ChatStore';
 
 // ─── SCHOLARSHIP DETAIL ───────────────────────────────────────────────────────
 export function ScholarshipDetailScreen() {
@@ -259,13 +259,15 @@ export function ApplyScreen() {
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState<number>(1);
   const [sopContent, setSopContent] = useState('');
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('');
+  const [transactionId, setTransactionId] = useState('');
+  const [receiptAsset, setReceiptAsset] = useState<any>(null);
 
   useEffect(() => { if (user) loadDocuments(user.id); }, [user?.id]);
 
   const STEPS = ['Info', 'Docs', 'SOP', 'Pay', 'Final'];
 
   const handlePickAndUpload = async (docLabel: string) => {
-    // Map UI labels to database enum document_type
     const typeMap: Record<string, DocumentType> = {
       'Degree Certificate': 'degree_certificate',
       'Official Transcript': 'transcript',
@@ -299,9 +301,28 @@ export function ApplyScreen() {
 
   const handleSubmit = async () => {
     if (!user || !scholarshipId || !packageTier) return;
+    if (selectedPaymentMethod && selectedPaymentMethod !== 'Chapa (Card/Transfer)' && (!transactionId || !receiptAsset)) {
+      Alert.alert('Missing Info', 'Please provide the transaction ID and upload the receipt screenshot for manual verification.');
+      return;
+    }
     setLoading(true);
     try {
       const app = await createApplication(user.id, scholarshipId, packageTier, sopContent);
+      
+      // Submit Payment Receipt if applicable
+      if (selectedPaymentMethod !== 'Chapa (Card/Transfer)' && receiptAsset) {
+        await paymentsService.submitPaymentReceipt({
+          userId: user.id,
+          referenceId: app.id,
+          paymentType: 'scholarship_package',
+          method: selectedPaymentMethod.includes('Telebirr') ? 'telebirr' : 'cbe',
+          amount: packageTier === 'premium' ? 55000 : packageTier === 'standard' ? 28000 : 10000,
+          transactionId: transactionId,
+          fileUri: receiptAsset.uri,
+          fileName: receiptAsset.name
+        });
+      }
+
       Alert.alert('Application Started! 🎉', 'Your consultant has been notified and will reach out shortly.', [
         { text: 'View Tracker', onPress: () => router.push('/tracker') },
       ]);
@@ -393,7 +414,13 @@ export function ApplyScreen() {
                 'Reference Letter 2': 'reference_letter',
               };
               const mappedType = typeMap[doc] || 'other';
-              const uploaded = documents.some(d => d.document_type === mappedType);
+              const refLetterCount = documents.filter(d => d.document_type === 'reference_letter').length;
+              // Reference letters require quantity: Letter 1 = at least 1, Letter 2 = at least 2
+              const uploaded = doc === 'Reference Letter 1'
+                ? refLetterCount >= 1
+                : doc === 'Reference Letter 2'
+                  ? refLetterCount >= 2
+                  : documents.some(d => d.document_type === mappedType);
 
               return (
                 <TouchableOpacity key={doc} style={[applyStyles.docRow, !uploaded && applyStyles.docRowMissing]} onPress={() => !uploaded && handlePickAndUpload(doc)} activeOpacity={0.8}>
@@ -437,7 +464,7 @@ export function ApplyScreen() {
                   Alert.alert('Too short', 'Please write at least 50 characters to get meaningful feedback.');
                   return;
                 }
-                const result = await useAppStore.getState().reviewSOP(content);
+                const result = await useAppStore.getState().reviewSOP(sopContent);
                 Alert.alert(`AI Score: ${result.score}/100`, result.feedback + '\n\n' + result.suggestions.map(s => '• ' + s).join('\n'));
               }}
               loading={useAppStore.getState().isReviewingSOP}
@@ -472,18 +499,39 @@ export function ApplyScreen() {
                 { name: 'Chapa (Card/Transfer)', icon: '💳' },
                 { name: 'CBE Birr / Bank Transfer', icon: '🏦' },
               ].map(pm => (
-                <TouchableOpacity key={pm.name} style={applyStyles.methodRow} activeOpacity={0.8}>
+                <TouchableOpacity key={pm.name} style={applyStyles.methodRow} activeOpacity={0.8} onPress={() => setSelectedPaymentMethod(pm.name)}>
                   <Text style={{ fontSize: 18 }}>{pm.icon}</Text>
                   <Text style={applyStyles.methodName}>{pm.name}</Text>
-                  <View style={applyStyles.radio} />
+                  <View style={[applyStyles.radio, selectedPaymentMethod === pm.name && { borderColor: Colors.blue, borderWidth: 5 }]} />
                 </TouchableOpacity>
               ))}
 
-              <View style={applyStyles.paymentInfo}>
-                <Text style={{ fontSize: 12, color: Colors.textSecondary }}>
-                  💡 After payment, please keep your reference number or screenshot ready.
-                </Text>
-              </View>
+              {(selectedPaymentMethod === 'Telebirr' || selectedPaymentMethod === 'CBE Birr / Bank Transfer') && (
+                <View style={{ marginTop: Spacing.lg }}>
+                  <Text style={{ fontSize: 14, fontWeight: 'bold', marginBottom: Spacing.xs }}>Transaction ID</Text>
+                  <TextInput 
+                    value={transactionId}
+                    onChangeText={setTransactionId}
+                    placeholder="e.g. 7A8B9C0D"
+                    style={{ borderWidth: 1, borderColor: Colors.border, borderRadius: Radius.md, padding: Spacing.md, marginBottom: Spacing.md }}
+                  />
+                  <Button 
+                    title={receiptAsset ? 'Receipt Attached ✅' : 'Upload Screenshot (Required)'} 
+                    variant="outline"
+                    onPress={async () => {
+                      const result = await scholarshipsService.pickDocument();
+                      if (!result.canceled && result.assets?.[0]) {
+                        setReceiptAsset(result.assets[0]);
+                      }
+                    }} 
+                  />
+                  <View style={applyStyles.paymentInfo}>
+                    <Text style={{ fontSize: 12, color: Colors.textSecondary }}>
+                      💡 A consultant will manually verify this receipt within 2 hours. Your package will then be activated!
+                    </Text>
+                  </View>
+                </View>
+              )}
             </View>
           </View>
         )}
@@ -554,6 +602,45 @@ const applyStyles = StyleSheet.create({
   aiTipText: { fontSize: 12, color: '#9a7230', lineHeight: 18 },
 });
 
+// ─── AUTHENTICATION TRACKER (MoE / MoFA) ───────────────────────────────────────
+const AuthenticationTracker = ({ isPremium }: { isPremium: boolean }) => (
+  <View style={[CommonStyles.card, { marginTop: Spacing.xl, marginHorizontal: Spacing.xl }]}>
+    <Text style={{ fontSize: Typography.base, fontWeight: 'bold', marginBottom: Spacing.sm, color: Colors.text }}>
+      📜 Legal Authentication Tracker
+    </Text>
+    <Text style={{ fontSize: 12, color: Colors.textSecondary, marginBottom: Spacing.md, lineHeight: 18 }}>
+      Track your document authentication via the Ministry of Education (MoE) and Ministry of Foreign Affairs (MoFA).
+    </Text>
+    
+    <View style={{ gap: Spacing.md }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.md }}>
+        <View style={{ width: 12, height: 12, borderRadius: 6, backgroundColor: Colors.green }} />
+        <View style={{ flex: 1 }}>
+          <Text style={{ fontSize: 14, fontWeight: 'bold' }}>MoE Academic Verification</Text>
+          <Text style={{ fontSize: 12, color: Colors.textSecondary }}>Authenticated</Text>
+        </View>
+        <Text style={{ fontSize: 10, color: Colors.green, fontWeight: 'bold' }}>DONE</Text>
+      </View>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.md }}>
+        <View style={{ width: 12, height: 12, borderRadius: 6, backgroundColor: Colors.gold }} />
+        <View style={{ flex: 1 }}>
+          <Text style={{ fontSize: 14, fontWeight: 'bold' }}>MoFA Stamp & Seal</Text>
+          <Text style={{ fontSize: 12, color: Colors.textSecondary }}>Waiting for embassy appointment</Text>
+        </View>
+        <Text style={{ fontSize: 10, color: Colors.gold, fontWeight: 'bold' }}>PENDING</Text>
+      </View>
+    </View>
+
+    {isPremium && (
+      <View style={{ marginTop: Spacing.lg, padding: Spacing.md, backgroundColor: '#f0f9ff', borderRadius: Radius.md, borderLeftWidth: 4, borderLeftColor: Colors.blue }}>
+        <Text style={{ fontSize: 12, fontStyle: 'italic', color: '#0369a1' }}>
+          💡 Premium Feature: Our courier team is managing this queue for you automatically at the ministry.
+        </Text>
+      </View>
+    )}
+  </View>
+);
+
 // ─── APPLICATION TRACKER ─────────────────────────────────────────────────────
 export function TrackerScreen() {
   const { user } = useAuthStore();
@@ -610,10 +697,47 @@ export function TrackerScreen() {
 
           <StatusTimeline currentStatus={selectedApp.status} updatedAt={selectedApp.updated_at} />
 
-          {selectedApp.notes && (
+          <AuthenticationTracker isPremium={selectedApp.package_tier === 'premium'} />
+
+          {selectedApp.consultant_feedback && (
             <View style={trackerStyles.notesBox}>
-              <Text style={trackerStyles.notesTitle}>Consultant Feedback</Text>
-              <Text style={trackerStyles.notesText}>{selectedApp.notes}</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                <View style={{ width: 32, height: 32, backgroundColor: Colors.blueLight, borderRadius: 8, alignItems: 'center', justifyContent: 'center' }}>
+                  <Text style={{ fontSize: 16 }}>✍️</Text>
+                </View>
+                <Text style={trackerStyles.notesTitle}>Consultant Feedback</Text>
+              </View>
+              <Text style={trackerStyles.notesText}>{selectedApp.consultant_feedback}</Text>
+              <Text style={{ fontSize: 10, color: Colors.textSecondary, marginTop: 12, fontStyle: 'italic' }}>
+                Feedback left on {format(new Date(selectedApp.updated_at), 'MMM d, h:mm a')}
+              </Text>
+            </View>
+          )}
+
+          {(['documents', 'sop', 'submitted'].includes(selectedApp.status)) && (
+            <View style={{ padding: Spacing.xl, paddingBottom: 0 }}>
+              <View style={trackerStyles.aiActionBox}>
+                <View style={{ flex: 1 }}>
+                  <Text style={trackerStyles.aiActionTitle}>✨ AI SOP Assistant</Text>
+                  <Text style={trackerStyles.aiActionSub}>Get real-time feedback on your Statement of Purpose from Eagle AI.</Text>
+                </View>
+                <TouchableOpacity 
+                   style={trackerStyles.aiActionBtn} 
+                   onPress={() => router.push({ 
+                     pathname: '/scholarship/sop', 
+                     params: { applicationId: selectedApp.id, scholarshipName: selectedApp.scholarship?.name } 
+                   })}
+                >
+                  <Text style={trackerStyles.aiActionBtnText}>Edit & Review</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
+
+          {selectedApp.notes && (
+            <View style={[trackerStyles.notesBox, { backgroundColor: Colors.grayLight, borderColor: Colors.border }]}>
+              <Text style={[trackerStyles.notesTitle, { color: Colors.textSecondary }]}>Internal Reference</Text>
+              <Text style={[trackerStyles.notesText, { color: Colors.textSecondary }]}>{selectedApp.notes}</Text>
             </View>
           )}
 
@@ -622,7 +746,7 @@ export function TrackerScreen() {
               <Button 
                 title="Message Consultant" 
                 variant="primary" 
-                onPress={() => openWhatsApp(selectedApp.consultant?.phone || '', `Hi ${selectedApp.consultant?.full_name}, I'm checking in on my ${selectedApp.scholarship?.name} application.`)} 
+                onPress={() => router.push({ pathname: '/chat/[id]', params: { id: selectedApp.consultant_id!, fullName: selectedApp.consultant?.full_name || 'Consultant' } })} 
               />
             </View>
           )}
@@ -634,6 +758,11 @@ export function TrackerScreen() {
   return (
     <SafeAreaView style={CommonStyles.screenBg} edges={['top']}>
       <View style={trackerStyles.hero}>
+        <View style={trackerStyles.heroHeader}>
+          <TouchableOpacity style={trackerStyles.backBtnCircle} onPress={() => router.back()} activeOpacity={0.8}>
+            <Text style={{ fontSize: 20, color: Colors.white }}>←</Text>
+          </TouchableOpacity>
+        </View>
         <View style={trackerStyles.heroTop}>
           <View>
             <Text style={trackerStyles.heroLabel}>Application Tracker</Text>
@@ -698,6 +827,8 @@ export function TrackerScreen() {
 
 const trackerStyles = StyleSheet.create({
   hero: { backgroundColor: Colors.blueDark, padding: Spacing.xl, paddingBottom: Spacing['3xl'] },
+  heroHeader: { marginBottom: Spacing.md },
+  backBtnCircle: { width: 40, height: 40, backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
   heroTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.xl },
   heroLabel: { fontSize: Typography.sm, fontWeight: Typography.bold, color: 'rgba(255,255,255,0.6)', letterSpacing: 1, textTransform: 'uppercase' },
   heroTitle: { fontSize: Typography['4xl'], fontWeight: Typography.bold, color: Colors.white, marginTop: 4 },
@@ -729,6 +860,26 @@ const trackerStyles = StyleSheet.create({
   notesBox: { margin: Spacing.xl, padding: Spacing.lg, backgroundColor: Colors.goldLight, borderRadius: Radius.xl, borderWidth: 1, borderColor: '#e8d5a0' },
   notesTitle: { fontWeight: 'bold', color: '#7a5c1e', marginBottom: 8, fontSize: Typography.base },
   notesText: { fontSize: Typography.md, color: '#9a7230', lineHeight: 22 },
+  aiActionBox: {
+    padding: Spacing.lg,
+    backgroundColor: Colors.white,
+    borderRadius: Radius.xl,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.md,
+    shadowColor: Colors.gold,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 3,
+    marginBottom: Spacing.md,
+  },
+  aiActionTitle: { fontSize: Typography.base, fontWeight: Typography.bold, color: Colors.text },
+  aiActionSub: { fontSize: 11, color: Colors.textSecondary, marginTop: 2 },
+  aiActionBtn: { backgroundColor: Colors.blue, paddingHorizontal: 16, paddingVertical: 10, borderRadius: Radius.lg },
+  aiActionBtnText: { color: Colors.white, fontWeight: Typography.bold, fontSize: 13 },
 });
 
 // ─── DOCUMENTS ───────────────────────────────────────────────────────────────
@@ -771,16 +922,16 @@ export function DocumentsScreen() {
       <View style={docStyles.statsRow}>
         <View style={docStyles.statBox}><Text style={[docStyles.statNum, { color: Colors.green }]}>{approved}</Text><Text style={docStyles.statLbl}>Approved</Text></View>
         <View style={docStyles.statBox}><Text style={[docStyles.statNum, { color: Colors.orange }]}>{pending}</Text><Text style={docStyles.statLbl}>Pending</Text></View>
-        <View style={docStyles.statBox}><Text style={[docStyles.statNum, { color: Colors.red }]}>{Math.max(0, 7 - documents.length)}</Text><Text style={docStyles.statLbl}>Missing</Text></View>
+        <View style={docStyles.statBox}><Text style={[docStyles.statNum, { color: Colors.red }]}>{Math.max(0, 7 - (documents || []).length)}</Text><Text style={docStyles.statLbl}>Missing</Text></View>
       </View>
 
       {loading ? (
         <View style={[CommonStyles.flex1, CommonStyles.center]}><ActivityIndicator color={Colors.blue} size="large" /></View>
-      ) : documents.length === 0 ? (
+      ) : (documents || []).length === 0 ? (
         <EmptyState icon="📁" title="No documents yet" subtitle="Upload your documents to start applying for scholarships" />
       ) : (
         <FlatList
-          data={documents}
+          data={documents || []}
           keyExtractor={d => d.id}
           renderItem={({ item: doc }) => (
             <TouchableOpacity style={docStyles.docItem} activeOpacity={0.9}>
@@ -829,6 +980,40 @@ export function BookingsScreen() {
   const { bookings, loadBookings, loadTutorBookings, updateBookingStatus, cancelBooking } = useAppStore();
   const [activeTab, setActiveTab] = useState<'upcoming' | 'past' | 'cancelled'>('upcoming');
   const [loading, setLoading] = useState(true);
+  const [ratingBookingId, setRatingBookingId] = useState<string | null>(null);
+  const [rating, setRating] = useState(0);
+  const [ratingComment, setRatingComment] = useState('');
+  const [ratingLoading, setRatingLoading] = useState(false);
+  const { supabase: supabaseClient } = require('@/services/supabase');
+
+  const handleMarkCompleted = async (bookingId: string) => {
+    await updateBookingStatus(bookingId, 'completed' as any);
+    setRatingBookingId(bookingId);
+    setRating(0);
+    setRatingComment('');
+  };
+
+  const handleSubmitRating = async () => {
+    if (!ratingBookingId || rating === 0) {
+      Alert.alert('Please Select a Rating', 'Tap a star to rate this session.');
+      return;
+    }
+    setRatingLoading(true);
+    try {
+      const { supabase: sb } = require('@/services/supabase');
+      await sb.from('booking_ratings').insert({
+        booking_id: ratingBookingId,
+        rating,
+        comment: ratingComment.trim() || null,
+      });
+      setRatingBookingId(null);
+      Alert.alert('Thank you! ⭐', 'Your rating has been submitted.');
+    } catch (e: any) {
+      Alert.alert('Error', e.message || 'Failed to submit rating');
+    } finally {
+      setRatingLoading(false);
+    }
+  };
 
   const isTutor = user?.role?.toLowerCase() === 'tutor';
 
@@ -842,7 +1027,7 @@ export function BookingsScreen() {
     }
   }, [user?.id, isTutor]);
 
-  const filtered = bookings.filter(b => {
+  const filtered = (bookings || []).filter(b => {
     if (activeTab === 'upcoming') return ['pending', 'confirmed'].includes(b.status);
     if (activeTab === 'past') return b.status === 'completed';
     return b.status === 'cancelled';
@@ -906,8 +1091,8 @@ export function BookingsScreen() {
                             <Text style={bkgStyles.btnJoinText}>Accept Request</Text>
                           </TouchableOpacity>
                         ) : (
-                          <TouchableOpacity style={bkgStyles.btnJoin} onPress={() => updateBookingStatus(b.id, 'completed' as any)} activeOpacity={0.85}>
-                            <Text style={bkgStyles.btnJoinText}>Mark Completed</Text>
+                          <TouchableOpacity style={bkgStyles.btnJoin} onPress={() => handleMarkCompleted(b.id)} activeOpacity={0.85}>
+                            <Text style={bkgStyles.btnJoinText}>Mark Completed ⭐</Text>
                           </TouchableOpacity>
                         )}
                         <TouchableOpacity style={bkgStyles.btnCancel} onPress={() => updateBookingStatus(b.id, 'cancelled' as any)} activeOpacity={0.85}>
@@ -923,6 +1108,39 @@ export function BookingsScreen() {
           contentContainerStyle={{ paddingBottom: 100 }}
           showsVerticalScrollIndicator={false}
         />
+      )}
+      {/* ── Session Rating Modal ── */}
+      {ratingBookingId && (
+        <View style={{ position: 'absolute', top: 0, bottom: 0, left: 0, right: 0, backgroundColor: 'rgba(0,0,0,0.55)', alignItems: 'center', justifyContent: 'center', zIndex: 999 }}>
+          <View style={{ backgroundColor: Colors.white, borderRadius: Radius.xl, padding: Spacing.xl, width: '88%' }}>
+            <Text style={{ fontSize: Typography['2xl'], fontWeight: 'bold', textAlign: 'center', marginBottom: 4 }}>Rate This Session</Text>
+            <Text style={{ fontSize: Typography.sm, color: Colors.textSecondary, textAlign: 'center', marginBottom: Spacing.lg }}>How was your experience?</Text>
+            <View style={{ flexDirection: 'row', justifyContent: 'center', gap: Spacing.md, marginBottom: Spacing.lg }}>
+              {[1,2,3,4,5].map(star => (
+                <TouchableOpacity key={star} onPress={() => setRating(star)} activeOpacity={0.8}>
+                  <Text style={{ fontSize: 36 }}>{star <= rating ? '⭐' : '☆'}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+            <TextInput
+              value={ratingComment}
+              onChangeText={setRatingComment}
+              placeholder="Optional comment..."
+              multiline
+              numberOfLines={3}
+              style={{ borderWidth: 1, borderColor: Colors.border, borderRadius: Radius.md, padding: Spacing.md, marginBottom: Spacing.lg, textAlignVertical: 'top', fontSize: Typography.sm }}
+              placeholderTextColor={Colors.textSecondary}
+            />
+            <View style={{ flexDirection: 'row', gap: Spacing.sm }}>
+              <TouchableOpacity style={[bkgStyles.btnCancel, { flex: 1 }]} onPress={() => setRatingBookingId(null)} activeOpacity={0.8}>
+                <Text style={bkgStyles.btnCancelText}>Skip</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[bkgStyles.btnJoin, { flex: 2, opacity: ratingLoading ? 0.6 : 1 }]} onPress={handleSubmitRating} activeOpacity={0.8} disabled={ratingLoading}>
+                <Text style={bkgStyles.btnJoinText}>{ratingLoading ? 'Submitting...' : 'Submit Rating'}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
       )}
     </SafeAreaView>
   );
@@ -958,15 +1176,15 @@ export function ProgressScreen() {
 
   const checklist = [
     { label: "Bachelor's degree completed", done: true },
-    { label: 'IELTS score obtained', done: documents.some(d => d.document_type === 'ielts_certificate' && d.status === 'approved') },
-    { label: 'CV uploaded & approved', done: documents.some(d => d.document_type === 'cv' && d.status === 'approved') },
-    { label: 'SOP in progress', done: applications.some(a => ['sop', 'submitted', 'accepted'].includes(a.status)), inProgress: true },
-    { label: 'Reference letters uploaded', done: documents.filter(d => d.document_type === 'reference_letter').length >= 2 },
-    { label: 'Interview preparation', done: applications.some(a => a.status === 'accepted') },
+    { label: 'IELTS score obtained', done: (documents || []).some(d => d.document_type === 'ielts_certificate' && d.status === 'approved') },
+    { label: 'CV uploaded & approved', done: (documents || []).some(d => d.document_type === 'cv' && d.status === 'approved') },
+    { label: 'SOP in progress', done: (applications || []).some(a => ['sop', 'submitted', 'accepted'].includes(a.status)), inProgress: true },
+    { label: 'Reference letters uploaded', done: (documents || []).filter(d => d.document_type === 'reference_letter').length >= 2 },
+    { label: 'Interview preparation', done: (applications || []).some(a => a.status === 'accepted') },
   ];
 
-  const doneCount = checklist.filter(c => c.done).length;
-  const readiness = Math.round((doneCount / checklist.length) * 100);
+  const doneCount = (checklist || []).filter(c => c.done).length;
+  const readiness = Math.round((doneCount / (checklist || []).length) * 100);
 
   const academicJourneys = [
     { title: 'Grade 12 Preparation', sub: 'Math & Physics', progress: 80, color: Colors.green, tag: 'Active' },
@@ -1073,7 +1291,22 @@ const progStyles = StyleSheet.create({
 // ─── NOTIFICATIONS ────────────────────────────────────────────────────────────
 export function NotificationsScreen() {
   const { user } = useAuthStore();
-  const { notifications, unreadCount, loadNotifications, markAllNotificationsRead } = useAppStore();
+  const { notifications, unreadCount, loadNotifications, markAllNotificationsRead, markNotificationRead } = useAppStore();
+  // Track in-flight read requests per notification to prevent double-taps
+  const [markingIds, setMarkingIds] = useState<Set<string>>(new Set());
+
+  const handleMarkRead = async (id: string) => {
+    if (markingIds.has(id)) return; // already in-flight
+    setMarkingIds(prev => new Set(prev).add(id));
+    try {
+      await markNotificationRead(id);
+    } catch (err) {
+      console.error('[Notifications] Failed to mark read:', err);
+      // Graceful — no crash, no alert for connectivity blip
+    } finally {
+      setMarkingIds(prev => { const s = new Set(prev); s.delete(id); return s; });
+    }
+  };
 
   useEffect(() => {
     if (user) loadNotifications(user.id);
@@ -1097,14 +1330,22 @@ export function NotificationsScreen() {
         )}
       </View>
 
-      {notifications.length === 0 ? (
+      {(notifications || []).length === 0 ? (
         <EmptyState icon="🔔" title="No notifications yet" subtitle="You'll see session reminders, scholarship alerts, and updates here" />
       ) : (
         <FlatList
-          data={notifications}
+          data={notifications || []}
           keyExtractor={n => n.id}
           renderItem={({ item: n }) => (
-            <View style={[notifStyles.item, !n.is_read && notifStyles.itemUnread]}>
+            <TouchableOpacity 
+              style={[notifStyles.item, !n.is_read && notifStyles.itemUnread]}
+              activeOpacity={0.8}
+              onPress={() => {
+                if (!n.is_read) {
+                  handleMarkRead(n.id);
+                }
+              }}
+            >
               <View style={notifStyles.iconWrap}>
                 <Text style={{ fontSize: 20 }}>{NOTIF_ICONS[n.type] || '📬'}</Text>
               </View>
@@ -1114,7 +1355,7 @@ export function NotificationsScreen() {
                 <Text style={notifStyles.itemTime}>{new Date(n.created_at).toLocaleDateString()}</Text>
               </View>
               {!n.is_read && <View style={notifStyles.unreadDot} />}
-            </View>
+            </TouchableOpacity>
           )}
           contentContainerStyle={{ paddingBottom: 40 }}
           showsVerticalScrollIndicator={false}
