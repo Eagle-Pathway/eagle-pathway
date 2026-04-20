@@ -22,6 +22,8 @@ export default function TutorsPage() {
   const [tutors, setTutors] = useState<TutorWithUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [actionError, setActionError] = useState('');
 
   useEffect(() => {
     fetchTutors();
@@ -51,11 +53,47 @@ export default function TutorsPage() {
   };
 
   const toggleVerification = async (id: string, currentStatus: boolean) => {
-    await supabase
+    const willBeVerified = !currentStatus;
+    setActionLoading(id);
+    setActionError('');
+
+    const { error: updateError } = await supabase
       .from('tutors')
-      .update({ is_verified: !currentStatus })
+      .update({ is_verified: willBeVerified })
       .eq('user_id', id);
-    fetchTutors();
+
+    if (updateError) {
+      setActionError(`Failed to update tutor: ${updateError.message}`);
+      setActionLoading(null);
+      return;
+    }
+
+    // Send in-app notification to the tutor
+    const notif = willBeVerified
+      ? {
+          user_id: id,
+          title: "You've been approved! 🎉",
+          body: 'Your tutor profile is now live on Eagle Pathway. Students can now find and book you.',
+          type: 'application_update',
+          is_read: false,
+        }
+      : {
+          user_id: id,
+          title: 'Account Status Update',
+          body: 'Your tutor verification has been revoked by an administrator. Please contact support for more information.',
+          type: 'application_update',
+          is_read: false,
+        };
+
+    const { error: notifError } = await supabase.from('notifications').insert(notif);
+    if (notifError) {
+      console.error('Failed to send tutor notification:', notifError.message);
+      // Status change succeeded but notification failed — warn admin explicitly
+      setActionError(`Status updated ✓, but notification not sent to tutor: ${notifError.message}`);
+    }
+
+    await fetchTutors();
+    setActionLoading(null);
   };
 
   const filtered = tutors.filter(t => 
@@ -71,6 +109,12 @@ export default function TutorsPage() {
           <p className="mt-1 text-sm text-gray-500">Verify and manage tutor applications</p>
         </div>
       </div>
+
+      {actionError && (
+        <div className="p-4 bg-red-50 border border-red-200 text-red-700 rounded-xl text-sm font-medium">
+          ⚠️ {actionError}
+        </div>
+      )}
 
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
         <div className="p-4 border-b border-gray-100 bg-gray-50/50 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -154,15 +198,16 @@ export default function TutorsPage() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <button 
-                         onClick={() => toggleVerification(tutor.user_id, tutor.is_verified)}
-                         className={`inline-flex items-center justify-center px-4 py-2 rounded-lg text-sm font-medium transition-colors border ${
-                           tutor.is_verified 
-                             ? 'text-red-700 bg-red-50 border-red-200 hover:bg-red-100' 
-                             : 'text-green-700 bg-green-50 border-green-200 hover:bg-green-100'
-                         }`}
-                      >
-                        {tutor.is_verified ? 'Revoke' : 'Approve'}
-                      </button>
+                        onClick={() => toggleVerification(tutor.user_id, tutor.is_verified)}
+                        disabled={actionLoading === tutor.user_id}
+                        className={`inline-flex items-center justify-center px-4 py-2 rounded-lg text-sm font-medium transition-colors border disabled:opacity-50 disabled:cursor-not-allowed ${
+                          tutor.is_verified 
+                            ? 'text-red-700 bg-red-50 border-red-200 hover:bg-red-100' 
+                            : 'text-green-700 bg-green-50 border-green-200 hover:bg-green-100'
+                        }`}
+                       >
+                         {actionLoading === tutor.user_id ? 'Saving…' : tutor.is_verified ? 'Revoke' : 'Approve'}
+                       </button>
                     </td>
                   </tr>
                 ))
