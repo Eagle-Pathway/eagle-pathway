@@ -90,11 +90,20 @@ export const tutorsService = {
     return data as Booking[];
   },
 
-  async getTutorBookings(tutorId: string): Promise<Booking[]> {
+  async getTutorBookings(userId: string): Promise<Booking[]> {
+    // Resolve the tutor profile ID from the auth user ID
+    const { data: tutor, error: tutorError } = await supabase
+      .from('tutors')
+      .select('id')
+      .eq('user_id', userId)
+      .single();
+    
+    if (tutorError || !tutor) return [];
+
     const { data, error } = await supabase
       .from('bookings')
       .select('*, student:users(*)')
-      .eq('tutor_id', tutorId)
+      .eq('tutor_id', tutor.id)
       .order('session_date', { ascending: true });
     if (error) throw error;
     return data as Booking[];
@@ -112,6 +121,13 @@ export const tutorsService = {
       .from('bookings')
       .update({ status: 'cancelled' })
       .eq('id', bookingId);
+    if (error) throw error;
+  },
+  async updateTutorProfile(userId: string, updates: Partial<Tutor>): Promise<void> {
+    const { error } = await supabase
+      .from('tutors')
+      .update(updates)
+      .eq('user_id', userId);
     if (error) throw error;
   },
 };
