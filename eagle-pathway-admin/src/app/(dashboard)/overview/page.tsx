@@ -18,6 +18,24 @@ import {
 
 const COLORS = ['#1E4D9B', '#C9A84C', '#9333EA'];
 
+// Returns 'YYYY-MM-DD' in LOCAL time — avoids UTC vs local midnight mismatch
+function toLocalDateStr(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+// Build a label array for the past 7 days using local calendar dates
+function getLast7Days() {
+  const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  return Array.from({ length: 7 }, (_, i) => {
+    const d = new Date();
+    d.setDate(d.getDate() - (6 - i));
+    return { label: dayNames[d.getDay()], dateStr: toLocalDateStr(d) };
+  });
+}
+
 export default function OverviewPage() {
   const [counts, setCounts] = useState({
     users: 0,
@@ -28,6 +46,7 @@ export default function OverviewPage() {
   });
   
   const [roleData, setRoleData] = useState<{name: string, value: number}[]>([]);
+  const [activityData, setActivityData] = useState<{name: string, signups: number, apps: number}[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -35,21 +54,33 @@ export default function OverviewPage() {
       setLoading(true);
       
       try {
+        const sevenDaysAgo = new Date();
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
+        // Set to local midnight so the query boundary aligns with chart day labels
+        sevenDaysAgo.setHours(0, 0, 0, 0);
+        // toISOString converts to UTC — for countries east of UTC (Ethiopia = UTC+3)
+        // local midnight is 3 hrs earlier in UTC, which is correct: captures the full local day
+        const isoStart = sevenDaysAgo.toISOString();
+
         const [
           usersRes, 
           tutorsRes, 
           scholarshipsRes, 
           bookingsRes,
           appRes,
-          roleCountsRes
+          roleCountsRes,
+          recentUsersRes,
+          recentAppsRes,
         ] = await Promise.all([
           supabase.from('users').select('*', { count: 'exact', head: true }),
           supabase.from('tutors').select('*', { count: 'exact', head: true }).eq('is_verified', false),
           supabase.from('scholarships').select('*', { count: 'exact', head: true }).eq('is_active', true),
           supabase.from('bookings').select('*', { count: 'exact', head: true }),
           supabase.from('applications').select('*', { count: 'exact', head: true }).neq('status', 'accepted'),
-          // Fetch roles in one go for the pie chart
-          supabase.from('users').select('role')
+          supabase.from('users').select('role'),
+          // Real 7-day activity data
+          supabase.from('users').select('created_at').gte('created_at', isoStart),
+          supabase.from('applications').select('created_at').gte('created_at', isoStart),
         ]);
 
         const totalUsers = usersRes.count || 0;
@@ -73,6 +104,29 @@ export default function OverviewPage() {
           { name: 'Tutors', value: tutors },
           { name: 'Admins', value: admins },
         ]);
+
+        // Build real 7-day activity — bucket by date string using local timezone
+        const days = getLast7Days();
+        const signupsByDate: Record<string, number> = {};
+        const appsByDate: Record<string, number> = {};
+        days.forEach(d => { signupsByDate[d.dateStr] = 0; appsByDate[d.dateStr] = 0; });
+
+        (recentUsersRes.data || []).forEach(u => {
+          if (!u.created_at) return;
+          const date = toLocalDateStr(new Date(u.created_at));
+          if (signupsByDate[date] !== undefined) signupsByDate[date]++;
+        });
+        (recentAppsRes.data || []).forEach(a => {
+          if (!a.created_at) return;
+          const date = toLocalDateStr(new Date(a.created_at));
+          if (appsByDate[date] !== undefined) appsByDate[date]++;
+        });
+
+        setActivityData(days.map(d => ({
+          name: d.label,
+          signups: signupsByDate[d.dateStr],
+          apps: appsByDate[d.dateStr],
+        })));
       } catch (err) {
         console.error('Error fetching dashboard stats:', err);
       } finally {
@@ -87,16 +141,7 @@ export default function OverviewPage() {
     { title: 'Applications', value: counts.applicationsPending, icon: Briefcase, color: 'text-brand-gold', bg: 'bg-brand-gold/10' },
     { title: 'Tutors Pending', value: counts.tutorsPending, icon: UserCheck, color: 'text-red-600', bg: 'bg-red-100' },
     { title: 'Active Scholarships', value: counts.activeScholarships, icon: GraduationCap, color: 'text-green-600', bg: 'bg-green-100' },
-  ];
-
-  const activityData = [
-    { name: 'Mon', signups: Math.max(0, counts.users - 8), apps: Math.max(0, counts.applicationsPending - 5) },
-    { name: 'Tue', signups: Math.max(0, counts.users - 6), apps: Math.max(0, counts.applicationsPending - 4) },
-    { name: 'Wed', signups: Math.max(0, counts.users - 4), apps: Math.max(0, counts.applicationsPending - 3) },
-    { name: 'Thu', signups: Math.max(0, counts.users - 3), apps: Math.max(0, counts.applicationsPending - 2) },
-    { name: 'Fri', signups: Math.max(0, counts.users - 2), apps: Math.max(0, counts.applicationsPending - 1) },
-    { name: 'Sat', signups: Math.max(0, counts.users - 1), apps: Math.max(0, counts.applicationsPending) },
-    { name: 'Sun', signups: counts.users, apps: counts.applicationsPending },
+    { title: 'Total Bookings', value: counts.bookings, icon: Calendar, color: 'text-purple-600', bg: 'bg-purple-100' },
   ];
 
   return (
@@ -108,7 +153,7 @@ export default function OverviewPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
         {stats.map((stat) => {
           const Icon = stat.icon;
           return (
