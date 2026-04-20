@@ -65,5 +65,36 @@ export const messageService = {
         callback
       )
       .subscribe();
+  },
+
+  async getConversations(userId: string) {
+    // Fetch unique users involved in messages
+    const { data: rawMessages, error } = await supabase
+      .from('messages')
+      .select('*, sender:users!messages_sender_id_fkey(id, full_name, role, avatar_url), recipient:users!messages_recipient_id_fkey(id, full_name, role, avatar_url)')
+      .or(`sender_id.eq.${userId},recipient_id.eq.${userId}`)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    if (!rawMessages) return [];
+
+    const userMap = new Map<string, any>();
+    rawMessages.forEach((msg: any) => {
+      const otherUser = msg.sender_id === userId ? msg.recipient : msg.sender;
+      if (!otherUser) return;
+      if (!userMap.has(otherUser.id)) {
+        userMap.set(otherUser.id, {
+          ...otherUser,
+          last_message: msg.content,
+          last_time: msg.created_at,
+          unread_count: msg.recipient_id === userId && !msg.is_read ? 1 : 0
+        });
+      } else if (msg.recipient_id === userId && !msg.is_read) {
+        const existing = userMap.get(otherUser.id);
+        existing.unread_count += 1;
+      }
+    });
+
+    return Array.from(userMap.values());
   }
 };
