@@ -14,9 +14,11 @@ SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   const { setSession, loadProfile, setUser } = useAuthStore();
-  const { subscribeToUpdates, unsubscribeFromUpdates } = useAppStore();
+  const { subscribeToUpdates, unsubscribeFromUpdates, loadSavedScholarships } = useAppStore();
 
   useEffect(() => {
+    // Load local offline caches
+    loadSavedScholarships();
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       setSession(session);
