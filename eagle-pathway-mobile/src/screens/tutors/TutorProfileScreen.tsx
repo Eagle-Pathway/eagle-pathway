@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity,
-  StyleSheet, ActivityIndicator,
+  StyleSheet, ActivityIndicator, TextInput, Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useAuthStore } from '@/store/authStore';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Colors, Typography, Spacing, Radius, CommonStyles } from '@/utils/theme';
 import { Pill, Avatar, Button } from '@/components/common';
@@ -16,6 +17,10 @@ export default function TutorProfileScreen() {
   const [tutor, setTutor] = useState<Tutor | null>(null);
   const [reviews, setReviews] = useState<TutorReview[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editBio, setEditBio] = useState('');
+  const [editRate, setEditRate] = useState('');
+  const { user } = useAuthStore();
 
   useEffect(() => {
     const load = async () => {
@@ -32,6 +37,31 @@ export default function TutorProfileScreen() {
     };
     if (tutorId) load();
   }, [tutorId]);
+
+  const handleSave = async () => {
+    if (!tutor || !user) return;
+    try {
+      setLoading(true);
+      await tutorsService.updateTutorProfile(user.id, {
+        bio: editBio,
+        hourly_rate: parseInt(editRate) || tutor.hourly_rate,
+      });
+      setTutor({ ...tutor, bio: editBio, hourly_rate: parseInt(editRate) || tutor.hourly_rate });
+      setIsEditing(false);
+      Alert.alert('Success', 'Profile updated successfully');
+    } catch (e) {
+      Alert.alert('Error', 'Failed to update profile');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const startEditing = () => {
+    if (!tutor) return;
+    setEditBio(tutor.bio);
+    setEditRate(tutor.hourly_rate.toString());
+    setIsEditing(true);
+  };
 
   if (loading) return (
     <View style={[CommonStyles.flex1, CommonStyles.center, { backgroundColor: Colors.bg }]}>
@@ -51,9 +81,27 @@ export default function TutorProfileScreen() {
           <TouchableOpacity style={styles.backBtn} onPress={() => router.back()} activeOpacity={0.8}>
             <Text style={styles.backIcon}>←</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.heartBtn} activeOpacity={0.8}>
-            <Text style={{ fontSize: 18 }}>🤍</Text>
-          </TouchableOpacity>
+          <View style={{ flexDirection: 'row', gap: Spacing.sm }}>
+            {user?.id === tutor.user_id && (
+              <TouchableOpacity 
+                style={[styles.editBtn, isEditing && { backgroundColor: Colors.gold }]} 
+                onPress={isEditing ? handleSave : startEditing}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.editBtnText}>{isEditing ? 'Save' : 'Edit'}</Text>
+              </TouchableOpacity>
+            )}
+            {!isEditing && (
+              <TouchableOpacity style={styles.heartBtn} activeOpacity={0.8}>
+                <Text style={{ fontSize: 18 }}>🤍</Text>
+              </TouchableOpacity>
+            )}
+            {isEditing && (
+              <TouchableOpacity style={styles.heartBtn} onPress={() => setIsEditing(false)} activeOpacity={0.8}>
+                <Text style={{ fontSize: 18, color: Colors.white }}>✕</Text>
+              </TouchableOpacity>
+            )}
+          </View>
         </View>
         <Avatar initials={initials} size={80} borderRadius={24} color={Colors.gold} style={styles.heroAvatar} />
         <Text style={styles.heroName}>{tutor.user?.full_name}</Text>
@@ -78,7 +126,18 @@ export default function TutorProfileScreen() {
         <View style={[CommonStyles.card, { marginTop: Spacing.lg }]}>
           <View style={{ padding: Spacing.lg }}>
             <Text style={styles.cardSectionTitle}>About</Text>
-            <Text style={styles.bioText}>{tutor.bio}</Text>
+            {isEditing ? (
+              <TextInput
+                style={styles.bioInput}
+                multiline
+                value={editBio}
+                onChangeText={setEditBio}
+                placeholder="Write your bio..."
+                placeholderTextColor={Colors.textSecondary}
+              />
+            ) : (
+              <Text style={styles.bioText}>{tutor.bio}</Text>
+            )}
           </View>
         </View>
 
@@ -87,8 +146,18 @@ export default function TutorProfileScreen() {
           {[
             { icon: '📍', label: 'Location', value: tutor.location || 'Addis Ababa' },
             { icon: '🎓', label: 'Education', value: tutor.education },
-            { icon: '🕐', label: 'Availability', value: 'Mon–Sat · 9AM – 8PM' },
-            { icon: '💰', label: 'Rate', value: `ETB ${tutor.hourly_rate}/hour` },
+            { icon: '💰', label: 'Rate', value: isEditing ? (
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <Text style={{ color: Colors.text, marginRight: 4 }}>ETB</Text>
+                <TextInput
+                  style={styles.rateInput}
+                  keyboardType="numeric"
+                  value={editRate}
+                  onChangeText={setEditRate}
+                />
+                <Text style={{ color: Colors.text }}>/hour</Text>
+              </View>
+            ) : `ETB ${tutor.hourly_rate}/hour` },
           ].map((row, i, arr) => (
             <View key={row.label} style={[styles.infoRow, i === arr.length - 1 && { borderBottomWidth: 0 }]}>
               <View style={styles.infoIcon}><Text style={{ fontSize: 16 }}>{row.icon}</Text></View>
@@ -136,8 +205,8 @@ export default function TutorProfileScreen() {
       {/* Bottom CTA */}
       <View style={styles.bottomBar}>
         <TouchableOpacity 
-          style={styles.whatsappBtn} 
-          onPress={() => openWhatsApp(tutor.user?.phone || '', `Hi ${tutor.user?.full_name}, I saw your profile on Eagle Pathway and I'm interested in your ${tutor.subjects[0]} tutoring.`)}
+          style={styles.chatBtn} 
+          onPress={() => router.push({ pathname: '/chat/[id]', params: { id: tutor.user_id, fullName: tutor.user?.full_name } })}
           activeOpacity={0.8}
         >
           <Text style={{ fontSize: 20 }}>💬</Text>
@@ -166,6 +235,8 @@ const styles = StyleSheet.create({
   heroNav: { flexDirection: 'row', justifyContent: 'space-between', alignSelf: 'stretch', marginBottom: Spacing.lg },
   backBtn: { width: 36, height: 36, backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
   backIcon: { color: Colors.white, fontSize: 20 },
+  editBtn: { backgroundColor: 'rgba(255,255,255,0.2)', paddingHorizontal: 12, height: 36, borderRadius: 10, justifyContent: 'center', alignItems: 'center' },
+  editBtnText: { color: Colors.white, fontSize: 13, fontWeight: Typography.bold },
   heartBtn: { width: 36, height: 36, backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
   heroAvatar: { marginBottom: Spacing.md, borderWidth: 3, borderColor: 'rgba(255,255,255,0.3)' },
   heroName: { fontSize: Typography['4xl'], fontWeight: Typography.bold, color: Colors.white },
@@ -176,6 +247,8 @@ const styles = StyleSheet.create({
   heroStatLbl: { fontSize: Typography.xs, color: 'rgba(255,255,255,0.5)', marginTop: 2 },
   cardSectionTitle: { fontSize: Typography.sm, fontWeight: Typography.bold, color: Colors.textSecondary, letterSpacing: 0.8, textTransform: 'uppercase', marginBottom: Spacing.sm },
   bioText: { fontSize: Typography.md, color: Colors.text, lineHeight: 22 },
+  bioInput: { fontSize: Typography.md, color: Colors.text, lineHeight: 22, backgroundColor: Colors.grayLight, borderRadius: 8, padding: 12, minHeight: 100, textAlignVertical: 'top' },
+  rateInput: { fontSize: Typography.md, fontWeight: Typography.semibold, color: Colors.text, backgroundColor: Colors.grayLight, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 4, minWidth: 60 },
   infoRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md, padding: Spacing.md, paddingHorizontal: Spacing.lg, borderBottomWidth: 1, borderBottomColor: Colors.border },
   infoIcon: { width: 32, height: 32, backgroundColor: Colors.blueLight, borderRadius: 9, alignItems: 'center', justifyContent: 'center' },
   infoLabel: { fontSize: Typography.sm, color: Colors.textSecondary },
@@ -184,9 +257,9 @@ const styles = StyleSheet.create({
   reviewName: { fontSize: Typography.base, fontWeight: Typography.semibold, color: Colors.text },
   reviewDate: { fontSize: Typography.sm, color: Colors.textSecondary },
   reviewText: { fontSize: Typography.base, color: Colors.textSecondary, lineHeight: 20 },
-  whatsappBtn: {
+  chatBtn: {
     width: 48, height: 48,
-    backgroundColor: '#25D366', // WhatsApp Green
+    backgroundColor: Colors.blue, 
     borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
