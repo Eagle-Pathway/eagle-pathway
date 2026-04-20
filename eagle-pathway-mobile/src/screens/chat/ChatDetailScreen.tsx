@@ -1,0 +1,143 @@
+import React, { useEffect, useState, useRef } from 'react';
+import {
+  View, Text, FlatList, TouchableOpacity,
+  StyleSheet, ActivityIndicator, TextInput, KeyboardAvoidingView, Platform,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useLocalSearchParams, router } from 'expo-router';
+import { Colors, Typography, Spacing, Radius, CommonStyles } from '@/utils/theme';
+import { Avatar } from '@/components/common';
+import { useAuthStore } from '@/store/authStore';
+import { useChatStore } from '@/store/ChatStore';
+
+export default function ChatDetailScreen() {
+  const { otherId, fullName } = useLocalSearchParams<{ otherId: string, fullName: string }>();
+  const { user } = useAuthStore();
+  const { 
+    activeMessages, 
+    loadMessages, 
+    sendMessage, 
+    isLoadingMessages,
+    subscribeToMessages
+  } = useChatStore();
+  
+  const [inputText, setInputText] = useState('');
+  const flatListRef = useRef<FlatList>(null);
+
+  useEffect(() => {
+    if (user && otherId) {
+      loadMessages(user.id, otherId);
+      const unsubscribe = subscribeToMessages(user.id);
+      return unsubscribe;
+    }
+  }, [user?.id, otherId]);
+
+  const handleSend = async () => {
+    if (!inputText.trim() || !user || !otherId) return;
+    const content = inputText.trim();
+    setInputText('');
+    try {
+      await sendMessage(user.id, otherId, content);
+      flatListRef.current?.scrollToEnd({ animated: true });
+    } catch (e) {
+      setInputText(content);
+    }
+  };
+
+  const renderMessage = ({ item }: { item: any }) => {
+    const isMine = item.sender_id === user?.id;
+    return (
+      <View style={[styles.messageRow, isMine ? styles.myRow : styles.theirRow]}>
+        {!isMine && <Avatar initials={fullName?.charAt(0) || 'T'} size={28} style={styles.miniAvatar} color={Colors.blue} />}
+        <View style={[styles.bubble, isMine ? styles.myBubble : styles.theirBubble]}>
+          <Text style={[styles.messageText, isMine ? styles.myText : styles.theirText]}>
+            {item.content}
+          </Text>
+          <Text style={[styles.timeText, isMine ? styles.myTime : styles.theirTime]}>
+            {new Date(item.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+          </Text>
+        </View>
+      </View>
+    );
+  };
+
+  return (
+    <SafeAreaView style={[CommonStyles.flex1, { backgroundColor: Colors.bg }]} edges={['top']}>
+      {/* Header */}
+      <View style={styles.header}>
+        <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
+          <Text style={{ fontSize: 20 }}>←</Text>
+        </TouchableOpacity>
+        <Avatar initials={fullName?.charAt(0) || 'T'} size={36} color={Colors.blue} />
+        <View style={{ flex: 1, marginLeft: Spacing.sm }}>
+          <Text style={styles.headerName}>{fullName}</Text>
+          <Text style={styles.statusText}>Online</Text>
+        </View>
+      </View>
+
+      <KeyboardAvoidingView 
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        style={CommonStyles.flex1}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
+      >
+        {isLoadingMessages && activeMessages.length === 0 ? (
+          <View style={[CommonStyles.flex1, CommonStyles.center]}>
+            <ActivityIndicator color={Colors.blue} size="large" />
+          </View>
+        ) : (
+          <FlatList
+            ref={flatListRef}
+            data={activeMessages}
+            keyExtractor={(item) => item.id}
+            renderItem={renderMessage}
+            contentContainerStyle={styles.listContainer}
+            onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
+          />
+        )}
+
+        {/* Input area */}
+        <View style={styles.inputArea}>
+          <TextInput
+            style={styles.input}
+            placeholder="Type a message..."
+            value={inputText}
+            onChangeText={setInputText}
+            multiline
+          />
+          <TouchableOpacity 
+            style={[styles.sendBtn, !inputText.trim() && { opacity: 0.5 }]} 
+            onPress={handleSend}
+            disabled={!inputText.trim()}
+          >
+            <Text style={styles.sendIcon}>🏹</Text>
+          </TouchableOpacity>
+        </View>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  header: { flexDirection: 'row', alignItems: 'center', padding: Spacing.md, backgroundColor: Colors.white, borderBottomWidth: 1, borderBottomColor: Colors.border },
+  backBtn: { padding: Spacing.sm, marginRight: Spacing.xs },
+  headerName: { fontSize: Typography.base, fontWeight: Typography.bold, color: Colors.text },
+  statusText: { fontSize: 10, color: Colors.green, fontWeight: 'bold', textTransform: 'uppercase' },
+  listContainer: { padding: Spacing.lg },
+  messageRow: { marginBottom: Spacing.md, flexDirection: 'row', alignItems: 'flex-end', maxWidth: '85%' },
+  myRow: { alignSelf: 'flex-end' },
+  theirRow: { alignSelf: 'flex-start' },
+  miniAvatar: { marginRight: 8, marginBottom: 4 },
+  bubble: { padding: 12, borderRadius: 20 },
+  myBubble: { backgroundColor: Colors.blue, borderBottomRightRadius: 4 },
+  theirBubble: { backgroundColor: Colors.white, borderBottomLeftRadius: 4, borderWidth: 1, borderColor: Colors.border },
+  messageText: { fontSize: Typography.md, lineHeight: 20 },
+  myText: { color: Colors.white },
+  theirText: { color: Colors.text },
+  timeText: { fontSize: 9, marginTop: 4, alignSelf: 'flex-end' },
+  myTime: { color: 'rgba(255,255,255,0.7)' },
+  theirTime: { color: Colors.textSecondary },
+  inputArea: { flexDirection: 'row', padding: Spacing.md, backgroundColor: Colors.white, borderTopWidth: 1, borderTopColor: Colors.border, alignItems: 'center' },
+  input: { flex: 1, backgroundColor: Colors.grayLight, borderRadius: 24, paddingHorizontal: Spacing.lg, paddingVertical: 8, maxHeight: 100, fontSize: Typography.md, color: Colors.text },
+  sendBtn: { marginLeft: Spacing.md, width: 44, height: 44, backgroundColor: Colors.blue, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
+  sendIcon: { fontSize: 18, color: Colors.white },
+});

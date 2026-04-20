@@ -1,0 +1,129 @@
+import React, { useEffect } from 'react';
+import {
+  View, Text, FlatList, TouchableOpacity,
+  StyleSheet, ActivityIndicator, RefreshControl,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { router } from 'expo-router';
+import { Colors, Typography, Spacing, Radius, CommonStyles } from '@/utils/theme';
+import { Avatar, EmptyState } from '@/components/common';
+import { useAuthStore } from '../../store/authStore';
+import { useChatStore } from '@/store/ChatStore';
+
+export default function ChatListScreen() {
+  const { user } = useAuthStore();
+  const { 
+    conversations, 
+    loadConversations, 
+    isLoadingConversations, 
+    subscribeToMessages 
+  } = useChatStore();
+
+  useEffect(() => {
+    if (user) {
+      loadConversations(user.id);
+      const unsubscribe = subscribeToMessages(user.id);
+      return unsubscribe;
+    }
+  }, [user?.id]);
+
+  const onRefresh = () => {
+    if (user) loadConversations(user.id);
+  };
+
+  const renderItem = ({ item }: { item: any }) => {
+    const initials = item.full_name?.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase() || '?';
+    
+    return (
+      <TouchableOpacity 
+        style={styles.convCard} 
+        onPress={() => router.push({ pathname: '/chat/[id]', params: { id: item.id } })}
+        activeOpacity={0.7}
+      >
+        <Avatar initials={initials} size={50} color={item.role === 'admin' ? Colors.blue : Colors.gold} />
+        <View style={styles.convInfo}>
+          <View style={styles.convHeader}>
+            <Text style={styles.convName}>{item.full_name}</Text>
+            <Text style={styles.convTime}>
+              {item.last_time ? new Date(item.last_time).toLocaleDateString([], { month: 'short', day: 'numeric' }) : ''}
+            </Text>
+          </View>
+          <View style={styles.convFooter}>
+            <Text style={[styles.lastMessage, item.unread_count > 0 && styles.unreadText]} numberOfLines={1}>
+              {item.last_message}
+            </Text>
+            {item.unread_count > 0 && (
+              <View style={styles.unreadBadge}>
+                <Text style={styles.unreadCount}>{item.unread_count}</Text>
+              </View>
+            )}
+          </View>
+          <View style={styles.roleBadge}>
+             <Text style={styles.roleText}>{item.role.toUpperCase()}</Text>
+          </View>
+        </View>
+      </TouchableOpacity>
+    );
+  };
+
+  return (
+    <SafeAreaView style={CommonStyles.screenBg} edges={['top']}>
+      <View style={styles.header}>
+        <TouchableOpacity style={styles.backBtn} onPress={() => router.back()} activeOpacity={0.8}>
+          <Text style={{ fontSize: 20, color: Colors.text }}>←</Text>
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Messages</Text>
+      </View>
+
+      {isLoadingConversations && conversations.length === 0 ? (
+        <View style={[CommonStyles.flex1, CommonStyles.center]}>
+          <ActivityIndicator color={Colors.blue} size="large" />
+        </View>
+      ) : (
+        <FlatList
+          data={conversations}
+          keyExtractor={(item) => item.id}
+          renderItem={renderItem}
+          contentContainerStyle={styles.listContainer}
+          refreshControl={
+            <RefreshControl refreshing={isLoadingConversations} onRefresh={onRefresh} tintColor={Colors.blue} />
+          }
+          ListEmptyComponent={
+            <EmptyState 
+              icon="💬" 
+              title="No messages yet" 
+              subtitle="Direct messages from your consultants and tutors will appear here." 
+            />
+          }
+        />
+      )}
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  header: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    gap: Spacing.md,
+    padding: Spacing.xl, 
+    backgroundColor: Colors.card, 
+    borderBottomWidth: 1, 
+    borderBottomColor: Colors.border 
+  },
+  headerTitle: { fontSize: Typography['3xl'], fontWeight: Typography.bold, color: Colors.text, flex: 1 },
+  backBtn: { width: 36, height: 36, backgroundColor: Colors.grayLight, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+  listContainer: { paddingBottom: 100 },
+  convCard: { flexDirection: 'row', padding: Spacing.lg, backgroundColor: Colors.white, borderBottomWidth: 1, borderBottomColor: Colors.grayLight, alignItems: 'center', gap: Spacing.md },
+  convInfo: { flex: 1 },
+  convHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 2 },
+  convName: { fontSize: Typography.md, fontWeight: Typography.bold, color: Colors.text },
+  convTime: { fontSize: Typography.xs, color: Colors.textSecondary },
+  convFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  lastMessage: { fontSize: Typography.sm, color: Colors.textSecondary, flex: 1, marginRight: Spacing.md },
+  unreadText: { color: Colors.text, fontWeight: 'bold' },
+  unreadBadge: { backgroundColor: Colors.blue, width: 20, height: 20, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+  unreadCount: { color: Colors.white, fontSize: 10, fontWeight: 'bold' },
+  roleBadge: { marginTop: 4, alignSelf: 'flex-start', paddingHorizontal: 6, paddingVertical: 2, backgroundColor: Colors.grayLight, borderRadius: Radius.full },
+  roleText: { fontSize: 8, fontWeight: 'bold', color: Colors.textSecondary, letterSpacing: 0.5 },
+});
