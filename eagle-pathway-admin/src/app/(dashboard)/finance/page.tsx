@@ -4,6 +4,7 @@ import { supabase } from '@/lib/supabase';
 import { DollarSign, TrendingUp, CreditCard, Wallet, Search, Loader2 } from 'lucide-react';
 
 interface TutorFinancials {
+  id: string;
   user_id: string;
   hourly_rate: number;
   total_sessions: number;
@@ -18,7 +19,9 @@ export default function FinancePage() {
   const [transactions, setTransactions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
-  const [activeTab, setActiveTab] = useState<'balances' | 'transactions'>('balances');
+  const [activeTab, setActiveTab] = useState<'balances' | 'transactions' | 'receipts' | 'payouts'>('balances');
+  const [payments, setPayments] = useState<any[]>([]);
+  const [payoutRequests, setPayoutRequests] = useState<any[]>([]);
 
   useEffect(() => {
     fetchData();
@@ -30,7 +33,7 @@ export default function FinancePage() {
     // Fetch tutor balances
     const { data: tutorData } = await supabase
       .from('tutors')
-      .select(`user_id, hourly_rate, total_sessions, users ( full_name, phone )`)
+      .select(`id, user_id, hourly_rate, total_sessions, users ( full_name, phone )`)
       .order('total_sessions', { ascending: false });
 
     // Fetch transactions
@@ -41,10 +44,105 @@ export default function FinancePage() {
       .order('created_at', { ascending: false })
       .limit(20);
 
+    // Fetch manual local payments (Telebirr/CBE receipts)
+    const { data: paymentsData } = await supabase
+      .from('payments')
+      .select('*, user:users(full_name, phone)')
+      .order('created_at', { ascending: false });
+
+    // Fetch payout requests
+    const { data: payRequests } = await supabase
+      .from('tutor_payouts')
+      .select('*, tutor:tutors(id, users(full_name, phone))')
+      .order('created_at', { ascending: false });
+
     if (tutorData) setTutors(tutorData as any);
     if (transData) setTransactions(transData);
+    if (paymentsData) setPayments(paymentsData);
+    if (payRequests) setPayoutRequests(payRequests);
     
     setLoading(false);
+  };
+
+  const handleVerifyReceipt = async (paymentId: string, status: 'approved' | 'rejected') => {
+    // Use the secure bypass RPC we created via migration
+    const { error } = await supabase.rpc('admin_update_payment_status', {
+      target_payment_id: paymentId,
+      new_status: status,
+      notes: status === 'rejected' ? 'Invalid receipt. Please try again.' : null
+    });
+    
+    if (!error) {
+      setPayments(prev => prev.map(p => p.id === paymentId ? { ...p, status } : p));
+      
+      // Optionally fire notification to student here about payment
+      const pData = payments.find(p => p.id === paymentId);
+      if (pData) {
+        await supabase.from('notifications').insert({
+          user_id: pData.user_id,
+          type: 'application_update',
+          title: status === 'approved' ? 'Payment Approved ✅' : 'Payment Rejected ❌',
+          body: status === 'approved' 
+            ? `Your ${pData.method} payment of ${pData.amount} ETB was verified.` 
+            : `Your recent payment was rejected. Please contact support.`,
+        });
+      }
+    } else {
+      alert('Verification failed: ' + error.message);
+    }
+  };
+
+  const handlePayout = async (tutorId: string, tutorName: string, amount: number) => {
+    const refId = window.prompt(`Confirm payout of ${amount.toLocaleString()} ETB to ${tutorName}.\\nEnter Bank/Telebirr Reference Number:`);
+    if (!refId) return;
+
+    const { error } = await supabase.from('tutor_payouts').insert({
+      tutor_id: tutorId,
+      amount,
+      bank_name: 'Manual / Admin Record',
+      account_number: refId,
+      account_name: tutorName,
+      status: 'completed',
+      processed_at: new Date().toISOString()
+    });
+
+    if (!error) {
+      alert(`Payout to ${tutorName} recorded successfully!`);
+      fetchData(); // Refresh list
+    } else {
+      alert('Failed to process payout: ' + error.message);
+    }
+  };
+
+  const handleUpdatePayoutStatus = async (payoutId: string, status: 'processing' | 'completed' | 'rejected') => {
+    const notes = status === 'rejected' ? window.prompt('Reason for rejection:') : null;
+    if (status === 'rejected' && notes === null) return;
+
+    const { error } = await supabase.rpc('admin_update_payout_status', {
+      target_payout_id: payoutId,
+      new_status: status,
+      notes: notes
+    });
+
+    if (!error) {
+      setPayoutRequests(prev => prev.map(p => p.id === payoutId ? { ...p, status, processed_at: status === 'completed' ? new Date().toISOString() : p.processed_at } : p));
+      
+      const pData = payoutRequests.find(p => p.id === payoutId);
+      if (pData) {
+        await supabase.from('notifications').insert({
+          user_id: pData.tutor.users.id, // We need to be sure this is the user_id
+          type: 'application_update',
+          title: `Payout ${status.charAt(0).toUpperCase() + status.slice(1)} 💰`,
+          body: status === 'completed' 
+            ? `Your payout of ${pData.amount} ETB has been successfully transferred.` 
+            : status === 'processing' 
+              ? `We are processing your payout request of ${pData.amount} ETB.`
+              : `Your payout request was rejected: ${notes}`,
+        });
+      }
+    } else {
+      alert('Update failed: ' + error.message);
+    }
   };
 
   const totalPlatformVolume = tutors.reduce((acc, t) => acc + ((t.hourly_rate || 0) * (t.total_sessions || 0)), 0);
@@ -114,6 +212,25 @@ export default function FinancePage() {
           Recent Transactions
           {activeTab === 'transactions' && <div className="absolute bottom-0 left-0 right-0 h-1 bg-brand-blue rounded-full" />}
         </button>
+        <button 
+          onClick={() => setActiveTab('receipts')}
+          className={`pb-4 text-sm font-bold transition-all relative ${activeTab === 'receipts' ? 'text-brand-blue' : 'text-gray-400 hover:text-gray-600'}`}
+        >
+          Receipt Verification
+          {activeTab === 'receipts' && <div className="absolute bottom-0 left-0 right-0 h-1 bg-brand-blue rounded-full" />}
+        </button>
+        <button 
+          onClick={() => setActiveTab('payouts')}
+          className={`pb-4 text-sm font-bold transition-all relative ${activeTab === 'payouts' ? 'text-brand-blue' : 'text-gray-400 hover:text-gray-600'}`}
+        >
+          Payout Requests
+          {activeTab === 'payouts' && <div className="absolute bottom-0 left-0 right-0 h-1 bg-brand-blue rounded-full" />}
+          {payoutRequests.filter(p => p.status === 'pending').length > 0 && (
+            <span className="absolute -top-1 -right-4 bg-brand-blue text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center border-2 border-white">
+              {payoutRequests.filter(p => p.status === 'pending').length}
+            </span>
+          )}
+        </button>
       </div>
 
       {activeTab === 'balances' ? (
@@ -166,7 +283,10 @@ export default function FinancePage() {
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{gross.toLocaleString()}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-brand-gold">{net.toLocaleString()}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                          <button className="px-3 py-1.5 bg-green-50 text-green-700 text-xs font-bold rounded-lg border border-green-200 hover:bg-green-100 transition-colors">
+                          <button 
+                            onClick={() => handlePayout(t.id, t.users?.full_name || 'Tutor', net)}
+                            className="px-3 py-1.5 bg-green-50 text-green-700 text-xs font-bold rounded-lg border border-green-200 hover:bg-green-100 transition-colors"
+                          >
                             Pay
                           </button>
                         </td>
@@ -178,7 +298,91 @@ export default function FinancePage() {
             </table>
           </div>
         </div>
-      ) : (
+      ) : activeTab === 'payouts' ? (
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden animate-in slide-in-from-bottom-2 duration-300">
+          <div className="p-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
+             <h2 className="font-bold text-gray-900 ml-2">Tutor Withdrawal Requests</h2>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tutor</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Request Details</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Bank Details</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                  <th className="relative px-6 py-3"><span className="sr-only">Actions</span></th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {payoutRequests.length === 0 ? (
+                  <tr><td colSpan={5} className="px-6 py-10 text-center text-sm text-gray-500">No payout requests found.</td></tr>
+                ) : (
+                  payoutRequests.map((p) => (
+                    <tr key={p.id} className="hover:bg-gray-50/50 transition-colors">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm font-bold text-gray-900">{p.tutor?.users?.full_name}</div>
+                        <div className="text-xs text-gray-500">{p.tutor?.users?.phone}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm font-bold text-brand-gold">{p.amount.toLocaleString()} ETB</div>
+                        <div className="text-xs text-gray-500 mt-0.5">{new Date(p.created_at).toLocaleDateString()}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900 font-medium">{p.bank_name}</div>
+                        <div className="text-xs text-gray-500">Acc: {p.account_number}</div>
+                        <div className="text-xs text-gray-400 capitalize">{p.account_name}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`px-2 py-1 text-[10px] font-bold rounded-full uppercase ${
+                          p.status === 'completed' ? 'bg-green-100 text-green-700' :
+                          p.status === 'processing' ? 'bg-blue-100 text-brand-blue' :
+                          p.status === 'rejected' ? 'bg-red-100 text-red-700' :
+                          'bg-amber-100 text-amber-700'
+                        }`}>
+                          {p.status}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        {p.status !== 'completed' && p.status !== 'rejected' && (
+                          <div className="flex justify-end gap-2">
+                             {p.status === 'pending' && (
+                               <button 
+                                 onClick={() => handleUpdatePayoutStatus(p.id, 'processing')}
+                                 className="px-3 py-1 bg-blue-50 text-brand-blue text-[10px] font-bold rounded border border-blue-100 hover:bg-blue-100"
+                               >
+                                 Process
+                               </button>
+                             )}
+                             <button 
+                               onClick={() => handleUpdatePayoutStatus(p.id, 'completed')}
+                               className="px-3 py-1 bg-green-50 text-green-700 text-[10px] font-bold rounded border border-green-100 hover:bg-green-100"
+                             >
+                               Complete
+                             </button>
+                             <button 
+                               onClick={() => handleUpdatePayoutStatus(p.id, 'rejected')}
+                               className="px-3 py-1 bg-red-50 text-red-700 text-[10px] font-bold rounded border border-red-100 hover:bg-red-100"
+                             >
+                               Reject
+                             </button>
+                          </div>
+                        )}
+                        {(p.status === 'completed' || p.status === 'rejected') && (
+                          <div className="text-[10px] text-gray-400 font-medium">
+                             {p.status === 'completed' ? 'Fulfilled ' : 'Rejected '} 
+                             {p.processed_at && new Date(p.processed_at).toLocaleDateString()}
+                          </div>
+                        )}
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      ) : activeTab === 'transactions' ? (
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden animate-in slide-in-from-bottom-2 duration-300">
           <div className="p-4 border-b border-gray-100 bg-gray-50/50">
              <h2 className="font-bold text-gray-900 ml-2">Recent Booking Payments</h2>
@@ -214,6 +418,65 @@ export default function FinancePage() {
                         <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-blue-50 text-brand-blue">
                           {b.status}
                         </span>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      ) : (
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden animate-in slide-in-from-bottom-2 duration-300">
+          <div className="p-4 border-b border-gray-100 bg-gray-50/50">
+             <h2 className="font-bold text-gray-900 ml-2">Approve Manual Payments</h2>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date & Method</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Student & Trans ID</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Amount</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Receipt File</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status & Verify</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {payments.length === 0 ? (
+                  <tr><td colSpan={5} className="px-6 py-10 text-center text-sm text-gray-500">No manual payment receipts found.</td></tr>
+                ) : (
+                  payments.map((p) => (
+                    <tr key={p.id} className="hover:bg-gray-50/50 transition-colors">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm font-medium text-gray-900">{new Date(p.created_at).toLocaleDateString()}</div>
+                        <div className="text-xs font-bold text-gray-400 uppercase mt-0.5">{p.method}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm font-bold text-gray-900">{p.user?.full_name}</div>
+                        <div className="text-[10px] bg-gray-100 text-gray-500 px-2 py-0.5 rounded mt-1 inline-block font-mono">Txn: {p.transaction_id}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-brand-blue">{p.amount?.toLocaleString()} ETB</td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {p.receipt_url ? (
+                          <a href={p.receipt_url} target="_blank" rel="noreferrer" className="text-sm text-blue-600 hover:underline flex items-center font-medium">
+                            <Search className="w-3 h-3 mr-1" /> View Image
+                          </a>
+                        ) : (
+                          <span className="text-xs text-gray-400">No file</span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {p.status === 'pending' ? (
+                          <div className="flex gap-2">
+                            <button onClick={() => handleVerifyReceipt(p.id, 'rejected')} className="px-3 py-1 bg-red-50 text-red-600 hover:bg-red-100 rounded-lg text-xs font-bold transition-colors">Reject</button>
+                            <button onClick={() => handleVerifyReceipt(p.id, 'approved')} className="px-3 py-1 bg-green-50 text-green-700 hover:bg-green-100 rounded-lg text-xs font-bold shadow transition-colors">Approve Data</button>
+                          </div>
+                        ) : (
+                          <span className={`px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider rounded-full ${p.status === 'approved' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                            {p.status}
+                          </span>
+                        )}
                       </td>
                     </tr>
                   ))
