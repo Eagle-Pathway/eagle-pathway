@@ -6,6 +6,18 @@
 -- Enable UUID extension
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
+-- Helper function to check if current user is an admin
+CREATE OR REPLACE FUNCTION public.is_admin()
+RETURNS BOOLEAN AS $$
+BEGIN
+  RETURN (
+    SELECT role = 'admin'
+    FROM public.users
+    WHERE id = auth.uid()
+  );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
 -- ─── USERS ────────────────────────────────────────────────────────────────────
 CREATE TYPE user_role AS ENUM ('student', 'parent', 'tutor', 'admin');
 
@@ -22,9 +34,9 @@ CREATE TABLE users (
 );
 
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Users can view own profile" ON users FOR SELECT USING (auth.uid() = id);
-CREATE POLICY "Users can update own profile" ON users FOR UPDATE USING (auth.uid() = id);
-CREATE POLICY "Users can insert own profile" ON users FOR INSERT WITH CHECK (auth.uid() = id);
+CREATE POLICY "Users can view own profile" ON users FOR SELECT USING (auth.uid() = id OR is_admin());
+CREATE POLICY "Users can update own profile" ON users FOR UPDATE USING (auth.uid() = id OR is_admin());
+CREATE POLICY "Users can insert own profile" ON users FOR INSERT WITH CHECK (auth.uid() = id OR is_admin());
 
 -- Sync auth.users to public.users
 CREATE OR REPLACE FUNCTION public.handle_new_user()
@@ -126,9 +138,9 @@ CREATE TABLE bookings (
 );
 
 ALTER TABLE bookings ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Students can view own bookings" ON bookings FOR SELECT USING (auth.uid() = student_id OR auth.uid() IN (SELECT user_id FROM tutors WHERE id = tutor_id));
-CREATE POLICY "Students can create bookings" ON bookings FOR INSERT WITH CHECK (auth.uid() = student_id);
-CREATE POLICY "Participants can update bookings" ON bookings FOR UPDATE USING (auth.uid() = student_id OR auth.uid() IN (SELECT user_id FROM tutors WHERE id = tutor_id));
+CREATE POLICY "Users can view relevant bookings" ON bookings FOR SELECT USING (auth.uid() = student_id OR auth.uid() IN (SELECT user_id FROM tutors WHERE id = tutor_id) OR is_admin());
+CREATE POLICY "Students can create bookings" ON bookings FOR INSERT WITH CHECK (auth.uid() = student_id OR is_admin());
+CREATE POLICY "Participants can update bookings" ON bookings FOR UPDATE USING (auth.uid() = student_id OR auth.uid() IN (SELECT user_id FROM tutors WHERE id = tutor_id) OR is_admin());
 
 -- ─── SCHOLARSHIPS ─────────────────────────────────────────────────────────────
 CREATE TYPE degree_level AS ENUM ('undergraduate', 'masters', 'phd', 'all');
@@ -178,9 +190,10 @@ CREATE TABLE applications (
 );
 
 ALTER TABLE applications ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Students can view own applications" ON applications FOR SELECT USING (auth.uid() = student_id OR auth.uid() = consultant_id);
-CREATE POLICY "Students can create applications" ON applications FOR INSERT WITH CHECK (auth.uid() = student_id);
-CREATE POLICY "Participants can update applications" ON applications FOR UPDATE USING (auth.uid() = student_id OR auth.uid() = consultant_id);
+CREATE POLICY "Users can view relevant applications" ON applications FOR SELECT USING (auth.uid() = student_id OR auth.uid() = consultant_id OR is_admin());
+CREATE POLICY "Students can create applications" ON applications FOR INSERT WITH CHECK (auth.uid() = student_id OR is_admin());
+CREATE POLICY "Participants can update applications" ON applications FOR UPDATE USING (auth.uid() = student_id OR auth.uid() = consultant_id OR is_admin());
+CREATE POLICY "Admins can delete applications" ON applications FOR DELETE USING (is_admin());
 
 -- ─── DOCUMENTS ────────────────────────────────────────────────────────────────
 CREATE TYPE document_type AS ENUM ('degree_certificate','transcript','passport','cv','ielts_certificate','reference_letter','sop','other');
@@ -200,9 +213,9 @@ CREATE TABLE documents (
 );
 
 ALTER TABLE documents ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Users can view own documents" ON documents FOR SELECT USING (auth.uid() = user_id);
-CREATE POLICY "Users can upload documents" ON documents FOR INSERT WITH CHECK (auth.uid() = user_id);
-CREATE POLICY "Users can update own documents" ON documents FOR UPDATE USING (auth.uid() = user_id);
+CREATE POLICY "Users can view relevant documents" ON documents FOR SELECT USING (auth.uid() = user_id OR is_admin() OR auth.uid() IN (SELECT consultant_id FROM applications WHERE id = application_id));
+CREATE POLICY "Users can upload documents" ON documents FOR INSERT WITH CHECK (auth.uid() = user_id OR is_admin());
+CREATE POLICY "Users can update relevant documents" ON documents FOR UPDATE USING (auth.uid() = user_id OR is_admin());
 
 -- ─── NOTIFICATIONS ────────────────────────────────────────────────────────────
 CREATE TYPE notification_type AS ENUM ('session_reminder','booking_confirmed','scholarship_alert','document_approved','document_rejected','sop_reviewed','application_update','offer_received');
@@ -219,8 +232,9 @@ CREATE TABLE notifications (
 );
 
 ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "Users can view own notifications" ON notifications FOR SELECT USING (auth.uid() = user_id);
-CREATE POLICY "Users can update own notifications" ON notifications FOR UPDATE USING (auth.uid() = user_id);
+CREATE POLICY "Users can view own notifications" ON notifications FOR SELECT USING (auth.uid() = user_id OR is_admin());
+CREATE POLICY "Users can update own notifications" ON notifications FOR UPDATE USING (auth.uid() = user_id OR is_admin());
+CREATE POLICY "Admins can insert notifications" ON notifications FOR INSERT WITH CHECK (is_admin());
 
 -- ─── PUSH TOKENS ──────────────────────────────────────────────────────────────
 CREATE TABLE push_tokens (
