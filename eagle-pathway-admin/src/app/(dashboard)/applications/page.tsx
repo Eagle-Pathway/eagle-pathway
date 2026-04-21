@@ -57,6 +57,8 @@ export default function ApplicationsPage() {
   const [selectedApp, setSelectedApp] = useState<Application | null>(null);
   const [notesInput, setNotesInput] = useState('');
   const [savingNotes, setSavingNotes] = useState(false);
+  const [savingFeedback, setSavingFeedback] = useState(false);
+  const [savingStatus, setSavingStatus] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -64,17 +66,28 @@ export default function ApplicationsPage() {
 
   const fetchData = async () => {
     setLoading(true);
+    console.log('Fetching applications...');
     // Fetch applications with joins
     const { data: appData, error: appError } = await supabase
       .from('applications')
       .select('*, student:users!applications_student_id_fkey(id, full_name, email), scholarship:scholarships(name, organization), consultant:users!applications_consultant_id_fkey(full_name), documents(*)')
       .order('updated_at', { ascending: false });
 
+    if (appError) {
+      console.error('Error fetching applications:', appError);
+    } else {
+      console.log(`Fetched ${appData?.length || 0} applications`);
+    }
+
     // Fetch potential consultants (users with role tutor or admin)
-    const { data: consData } = await supabase
+    const { data: consData, error: consError } = await supabase
       .from('users')
       .select('id, full_name')
       .in('role', ['tutor', 'admin']);
+
+    if (consError) {
+      console.error('Error fetching consultants:', consError);
+    }
 
     if (!appError && appData) setApplications(appData as Application[]);
     if (consData) setConsultants(consData as Consultant[]);
@@ -98,14 +111,24 @@ export default function ApplicationsPage() {
   };
 
   const handleUpdateStatus = async (appId: string, status: string) => {
-    const { error } = await supabase
-      .from('applications')
-      .update({ status })
-      .eq('id', appId);
+    setSavingStatus(true);
+    try {
+      const { error } = await supabase
+        .from('applications')
+        .update({ status, updated_at: new Date().toISOString() })
+        .eq('id', appId);
 
-    if (!error) {
-      setApplications(prev => prev.map(app => app.id === appId ? { ...app, status } : app));
-      if (selectedApp?.id === appId) setSelectedApp(prev => prev ? { ...prev, status } : null);
+      if (!error) {
+        setApplications(prev => prev.map(app => app.id === appId ? { ...app, status, updated_at: new Date().toISOString() } : app));
+        if (selectedApp?.id === appId) setSelectedApp(prev => prev ? { ...prev, status, updated_at: new Date().toISOString() } : null);
+        // Optional: Alert success for status update too
+      } else {
+        alert('Failed to update status: ' + error.message);
+      }
+    } catch (err: any) {
+      alert('An unexpected error occurred: ' + err.message);
+    } finally {
+      setSavingStatus(false);
     }
   };
 
@@ -127,27 +150,41 @@ export default function ApplicationsPage() {
   };
 
   const handleSaveFeedback = async (appId: string, feedback: string) => {
-    const { error } = await supabase
-      .from('applications')
-      .update({ consultant_feedback: feedback })
-      .eq('id', appId);
-      
-    if (!error) {
-      setApplications(prev => prev.map(app => app.id === appId ? { ...app, consultant_feedback: feedback } : app));
-      if (selectedApp?.id === appId) setSelectedApp(prev => prev ? { ...prev, consultant_feedback: feedback } : null);
-      
-      // Notify student
-      const appData = applications.find(a => a.id === appId);
-      if (appData?.student_id) {
-        await supabase.from('notifications').insert({
-          user_id: appData.student_id,
-          type: 'sop_reviewed',
-          title: 'SOP Feedback Available ✍️',
-          body: `Consultant left some feedback on your ${appData.scholarship?.name} application.`,
-        });
+    if (!feedback.trim()) {
+      alert('Please enter some feedback before sending.');
+      return;
+    }
+
+    setSavingFeedback(true);
+    try {
+      const { error } = await supabase
+        .from('applications')
+        .update({ consultant_feedback: feedback, updated_at: new Date().toISOString() })
+        .eq('id', appId);
+        
+      if (!error) {
+        setApplications(prev => prev.map(app => app.id === appId ? { ...app, consultant_feedback: feedback, updated_at: new Date().toISOString() } : app));
+        if (selectedApp?.id === appId) setSelectedApp(prev => prev ? { ...prev, consultant_feedback: feedback, updated_at: new Date().toISOString() } : null);
+        
+        // Notify student
+        const appData = applications.find(a => a.id === appId);
+        if (appData?.student_id) {
+          await supabase.from('notifications').insert({
+            user_id: appData.student_id,
+            type: 'sop_reviewed',
+            title: 'SOP Feedback Available ✍️',
+            body: `Consultant left some feedback on your ${appData.scholarship?.name} application.`,
+          });
+        }
+        alert('Feedback sent to student successfully! ✨');
+      } else {
+        alert('Failed to save feedback: ' + error.message);
       }
-    } else {
-      alert('Failed to save feedback: ' + error.message);
+    } catch (err: any) {
+      alert('An unexpected error occurred while saving feedback.');
+      console.error(err);
+    } finally {
+      setSavingFeedback(false);
     }
   };
 
@@ -384,9 +421,10 @@ export default function ApplicationsPage() {
                   />
                   <button 
                     onClick={() => handleSaveFeedback(selectedApp.id, selectedApp.consultant_feedback || '')}
-                    className="w-full py-2 bg-brand-blue text-white rounded-xl text-sm font-bold shadow-sm hover:bg-blue-800"
+                    disabled={savingFeedback}
+                    className="w-full py-2 bg-brand-blue text-white rounded-xl text-sm font-bold shadow-sm hover:bg-blue-800 disabled:opacity-50 transition-all active:scale-[0.98]"
                   >
-                    Send to Student
+                    {savingFeedback ? 'Sending...' : 'Send to Student'}
                   </button>
                 </div>
 
@@ -397,9 +435,14 @@ export default function ApplicationsPage() {
                        <button 
                           key={s.id}
                           onClick={() => handleUpdateStatus(selectedApp.id, s.id)}
-                          className={`w-full py-2.5 rounded-xl text-sm font-bold text-left px-4 border ${selectedApp.status === s.id ? 'bg-brand-blue text-white border-brand-blue' : 'bg-gray-50 text-gray-600 hover:bg-gray-100 border-transparent'}`}
+                          disabled={savingStatus}
+                          className={`w-full py-2.5 rounded-xl text-sm font-bold text-left px-4 border transition-all ${
+                            selectedApp.status === s.id 
+                              ? 'bg-brand-blue text-white border-brand-blue shadow-md' 
+                              : 'bg-gray-50 text-gray-600 hover:bg-gray-100 border-gray-200'
+                          } disabled:opacity-50`}
                        >
-                          Move to {s.label}
+                          {savingStatus && selectedApp.status !== s.id ? 'Updating...' : `Move to ${s.label}`}
                        </button>
                     ))}
                   </div>
