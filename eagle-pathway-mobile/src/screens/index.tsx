@@ -14,6 +14,8 @@ import { paymentsService } from '@/services/payments';
 import { useAuthStore } from '@/store/authStore';
 import { useAppStore } from '@/store/appStore';
 import { useChatStore } from '@/store/ChatStore';
+import { supabase } from '@/services/supabase';
+import type { Application, PackageTier, Scholarship } from '@/types';
 
 // ─── SCHOLARSHIP DETAIL ───────────────────────────────────────────────────────
 export function ScholarshipDetailScreen() {
@@ -992,7 +994,7 @@ export function DocumentsScreen() {
               </Text>
             </TouchableOpacity>
           ))}
-        </div>
+        </View>
 
         {loading ? (
           <ActivityIndicator color={Colors.blue} style={{ marginTop: 40 }} />
@@ -1075,8 +1077,6 @@ export function BookingsScreen() {
   const [rating, setRating] = useState(0);
   const [ratingComment, setRatingComment] = useState('');
   const [ratingLoading, setRatingLoading] = useState(false);
-  const { supabase: supabaseClient } = require('@/services/supabase');
-
   const handleMarkCompleted = async (bookingId: string) => {
     await updateBookingStatus(bookingId, 'completed' as any);
     setRatingBookingId(bookingId);
@@ -1091,8 +1091,7 @@ export function BookingsScreen() {
     }
     setRatingLoading(true);
     try {
-      const { supabase: sb } = require('@/services/supabase');
-      await sb.from('booking_ratings').insert({
+      await supabase.from('booking_ratings').insert({
         booking_id: ratingBookingId,
         rating,
         comment: ratingComment.trim() || null,
