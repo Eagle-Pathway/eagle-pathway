@@ -3,13 +3,14 @@ import Link from "next/link";
 export default function Home() {
   return (
     <div className="page-layout">
-      {/* ─── NAVIGATION ────────────────────────────────────────────────────── */}
       <nav className="navbar">
         <div className="container">
           <div className="nav-grid">
             <div className="logo-group">
               <div className="logo-icon">🦅</div>
-              <span className="logo-text">Eagle <span className="text-blue">Pathway</span></span>
+              <span className="logo-text">
+                Eagle <span className="text-brand">Pathway</span>
+              </span>
             </div>
             <ul className="nav-links">
               <li><a href="#services">Services</a></li>
@@ -17,131 +18,136 @@ export default function Home() {
               <li><a href="#testimonials">Success</a></li>
             </ul>
             <div className="nav-cta">
-              <Link href="/login" className="btn btn-outline" style={{ padding: '0.6rem 1.5rem' }}>Portal Login</Link>
+              <Link href="/login" className="btn btn-outline">Portal Login</Link>
             </div>
           </div>
         </div>
       </nav>
 
       <main>
-        {/* ─── HERO SECTION ──────────────────────────────────────────────────── */}
-        <section className="hero-section">
+        <section className="hero section">
           <div className="container">
-            <span className="badge">Ethiopia's Premier Education Bridge</span>
-            <h1 className="hero-title">
-              Unlock Your <span className="gradient-text">Global Scholar</span> <br />
-              Potential Today
-            </h1>
-            <p className="hero-subtitle">
-              Expert guidance for international scholarships and premium tutoring services 
-              tailored for the ambitious Ethiopian student. We don't just apply—we succeed.
-            </p>
-            <div className="cta-group">
-              <a href="#" className="btn btn-primary">Begin Your Journey</a>
-              <a href="#" className="btn btn-outline">Explore Scholarships</a>
-            </div>
-            
-            <div className="hero-meta container" style={{ marginTop: '4rem', maxWidth: '800px' }}>
-              <div className="grid-3" style={{ gap: '1rem' }}>
-                <div className="meta-item">
-                  <strong>94%</strong>
-                  <span>Admission Success</span>
-                </div>
-                <div className="meta-item">
-                  <strong>500+</strong>
-                  <span>Global Placements</span>
-                </div>
-                <div className="meta-item">
-                  <strong>$12M+</strong>
-                  <span>Scholarship Funding</span>
+            <div className="hero-grid">
+              <div>
+                <span className="badge">Ethiopia's fastest scholarship pathway</span>
+                <h1>
+                  Launch your
+                  {" "}
+                  <span className="gradient-text">global education future</span>
+                  {" "}
+                  with confidence
+                </h1>
+                <p>
+                  Eagle Pathway combines elite tutoring, application strategy, and end-to-end
+                  scholarship execution so ambitious students can secure admission and funding.
+                </p>
+                <div className="cta-group">
+                  <a href="#services" className="btn btn-primary">Start your plan</a>
+                  <a href="#pathway" className="btn btn-outline">See the process</a>
                 </div>
               </div>
+
+              <aside className="hero-panel">
+                <h3>Impact Snapshot</h3>
+                <p>Performance indicators from our student and admissions pipeline.</p>
+                <div className="metric-grid">
+                  <div className="metric">
+                    <strong>94%</strong>
+                    <span>Admission success</span>
+                  </div>
+                  <div className="metric">
+                    <strong>500+</strong>
+                    <span>Global placements</span>
+                  </div>
+                  <div className="metric">
+                    <strong>$12M+</strong>
+                    <span>Scholarship value</span>
+                  </div>
+                </div>
+                <div className="mini-note">Trusted by students targeting Canada, UK, EU, and the US.</div>
+              </aside>
             </div>
           </div>
         </section>
 
-        {/* ─── SERVICES ───────────────────────────────────────────────────────── */}
-        <section id="services" className="services-section">
+        <section id="services" className="section">
           <div className="container">
-            <div className="section-header">
-              <h2 className="section-title">End-to-End Academic Solutions</h2>
-              <p className="section-subtitle">A comprehensive ecosystem built to bridge the gap between brilliance and opportunity.</p>
+            <div className="section-head">
+              <h2>End-to-end academic execution</h2>
+              <p>A complete ecosystem for scholarship wins and academic excellence.</p>
             </div>
-            
             <div className="grid-2">
               <div className="card">
-                <span style={{ fontSize: '3.5rem', marginBottom: '1.5rem', display: 'block' }}>📖</span>
+                <div className="icon-chip">📖</div>
                 <h3>Elite Tutoring</h3>
-                <p style={{ color: 'var(--gray-600)', marginBottom: '2rem' }}>
-                  Personalized KG-12 academic support and specialized SAT/IELTS prep 
+                <p>
+                  Personalized KG-12 support with SAT/IELTS preparation from top-performing
                   from Ethiopia's top-performing tutors.
                 </p>
-                <a href="#" className="btn btn-primary">Find Your Tutor</a>
+                <a href="#testimonials" className="btn btn-primary">Find your tutor</a>
               </div>
 
               <div className="card">
-                <span style={{ fontSize: '3.5rem', marginBottom: '1.5rem', display: 'block' }}>🌍</span>
+                <div className="icon-chip">🌍</div>
                 <h3>Scholarship Mastery</h3>
-                <p style={{ color: 'var(--gray-600)', marginBottom: '2rem' }}>
-                  Data-driven university shortlisting, professional SOP drafting, and MoE 
+                <p>
+                  Data-driven university shortlisting, professional SOP drafting, and MoE
                   document authentication support.
                 </p>
-                <a href="#" className="btn btn-outline">Start Application</a>
+                <a href="#pathway" className="btn btn-outline">Start application</a>
               </div>
             </div>
           </div>
         </section>
 
-        {/* ─── PATHWAY ───────────────────────────────────────────────────────── */}
-        <section id="pathway" className="pathway-section" style={{ background: 'var(--gray-50)' }}>
+        <section id="pathway" className="section">
           <div className="container">
-            <div className="section-header">
-              <h2 className="section-title">The Eagle Pathway</h2>
-              <p className="section-subtitle">O ur proven 3-step framework for international success.</p>
+            <div className="section-head">
+              <h2>The Eagle Pathway</h2>
+              <p>Our proven 3-step framework for international outcomes.</p>
             </div>
 
             <div className="grid-3">
-              <div className="pathway-item">
+              <div className="card pathway-item">
                 <div className="step-num">01</div>
                 <h4>Assessment</h4>
-                <p style={{ color: 'var(--gray-600)', marginTop: '1rem' }}>Strategic profile analysis to align your goals with global funding opportunities.</p>
+                <p>Strategic profile analysis to align your strengths with global funding opportunities.</p>
               </div>
-              <div className="pathway-item">
+              <div className="card pathway-item">
                 <div className="step-num">02</div>
                 <h4>Preparation</h4>
-                <p style={{ color: 'var(--gray-600)', marginTop: '1rem' }}>Intensive tutoring and standardized test mastery to make your application undeniable.</p>
+                <p>Intensive tutoring and test mastery to make your application stand out.</p>
               </div>
-              <div className="pathway-item">
+              <div className="card pathway-item">
                 <div className="step-num">03</div>
                 <h4>Placement</h4>
-                <p style={{ color: 'var(--gray-600)', marginTop: '1rem' }}>Expert handling of document verification, scholarship submission, and visa processing.</p>
+                <p>Expert support for document verification, submission workflows, and visa readiness.</p>
               </div>
             </div>
           </div>
         </section>
 
-        {/* ─── TESTIMONIALS ──────────────────────────────────────────────────── */}
-        <section id="testimonials" className="testi-section">
+        <section id="testimonials" className="section">
           <div className="container">
-            <div className="section-header">
-              <h2 className="section-title">Verified Student Success</h2>
-              <p className="section-subtitle">Real results from the most ambitious students in the country.</p>
+            <div className="section-head">
+              <h2>Verified student success</h2>
+              <p>Real outcomes from ambitious students across Ethiopia.</p>
             </div>
 
             <div className="grid-2">
-              <div className="card" style={{ background: 'var(--gray-50)', border: 'none' }}>
-                <p className="testi-quote">
+              <div className="card">
+                <p className="testimonial-quote">
                   "The application process felt impossible until I joined Eagle Pathway. 
                   Their help with the MoE authentication tracker was a game-changer."
                 </p>
-                <div style={{ marginTop: '2rem', fontWeight: '800' }}>Abel Tadesse — McGill University Scholar</div>
+                <div className="testimonial-author">Abel Tadesse - McGill University Scholar</div>
               </div>
-              <div className="card" style={{ background: 'var(--gray-50)', border: 'none' }}>
-                <p className="testi-quote">
+              <div className="card">
+                <p className="testimonial-quote">
                   "Professional tutoring at its best. My SAT score improved by 210 points 
                   after just eight weeks of intensive coaching."
                 </p>
-                <div style={{ marginTop: '2rem', fontWeight: '800' }}>Selam G. — University of Manchester</div>
+                <div className="testimonial-author">Selam G. - University of Manchester</div>
               </div>
             </div>
           </div>
@@ -150,11 +156,11 @@ export default function Home() {
 
       <footer className="footer">
         <div className="container">
-          <div className="logo-group" style={{ justifyContent: 'center', marginBottom: '2rem' }}>
-            <div className="logo-icon" style={{ background: 'var(--gray-400)' }}>🦅</div>
-            <span className="logo-text" style={{ color: 'var(--gray-600)' }}>Eagle Pathway</span>
+          <div className="logo-group" style={{ justifyContent: "center", marginBottom: "0.8rem" }}>
+            <div className="logo-icon">🦅</div>
+            <span className="logo-text">Eagle Pathway</span>
           </div>
-          <p>&copy; {new Date().getFullYear()} Eagle Pathway Ethiopia. Secure Your Future Abroad.</p>
+          <p>&copy; {new Date().getFullYear()} Eagle Pathway Ethiopia. Secure your future abroad.</p>
         </div>
       </footer>
     </div>
