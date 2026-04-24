@@ -142,6 +142,42 @@ CREATE POLICY "Users can view relevant bookings" ON bookings FOR SELECT USING (a
 CREATE POLICY "Students can create bookings" ON bookings FOR INSERT WITH CHECK (auth.uid() = student_id OR is_admin());
 CREATE POLICY "Participants can update bookings" ON bookings FOR UPDATE USING (auth.uid() = student_id OR auth.uid() IN (SELECT user_id FROM tutors WHERE id = tutor_id) OR is_admin());
 
+-- ─── INTERNATIONAL SERVICES ──────────────────────────────────────────────────
+CREATE TYPE service_type AS ENUM (
+  'application_fee',
+  'tuition_fee',
+  'international'
+);
+
+CREATE TYPE service_status AS ENUM ('pending', 'reviewing', 'approved', 'rejected', 'completed', 'cancelled');
+
+CREATE TABLE service_requests (
+  id                UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id           UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  service_type      service_type NOT NULL,
+  from_currency    TEXT NOT NULL,
+  to_currency      TEXT NOT NULL,
+  amount           DECIMAL(15,2) NOT NULL,
+  country_from      TEXT,
+  country_to       TEXT NOT NULL,
+  recipient_name   TEXT NOT NULL,
+  recipient_bank    TEXT,
+  recipient_account TEXT,
+  reason           TEXT NOT NULL,
+  additional_details TEXT,
+  status            service_status NOT NULL DEFAULT 'pending',
+  admin_note        TEXT,
+  reviewed_by       UUID REFERENCES users(id),
+  reviewed_at       TIMESTAMPTZ,
+  created_at        TIMESTAMPTZ DEFAULT NOW(),
+  updated_at        TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE service_requests ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users can view own requests" ON service_requests FOR SELECT USING (auth.uid() = user_id OR is_admin());
+CREATE POLICY "Users can create requests" ON service_requests FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Admins can manage requests" ON service_requests FOR UPDATE USING (is_admin());
+
 -- ─── SCHOLARSHIPS ─────────────────────────────────────────────────────────────
 CREATE TYPE degree_level AS ENUM ('undergraduate', 'masters', 'phd', 'all');
 CREATE TYPE funding_type AS ENUM ('fully_funded', 'partial', 'stipend_only');
