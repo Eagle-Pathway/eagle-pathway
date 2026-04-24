@@ -13,7 +13,7 @@ import { format } from 'date-fns';
 
 const DEGREE_FILTERS = ['All', 'Undergraduate', 'Masters', 'PhD', 'Fully Funded'];
 
-export default function ScholarshipsScreen() {
+export default function ScholarshipsScreen({ hideBack = false }: { hideBack?: boolean }) {
   const { scholarships, savedScholarshipIds, loadScholarships, toggleSaveScholarship, isLoadingScholarships } = useAppStore();
   const [search, setSearch] = useState('');
   const [activeFilter, setActiveFilter] = useState('All');
@@ -29,16 +29,18 @@ export default function ScholarshipsScreen() {
   });
 
   return (
-    <SafeAreaView style={CommonStyles.screenBg} edges={['top']}>
+    <SafeAreaView style={CommonStyles.screenBg} edges={hideBack ? [] : ['top']}>
       <View style={styles.hero}>
-        <View style={{ marginBottom: Spacing.md }}>
-          <TouchableOpacity 
-            style={{ width: 36, height: 36, backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 10, alignItems: 'center', justifyContent: 'center' }} 
-            onPress={() => router.back()}
-          >
-            <Text style={{ fontSize: 20, color: Colors.white }}>←</Text>
-          </TouchableOpacity>
-        </View>
+        {!hideBack && (
+          <View style={{ marginBottom: Spacing.md }}>
+            <TouchableOpacity 
+              style={{ width: 36, height: 36, backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 10, alignItems: 'center', justifyContent: 'center' }} 
+              onPress={() => router.back()}
+            >
+              <Text style={{ fontSize: 20, color: Colors.white }}>←</Text>
+            </TouchableOpacity>
+          </View>
+        )}
         <View style={styles.heroTop}>
           <View>
             <Text style={styles.heroTitle}>Scholarships</Text>
