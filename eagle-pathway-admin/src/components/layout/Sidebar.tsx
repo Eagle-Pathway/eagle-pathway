@@ -16,7 +16,8 @@ import {
   Settings2,
   FileText,
   Briefcase,
-  MessageSquare
+  MessageSquare,
+  Globe
 } from 'lucide-react';
 
 export default function Sidebar() {
@@ -63,6 +64,7 @@ export default function Sidebar() {
     { name: 'Applications', href: '/applications', icon: Briefcase },
     { name: 'Scholarships', href: '/scholarships', icon: GraduationCap },
     { name: 'Bookings', href: '/bookings', icon: Calendar },
+    { name: 'Service Requests', href: '/services', icon: Globe },
     { name: 'Notifications', href: '/notifications', icon: Bell },
     { name: 'Chat', href: '/chat', icon: MessageSquare, badge: unreadCount },
     { name: 'Finance', href: '/finance', icon: DollarSign },

@@ -5,6 +5,7 @@ import { useRef } from 'react';
 import Link from 'next/link';
 import {
   faqs,
+  internationalServices,
   pricingPlans,
   serviceTracks,
   timeline,
@@ -198,20 +199,43 @@ export function LandingPage() {
           </div>
         </AnimatedSection>
 
-        <AnimatedSection id="services" className="section">
+<AnimatedSection id="services" className="section">
           <div className="container">
             <div className="section-head">
               <h2>Detailed service tracks</h2>
               <p>Specific deliverables, not vague promises.</p>
             </div>
             <div className="grid-2">
-              {serviceTracks.map((track, i) => (
+              {serviceTracks.map((track) => (
                 <AnimatedCard key={track.title} className="card">
                   <h3>{track.title}</h3>
                   <p className="service-subtitle">{track.subtitle}</p>
                   <ul className="check-list">
                     {track.items.map((item) => (
                       <li key={item}>{item}</li>
+                    ))}
+                  </ul>
+                </AnimatedCard>
+              ))}
+            </div>
+          </div>
+        </AnimatedSection>
+
+        <AnimatedSection id="intlservices" className="section section-soft">
+          <div className="container">
+            <div className="section-head">
+              <h2>International Financial Services</h2>
+              <p>Secure global payment and currency solutions for students and diaspora.</p>
+            </div>
+            <div className="grid-3">
+              {internationalServices.map((service) => (
+                <AnimatedCard key={service.type} className="card">
+                  <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>{service.icon}</div>
+                  <h3>{service.title}</h3>
+                  <p>{service.description}</p>
+                  <ul className="check-list">
+                    {service.details.map((d) => (
+                      <li key={d}>{d}</li>
                     ))}
                   </ul>
                 </AnimatedCard>

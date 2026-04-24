@@ -129,6 +129,41 @@ export const pricingPlans = [
   },
 ];
 
+export const internationalServices = [
+  {
+    type: "application_fee",
+    title: "Application Fee Payment",
+    description: "Pay application fees for universities and scholarship programs worldwide.",
+    icon: "📄",
+    details: ["Secure payment", "Direct to university", "Receipt provided"],
+  },
+  {
+    type: "tuition_fee",
+    title: "Tuition Fee Payment",
+    description: "Pay tuition fees directly to universities in USD, EUR, GBP, and more.",
+    icon: "🎓",
+    details: ["Best exchange rates", "Direct payment", "Fee negotiation support"],
+  },
+  {
+    type: "international",
+    title: "International Payment",
+    description: "Any other international payment for education-related purposes.",
+    icon: "🌍",
+    details: ["Global coverage", "Multiple currencies", "Fast processing"],
+  },
+];
+
+export const serviceCountries = [
+  { code: "US", name: "United States", currency: "USD", symbol: "$" },
+  { code: "GB", name: "United Kingdom", currency: "GBP", symbol: "£" },
+  { code: "CA", name: "Canada", currency: "CAD", symbol: "C$" },
+  { code: "DE", name: "Germany", currency: "EUR", symbol: "€" },
+  { code: "NL", name: "Netherlands", currency: "EUR", symbol: "€" },
+  { code: "AU", name: "Australia", currency: "AUD", symbol: "A$" },
+  { code: "KE", name: "Kenya", currency: "KES", symbol: "KSh" },
+  { code: "ET", name: "Ethiopia", currency: "ETB", symbol: "Br" },
+];
+
 export const faqs = [
   {
     question: "Do you guarantee scholarship approval?",
