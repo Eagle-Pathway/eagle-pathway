@@ -70,7 +70,13 @@ export default function HomeScreen() {
     setRefreshing(false);
   };
 
-  if (!user) return null; // Early return for unauthenticated state is okay as long as all hooks were called above
+  if (!user) return (
+    <SafeAreaView style={CommonStyles.screenBg} edges={['top']}>
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+        <ActivityIndicator size="large" color={Colors.white} />
+      </View>
+    </SafeAreaView>
+  );
 
   const initials = user?.full_name?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || 'EP';
   const firstName = user?.full_name?.split(' ')[0] || 'there';

@@ -18,12 +18,7 @@ const tabStyles = StyleSheet.create({
   labelActive: { color: Colors.blue, fontWeight: Typography.semibold },
 });
 
-import { useAuthStore } from '../../src/store/authStore';
-
 export default function TabLayout() {
-  const { user } = useAuthStore();
-  const isTutor = user?.role?.toLowerCase() === 'tutor';
-
   return (
     <Tabs
       screenOptions={{
@@ -32,8 +27,8 @@ export default function TabLayout() {
           backgroundColor: Colors.white,
           borderTopWidth: 1,
           borderTopColor: Colors.border,
-          height: 82,
-          paddingBottom: 8,
+          height: 70,
+          paddingBottom: 6,
         },
         tabBarShowLabel: false,
       }}
@@ -45,23 +40,15 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="tutors"
+        name="explore"
         options={{
-          tabBarIcon: ({ focused }) => <TabIcon emoji="👨‍🏫" label="Tutors" focused={focused} />,
-          href: isTutor ? null : '/(tabs)/tutors',
+          tabBarIcon: ({ focused }) => <TabIcon emoji="🔍" label="Explore" focused={focused} />,
         }}
       />
       <Tabs.Screen
-        name="scholarships"
+        name="activity"
         options={{
-          tabBarIcon: ({ focused }) => <TabIcon emoji="🎓" label="Scholarships" focused={focused} />,
-          href: isTutor ? null : '/(tabs)/scholarships',
-        }}
-      />
-      <Tabs.Screen
-        name="bookings"
-        options={{
-          tabBarIcon: ({ focused }) => <TabIcon emoji="📅" label={isTutor ? "Sessions" : "Bookings"} focused={focused} />,
+          tabBarIcon: ({ focused }) => <TabIcon emoji="⚡" label="Activity" focused={focused} />,
         }}
       />
       <Tabs.Screen
@@ -76,6 +63,11 @@ export default function TabLayout() {
           tabBarIcon: ({ focused }) => <TabIcon emoji="👤" label="Profile" focused={focused} />,
         }}
       />
+      {/* Hidden from tab bar — accessible via deep links / programmatic nav */}
+      <Tabs.Screen name="scholarships" options={{ href: null }} />
+      <Tabs.Screen name="tutors" options={{ href: null }} />
+      <Tabs.Screen name="service" options={{ href: null }} />
+      <Tabs.Screen name="bookings" options={{ href: null }} />
     </Tabs>
   );
 }

@@ -644,7 +644,7 @@ const AuthenticationTracker = ({ isPremium }: { isPremium: boolean }) => (
 );
 
 // ─── APPLICATION TRACKER ─────────────────────────────────────────────────────
-export function TrackerScreen() {
+export function TrackerScreen({ hideHeader = false }: { hideHeader?: boolean }) {
   const { user } = useAuthStore();
   const { applications, loadApplications } = useAppStore();
   const [loading, setLoading] = useState(true);
@@ -758,7 +758,7 @@ export function TrackerScreen() {
   }
 
   return (
-    <SafeAreaView style={CommonStyles.screenBg} edges={['top']}>
+    <SafeAreaView style={CommonStyles.screenBg} edges={[]}>
       <View style={trackerStyles.hero}>
         <View style={trackerStyles.heroHeader}>
           <TouchableOpacity style={trackerStyles.backBtnCircle} onPress={() => router.back()} activeOpacity={0.8}>
@@ -1068,7 +1068,7 @@ const docStyles = StyleSheet.create({
 });
 
 // ─── BOOKINGS ────────────────────────────────────────────────────────────────
-export function BookingsScreen() {
+export function BookingsScreen({ hideHeader = false }: { hideHeader?: boolean }) {
   const { user } = useAuthStore();
   const { bookings, loadBookings, loadTutorBookings, updateBookingStatus, cancelBooking } = useAppStore();
   const [activeTab, setActiveTab] = useState<'upcoming' | 'past' | 'cancelled'>('upcoming');
@@ -1124,7 +1124,7 @@ export function BookingsScreen() {
   });
 
   return (
-    <SafeAreaView style={CommonStyles.screenBg} edges={['top']}>
+    <SafeAreaView style={CommonStyles.screenBg} edges={[]}>
       <View style={bkgStyles.header}><Text style={bkgStyles.title}>{isTutor ? 'My Sessions' : 'My Bookings'}</Text></View>
       <View style={bkgStyles.tabs}>
         {(['upcoming', 'past', 'cancelled'] as const).map(tab => (

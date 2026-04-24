@@ -2,17 +2,22 @@ import Link from "next/link";
 
 export default function LoginPage() {
   return (
-    <main className="page-layout" style={{ minHeight: "100vh", display: "grid", placeItems: "center" }}>
-      <section className="card" style={{ maxWidth: "560px", textAlign: "center" }}>
-        <h1 style={{ marginBottom: "0.75rem" }}>Portal Login</h1>
-        <p style={{ color: "var(--gray-600)", marginBottom: "1.5rem" }}>
-          Login is handled in the dedicated portal app.
+    <main className="login-shell">
+      <section className="card login-card">
+        <div className="badge">Client Portal</div>
+        <h1 style={{ margin: "0.85rem 0 0.55rem" }}>Portal login</h1>
+        <p style={{ marginBottom: "1rem" }}>
+          Secure login is currently managed in the dedicated portal application.
         </p>
-        <div className="cta-group" style={{ justifyContent: "center" }}>
+        <div className="cta-group" style={{ marginTop: 0 }}>
+          <Link href="/" className="btn btn-primary">
+            Return to homepage
+          </Link>
           <Link href="/" className="btn btn-outline">
-            Back to Home
+            Explore services
           </Link>
         </div>
+        <p className="mini-note">Need access help? Contact Eagle Pathway operations support.</p>
       </section>
     </main>
   );
