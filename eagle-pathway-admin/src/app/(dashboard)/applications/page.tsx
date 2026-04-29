@@ -253,15 +253,36 @@ export default function ApplicationsPage() {
               </span>
             </div>
             
-            <div className="flex-1 space-y-3 min-h-[500px] bg-gray-50/50 rounded-2xl p-2 border border-dashed border-gray-200">
+            <div 
+              className="flex-1 space-y-3 min-h-[500px] bg-gray-50/50 rounded-2xl p-2 border border-dashed border-gray-200 transition-colors"
+              onDragOver={(e) => {
+                e.preventDefault();
+                e.currentTarget.classList.add('bg-blue-50', 'border-blue-200');
+              }}
+              onDragLeave={(e) => {
+                e.currentTarget.classList.remove('bg-blue-50', 'border-blue-200');
+              }}
+              onDrop={(e) => {
+                e.preventDefault();
+                e.currentTarget.classList.remove('bg-blue-50', 'border-blue-200');
+                const appId = e.dataTransfer.getData('applicationId');
+                if (appId && applications.find(a => a.id === appId)?.status !== stage.id) {
+                  handleUpdateStatus(appId, stage.id);
+                }
+              }}
+            >
               {filtered.filter(a => a.status === stage.id).map(app => (
                 <div key={app.id} 
+                  draggable
+                  onDragStart={(e) => {
+                    e.dataTransfer.setData('applicationId', app.id);
+                  }}
                   onClick={(e) => {
                     if ((e.target as HTMLElement).closest('button') || (e.target as HTMLElement).closest('select')) return;
                     setSelectedApp(app);
                     setNotesInput(app.notes || '');
                   }}
-                  className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow group cursor-pointer"
+                  className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow group cursor-grab active:cursor-grabbing"
                 >
                   <div className="flex justify-between items-start mb-2">
                     <span className={`text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded ${
