@@ -179,12 +179,11 @@ export default function ContactPage() {
                       value={formData.gradeLevel}
                       onChange={handleChange}
                     >
-                      <option value="">Select grade level</option>
-                      <option value="grade9">Grade 9</option>
-                      <option value="grade10">Grade 10</option>
-                      <option value="grade11">Grade 11</option>
-                      <option value="grade12">Grade 12</option>
+                      <option value="">Select your academic status</option>
+                      <option value="high-school">High School Student</option>
                       <option value="university">University Student</option>
+                      <option value="bsc-completed">BSc Completed</option>
+                      <option value="msc-completed">MSc Completed</option>
                       <option value="other">Other</option>
                     </select>
                   </div>
@@ -231,10 +230,10 @@ export default function ContactPage() {
               <div style={{ marginTop: '2rem', textAlign: 'center', color: 'var(--muted)', fontSize: '0.9rem' }}>
                 <p>Or reach us directly:</p>
                 <p style={{ marginTop: '0.5rem' }}>
-                  <strong>Phone:</strong> +251 912 345 678<br />
+                  <strong>Phone:</strong> +251 32508910<br />
                   <strong>Email:</strong> info@eagle-pathway.com<br />
-                  <strong>Location:</strong> Addis Ababa, Ethiopia
-                </p>
+                  <strong>Primary Location:</strong> Addis Ababa, Ethiopia<br />
+                  <strong>Secondary Location:</strong> Italy                </p>
               </div>
             </div>
           </div>

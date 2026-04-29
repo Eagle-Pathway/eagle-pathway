@@ -9,12 +9,7 @@ export const metadata = {
 export default function AboutPage() {
   const values = [
     {
-      icon: '🎯',
-      title: 'Clarity First',
-      description: 'Every student deserves a clear, actionable pathway to their goals—no vague promises.',
-    },
-    {
-      icon: '📊',
+      icon: '📈',
       title: 'Data-Driven',
       description: 'We track outcomes and continuously improve our methods based on what works.',
     },
@@ -31,12 +26,10 @@ export default function AboutPage() {
   ];
 
   const milestones = [
-    { year: '2019', title: 'Foundation', description: 'Started with a handful of students in Addis Ababa' },
-    { year: '2020', title: 'Remote Expansion', description: 'Launched virtual tutoring and advisory sessions' },
-    { year: '2021', title: 'First $1M in Scholarships', description: 'Helped students secure over $1M in scholarship value' },
-    { year: '2022', title: '100+ Placements', description: 'Reached 100+ students placed in universities worldwide' },
-    { year: '2023', title: 'Full Service Launch', description: 'Expanded to end-to-end application support' },
-    { year: '2024', title: '$12M+ Milestone', description: 'Crossed $12M in total scholarship value secured' },
+    { year: '2023', title: 'Foundation', description: 'Started with a handful of students in Addis Ababa' },
+    { year: '2024', title: 'Remote Expansion', description: 'Launched virtual tutoring and advisory sessions' },
+    { year: '2025', title: 'Full Service Launch', description: 'Expanded to end-to-end application support' },
+    { year: '2026', title: 'Scholarship Milestone', description: 'Crossed $100K in total scholarship value secured' },
   ];
 
   return (
@@ -71,8 +64,8 @@ export default function AboutPage() {
 
         <header className="page-header">
           <div className="container">
-            <h1>About Eagle Pathway</h1>
-            <p>Empowering Ethiopian students to achieve their global education dreams through expert guidance and structured execution.</p>
+            <h1 className='text-black'>About Eagle Pathway</h1>
+            <p className='text-white' style={{ color: 'blue' }}>Empowering Ethiopian students to achieve their global education dreams through expert guidance and structured execution.</p>
           </div>
         </header>
 
@@ -82,7 +75,7 @@ export default function AboutPage() {
               <div>
                 <h2 style={{ marginBottom: '1rem' }}>Our Story</h2>
                 <p style={{ color: 'var(--muted)', marginBottom: '1rem', lineHeight: 1.7 }}>
-                  Eagle Pathway was founded in 2019 by a group of educators and advisors who saw a gap in international scholarship guidance for Ethiopian students. Many bright students had the grades and ambitions but lacked the strategic knowledge to navigate complex application processes.
+                  Eagle Pathway was founded in 2025 by a group of educators and advisors who saw a gap in international scholarship guidance for Ethiopian students. Many bright students had the grades and ambitions but lacked the strategic knowledge to navigate complex application processes.
                 </p>
                 <p style={{ color: 'var(--muted)', marginBottom: '1rem', lineHeight: 1.7 }}>
                   What started as small-group advising sessions in Addis Ababa has grown into a comprehensive service helping hundreds of students secure placements at top universities in Canada, the UK, Europe, and the US.
@@ -103,7 +96,7 @@ export default function AboutPage() {
                   justifyContent: 'center',
                   fontSize: '5rem',
                 }}>
-                  🦅
+                  🎓
                 </div>
               </div>
             </div>

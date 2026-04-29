@@ -8,40 +8,22 @@ export const metadata = {
 export default function TeamPage() {
   const team = [
     {
-      name: 'Dr. Alemayehu T.',
+      name: 'Tegegn T.',
       role: 'Founder & Lead Advisor',
       initials: 'AT',
-      bio: 'PhD in Education Policy from University of Toronto. 10+ years in international admissions consulting.',
+      bio: 'Master in Economic Policy and Data Analytics from University of Verona in Italy. 5+ years in international admissions consulting.',
     },
     {
-      name: 'Sarah K.',
-      role: 'Senior Scholarship Advisor',
-      initials: 'SK',
-      bio: 'Former admissions reviewer at UK Russell Group university. Specializes in UK and European applications.',
+      name: 'Amanuel A.',
+      role: 'Executive Director',
+      initials: 'AA',
+      bio: 'BA in Economics from Addis Ababa University.',
     },
     {
-      name: 'Michael B.',
-      role: 'Head of Tutoring',
-      initials: 'MB',
-      bio: 'MSc in Mathematics from Imperial College. Expert in SAT/IELTS preparation and STEM subjects.',
-    },
-    {
-      name: 'Fikirte R.',
-      role: 'Application Manager',
-      initials: 'FR',
-      bio: '5+ years managing 100+ successful applications. Handles document coordination and timeline management.',
-    },
-    {
-      name: 'David M.',
-      role: 'US Admissions Specialist',
-      initials: 'DM',
-      bio: 'BA from Harvard. Specialized knowledge in US university applications and financial aid.',
-    },
-    {
-      name: 'Hiwot A.',
-      role: 'Student Success Coordinator',
-      initials: 'HA',
-      bio: 'Masters from University of Edinburgh. Helps students navigate the transition from acceptance to enrollment.',
+      name: 'Genene T.',
+      role: 'Head of Education Technology',
+      initials: 'GT',
+      bio: 'Software Engineer with experience in IT. Expert in SAT/IELTS preparation and STEM subjects.',
     },
   ];
 
