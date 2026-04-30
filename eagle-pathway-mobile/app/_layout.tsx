@@ -33,16 +33,34 @@ export default function RootLayout() {
     });
 
     // Check existing session on mount
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(({ data: { session }, error }) => {
+      if (error) {
+        console.error('Session error:', error);
+        if (error.message.includes('Refresh Token')) {
+          supabase.auth.signOut();
+        }
+        SplashScreen.hideAsync();
+        return;
+      }
+
       setSession(session);
       if (session) {
-        loadProfile().finally(() => {
-          subscribeToUpdates(session.user.id);
-          notificationsService.requestPermission().then(granted => {
-            if (granted) notificationsService.registerPushToken(session.user.id);
+        loadProfile()
+          .then(() => {
+            subscribeToUpdates(session.user.id);
+            notificationsService.requestPermission().then(granted => {
+              if (granted) notificationsService.registerPushToken(session.user.id);
+            });
+          })
+          .catch(e => {
+            console.error('Profile load error:', e);
+            if (e.message?.includes('Refresh Token')) {
+              supabase.auth.signOut();
+            }
+          })
+          .finally(() => {
+            SplashScreen.hideAsync();
           });
-          SplashScreen.hideAsync();
-        });
       } else {
         SplashScreen.hideAsync();
       }
