@@ -193,7 +193,7 @@ export default function ScholarshipForm({ scholarship, onClose, onSuccess }: Sch
                     value={formData.degree_levels} 
                     onChange={(e) => {
                       const options = e.target.options;
-                      const value = [];
+                      const value: string[] = [];
                       for (let i = 0, l = options.length; i < l; i++) {
                         if (options[i].selected) {
                           value.push(options[i].value);
