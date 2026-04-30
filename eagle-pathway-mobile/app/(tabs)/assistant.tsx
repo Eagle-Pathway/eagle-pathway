@@ -41,54 +41,23 @@ export default function AssistantScreen() {
 
       const response = await fetch(apiUrl, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
         body: JSON.stringify({ messages: [...messages, userMessage] }),
       });
 
       if (!response.ok) throw new Error('Failed to connect');
-      if (!response.body) throw new Error('No response body');
-
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder('utf-8');
-      let buffer = '';
-
-      setMessages((prev) => [...prev, { role: 'assistant', content: '' }]);
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split('\n');
-        buffer = lines.pop() || '';
-
-        for (const line of lines) {
-          const trimmed = line.trim();
-          if (!trimmed || !trimmed.startsWith('data: ')) continue;
-
-          const dataStr = trimmed.slice(6);
-          if (dataStr === '[DONE]') continue;
-
-          try {
-            const data = JSON.parse(dataStr);
-            const content = data.choices?.[0]?.delta?.content;
-            if (content) {
-              setMessages((prev) => {
-                const newMessages = [...prev];
-                const lastMessage = newMessages[newMessages.length - 1];
-                if (lastMessage && lastMessage.role === 'assistant') {
-                  return [
-                    ...newMessages.slice(0, -1),
-                    { ...lastMessage, content: lastMessage.content + content }
-                  ];
-                }
-                return newMessages;
-              });
-            }
-          } catch (e) {
-            console.error('Error parsing JSON:', e);
-          }
-        }
+      
+      const data = await response.json();
+      const content = data.content;
+      
+      if (content) {
+        setMessages((prev) => [
+          ...prev,
+          { role: 'assistant', content: content }
+        ]);
       }
     } catch (error) {
       console.error('Failed to send message:', error);
