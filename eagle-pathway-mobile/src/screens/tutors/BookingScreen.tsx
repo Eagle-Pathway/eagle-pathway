@@ -44,7 +44,7 @@ export default function BookingScreen() {
       await tutorsService.createBooking({
         studentId: user.id,
         tutorId: tutor.id,
-        subject: tutor.subjects[0],
+        subject: tutor.subjects?.[0] || 'General Tutoring',
         sessionDate: format(selectedDate, 'yyyy-MM-dd'),
         sessionTime: selectedTime,
         durationHours: 1,
@@ -89,7 +89,7 @@ export default function BookingScreen() {
           <Avatar initials={initials} size={44} borderRadius={13} color={Colors.gold} />
           <View style={{ flex: 1, marginLeft: Spacing.md }}>
             <Text style={styles.tutorName}>{tutor.user?.full_name}</Text>
-            <Text style={styles.tutorSub}>{tutor.subjects[0]} · ETB {tutor.hourly_rate}/hr</Text>
+            <Text style={styles.tutorSub}>{tutor.subjects?.[0] || 'General'} · ETB {tutor.hourly_rate}/hr</Text>
           </View>
           <View style={styles.availablePill}><Text style={styles.availableText}>Available</Text></View>
         </View>
