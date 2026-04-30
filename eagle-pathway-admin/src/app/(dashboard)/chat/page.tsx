@@ -45,7 +45,7 @@ export default function AdminChatPage() {
     
     const subscription = supabase
       .channel('admin_messages')
-      .on('postgres_changes', { event: 'INSERT', table: 'messages' }, (payload) => {
+      .on('postgres_changes' as any, { event: 'INSERT', schema: 'public', table: 'messages' }, (payload) => {
         const newMsg = payload.new as ChatMessage;
         if (selectedUser && (newMsg.sender_id === selectedUser.id || newMsg.recipient_id === selectedUser.id)) {
           setMessages(prev => [...prev, newMsg]);
