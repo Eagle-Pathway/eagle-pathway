@@ -47,6 +47,7 @@ export default function AiAssistantWidget() {
 
       const reader = response.body.getReader();
       const decoder = new TextDecoder('utf-8');
+      let buffer = '';
       
       setMessages((prev) => [...prev, { role: 'assistant', content: '' }]);
 
@@ -54,30 +55,37 @@ export default function AiAssistantWidget() {
         const { done, value } = await reader.read();
         if (done) break;
 
-        const chunk = decoder.decode(value, { stream: true });
-        const lines = chunk.split('\n').filter(Boolean);
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        
+        // Keep the last partial line in the buffer
+        buffer = lines.pop() || '';
 
         for (const line of lines) {
           const trimmed = line.trim();
-          if (trimmed.startsWith('data: ')) {
-            const dataStr = trimmed.slice(6);
-            if (dataStr === '[DONE]') continue;
-            try {
-              const data = JSON.parse(dataStr);
-              const content = data.choices?.[0]?.delta?.content;
-              if (content) {
-                setMessages((prev) => {
-                  const newMessages = [...prev];
-                  const lastMessage = newMessages[newMessages.length - 1];
-                  if (lastMessage.role === 'assistant') {
-                    lastMessage.content += content;
-                  }
-                  return newMessages;
-                });
-              }
-            } catch (e) {
-              console.error('Error parsing JSON:', e);
+          if (!trimmed || !trimmed.startsWith('data: ')) continue;
+          
+          const dataStr = trimmed.slice(6);
+          if (dataStr === '[DONE]') continue;
+
+          try {
+            const data = JSON.parse(dataStr);
+            const content = data.choices?.[0]?.delta?.content;
+            if (content) {
+              setMessages((prev) => {
+                const newMessages = [...prev];
+                const lastMessage = newMessages[newMessages.length - 1];
+                if (lastMessage && lastMessage.role === 'assistant') {
+                  return [
+                    ...newMessages.slice(0, -1),
+                    { ...lastMessage, content: lastMessage.content + content }
+                  ];
+                }
+                return newMessages;
+              });
             }
+          } catch (e) {
+            console.error('Error parsing JSON line:', e);
           }
         }
       }
@@ -144,7 +152,7 @@ export default function AiAssistantWidget() {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 placeholder="Ask me about scholarships..."
-                className="flex-1 bg-gray-100 dark:bg-gray-800 border-transparent rounded-full px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="flex-1 bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-white border-transparent rounded-full px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 placeholder-gray-500 dark:placeholder-gray-400"
                 disabled={isLoading}
               />
               <button
