@@ -646,12 +646,26 @@ const AuthenticationTracker = ({ isPremium }: { isPremium: boolean }) => (
 // ─── APPLICATION TRACKER ─────────────────────────────────────────────────────
 export function TrackerScreen({ hideHeader = false }: { hideHeader?: boolean }) {
   const { user } = useAuthStore();
+  const { applicationId } = useLocalSearchParams<{ applicationId: string }>();
   const { applications, loadApplications } = useAppStore();
   const [loading, setLoading] = useState(true);
+  const [selectedApp, setSelectedApp] = useState<Application | null>(null);
 
   useEffect(() => {
-    if (user) loadApplications(user.id).finally(() => setLoading(false));
+    if (user) {
+      loadApplications(user.id).finally(() => {
+        setLoading(false);
+      });
+    }
   }, [user?.id]);
+
+  // Auto-select application if ID provided via deep link/params
+  useEffect(() => {
+    if (!loading && applicationId && applications.length > 0) {
+      const found = applications.find(a => a.id === applicationId);
+      if (found) setSelectedApp(found);
+    }
+  }, [loading, applicationId, applications]);
 
   const STATUS_STEPS: Application['status'][] = ['personal_info', 'documents', 'sop', 'submitted', 'interview', 'accepted'];
   const STATUS_LABELS: Record<string, string> = {
@@ -675,7 +689,6 @@ export function TrackerScreen({ hideHeader = false }: { hideHeader?: boolean }) 
 
   const active = applications.filter(a => !['accepted', 'rejected'].includes(a.status));
   const completed = applications.filter(a => ['accepted', 'rejected'].includes(a.status));
-  const [selectedApp, setSelectedApp] = useState<Application | null>(null);
 
   if (selectedApp) {
     return (
@@ -1433,6 +1446,44 @@ export function NotificationsScreen() {
               onPress={() => {
                 if (!n.is_read) {
                   handleMarkRead(n.id);
+                }
+
+                // Navigation logic based on notification type
+                const data = n.data as any;
+                switch (n.type) {
+                  case 'application_update':
+                  case 'sop_reviewed':
+                  case 'offer_received':
+                    if (data?.application_id) {
+                      router.push({
+                        pathname: '/tracker',
+                        params: { applicationId: data.application_id }
+                      });
+                    } else {
+                      router.push('/tracker');
+                    }
+                    break;
+                  case 'document_approved':
+                  case 'document_rejected':
+                    router.push('/documents');
+                    break;
+                  case 'booking_confirmed':
+                  case 'session_reminder':
+                    router.push('/(tabs)/bookings');
+                    break;
+                  case 'scholarship_alert':
+                    if (data?.scholarship_id) {
+                      router.push({
+                        pathname: '/scholarship/[scholarshipId]',
+                        params: { scholarshipId: data.scholarship_id }
+                      });
+                    } else {
+                      router.push('/(tabs)/scholarships');
+                    }
+                    break;
+                  default:
+                    // If no specific route, just mark as read (already done)
+                    break;
                 }
               }}
             >
