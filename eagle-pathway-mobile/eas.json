@@ -9,7 +9,14 @@
       "distribution": "internal"
     },
     "preview": {
-      "distribution": "internal"
+      "distribution": "internal",
+      "android": {
+        "buildType": "apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_SUPABASE_URL": "https://bkkhheaeqhhfeyfwjjxx.supabase.co",
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_VbwNpq5HT2kCv4enDaifNQ_sn8F1Rsm"
+      }
     },
     "production": {
       "autoIncrement": true
