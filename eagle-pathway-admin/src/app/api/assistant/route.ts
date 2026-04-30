@@ -16,6 +16,12 @@ export async function POST(req: Request) {
   try {
     const { messages } = await req.json();
 
+    // Debug: Check if key exists (don't log the full key for security)
+    if (!process.env.GROQ_API_KEY) {
+      console.error('CRITICAL: GROQ_API_KEY is missing from environment variables');
+      throw new Error('API Configuration Error: GROQ_API_KEY is not set.');
+    }
+
     const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -33,31 +39,31 @@ export async function POST(req: Request) {
     });
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      console.error('Groq API Error Details:', errorData);
-      throw new Error(`Groq API error: ${response.status} ${response.statusText} - ${JSON.stringify(errorData)}`);
+      const errorText = await response.text();
+      console.error('Groq API Error:', response.status, errorText);
+      throw new Error(`AI Service Error: ${response.status}`);
     }
 
-    // Proxy the stream directly to the client
+    // Proxy the stream
     return new Response(response.body, {
       headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
         'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        'Connection': 'keep-alive',
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
       },
     });
   } catch (error: any) {
-    console.error('Error in AI Assistant API:', error);
-    return NextResponse.json(
-      { error: error.message || 'Failed to connect to AI Assistant.' },
-      { 
-        status: 500,
-        headers: {
-          'Access-Control-Allow-Origin': '*',
-        }
-      }
-    );
+    console.error('Assistant API Error:', error);
+    return new Response(JSON.stringify({ error: error.message }), {
+      status: 500,
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*',
+      },
+    });
   }
 }
 
