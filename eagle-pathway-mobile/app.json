@@ -49,7 +49,7 @@
       "supabaseUrl": "YOUR_SUPABASE_URL",
       "supabaseAnonKey": "YOUR_SUPABASE_ANON_KEY",
       "eas": {
-        "projectId": "YOUR_EAS_PROJECT_ID"
+        "projectId": "00000000-0000-0000-0000-000000000000"
       }
     }
   }
