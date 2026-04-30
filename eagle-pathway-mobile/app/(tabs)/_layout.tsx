@@ -1,6 +1,7 @@
-import { Tabs } from 'expo-router';
+import { Tabs, usePathname } from 'expo-router';
 import { View, Text, StyleSheet } from 'react-native';
 import { Colors, Typography } from '../../src/utils/theme';
+import AiAssistantFAB from '../../src/components/AiAssistantFAB';
 
 function TabIcon({ emoji, label, focused }: { emoji: string; label: string; focused: boolean }) {
   return (
@@ -19,7 +20,11 @@ const tabStyles = StyleSheet.create({
 });
 
 export default function TabLayout() {
+  const pathname = usePathname();
+  const isAssistant = pathname === '/assistant' || pathname.includes('/assistant');
+
   return (
+    <>
     <Tabs
       screenOptions={{
         headerShown: false,
@@ -68,6 +73,9 @@ export default function TabLayout() {
       <Tabs.Screen name="tutors" options={{ href: null }} />
       <Tabs.Screen name="service" options={{ href: null }} />
       <Tabs.Screen name="bookings" options={{ href: null }} />
+      <Tabs.Screen name="assistant" options={{ href: null }} />
     </Tabs>
+      {!isAssistant && <AiAssistantFAB />}
+    </>
   );
 }
