@@ -48,41 +48,50 @@ export default function AssistantScreen() {
       });
 
       if (!response.ok) throw new Error('Failed to connect');
+      if (!response.body) throw new Error('No response body');
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder('utf-8');
+      let buffer = '';
 
       setMessages((prev) => [...prev, { role: 'assistant', content: '' }]);
 
-      // NOTE: React Native fetch doesn't natively support ReadableStream like browsers do.
-      // We read the full response text since standard polyfills might be needed for true NDJSON streaming on RN.
-      // For this implementation, we will process the raw text response block by block if possible, 
-      // or just wait for the whole block to complete. Since we want a robust cross-platform experience,
-      // parsing the full text is safest if stream support is missing, but let's try standard await text().
-      
-      const fullText = await response.text();
-      const lines = fullText.split('\n').filter(Boolean);
-      let assistantResponse = '';
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
 
-      for (const line of lines) {
-        const trimmed = line.trim();
-        if (trimmed.startsWith('data: ')) {
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (!trimmed || !trimmed.startsWith('data: ')) continue;
+
           const dataStr = trimmed.slice(6);
           if (dataStr === '[DONE]') continue;
+
           try {
             const data = JSON.parse(dataStr);
             const content = data.choices?.[0]?.delta?.content;
             if (content) {
-              assistantResponse += content;
+              setMessages((prev) => {
+                const newMessages = [...prev];
+                const lastMessage = newMessages[newMessages.length - 1];
+                if (lastMessage && lastMessage.role === 'assistant') {
+                  return [
+                    ...newMessages.slice(0, -1),
+                    { ...lastMessage, content: lastMessage.content + content }
+                  ];
+                }
+                return newMessages;
+              });
             }
           } catch (e) {
             console.error('Error parsing JSON:', e);
           }
         }
       }
-
-      setMessages((prev) => {
-        const newMessages = [...prev];
-        newMessages[newMessages.length - 1].content = assistantResponse;
-        return newMessages;
-      });
     } catch (error) {
       console.error('Failed to send message:', error);
       setMessages((prev) => [
