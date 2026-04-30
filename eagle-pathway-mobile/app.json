@@ -39,7 +39,6 @@
       [
         "expo-notifications",
         {
-          "icon": "./assets/notification-icon.png",
           "color": "#1E4D9B"
         }
       ]
@@ -48,9 +47,11 @@
     "extra": {
       "supabaseUrl": "YOUR_SUPABASE_URL",
       "supabaseAnonKey": "YOUR_SUPABASE_ANON_KEY",
+      "router": {},
       "eas": {
-        "projectId": "00000000-0000-0000-0000-000000000000"
+        "projectId": "e9e50db8-99a2-4004-9e3a-63661f1a847a"
       }
-    }
+    },
+    "owner": "tise_genene"
   }
 }
