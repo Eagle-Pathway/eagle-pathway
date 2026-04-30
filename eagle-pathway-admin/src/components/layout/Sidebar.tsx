@@ -33,8 +33,8 @@ export default function Sidebar() {
       const channel = supabase
         .channel('sidebar-chat-count')
         .on(
-          'postgres_changes',
-          { event: '*', table: 'messages', filter: `recipient_id=eq.${user.id}` },
+          'postgres_changes' as any,
+          { event: '*', schema: 'public', table: 'messages', filter: `recipient_id=eq.${user.id}` },
           () => fetchUnreadCount()
         )
         .subscribe();
