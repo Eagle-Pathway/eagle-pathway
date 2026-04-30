@@ -22,6 +22,8 @@ export async function POST(req: Request) {
       throw new Error('API Configuration Error: GROQ_API_KEY is not set.');
     }
 
+    const isStreaming = req.headers.get('accept') === 'text/event-stream';
+
     const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -34,7 +36,7 @@ export async function POST(req: Request) {
           { role: 'system', content: SYSTEM_PROMPT },
           ...messages,
         ],
-        stream: true,
+        stream: isStreaming,
       }),
     });
 
@@ -42,6 +44,15 @@ export async function POST(req: Request) {
       const errorText = await response.text();
       console.error('Groq API Error:', response.status, errorText);
       throw new Error(`AI Service Error: ${response.status}`);
+    }
+
+    if (!isStreaming) {
+      const data = await response.json();
+      return NextResponse.json(data.choices[0].message, {
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+        }
+      });
     }
 
     // Proxy the stream
