@@ -17,7 +17,9 @@ import {
   FileText,
   Briefcase,
   MessageSquare,
-  Globe
+  Globe,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 
 export default function Sidebar() {
@@ -75,20 +77,32 @@ export default function Sidebar() {
     await supabase.auth.signOut();
   };
 
+  const [isCollapsed, setIsCollapsed] = useState(false);
+
   return (
-    <div className="w-64 bg-white border-r border-gray-200 flex flex-col h-full shadow-sm z-20">
-      <div className="h-20 flex items-center px-6 border-b border-gray-100">
-        <div className="h-10 w-10 bg-brand-blue rounded-xl flex items-center justify-center mr-3 shadow-md shadow-brand-blue/20">
+    <div className={`${isCollapsed ? 'w-20' : 'w-64'} bg-white border-r border-gray-200 flex flex-col h-full shadow-sm z-20 transition-all duration-300 relative`}>
+      {/* Toggle Button */}
+      <button 
+        onClick={() => setIsCollapsed(!isCollapsed)}
+        className="absolute -right-3 top-10 bg-white border border-gray-200 rounded-full p-1 shadow-sm hover:bg-gray-50 text-gray-500 z-30 transition-transform hover:scale-110"
+      >
+        {isCollapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
+      </button>
+
+      <div className={`h-20 flex items-center ${isCollapsed ? 'justify-center px-0' : 'px-6'} border-b border-gray-100 overflow-hidden`}>
+        <div className="h-10 w-10 bg-brand-blue rounded-xl flex items-center justify-center flex-shrink-0 shadow-md shadow-brand-blue/20">
           <span className="text-white text-xl">🦅</span>
         </div>
-        <div>
-          <h1 className="text-lg font-bold text-gray-900 leading-tight">Admin</h1>
-          <p className="text-xs text-gray-500">Eagle Pathway</p>
-        </div>
+        {!isCollapsed && (
+          <div className="ml-3 animate-in fade-in duration-300">
+            <h1 className="text-lg font-bold text-gray-900 leading-tight">Admin</h1>
+            <p className="text-xs text-gray-500">Eagle Pathway</p>
+          </div>
+        )}
       </div>
 
-      <div className="flex-1 py-6 px-4 space-y-1 overflow-y-auto">
-        <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4 px-2">Menu</div>
+      <div className={`flex-1 py-6 ${isCollapsed ? 'px-2' : 'px-4'} space-y-1 overflow-y-auto overflow-x-hidden`}>
+        {!isCollapsed && <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-4 px-2">Menu</div>}
         {navigation.map((item) => {
           const isActive = pathname.startsWith(item.href);
           const Icon = item.icon;
@@ -96,16 +110,18 @@ export default function Sidebar() {
             <Link
               key={item.name}
               href={item.href}
-              className={`flex items-center px-3 py-3 rounded-xl transition-all duration-200 group ${
+              title={isCollapsed ? item.name : ''}
+              className={`flex items-center ${isCollapsed ? 'justify-center' : 'px-3'} py-3 rounded-xl transition-all duration-200 group relative ${
                 isActive 
                   ? 'bg-brand-blue/10 text-brand-blue font-semibold' 
                   : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900 font-medium'
               }`}
             >
-              <Icon className={`mr-3 h-5 w-5 ${isActive ? 'text-brand-blue' : 'text-gray-400 group-hover:text-gray-600'}`} />
-              <span className="flex-1">{item.name}</span>
+              <Icon className={`${isCollapsed ? '' : 'mr-3'} h-5 w-5 flex-shrink-0 ${isActive ? 'text-brand-blue' : 'text-gray-400 group-hover:text-gray-600'}`} />
+              {!isCollapsed && <span className="flex-1 truncate animate-in slide-in-from-left-2 duration-300">{item.name}</span>}
+              
               {item.badge && item.badge > 0 ? (
-                <span className="ml-2 px-2 py-0.5 bg-red-500 text-white text-[10px] font-bold rounded-full animate-pulse">
+                <span className={`${isCollapsed ? 'absolute top-1 right-1' : 'ml-2'} px-2 py-0.5 bg-red-500 text-white text-[10px] font-bold rounded-full animate-pulse`}>
                   {item.badge}
                 </span>
               ) : null}
@@ -114,22 +130,25 @@ export default function Sidebar() {
         })}
       </div>
 
-      <div className="p-4 border-t border-gray-100">
-        <div className="flex items-center px-2 py-3 mb-2">
-          <div className="h-8 w-8 rounded-full bg-brand-gold/20 flex items-center justify-center mr-3">
+      <div className={`p-4 border-t border-gray-100 overflow-hidden`}>
+        <div className={`flex items-center ${isCollapsed ? 'justify-center px-0' : 'px-2'} py-3 mb-2`}>
+          <div className="h-8 w-8 rounded-full bg-brand-gold/20 flex items-center justify-center flex-shrink-0">
              <span className="text-brand-gold text-xs font-bold">{user?.email?.charAt(0).toUpperCase()}</span>
           </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-gray-900 truncate">{user?.email}</p>
-            <p className="text-xs text-gray-500 truncate">Administrator</p>
-          </div>
+          {!isCollapsed && (
+            <div className="ml-3 flex-1 min-w-0 animate-in fade-in duration-300">
+              <p className="text-sm font-medium text-gray-900 truncate">{user?.email}</p>
+              <p className="text-xs text-gray-500 truncate">Administrator</p>
+            </div>
+          )}
         </div>
         <button
           onClick={handleLogout}
-          className="flex w-full items-center px-3 py-2.5 text-sm font-medium text-red-600 rounded-xl hover:bg-red-50 transition-colors"
+          title={isCollapsed ? 'Log out' : ''}
+          className={`flex w-full items-center ${isCollapsed ? 'justify-center' : 'px-3'} py-2.5 text-sm font-medium text-red-600 rounded-xl hover:bg-red-50 transition-colors`}
         >
-          <LogOut className="mr-3 h-4 w-4" />
-          Log out
+          <LogOut className={`${isCollapsed ? '' : 'mr-3'} h-4 w-4 flex-shrink-0`} />
+          {!isCollapsed && <span className="animate-in fade-in duration-300">Log out</span>}
         </button>
       </div>
     </div>
