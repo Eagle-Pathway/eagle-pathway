@@ -46,6 +46,8 @@ export default function BookingsPage() {
         ...b,
         student: userMap.get(b.student_id),
         tutor: userMap.get(b.tutor_id),
+        // Fallback for UI that expects a single date string
+        scheduled_at: `${b.session_date} ${b.session_time}`,
       }));
 
       setBookings(enrichedBookings as Booking[]);
