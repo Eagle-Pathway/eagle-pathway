@@ -36,9 +36,7 @@ export default function AssistantScreen() {
     setIsLoading(true);
 
     try {
-      // NOTE: For physical devices, replace 'localhost' with your computer's local IP address.
-      // 10.0.2.2 works for Android emulator to access the host machine's localhost.
-      const baseUrl = Platform.OS === 'android' ? 'http://10.0.2.2:3001' : 'http://localhost:3001';
+      const baseUrl = 'https://eagle-pathway-79kn.vercel.app';
       const apiUrl = `${baseUrl}/api/assistant`;
 
       const response = await fetch(apiUrl, {

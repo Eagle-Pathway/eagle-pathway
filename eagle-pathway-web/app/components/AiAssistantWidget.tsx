@@ -33,8 +33,7 @@ export default function AiAssistantWidget() {
     setIsLoading(true);
 
     try {
-      // Pointing to the Admin Dashboard API route. Update port if your admin is running on a different port.
-      const adminApiUrl = process.env.NEXT_PUBLIC_ADMIN_API_URL || 'http://localhost:3001/api/assistant';
+      const adminApiUrl = 'https://eagle-pathway-79kn.vercel.app/api/assistant';
       
       const response = await fetch(adminApiUrl, {
         method: 'POST',
