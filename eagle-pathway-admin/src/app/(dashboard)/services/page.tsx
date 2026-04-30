@@ -51,10 +51,12 @@ export default function ServiceRequestsPage() {
     setLoading(true);
     const { data, error } = await supabase
       .from('service_requests')
-      .select('*, users(full_name, email)')
+      .select('*, users:users!user_id(full_name, email)')
       .order('created_at', { ascending: false });
 
-    if (!error && data) {
+    if (error) {
+      console.error('Error fetching service requests:', error);
+    } else if (data) {
       setRequests(data);
     }
     setLoading(false);
