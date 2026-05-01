@@ -14,6 +14,8 @@ export interface User {
   academic_summary?: string;
   career_goals?: string;
   interested_subjects?: string[];
+  gpa?: number;
+  target_countries?: string[];
 }
 
 // ─── TUTOR ───────────────────────────────────────────────────────────────────
@@ -89,6 +91,7 @@ export interface Scholarship {
   benefits: Record<string, string>;
   deadline: string;
   fields_of_study?: string[];
+  min_gpa?: number;
   eagle_success_rate?: number;
   website_url?: string;
   image_url?: string;
