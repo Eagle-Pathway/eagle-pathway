@@ -22,6 +22,7 @@ interface AuthState {
   loadProfile: () => Promise<void>;
   updateProfile: (updates: Partial<User>) => Promise<void>;
   uploadAvatar: (fileUri: string, fileName: string) => Promise<void>;
+  switchPersona: (role: UserRole) => Promise<void>;
   signOut: () => Promise<void>;
 }
 
@@ -158,6 +159,22 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       set({ user: { ...user, avatar_url: publicUrl } });
     } finally {
       set({ isLoading: false });
+    }
+  },
+
+  switchPersona: async (role) => {
+    const { user } = get();
+    if (!user) return;
+    
+    // Optimistically switch in UI
+    set({ user: { ...user, active_role: role } });
+    
+    try {
+      await authService.updateProfile(user.id, { active_role: role });
+    } catch (e) {
+      console.error('Failed to persist persona switch:', e);
+      // Revert if failed
+      set({ user });
     }
   },
 
