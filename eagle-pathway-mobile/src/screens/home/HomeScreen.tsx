@@ -406,8 +406,29 @@ export default function HomeScreen() {
           </TouchableOpacity>
         )}
 
+        {/* Profile Incomplete Nudge */}
+        {(!user.gpa || !user.interested_subjects?.length) && (
+          <TouchableOpacity 
+            style={[styles.readinessBanner, { backgroundColor: Colors.blueDark, borderColor: 'rgba(255,255,255,0.1)' }]} 
+            onPress={() => router.push('/profile/edit')}
+            activeOpacity={0.9}
+          >
+            <View style={[styles.readinessIconWrap, { backgroundColor: 'rgba(255,255,255,0.1)' }]}>
+              <Text style={{ fontSize: 20 }}>🧠</Text>
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.readinessTitle, { color: Colors.white }]}>Personalize Your Feed</Text>
+              <Text style={[styles.readinessSub, { color: 'rgba(255,255,255,0.6)' }]}>Add your GPA and interests to get 100% matched scholarships.</Text>
+              <View style={{ flexDirection: 'row', gap: 6, marginTop: 8 }}>
+                <View style={{ width: 40, height: 4, borderRadius: 2, backgroundColor: Colors.gold }} />
+                <View style={{ width: 40, height: 4, borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.2)' }} />
+              </View>
+            </View>
+          </TouchableOpacity>
+        )}
+
         {/* Readiness banner */}
-        {!assignedConsultant && (
+        {!assignedConsultant && user.gpa && (
           <TouchableOpacity style={styles.readinessBanner} onPress={() => router.push('/progress')} activeOpacity={0.9}>
             <View style={styles.readinessIconWrap}><Text style={{ fontSize: 20 }}>⭐</Text></View>
             <View style={{ flex: 1 }}>
@@ -420,38 +441,52 @@ export default function HomeScreen() {
 
         {/* Recommended Scholarships */}
         {recommendedScholarships.length > 0 && (
-          <>
-            <SectionTitle title="Recommended for You" />
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: Spacing.xl, gap: Spacing.md }}>
+          <View style={{ marginTop: Spacing.xl }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: Spacing.xl, marginBottom: Spacing.md }}>
+              <View>
+                <Text style={{ fontSize: Typography['2xl'], fontWeight: Typography.bold, color: Colors.text }}>Top Matches For You</Text>
+                <Text style={{ fontSize: Typography.xs, color: Colors.textSecondary, marginTop: 2 }}>Based on your academic profile</Text>
+              </View>
+              <TouchableOpacity onPress={() => router.push('/(tabs)/explore')}>
+                <Text style={{ fontSize: Typography.sm, fontWeight: Typography.bold, color: Colors.blue }}>See All</Text>
+              </TouchableOpacity>
+            </View>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: Spacing.xl, gap: Spacing.lg, paddingBottom: 10 }}>
               {recommendedScholarships.map(s => (
                 <TouchableOpacity 
                   key={s.id} 
-                  style={styles.recCard}
+                  style={styles.discoverCard}
                   onPress={() => router.push({ pathname: '/scholarship-detail', params: { scholarshipId: s.id } })}
                   activeOpacity={0.9}
                 >
-                  <View style={styles.recFlag}><Text style={{ fontSize: 24 }}>{s.country_flag}</Text></View>
-                  <Text style={styles.recName} numberOfLines={1}>{s.name}</Text>
-                  <Text style={styles.recOrg} numberOfLines={1}>{s.organization}</Text>
-                  <View style={{ flexDirection: 'row', gap: 4, flexWrap: 'wrap' }}>
-                    <View style={styles.recPill}>
-                      <Text style={styles.recPillText}>{s.funding_type === 'fully_funded' ? 'Fully Funded' : 'Partial'}</Text>
-                    </View>
+                  <View style={styles.discoverCardTop}>
+                    <View style={styles.discoverFlag}><Text style={{ fontSize: 28 }}>{s.country_flag}</Text></View>
                     {(s as any).matchScore && (
-                      <View style={[styles.recPill, { backgroundColor: Colors.goldLight }]}>
-                        <Text style={[styles.recPillText, { color: Colors.goldDark }]}>✨ {(s as any).matchScore}% Match</Text>
+                      <View style={styles.matchScoreBadge}>
+                        <Text style={styles.matchScoreText}>{(s as any).matchScore}%</Text>
                       </View>
                     )}
                   </View>
-                  {(s as any).matchReason && (
-                    <Text style={{ fontSize: 9, color: Colors.textSecondary, marginTop: 4 }} numberOfLines={1}>
-                      💡 {(s as any).matchReason}
-                    </Text>
-                  )}
+                  
+                  <View style={{ marginTop: 12 }}>
+                    <Text style={styles.discoverName} numberOfLines={1}>{s.name}</Text>
+                    <Text style={styles.discoverOrg} numberOfLines={1}>{s.organization}</Text>
+                  </View>
+
+                  <View style={styles.discoverFooter}>
+                    <View style={styles.discoverTag}>
+                       <Text style={styles.discoverTagText}>{s.funding_type === 'fully_funded' ? 'Full' : 'Partial'}</Text>
+                    </View>
+                    {(s as any).matchReason && (
+                      <View style={styles.reasonPill}>
+                        <Text style={styles.reasonText} numberOfLines={1}>✨ {(s as any).matchReason}</Text>
+                      </View>
+                    )}
+                  </View>
                 </TouchableOpacity>
               ))}
             </ScrollView>
-          </>
+          </View>
         )}
 
         {/* Action Items */}
@@ -789,10 +824,28 @@ const styles = StyleSheet.create({
   taskSub: { fontSize: Typography.xs, color: Colors.textSecondary },
   viewAllTasks: { alignItems: 'center', paddingVertical: Spacing.sm },
   viewAllTasksText: { fontSize: Typography.sm, fontWeight: Typography.semibold, color: Colors.blue },
-  recCard: { width: 160, backgroundColor: Colors.card, borderRadius: Radius.xl, padding: Spacing.md, borderWidth: 1, borderColor: Colors.border, marginBottom: Spacing.sm },
-  recFlag: { width: 44, height: 44, borderRadius: 12, backgroundColor: Colors.bg, alignItems: 'center', justifyContent: 'center', marginBottom: 8 },
-  recName: { fontSize: Typography.sm, fontWeight: Typography.bold, color: Colors.text },
-  recOrg: { fontSize: Typography.xs, color: Colors.textSecondary, marginTop: 2 },
-  recPill: { marginTop: 8, backgroundColor: Colors.blueLight, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, alignSelf: 'flex-start' },
-  recPillText: { fontSize: 9, fontWeight: 'bold', color: Colors.blue },
+  discoverCard: { 
+    width: 240, 
+    backgroundColor: Colors.card, 
+    borderRadius: Radius['2xl'], 
+    padding: Spacing.lg, 
+    borderWidth: 1, 
+    borderColor: Colors.border,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.04,
+    shadowRadius: 10,
+    elevation: 2,
+  },
+  discoverCardTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
+  discoverFlag: { width: 50, height: 50, borderRadius: 15, backgroundColor: Colors.bg, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: Colors.border },
+  matchScoreBadge: { backgroundColor: Colors.blueDark, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 10 },
+  matchScoreText: { color: Colors.white, fontSize: 10, fontWeight: 'bold' },
+  discoverName: { fontSize: Typography.md, fontWeight: Typography.bold, color: Colors.text },
+  discoverOrg: { fontSize: Typography.xs, color: Colors.textSecondary, marginTop: 2 },
+  discoverFooter: { flexDirection: 'row', gap: 6, marginTop: 12, alignItems: 'center' },
+  discoverTag: { backgroundColor: Colors.blueLight, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 },
+  discoverTagText: { fontSize: 9, fontWeight: 'bold', color: Colors.blue },
+  reasonPill: { flex: 1, backgroundColor: 'rgba(212, 175, 55, 0.1)', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 },
+  reasonText: { fontSize: 9, fontWeight: 'bold', color: '#856404' },
 });
