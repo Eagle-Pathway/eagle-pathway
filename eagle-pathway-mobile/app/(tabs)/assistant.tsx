@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -10,15 +10,24 @@ import {
   StyleSheet,
   ActivityIndicator,
   SafeAreaView,
+  ScrollView,
 } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
-import { Colors, Typography } from '../../src/utils/theme';
+import { Colors, Typography, Spacing, Radius } from '../../src/utils/theme';
 import { Ionicons } from '@expo/vector-icons';
 
 interface Message {
   role: 'user' | 'assistant' | 'system';
   content: string;
 }
+
+const QUICK_ACTIONS = [
+  { id: '1', label: 'Review my SOP', icon: '✍️', prompt: 'Can you help me review my Statement of Purpose?' },
+  { id: '2', label: 'Find Scholarships', icon: '🎓', prompt: 'What are the best scholarships for Ethiopian students right now?' },
+  { id: '3', label: 'Document Help', icon: '📄', prompt: 'Which documents do I need for a PhD application?' },
+  { id: '4', label: 'Visa Guide', icon: '🌍', prompt: 'How do I start the visa process for Hungary?' },
+  { id: '5', label: 'Package info', icon: '💰', prompt: 'Tell me about the Standard and Premium packages.' },
+];
 
 export default function AssistantScreen() {
   const router = useRouter();
@@ -27,12 +36,13 @@ export default function AssistantScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const flatListRef = useRef<FlatList>(null);
 
-  const sendMessage = async () => {
-    if (!input.trim() || isLoading) return;
+  const sendMessage = async (textOverride?: string) => {
+    const messageText = textOverride || input;
+    if (!messageText.trim() || isLoading) return;
 
-    const userMessage: Message = { role: 'user', content: input };
+    const userMessage: Message = { role: 'user', content: messageText };
     setMessages((prev) => [...prev, userMessage]);
-    setInput('');
+    if (!textOverride) setInput('');
     setIsLoading(true);
 
     try {
@@ -94,6 +104,7 @@ export default function AssistantScreen() {
         options={{
           headerShown: true,
           title: 'Eagle AI Guide',
+          headerTitleStyle: { fontWeight: 'bold', color: Colors.blueDark },
           headerLeft: () => (
             <TouchableOpacity onPress={() => router.back()} style={{ marginLeft: 16 }}>
               <Ionicons name="arrow-back" size={24} color={Colors.text} />
@@ -104,8 +115,8 @@ export default function AssistantScreen() {
       
       <KeyboardAvoidingView 
         style={{ flex: 1 }} 
-        behavior={Platform.OS === 'ios' ? 'padding' : 'padding'}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 100}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
       >
         <FlatList
           ref={flatListRef}
@@ -116,44 +127,53 @@ export default function AssistantScreen() {
           onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
-              <Text style={styles.emptyIcon}>🤖</Text>
-              <Text style={styles.emptyText}>Hi! I'm the Eagle Pathway Assistant. Ask me anything!</Text>
+              <View style={styles.emptyIconBg}>
+                <Text style={styles.emptyIcon}>🤖</Text>
+              </View>
+              <Text style={styles.emptyTitle}>Your AI Academic Guide</Text>
+              <Text style={styles.emptyText}>I can help you with scholarship searches, SOP reviews, visa info, and more.</Text>
             </View>
           }
         />
+
+        {messages.length < 5 && (
+          <View style={styles.quickActionsContainer}>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.quickActionsScroll}>
+              {QUICK_ACTIONS.map(action => (
+                <TouchableOpacity 
+                  key={action.id} 
+                  style={styles.quickChip} 
+                  onPress={() => sendMessage(action.prompt)}
+                  disabled={isLoading}
+                >
+                  <Text style={{ marginRight: 6 }}>{action.icon}</Text>
+                  <Text style={styles.quickChipText}>{action.label}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        )}
 
         <View style={styles.inputContainer}>
           <TextInput
             style={styles.input}
             value={input}
             onChangeText={setInput}
-            placeholder="Ask me a question..."
+            placeholder="Ask Eagle AI..."
             placeholderTextColor="#9ca3af"
             multiline
             maxLength={500}
             editable={!isLoading}
-            onSubmitEditing={() => {
-              if (Platform.OS !== 'web') {
-                sendMessage();
-              }
-            }}
-            onKeyPress={(e: any) => {
-              if (Platform.OS === 'web' && e.nativeEvent.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                sendMessage();
-              }
-            }}
-            blurOnSubmit={false}
           />
           <TouchableOpacity 
             style={[styles.sendButton, (!input.trim() || isLoading) && styles.sendButtonDisabled]}
-            onPress={sendMessage}
+            onPress={() => sendMessage()}
             disabled={!input.trim() || isLoading}
           >
             {isLoading ? (
               <ActivityIndicator color={Colors.white} size="small" />
             ) : (
-              <Ionicons name="send" size={20} color={Colors.white} />
+              <Ionicons name="send" size={18} color={Colors.white} />
             )}
           </TouchableOpacity>
         </View>
@@ -165,7 +185,7 @@ export default function AssistantScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f9fafb',
+    backgroundColor: '#f8fafc',
   },
   listContent: {
     padding: 16,
@@ -175,17 +195,34 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 60,
+    paddingHorizontal: 40,
+  },
+  emptyIconBg: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: Colors.blueLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 20,
+    borderWidth: 2,
+    borderColor: 'rgba(255,255,255,0.8)',
   },
   emptyIcon: {
-    fontSize: 48,
-    marginBottom: 16,
-    opacity: 0.8,
+    fontSize: 50,
+  },
+  emptyTitle: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: Colors.blueDark,
+    marginBottom: 10,
+    textAlign: 'center',
   },
   emptyText: {
-    fontSize: 16,
-    color: '#6b7280',
+    fontSize: 15,
+    color: '#64748b',
     textAlign: 'center',
-    fontWeight: Typography.medium,
+    lineHeight: 22,
   },
   messageWrapper: {
     flexDirection: 'row',
@@ -202,16 +239,21 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: '#e5e7eb',
+    backgroundColor: Colors.blueDark,
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 8,
   },
   messageBubble: {
-    maxWidth: '80%',
+    maxWidth: '82%',
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderRadius: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
   },
   messageBubbleUser: {
     backgroundColor: Colors.blue,
@@ -221,7 +263,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.white,
     borderBottomLeftRadius: 4,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: '#e2e8f0',
   },
   messageText: {
     fontSize: 15,
@@ -229,41 +271,79 @@ const styles = StyleSheet.create({
   },
   messageTextUser: {
     color: Colors.white,
+    fontWeight: '500',
   },
   messageTextAssistant: {
     color: Colors.text,
   },
+  quickActionsContainer: {
+    paddingVertical: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#f1f5f9',
+    backgroundColor: 'rgba(248, 250, 252, 0.8)',
+  },
+  quickActionsScroll: {
+    paddingHorizontal: 16,
+    gap: 10,
+  },
+  quickChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.white,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 1,
+    elevation: 1,
+  },
+  quickChipText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: Colors.blue,
+  },
   inputContainer: {
     flexDirection: 'row',
     padding: 12,
-    paddingBottom: Platform.OS === 'ios' ? 24 : 12,
+    paddingBottom: Platform.OS === 'ios' ? 30 : 12,
     backgroundColor: Colors.white,
     borderTopWidth: 1,
-    borderTopColor: Colors.border,
+    borderTopColor: '#e2e8f0',
     alignItems: 'flex-end',
   },
   input: {
     flex: 1,
-    minHeight: 40,
+    minHeight: 44,
     maxHeight: 120,
-    backgroundColor: '#f3f4f6',
-    borderRadius: 20,
-    paddingHorizontal: 16,
+    backgroundColor: '#f1f5f9',
+    borderRadius: 22,
+    paddingHorizontal: 18,
     paddingTop: 12,
     paddingBottom: 12,
     fontSize: 15,
     color: Colors.text,
-    marginRight: 12,
+    marginRight: 10,
   },
   sendButton: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: Colors.blue,
+    backgroundColor: Colors.blueDark,
     justifyContent: 'center',
     alignItems: 'center',
+    shadowColor: Colors.blue,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 4,
   },
   sendButtonDisabled: {
-    backgroundColor: '#9ca3af',
+    backgroundColor: '#cbd5e1',
+    shadowOpacity: 0,
+    elevation: 0,
   },
 });

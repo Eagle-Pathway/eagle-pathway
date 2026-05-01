@@ -10,6 +10,7 @@ import { EmptyState } from '@/components/common';
 import { useAppStore } from '@/store/appStore';
 import { Scholarship } from '@/types';
 import { format } from 'date-fns';
+import { Ionicons } from '@expo/vector-icons';
 
 const DEGREE_FILTERS = ['All', 'Undergraduate', 'Masters', 'PhD', 'Fully Funded'];
 
@@ -106,38 +107,48 @@ function ScholarshipCard({ scholarship: s, isSaved, onSave }: { scholarship: Sch
       onPress={() => router.push({ pathname: '/scholarship-detail', params: { scholarshipId: s.id } })}
       activeOpacity={0.9}
     >
-      {s.image_url ? (
-        <Image source={{ uri: s.image_url }} style={styles.cardImage} />
-      ) : null}
-      <View style={styles.cardTop}>
-        <View style={{ flexDirection: 'row', gap: Spacing.md, flex: 1, alignItems: 'flex-start' }}>
-          <View style={styles.flagBox}><Text style={{ fontSize: 22 }}>{s.country_flag || '🌍'}</Text></View>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.schName} numberOfLines={2}>{s.name}</Text>
-            <Text style={styles.schOrg} numberOfLines={1}>{s.organization}</Text>
+      {s.image_url && (
+        <View style={styles.imageContainer}>
+          <Image source={{ uri: s.image_url }} style={styles.cardImage} resizeMode="cover" />
+          <View style={styles.imageOverlay} />
+          <View style={styles.imageBadge}>
+            <Text style={styles.imageBadgeText}>{s.funding_type === 'fully_funded' ? 'Full Funding' : 'Partial'}</Text>
           </View>
         </View>
-        <TouchableOpacity onPress={onSave} style={styles.saveBtn} activeOpacity={0.8}>
-          <Text style={{ fontSize: 18 }}>{isSaved ? '🔖' : '🏷️'}</Text>
-        </TouchableOpacity>
-      </View>
-      <View style={styles.cardMeta}>
-        {s.deadline && (
-          <View style={[styles.metaPill, { backgroundColor: Colors.redLight }]}>
-            <Text style={[styles.metaText, { color: Colors.red }]}>
-              {isDeadlineSoon ? '⚡ ' : ''}Deadline: {format(new Date(s.deadline), 'MMM d')}
-            </Text>
+      )}
+      
+      <View style={styles.cardContent}>
+        <View style={styles.cardTop}>
+          <View style={styles.flagAndTitle}>
+            <View style={styles.flagCircle}>
+              <Text style={{ fontSize: 22 }}>{s.country_flag || '🌍'}</Text>
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.schName} numberOfLines={2}>{s.name}</Text>
+              <Text style={styles.schOrg} numberOfLines={1}>{s.organization}</Text>
+            </View>
           </View>
-        )}
-        {s.degree_levels && s.degree_levels.slice(0, 2).map(d => (
-          <View key={d} style={[styles.metaPill, { backgroundColor: Colors.blueLight }]}>
-            <Text style={[styles.metaText, { color: Colors.blue }]}>{d.charAt(0).toUpperCase() + d.slice(1)}</Text>
+          <TouchableOpacity onPress={onSave} style={styles.saveBtn} activeOpacity={0.7}>
+            <Ionicons name={isSaved ? "bookmark" : "bookmark-outline"} size={20} color={isSaved ? Colors.blue : Colors.textSecondary} />
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.cardFooter}>
+          <View style={styles.metaRow}>
+            {s.deadline && (
+              <View style={[styles.metaPill, { backgroundColor: Colors.redLight }]}>
+                <Ionicons name="time-outline" size={12} color={Colors.red} style={{ marginRight: 4 }} />
+                <Text style={[styles.metaText, { color: Colors.red }]}>
+                  {format(new Date(s.deadline), 'MMM d')}
+                </Text>
+              </View>
+            )}
+            <View style={[styles.metaPill, { backgroundColor: Colors.blueLight }]}>
+               <Ionicons name="location-outline" size={12} color={Colors.blue} style={{ marginRight: 4 }} />
+               <Text style={[styles.metaText, { color: Colors.blue }]}>{s.country || 'International'}</Text>
+            </View>
           </View>
-        ))}
-        <View style={[styles.metaPill, { backgroundColor: Colors.greenLight }]}>
-          <Text style={[styles.metaText, { color: Colors.green }]}>
-            {s.funding_type === 'fully_funded' ? 'Fully Funded' : s.funding_details}
-          </Text>
+          <Ionicons name="chevron-forward" size={18} color={Colors.border} />
         </View>
       </View>
     </TouchableOpacity>
@@ -156,14 +167,36 @@ const styles = StyleSheet.create({
   filterChipActive: { borderColor: 'rgba(255,255,255,0.5)', backgroundColor: 'rgba(255,255,255,0.15)' },
   filterChipText: { fontSize: Typography.sm, fontWeight: Typography.semibold, color: 'rgba(255,255,255,0.7)' },
   filterChipTextActive: { color: Colors.white },
-  card: { marginHorizontal: Spacing.xl, marginBottom: Spacing.md, backgroundColor: Colors.card, borderRadius: Radius['2xl'], padding: Spacing.lg, borderWidth: 1, borderColor: Colors.border, overflow: 'hidden' },
-  cardImage: { width: '120%', height: 140, marginHorizontal: '-10%', marginTop: '-10%', marginBottom: Spacing.md },
-  cardTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: Spacing.md },
-  flagBox: { width: 40, height: 40, borderRadius: 12, backgroundColor: Colors.bg, alignItems: 'center', justifyContent: 'center' },
-  schName: { fontSize: Typography.lg, fontWeight: Typography.bold, color: Colors.text, marginBottom: 3 },
-  schOrg: { fontSize: Typography.sm, color: Colors.textSecondary },
-  saveBtn: { width: 32, height: 32, backgroundColor: Colors.bg, borderRadius: 9, alignItems: 'center', justifyContent: 'center' },
-  cardMeta: { flexDirection: 'row', gap: Spacing.sm, flexWrap: 'wrap' },
-  metaPill: { paddingHorizontal: Spacing.sm, paddingVertical: 3, borderRadius: 6 },
-  metaText: { fontSize: Typography.sm, fontWeight: Typography.semibold },
+  card: { 
+    marginHorizontal: Spacing.xl, 
+    marginBottom: Spacing.lg, 
+    backgroundColor: Colors.card, 
+    borderRadius: Radius['2xl'], 
+    borderWidth: 1, 
+    borderColor: Colors.border, 
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    elevation: 2,
+  },
+  imageContainer: { width: '100%', height: 120, position: 'relative' },
+  cardImage: { width: '100%', height: '100%' },
+  imageOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.1)' },
+  imageBadge: { position: 'absolute', top: 12, right: 12, backgroundColor: 'rgba(0,0,0,0.5)', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
+  imageBadgeText: { color: Colors.white, fontSize: 10, fontWeight: 'bold' },
+  
+  cardContent: { padding: Spacing.lg },
+  cardTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: Spacing.lg },
+  flagAndTitle: { flexDirection: 'row', gap: Spacing.md, flex: 1, alignItems: 'center' },
+  flagCircle: { width: 44, height: 44, borderRadius: 22, backgroundColor: Colors.bg, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: Colors.border },
+  schName: { fontSize: Typography.md, fontWeight: Typography.bold, color: Colors.text, marginBottom: 2 },
+  schOrg: { fontSize: Typography.xs, color: Colors.textSecondary, fontWeight: '500' },
+  saveBtn: { width: 36, height: 36, backgroundColor: Colors.bg, borderRadius: 12, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: Colors.border },
+  
+  cardFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingTop: Spacing.md, borderTopWidth: 1, borderTopColor: '#f1f5f9' },
+  metaRow: { flexDirection: 'row', gap: Spacing.sm },
+  metaPill: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 10 },
+  metaText: { fontSize: 11, fontWeight: 'bold' },
 });
