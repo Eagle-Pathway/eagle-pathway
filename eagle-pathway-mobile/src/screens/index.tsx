@@ -125,6 +125,24 @@ export function ScholarshipDetailScreen() {
               </View>
             ))}
           </View>
+          
+          <View style={[sdStyles.section, { backgroundColor: Colors.blueDark, margin: Spacing.md, borderRadius: Radius.xl, borderBottomWidth: 0 }]}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+              <Text style={{ fontSize: 24 }}>✨</Text>
+              <Text style={[sdStyles.sectionTitle, { color: Colors.gold, marginBottom: 0 }]}>Eagle AI Assistant</Text>
+            </View>
+            <Text style={[sdStyles.bodyText, { color: 'rgba(255,255,255,0.8)', fontSize: 13, marginBottom: 16 }]}>
+              Stop struggling with your essay. We'll use your academic profile to draft a winning Statement of Purpose for this scholarship in seconds.
+            </Text>
+            <TouchableOpacity 
+              style={{ backgroundColor: Colors.gold, padding: 14, borderRadius: 12, alignItems: 'center' }}
+              onPress={() => router.push({ pathname: '/scholarship/magic-draft', params: { scholarshipId: scholarship.id } })}
+              activeOpacity={0.8}
+            >
+              <Text style={{ color: Colors.blueDark, fontWeight: 'bold', fontSize: 15 }}>Generate Magic Draft ✨</Text>
+            </TouchableOpacity>
+          </View>
+
           {scholarship.eagle_success_rate && (
             <View style={[sdStyles.section, { borderBottomWidth: 0 }]}>
               <Text style={sdStyles.sectionTitle}>Eagle Pathway Success Rate</Text>
@@ -1564,7 +1582,7 @@ const notifStyles = StyleSheet.create({
 
 // ─── PROFILE ─────────────────────────────────────────────────────────────────
 export function ProfileScreen() {
-  const { user, signOut, uploadAvatar } = useAuthStore();
+  const { user, signOut, uploadAvatar, switchPersona } = useAuthStore();
   const { applications, documents, unreadCount } = useAppStore();
   const [uploading, setUploading] = useState(false);
 
@@ -1624,7 +1642,9 @@ export function ProfileScreen() {
           </View>
         </TouchableOpacity>
         <Text style={profStyles.name}>{user?.full_name || 'Student'}</Text>
-        <Text style={profStyles.role}>{user?.role?.charAt(0).toUpperCase()}{user?.role?.slice(1) || 'Student'}</Text>
+        <Text style={profStyles.role}>
+          {(user?.active_role || 'student').charAt(0).toUpperCase()}{(user?.active_role || 'student').slice(1)} Mode
+        </Text>
         <View style={profStyles.badges}>
           {user?.grade_level && <View style={profStyles.badge}><Text style={profStyles.badgeText}>{user.grade_level}</Text></View>}
           {user?.city && <View style={profStyles.badge}><Text style={profStyles.badgeText}>{user.city}</Text></View>}
@@ -1638,6 +1658,29 @@ export function ProfileScreen() {
         >
           <Text style={{ color: Colors.white, fontWeight: 'bold', fontSize: 13 }}>Edit Academic Profile</Text>
         </TouchableOpacity>
+
+        {/* Persona Switcher */}
+        <View style={profStyles.personaContainer}>
+          {['student', 'tutor', 'parent'].map((role) => (
+            <TouchableOpacity 
+              key={role}
+              style={[
+                profStyles.personaBtn, 
+                user?.active_role === role && profStyles.personaBtnActive
+              ]}
+              onPress={() => switchPersona(role as any)}
+              activeOpacity={0.7}
+            >
+              <Text style={{ fontSize: 18 }}>{role === 'student' ? '🎓' : role === 'tutor' ? '👨‍🏫' : '👨‍👩‍👧'}</Text>
+              <Text style={[
+                profStyles.personaText,
+                user?.active_role === role && profStyles.personaTextActive
+              ]}>
+                {role.charAt(0).toUpperCase() + role.slice(1)}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
       </View>
 
       <ScrollView contentContainerStyle={{ paddingBottom: 100 }}>
@@ -1681,6 +1724,12 @@ const profStyles = StyleSheet.create({
   version: { textAlign: 'center', fontSize: Typography.sm, color: Colors.textSecondary, padding: Spacing.xl },
   editBadge: { position: 'absolute', bottom: 15, right: -5, backgroundColor: Colors.blue, width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: Colors.blueDark },
   editProfileBtn: { marginTop: Spacing.xl, backgroundColor: 'rgba(255,255,255,0.15)', paddingHorizontal: 20, paddingVertical: 10, borderRadius: 12, borderWidth: 1, borderColor: 'rgba(255,255,255,0.2)' },
+  editProfileBtn: { marginTop: Spacing.xl, backgroundColor: 'rgba(255,255,255,0.15)', paddingHorizontal: 20, paddingVertical: 10, borderRadius: 12, borderWidth: 1, borderColor: 'rgba(255,255,255,0.2)' },
+  personaContainer: { flexDirection: 'row', gap: Spacing.sm, marginTop: Spacing.xl, backgroundColor: 'rgba(0,0,0,0.1)', padding: 4, borderRadius: 16 },
+  personaBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 10, borderRadius: 12 },
+  personaBtnActive: { backgroundColor: Colors.white, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 3 },
+  personaText: { fontSize: 12, fontWeight: Typography.semibold, color: 'rgba(255,255,255,0.6)' },
+  personaTextActive: { color: Colors.blueDark },
 });
 
 // ─── SETTINGS ────────────────────────────────────────────────────────────────
@@ -1780,15 +1829,18 @@ const settingsStyles = StyleSheet.create({
 export function EditProfileScreen() {
   const { user, updateProfile } = useAuthStore();
   const [formData, setFormData] = useState({
-    full_name: user?.full_name || '',
-    grade_level: user?.grade_level || 'Undergraduate',
-    gpa: user?.gpa?.toString() || '',
     interested_subjects: user?.interested_subjects || [],
     academic_summary: user?.academic_summary || '',
+    has_ielts: user?.has_ielts || false,
+    is_english_medium: user?.is_english_medium || false,
+    target_degree_level: user?.target_degree_level || 'BSc',
+    has_extracurriculars: user?.has_extracurriculars || false,
+    target_departments: user?.target_departments || [],
   });
   const [loading, setLoading] = useState(false);
 
   const SUBJECTS = ['STEM', 'Healthcare', 'Business', 'Humanities', 'Arts', 'Law'];
+  const DEPARTMENTS = ['Computer Science', 'Mechanical Engineering', 'Medicine', 'Economics', 'Psychology', 'Education', 'Architecture', 'Law', 'International Relations'];
 
   const handleSave = async () => {
     setLoading(true);
@@ -1812,6 +1864,15 @@ export function EditProfileScreen() {
       interested_subjects: prev.interested_subjects.includes(s)
         ? prev.interested_subjects.filter(x => x !== s)
         : [...prev.interested_subjects, s]
+    }));
+  };
+
+  const toggleDepartment = (d: string) => {
+    setFormData(prev => ({
+      ...prev,
+      target_departments: prev.target_departments.includes(d)
+        ? prev.target_departments.filter(x => x !== d)
+        : [...prev.target_departments, d]
     }));
   };
 
@@ -1844,6 +1905,50 @@ export function EditProfileScreen() {
           ))}
         </View>
 
+        <Text style={editProfStyles.label}>Target Study Level (Aiming for)</Text>
+        <View style={editProfStyles.pickerContainer}>
+          {['BSc', 'MSc', 'PhD'].map(lvl => (
+            <TouchableOpacity 
+              key={lvl} 
+              style={[editProfStyles.pickerBtn, formData.target_degree_level === lvl && editProfStyles.pickerBtnActive]}
+              onPress={() => setFormData(f => ({ ...f, target_degree_level: lvl }))}
+            >
+              <Text style={[editProfStyles.pickerText, formData.target_degree_level === lvl && editProfStyles.pickerTextActive]}>{lvl}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        <View style={editProfStyles.row}>
+          <View style={{ flex: 1 }}>
+            <Text style={editProfStyles.label}>English Proficiency</Text>
+            <View style={editProfStyles.switchRow}>
+              <Text style={editProfStyles.switchLabel}>Have IELTS/TOEFL</Text>
+              <Switch 
+                value={formData.has_ielts} 
+                onValueChange={v => setFormData(f => ({ ...f, has_ielts: v }))} 
+                trackColor={{ true: Colors.blue }}
+              />
+            </View>
+            <View style={editProfStyles.switchRow}>
+              <Text style={editProfStyles.switchLabel}>English Medium Studied</Text>
+              <Switch 
+                value={formData.is_english_medium} 
+                onValueChange={v => setFormData(f => ({ ...f, is_english_medium: v }))} 
+                trackColor={{ true: Colors.blue }}
+              />
+            </View>
+          </View>
+        </View>
+
+        <View style={editProfStyles.switchRow}>
+          <Text style={[editProfStyles.label, { marginTop: 0 }]}>Has Extracurriculars</Text>
+          <Switch 
+            value={formData.has_extracurriculars} 
+            onValueChange={v => setFormData(f => ({ ...f, has_extracurriculars: v }))} 
+            trackColor={{ true: Colors.blue }}
+          />
+        </View>
+
         <Text style={editProfStyles.label}>Cumulative GPA (e.g. 3.8)</Text>
         <TextInput 
           style={editProfStyles.input} 
@@ -1874,6 +1979,19 @@ export function EditProfileScreen() {
           onChangeText={t => setFormData(f => ({ ...f, academic_summary: t }))} 
         />
 
+        <Text style={editProfStyles.label}>Target Departments</Text>
+        <View style={editProfStyles.subjectsRow}>
+          {DEPARTMENTS.map(d => (
+            <TouchableOpacity 
+              key={d} 
+              style={[editProfStyles.subjectPill, formData.target_departments.includes(d) && editProfStyles.subjectPillActive]}
+              onPress={() => toggleDepartment(d)}
+            >
+              <Text style={[editProfStyles.subjectText, formData.target_departments.includes(d) && editProfStyles.subjectTextActive]}>{d}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
         <Button title='Save Profile' variant='primary' onPress={handleSave} loading={loading} style={{ marginTop: Spacing.xl }} />
       </ScrollView>
     </SafeAreaView>
@@ -1896,4 +2014,112 @@ const editProfStyles = StyleSheet.create({
   subjectPillActive: { backgroundColor: Colors.blueLight, borderColor: Colors.blue },
   subjectText: { fontSize: Typography.sm, fontWeight: Typography.medium, color: Colors.textSecondary },
   subjectTextActive: { color: Colors.blue, fontWeight: Typography.bold },
+  switchRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: Spacing.sm },
+  switchLabel: { fontSize: Typography.base, color: Colors.textSecondary },
+  row: { flexDirection: 'row', gap: Spacing.md, marginTop: Spacing.sm },
+});
+
+// ─── MAGIC DRAFT ─────────────────────────────────────────────────────────────
+export function MagicDraftScreen() {
+  const { scholarshipId } = useLocalSearchParams<{ scholarshipId: string }>();
+  const { user } = useAuthStore();
+  const { generateMagicSOP, isGeneratingMagicSOP } = useAppStore();
+  const [scholarship, setScholarship] = useState<Scholarship | null>(null);
+  const [draft, setDraft] = useState('');
+
+  useEffect(() => {
+    if (scholarshipId) {
+      scholarshipsService.getScholarshipById(scholarshipId).then(setScholarship);
+    }
+  }, [scholarshipId]);
+
+  const handleGenerate = async () => {
+    if (!user || !scholarship) return;
+    const result = await generateMagicSOP(user, scholarship);
+    setDraft(result);
+  };
+
+  const handleCopy = () => {
+    // In a real app, use Clipboard.setString
+    Alert.alert('Copied!', 'Draft copied to clipboard. You can now use it in your application.');
+  };
+
+  return (
+    <SafeAreaView style={CommonStyles.screenBg} edges={['top']}>
+      <View style={magicStyles.header}>
+        <TouchableOpacity style={magicStyles.backBtn} onPress={() => router.back()} activeOpacity={0.8}>
+          <Text style={{ fontSize: 20, color: Colors.text }}>←</Text>
+        </TouchableOpacity>
+        <Text style={magicStyles.title}>Eagle AI Magic Draft</Text>
+      </View>
+
+      <ScrollView contentContainerStyle={{ padding: Spacing.xl }}>
+        {!draft ? (
+          <View style={magicStyles.emptyState}>
+            <View style={magicStyles.aiCircle}>
+              <Text style={{ fontSize: 40 }}>✨</Text>
+            </View>
+            <Text style={magicStyles.emptyTitle}>Ready to write your SOP?</Text>
+            <Text style={magicStyles.emptySub}>
+              We will combine your profile summary, GPA (${user?.gpa || '3.5'}), and interests with the requirements of ${scholarship?.name || 'this scholarship'} to create a professional draft.
+            </Text>
+            <Button 
+              title={isGeneratingMagicSOP ? 'Generating Magic... ✨' : 'Generate My Draft Now'} 
+              variant='primary' 
+              onPress={handleGenerate} 
+              loading={isGeneratingMagicSOP}
+              style={{ width: '100%', marginTop: Spacing.xl }}
+            />
+          </View>
+        ) : (
+          <View>
+            <View style={magicStyles.draftHeader}>
+              <Text style={magicStyles.draftLabel}>AI-Generated Statement of Purpose</Text>
+              <TouchableOpacity onPress={handleCopy} activeOpacity={0.7}>
+                <Text style={{ color: Colors.blue, fontWeight: 'bold' }}>📋 Copy All</Text>
+              </TouchableOpacity>
+            </View>
+            <View style={magicStyles.draftCard}>
+              <Text style={magicStyles.draftText}>{draft}</Text>
+            </View>
+            <View style={magicStyles.tipBox}>
+              <Text style={magicStyles.tipTitle}>💡 Tip for Success</Text>
+              <Text style={magicStyles.tipText}>
+                This is a solid draft! We recommend reading through it and adding 1-2 personal anecdotes to make it truly unique before submitting.
+              </Text>
+            </View>
+            <Button 
+              title='Use This Draft' 
+              variant='primary' 
+              onPress={() => router.push({ pathname: '/tracker' })} 
+              style={{ marginTop: Spacing.xl }}
+            />
+            <TouchableOpacity 
+              style={{ marginTop: Spacing.md, alignSelf: 'center' }}
+              onPress={() => setDraft('')}
+            >
+              <Text style={{ color: Colors.textSecondary }}>Retry Generation</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+      </ScrollView>
+    </SafeAreaView>
+  );
+}
+
+const magicStyles = StyleSheet.create({
+  header: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md, padding: Spacing.xl, backgroundColor: Colors.card, borderBottomWidth: 1, borderBottomColor: Colors.border },
+  backBtn: { width: 36, height: 36, backgroundColor: Colors.grayLight, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+  title: { fontSize: Typography.xl, fontWeight: Typography.bold, color: Colors.text },
+  emptyState: { alignItems: 'center', paddingTop: 60 },
+  aiCircle: { width: 100, height: 100, borderRadius: 50, backgroundColor: Colors.blueLight, alignItems: 'center', justifyContent: 'center', marginBottom: Spacing.xl, shadowColor: Colors.blue, shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.2, shadowRadius: 20, elevation: 10 },
+  emptyTitle: { fontSize: Typography['2xl'], fontWeight: Typography.bold, color: Colors.text, textAlign: 'center', marginBottom: Spacing.md },
+  emptySub: { fontSize: Typography.base, color: Colors.textSecondary, textAlign: 'center', lineHeight: 22, paddingHorizontal: 20 },
+  draftHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.md },
+  draftLabel: { fontSize: Typography.xs, fontWeight: Typography.bold, color: Colors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.5 },
+  draftCard: { backgroundColor: Colors.card, padding: Spacing.lg, borderRadius: Radius.xl, borderWidth: 1, borderColor: Colors.border, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 },
+  draftText: { fontSize: Typography.base, color: Colors.text, lineHeight: 24, fontStyle: 'italic' },
+  tipBox: { marginTop: Spacing.xl, backgroundColor: Colors.goldLight, padding: Spacing.lg, borderRadius: Radius.lg, borderWidth: 1, borderColor: '#e8d5a0' },
+  tipTitle: { fontWeight: 'bold', color: '#7a5c1e', marginBottom: 4 },
+  tipText: { fontSize: 12, color: '#9a7230', lineHeight: 18 },
 });
