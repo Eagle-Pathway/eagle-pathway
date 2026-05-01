@@ -1,5 +1,5 @@
 import { supabase } from './supabase';
-import { Scholarship, Application, PackageTier, Document, DocumentType } from '../types';
+import { Scholarship, Application, PackageTier, Document, DocumentType, User } from '../types';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as DocumentPicker from 'expo-document-picker';
 
@@ -254,65 +254,130 @@ export const scholarshipsService = {
     const scored = (scholarships as Scholarship[]).map(sch => {
       let score = 30; // Base score
       let reasons: string[] = [];
-      let matchCount = 0;
 
-      // 1. Degree Level Match (Weight: 40)
+      // 1. Degree Level Match (Weight: 35)
       const userLevel = (user.grade_level || '').toLowerCase();
       const schLevels = (sch.degree_levels || []).map(l => l.toLowerCase());
-      
       if (schLevels.includes(userLevel) || schLevels.includes('all')) {
-        score += 40;
-        matchCount++;
+        score += 35;
       } else {
-        score -= 20; // Penalty for mismatching level
+        score -= 25; // Penalty for wrong level
       }
 
-      // 2. Field of Study / Interest Match (Weight: 30)
+      // 2. Target Degree Level Match (Weight: 15)
+      const targetDegree = (user.target_degree_level || '').toLowerCase();
+      const degreeMap: Record<string, string> = { bsc: 'undergraduate', msc: 'masters', phd: 'phd' };
+      const mappedTarget = degreeMap[targetDegree] || targetDegree;
+      if (schLevels.includes(mappedTarget) || schLevels.includes('all')) {
+        score += 15;
+        reasons.push(`Matches your target ${user.target_degree_level} degree`);
+      }
+
+      // 3. Field of Study Match (Weight: 20)
+      const userInterests = [
+        ...(user.interested_subjects || []),
+        ...(user.academic_summary?.split(' ') || []),
+        ...(user.career_goals?.split(' ') || [])
+      ].map(s => s.toLowerCase());
       const schFields = (sch.fields_of_study || []).map(f => f.toLowerCase());
-      const interestMatches = schFields.filter(f => 
+      const interestMatches = schFields.filter(f =>
         userInterests.some(ui => ui.includes(f) || f.includes(ui)) || f === 'any'
       );
-      
       if (interestMatches.length > 0) {
-        score += 30;
+        score += 20;
         reasons.push(`Matches your interest in ${interestMatches[0] === 'any' ? 'multiple fields' : interestMatches[0]}`);
-        matchCount++;
       }
 
-      // 3. GPA Match (Weight: 20)
-      if (sch.min_gpa) {
-        if (user.gpa && user.gpa >= sch.min_gpa) {
-          score += 20;
-          reasons.push("You meet the GPA requirements");
-        } else if (user.gpa && user.gpa < sch.min_gpa) {
-          score -= 10; // Slightly less likely to show if below GPA
+      // 4. Department Match (Weight: 15)
+      if (sch.target_departments && user.target_departments) {
+        const deptOverlap = sch.target_departments.filter(d =>
+          d === 'Any' || user.target_departments!.includes(d)
+        );
+        if (deptOverlap.length > 0) {
+          score += 15;
+          reasons.push(`Open for ${deptOverlap[0] === 'Any' ? 'all departments' : deptOverlap[0]}`);
         }
       } else {
-        score += 10; // Neutral boost if no GPA requirement mentioned
+        score += 5; // Neutral if not specified
       }
 
-      // 4. Country Preference (Weight: 10)
+      // 5. English Proficiency (Weight: 10)
+      if (sch.requires_ielts) {
+        if (user.has_ielts) {
+          score += 10;
+          reasons.push('You meet the IELTS requirement');
+        } else if (sch.accepts_english_medium && user.is_english_medium) {
+          score += 6;
+          reasons.push('Your English medium background qualifies');
+        } else {
+          score -= 15; // Hard disqualifier
+        }
+      } else if (sch.accepts_english_medium && user.is_english_medium) {
+        score += 5;
+      }
+
+      // 6. GPA Match (Weight: 10)
+      if (sch.min_gpa) {
+        if (user.gpa && user.gpa >= sch.min_gpa) {
+          score += 10;
+          reasons.push('You meet the GPA requirements');
+        } else if (user.gpa && user.gpa < sch.min_gpa) {
+          score -= 10;
+        }
+      } else {
+        score += 5;
+      }
+
+      // 7. Extracurriculars boost (Weight: 5)
+      if (user.has_extracurriculars) score += 5;
+
+      // 8. Country Preference (Weight: 5)
       if (user.target_countries?.includes(sch.country)) {
-        score += 10;
+        score += 5;
         reasons.push(`Located in ${sch.country} (your preference)`);
       }
 
-      // 5. Deadline Urgency (Small boost)
-      const daysToDeadline = sch.deadline ? (new Date(sch.deadline).getTime() - Date.now()) / (1000 * 3600 * 24) : 100;
-      if (daysToDeadline > 0 && daysToDeadline < 30) {
-         score += 5;
-      }
+      // 9. Deadline urgency (small awareness boost)
+      const daysToDeadline = sch.deadline
+        ? (new Date(sch.deadline).getTime() - Date.now()) / (1000 * 3600 * 24)
+        : 100;
+      if (daysToDeadline > 0 && daysToDeadline < 30) score += 5;
 
       return {
         ...sch,
-        matchScore: Math.min(score, 99),
-        matchReason: reasons[0] || `${user.grade_level || 'General'} Academic Fit`
+        matchScore: Math.min(Math.max(score, 0), 99),
+        matchReason: reasons[0] || `${user.grade_level || 'General'} Academic Fit`,
       };
     });
 
     return scored
-      .filter(s => (s.matchScore || 0) > 60)
+      .filter(s => (s.matchScore || 0) > 55)
       .sort((a, b) => (b.matchScore || 0) - (a.matchScore || 0))
       .slice(0, 10);
+  },
+
+  async generateMagicSOP(student: User, scholarship: Scholarship): Promise<string> {
+    // In production, this would be an Edge Function call to Gemini/OpenAI
+    // The prompt would be: "Given this student's profile (GPA: {gpa}, Interests: {interests}, Summary: {summary}) 
+    // and this scholarship ({name}, {org}, {requirements}), write a compelling 500-word SOP."
+    
+    await new Promise(r => setTimeout(r, 3000)); // Simulate AI heavy lifting
+
+    const interests = (student.interested_subjects || []).join(', ');
+    
+    return `Subject: Statement of Purpose for ${scholarship.name}
+
+Dear Scholarship Committee,
+
+My name is ${student.full_name}, and I am writing to express my strong interest in the ${scholarship.name} offered by ${scholarship.organization}. As a student currently at the ${student.grade_level || 'undergraduate'} level with a cumulative GPA of ${student.gpa || '3.5'}, I have always aimed for academic excellence and community impact.
+
+My passion for ${interests || 'academic growth'} aligns perfectly with the mission of this scholarship. ${student.academic_summary || 'I have a strong background in my chosen field and a clear vision for my future.'}
+
+Specifically, ${scholarship.description.slice(0, 100)}... this opportunity in ${scholarship.country} represents a pivotal step for my career goals. I am confident that my background and dedication make me an ideal candidate for this prestigious award.
+
+Thank you for your time and consideration.
+
+Sincerely,
+${student.full_name}`;
   },
 };
