@@ -22,15 +22,26 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 CREATE TYPE user_role AS ENUM ('student', 'parent', 'tutor', 'admin');
 
 CREATE TABLE users (
-  id          UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
-  full_name   TEXT NOT NULL,
-  phone       TEXT UNIQUE NOT NULL,
-  email       TEXT,
-  role        user_role NOT NULL DEFAULT 'student',
-  avatar_url  TEXT,
-  grade_level TEXT,
-  city        TEXT DEFAULT 'Addis Ababa',
-  created_at  TIMESTAMPTZ DEFAULT NOW()
+  id                    UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  full_name             TEXT NOT NULL,
+  phone                 TEXT UNIQUE NOT NULL,
+  email                 TEXT,
+  roles                 TEXT[] NOT NULL DEFAULT ARRAY['student'],
+  active_role           TEXT NOT NULL DEFAULT 'student',
+  avatar_url            TEXT,
+  grade_level           TEXT,
+  city                  TEXT DEFAULT 'Addis Ababa',
+  academic_summary      TEXT,
+  career_goals          TEXT,
+  interested_subjects   TEXT[] DEFAULT '{}',
+  gpa                   DECIMAL(3,2),
+  target_countries      TEXT[] DEFAULT '{}',
+  has_ielts             BOOLEAN DEFAULT FALSE,
+  is_english_medium     BOOLEAN DEFAULT FALSE,
+  target_degree_level   TEXT,
+  has_extracurriculars  BOOLEAN DEFAULT FALSE,
+  target_departments    TEXT[] DEFAULT '{}',
+  created_at            TIMESTAMPTZ DEFAULT NOW()
 );
 
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;
@@ -183,23 +194,29 @@ CREATE TYPE degree_level AS ENUM ('undergraduate', 'masters', 'phd', 'all');
 CREATE TYPE funding_type AS ENUM ('fully_funded', 'partial', 'stipend_only');
 
 CREATE TABLE scholarships (
-  id                   UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  name                 TEXT NOT NULL,
-  organization         TEXT NOT NULL,
-  country              TEXT NOT NULL,
-  country_flag         TEXT NOT NULL DEFAULT '🌍',
-  degree_levels        degree_level[] NOT NULL DEFAULT '{}',
-  funding_type         funding_type NOT NULL DEFAULT 'fully_funded',
-  funding_details      TEXT NOT NULL DEFAULT 'Fully Funded',
-  description          TEXT NOT NULL,
-  requirements         TEXT[] DEFAULT '{}',
-  benefits             JSONB DEFAULT '{}',
-  deadline             DATE NOT NULL,
-  fields_of_study      TEXT[],
-  eagle_success_rate   INTEGER,
-  website_url          TEXT,
-  is_active            BOOLEAN DEFAULT TRUE,
-  created_at           TIMESTAMPTZ DEFAULT NOW()
+  id                           UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  name                         TEXT NOT NULL,
+  organization                 TEXT NOT NULL,
+  country                      TEXT NOT NULL,
+  country_flag                 TEXT NOT NULL DEFAULT '🌍',
+  degree_levels                degree_level[] NOT NULL DEFAULT '{}',
+  funding_type                 funding_type NOT NULL DEFAULT 'fully_funded',
+  funding_details              TEXT NOT NULL DEFAULT 'Fully Funded',
+  description                  TEXT NOT NULL,
+  requirements                 TEXT[] DEFAULT '{}',
+  benefits                     JSONB DEFAULT '{}',
+  deadline                     DATE NOT NULL,
+  fields_of_study              TEXT[],
+  min_gpa                      DECIMAL(3,2),
+  eagle_success_rate           INTEGER,
+  website_url                  TEXT,
+  image_url                    TEXT,
+  is_active                    BOOLEAN DEFAULT TRUE,
+  requires_ielts               BOOLEAN DEFAULT FALSE,
+  accepts_english_medium       BOOLEAN DEFAULT FALSE,
+  target_departments           TEXT[] DEFAULT ARRAY['Any'],
+  recommendation_letters_count INTEGER DEFAULT 0,
+  created_at                   TIMESTAMPTZ DEFAULT NOW()
 );
 
 ALTER TABLE scholarships ENABLE ROW LEVEL SECURITY;
