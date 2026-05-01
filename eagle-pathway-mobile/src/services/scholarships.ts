@@ -235,7 +235,6 @@ export const scholarshipsService = {
   },
 
   async getRecommendedScholarships(userId: string): Promise<(Scholarship & { matchScore?: number; matchReason?: string })[]> {
-    // Advanced matching logic: semantic search simulation
     const { data: user } = await supabase.from('users').select('*').eq('id', userId).single();
     if (!user) return [];
 
@@ -253,41 +252,67 @@ export const scholarshipsService = {
     ].map(s => s.toLowerCase());
 
     const scored = (scholarships as Scholarship[]).map(sch => {
-      let score = 50; // Base score
+      let score = 30; // Base score
       let reasons: string[] = [];
+      let matchCount = 0;
 
-      // 1. Degree Level Match
-      if (sch.degree_levels.includes(user.grade_level?.toLowerCase() as any) || sch.degree_levels.includes('all')) {
-        score += 20;
-        reasons.push(`${user.grade_level} Level Match`);
+      // 1. Degree Level Match (Weight: 40)
+      const userLevel = (user.grade_level || '').toLowerCase();
+      const schLevels = (sch.degree_levels || []).map(l => l.toLowerCase());
+      
+      if (schLevels.includes(userLevel) || schLevels.includes('all')) {
+        score += 40;
+        matchCount++;
+      } else {
+        score -= 20; // Penalty for mismatching level
       }
 
-      // 2. Field of Study / Interest Match
-      const matches = sch.fields_of_study?.filter(f => 
-        userInterests.some(ui => ui.includes(f.toLowerCase()) || f.toLowerCase().includes(ui))
+      // 2. Field of Study / Interest Match (Weight: 30)
+      const schFields = (sch.fields_of_study || []).map(f => f.toLowerCase());
+      const interestMatches = schFields.filter(f => 
+        userInterests.some(ui => ui.includes(f) || f.includes(ui)) || f === 'any'
       );
       
-      if (matches && matches.length > 0) {
-        score += 25;
-        reasons.push(`Alignment with your interest in ${matches[0]}`);
+      if (interestMatches.length > 0) {
+        score += 30;
+        reasons.push(`Matches your interest in ${interestMatches[0] === 'any' ? 'multiple fields' : interestMatches[0]}`);
+        matchCount++;
       }
 
-      // 3. Location / Diversity
-      if (user.city && sch.description.toLowerCase().includes(user.city.toLowerCase())) {
-        score += 5;
-        reasons.push(`Local Opportunities`);
+      // 3. GPA Match (Weight: 20)
+      if (sch.min_gpa) {
+        if (user.gpa && user.gpa >= sch.min_gpa) {
+          score += 20;
+          reasons.push("You meet the GPA requirements");
+        } else if (user.gpa && user.gpa < sch.min_gpa) {
+          score -= 10; // Slightly less likely to show if below GPA
+        }
+      } else {
+        score += 10; // Neutral boost if no GPA requirement mentioned
+      }
+
+      // 4. Country Preference (Weight: 10)
+      if (user.target_countries?.includes(sch.country)) {
+        score += 10;
+        reasons.push(`Located in ${sch.country} (your preference)`);
+      }
+
+      // 5. Deadline Urgency (Small boost)
+      const daysToDeadline = sch.deadline ? (new Date(sch.deadline).getTime() - Date.now()) / (1000 * 3600 * 24) : 100;
+      if (daysToDeadline > 0 && daysToDeadline < 30) {
+         score += 5;
       }
 
       return {
         ...sch,
         matchScore: Math.min(score, 99),
-        matchReason: reasons[0] || 'Good Academic Fit'
+        matchReason: reasons[0] || `${user.grade_level || 'General'} Academic Fit`
       };
     });
 
     return scored
       .filter(s => (s.matchScore || 0) > 60)
       .sort((a, b) => (b.matchScore || 0) - (a.matchScore || 0))
-      .slice(0, 6);
+      .slice(0, 10);
   },
 };
