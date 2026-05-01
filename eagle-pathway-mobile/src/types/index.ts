@@ -6,7 +6,8 @@ export interface User {
   full_name: string;
   phone: string;
   email: string;
-  role: UserRole;
+  roles: UserRole[];
+  active_role: UserRole;
   avatar_url?: string;
   grade_level?: string;
   city?: string;
@@ -16,6 +17,11 @@ export interface User {
   interested_subjects?: string[];
   gpa?: number;
   target_countries?: string[];
+  has_ielts?: boolean;
+  is_english_medium?: boolean;
+  target_degree_level?: string;
+  has_extracurriculars?: boolean;
+  target_departments?: string[];
 }
 
 // ─── TUTOR ───────────────────────────────────────────────────────────────────
@@ -97,6 +103,12 @@ export interface Scholarship {
   image_url?: string;
   is_active: boolean;
   created_at: string;
+  
+  // Complexity fields
+  requires_ielts?: boolean;
+  accepts_english_medium?: boolean;
+  target_departments?: string[]; // ["Computer Science", "Engineering", "Business", "Any"]
+  recommendation_letters_count?: number;
 }
 
 // ─── APPLICATION ─────────────────────────────────────────────────────────────
