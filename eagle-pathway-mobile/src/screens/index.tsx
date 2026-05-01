@@ -1630,6 +1630,14 @@ export function ProfileScreen() {
           {user?.city && <View style={profStyles.badge}><Text style={profStyles.badgeText}>{user.city}</Text></View>}
           <View style={profStyles.badge}><Text style={profStyles.badgeText}>{user?.email || user?.phone || ''}</Text></View>
         </View>
+
+        <TouchableOpacity 
+          style={profStyles.editProfileBtn} 
+          onPress={() => router.push('/profile/edit')}
+          activeOpacity={0.8}
+        >
+          <Text style={{ color: Colors.white, fontWeight: 'bold', fontSize: 13 }}>Edit Academic Profile</Text>
+        </TouchableOpacity>
       </View>
 
       <ScrollView contentContainerStyle={{ paddingBottom: 100 }}>
@@ -1672,6 +1680,7 @@ const profStyles = StyleSheet.create({
   menuArrow: { fontSize: Typography.xl, color: Colors.textSecondary },
   version: { textAlign: 'center', fontSize: Typography.sm, color: Colors.textSecondary, padding: Spacing.xl },
   editBadge: { position: 'absolute', bottom: 15, right: -5, backgroundColor: Colors.blue, width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: Colors.blueDark },
+  editProfileBtn: { marginTop: Spacing.xl, backgroundColor: 'rgba(255,255,255,0.15)', paddingHorizontal: 20, paddingVertical: 10, borderRadius: 12, borderWidth: 1, borderColor: 'rgba(255,255,255,0.2)' },
 });
 
 // ─── SETTINGS ────────────────────────────────────────────────────────────────
@@ -1766,4 +1775,125 @@ const settingsStyles = StyleSheet.create({
   label: { fontSize: Typography.md, fontWeight: Typography.medium, color: Colors.text, flex: 1 },
   navValue: { fontSize: Typography.base, fontWeight: Typography.semibold, color: Colors.blue },
   arrow: { fontSize: Typography.xl, color: Colors.textSecondary },
+});
+// --- EDIT PROFILE ------------------------------------------------------------
+export function EditProfileScreen() {
+  const { user, updateProfile } = useAuthStore();
+  const [formData, setFormData] = useState({
+    full_name: user?.full_name || '',
+    grade_level: user?.grade_level || 'Undergraduate',
+    gpa: user?.gpa?.toString() || '',
+    interested_subjects: user?.interested_subjects || [],
+    academic_summary: user?.academic_summary || '',
+  });
+  const [loading, setLoading] = useState(false);
+
+  const SUBJECTS = ['STEM', 'Healthcare', 'Business', 'Humanities', 'Arts', 'Law'];
+
+  const handleSave = async () => {
+    setLoading(true);
+    try {
+      await updateProfile({
+        ...formData,
+        gpa: formData.gpa ? parseFloat(formData.gpa) : undefined,
+      });
+      Alert.alert('Success', 'Profile updated successfully!');
+      router.back();
+    } catch (e: any) {
+      Alert.alert('Error', e.message || 'Update failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const toggleSubject = (s: string) => {
+    setFormData(prev => ({
+      ...prev,
+      interested_subjects: prev.interested_subjects.includes(s)
+        ? prev.interested_subjects.filter(x => x !== s)
+        : [...prev.interested_subjects, s]
+    }));
+  };
+
+  return (
+    <SafeAreaView style={CommonStyles.screenBg} edges={['top']}>
+      <View style={editProfStyles.header}>
+        <TouchableOpacity style={editProfStyles.backBtn} onPress={() => router.back()} activeOpacity={0.8}>
+          <Text style={{ fontSize: 20, color: Colors.text }}>←</Text>
+        </TouchableOpacity>
+        <Text style={editProfStyles.title}>Edit Profile</Text>
+      </View>
+      <ScrollView contentContainerStyle={{ padding: Spacing.xl }}>
+        <Text style={editProfStyles.label}>Full Name</Text>
+        <TextInput 
+          style={editProfStyles.input} 
+          value={formData.full_name} 
+          onChangeText={t => setFormData(f => ({ ...f, full_name: t }))} 
+        />
+
+        <Text style={editProfStyles.label}>Current Grade Level</Text>
+        <View style={editProfStyles.pickerContainer}>
+          {['Undergraduate', 'Masters', 'PhD'].map(lvl => (
+            <TouchableOpacity 
+              key={lvl} 
+              style={[editProfStyles.pickerBtn, formData.grade_level === lvl && editProfStyles.pickerBtnActive]}
+              onPress={() => setFormData(f => ({ ...f, grade_level: lvl }))}
+            >
+              <Text style={[editProfStyles.pickerText, formData.grade_level === lvl && editProfStyles.pickerTextActive]}>{lvl}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        <Text style={editProfStyles.label}>Cumulative GPA (e.g. 3.8)</Text>
+        <TextInput 
+          style={editProfStyles.input} 
+          keyboardType='numeric'
+          value={formData.gpa} 
+          onChangeText={t => setFormData(f => ({ ...f, gpa: t }))} 
+        />
+
+        <Text style={editProfStyles.label}>Interested Fields</Text>
+        <View style={editProfStyles.subjectsRow}>
+          {SUBJECTS.map(s => (
+            <TouchableOpacity 
+              key={s} 
+              style={[editProfStyles.subjectPill, formData.interested_subjects.includes(s) && editProfStyles.subjectPillActive]}
+              onPress={() => toggleSubject(s)}
+            >
+              <Text style={[editProfStyles.subjectText, formData.interested_subjects.includes(s) && editProfStyles.subjectTextActive]}>{s}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        <Text style={editProfStyles.label}>Academic Summary (Bio)</Text>
+        <TextInput 
+          style={[editProfStyles.input, { minHeight: 100 }]} 
+          multiline
+          placeholder='Briefly describe your academic background...'
+          value={formData.academic_summary} 
+          onChangeText={t => setFormData(f => ({ ...f, academic_summary: t }))} 
+        />
+
+        <Button title='Save Profile' variant='primary' onPress={handleSave} loading={loading} style={{ marginTop: Spacing.xl }} />
+      </ScrollView>
+    </SafeAreaView>
+  );
+}
+
+const editProfStyles = StyleSheet.create({
+  header: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md, padding: Spacing.xl, backgroundColor: Colors.white, borderBottomWidth: 1, borderBottomColor: Colors.border },
+  backBtn: { width: 36, height: 36, backgroundColor: Colors.grayLight, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+  title: { fontSize: Typography.xl, fontWeight: Typography.bold, color: Colors.text },
+  label: { fontSize: Typography.sm, fontWeight: Typography.bold, color: Colors.textSecondary, marginTop: Spacing.xl, marginBottom: Spacing.xs, textTransform: 'uppercase', letterSpacing: 0.5 },
+  input: { backgroundColor: Colors.card, borderWidth: 1, borderColor: Colors.border, borderRadius: Radius.lg, padding: Spacing.md, fontSize: Typography.base, color: Colors.text },
+  pickerContainer: { flexDirection: 'row', gap: Spacing.sm },
+  pickerBtn: { flex: 1, paddingVertical: 12, alignItems: 'center', backgroundColor: Colors.card, borderRadius: Radius.lg, borderWidth: 1, borderColor: Colors.border },
+  pickerBtnActive: { backgroundColor: Colors.blue, borderColor: Colors.blue },
+  pickerText: { fontSize: Typography.sm, fontWeight: Typography.semibold, color: Colors.textSecondary },
+  pickerTextActive: { color: Colors.white },
+  subjectsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm },
+  subjectPill: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 99, backgroundColor: Colors.card, borderWidth: 1, borderColor: Colors.border },
+  subjectPillActive: { backgroundColor: Colors.blueLight, borderColor: Colors.blue },
+  subjectText: { fontSize: Typography.sm, fontWeight: Typography.medium, color: Colors.textSecondary },
+  subjectTextActive: { color: Colors.blue, fontWeight: Typography.bold },
 });
