@@ -17,6 +17,27 @@ import { useChatStore } from '@/store/ChatStore';
 import { supabase } from '@/services/supabase';
 import type { Application, PackageTier, Scholarship } from '@/types';
 
+// Helper to render text with clickable links
+const renderLinkedText = (text: string) => {
+  const urlRegex = /(https?:\/\/[^\s]+)/g;
+  const parts = text.split(urlRegex);
+  
+  return parts.map((part, index) => {
+    if (part.match(urlRegex)) {
+      return (
+        <Text
+          key={index}
+          style={{ color: Colors.blue, textDecorationLine: 'underline' }}
+          onPress={() => Linking.openURL(part)}
+        >
+          {part}
+        </Text>
+      );
+    }
+    return part;
+  });
+};
+
 // ─── SCHOLARSHIP DETAIL ───────────────────────────────────────────────────────
 export function ScholarshipDetailScreen() {
   const { scholarshipId } = useLocalSearchParams<{ scholarshipId: string }>();
@@ -61,19 +82,37 @@ export function ScholarshipDetailScreen() {
           {scholarship.degree_levels.map(d => (
             <View key={d} style={[sdStyles.pill, { backgroundColor: 'rgba(255,255,255,0.12)' }]}><Text style={[sdStyles.pillText, { color: 'rgba(255,255,255,0.9)' }]}>{d.charAt(0).toUpperCase() + d.slice(1)}</Text></View>
           ))}
-          <View style={[sdStyles.pill, { backgroundColor: '#d1fae5' }]}><Text style={[sdStyles.pillText, { color: '#065f46' }]}>{scholarship.funding_type === 'fully_funded' ? 'Fully Funded' : scholarship.funding_details}</Text></View>
+          <View style={[sdStyles.pill, { backgroundColor: '#d1fae5' }]}><Text style={[sdStyles.pillText, { color: '#065f46' }]}>{scholarship.funding_type === 'fully_funded' ? 'Fully Funded' : renderLinkedText(scholarship.funding_details)}</Text></View>
         </View>
       </View>
 
       <ScrollView style={{ backgroundColor: Colors.bg }} contentContainerStyle={{ paddingBottom: 100 }}>
         <View style={[CommonStyles.card, { marginTop: Spacing.lg }]}>
-          <View style={sdStyles.section}><Text style={sdStyles.sectionTitle}>About This Scholarship</Text><Text style={sdStyles.bodyText}>{scholarship.description}</Text></View>
+          <View style={sdStyles.section}>
+            <Text style={sdStyles.sectionTitle}>About This Scholarship</Text>
+            <Text style={sdStyles.bodyText}>{renderLinkedText(scholarship.description)}</Text>
+          </View>
+
+          {scholarship.website_url && (
+            <View style={sdStyles.section}>
+              <Text style={sdStyles.sectionTitle}>Official Website</Text>
+              <TouchableOpacity 
+                style={sdStyles.linkButton} 
+                onPress={() => Linking.openURL(scholarship.website_url!)}
+                activeOpacity={0.7}
+              >
+                <Text style={sdStyles.linkButtonText}>🌐 Open Official Link</Text>
+              </TouchableOpacity>
+              <Text style={sdStyles.linkSubtext}>Visit the university's portal for raw details and official forms.</Text>
+            </View>
+          )}
+
           <View style={sdStyles.section}>
             <Text style={sdStyles.sectionTitle}>Benefits</Text>
             {Object.entries(scholarship.benefits).map(([k, v]) => (
               <View key={k} style={sdStyles.benefitRow}>
                 <Text style={sdStyles.benefitLabel}>{k}</Text>
-                <Text style={sdStyles.benefitValue}>{v}</Text>
+                <Text style={sdStyles.benefitValue}>{renderLinkedText(v)}</Text>
               </View>
             ))}
           </View>
@@ -82,7 +121,7 @@ export function ScholarshipDetailScreen() {
             {scholarship.requirements.map((r, i) => (
               <View key={i} style={sdStyles.reqItem}>
                 <View style={sdStyles.checkBox}><Text style={{ fontSize: 10, color: Colors.green }}>✓</Text></View>
-                <Text style={sdStyles.reqText}>{r}</Text>
+                <Text style={sdStyles.reqText}>{renderLinkedText(r)}</Text>
               </View>
             ))}
           </View>
@@ -130,6 +169,9 @@ const sdStyles = StyleSheet.create({
   successNum: { fontSize: Typography['5xl'], fontWeight: Typography.bold, color: '#7a5c1e', marginBottom: 4 },
   successText: { fontSize: Typography.base, color: '#9a7230', lineHeight: 20 },
   bottomBar: { padding: Spacing.lg, backgroundColor: Colors.card, borderTopWidth: 1, borderTopColor: Colors.border, flexDirection: 'row', gap: Spacing.sm },
+  linkButton: { backgroundColor: Colors.blueLight, padding: Spacing.md, borderRadius: Radius.md, alignItems: 'center', borderWidth: 1, borderColor: Colors.blue, marginBottom: Spacing.xs },
+  linkButtonText: { color: Colors.blue, fontWeight: 'bold', fontSize: Typography.md },
+  linkSubtext: { fontSize: Typography.xs, color: Colors.textSecondary, fontStyle: 'italic' },
 });
 
 // ─── PACKAGES ────────────────────────────────────────────────────────────────
