@@ -41,6 +41,7 @@ interface AppState {
   isLoadingTasks: boolean;
   isLoadingPayouts: boolean;
   isReviewingSOP: boolean;
+  isGeneratingMagicSOP: boolean;
 
   // Actions — Scholarships
   loadScholarships: (filters?: any) => Promise<void>;
@@ -49,6 +50,7 @@ interface AppState {
   createApplication: (userId: string, scholarshipId: string, packageTier: PackageTier, sopContent?: string) => Promise<Application>;
   updateSOP: (applicationId: string, content: string) => Promise<void>;
   reviewSOP: (content: string, scholarshipId?: string, studentId?: string) => Promise<{ score: number; feedback: string; suggestions: string[] }>;
+  generateMagicSOP: (student: User, scholarship: Scholarship) => Promise<string>;
   toggleSaveScholarship: (id: string) => void;
   loadSavedScholarships: () => Promise<void>;
 
@@ -113,6 +115,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   isLoadingTasks: false,
   isLoadingPayouts: false,
   isReviewingSOP: false,
+  isGeneratingMagicSOP: false,
 
   loadScholarships: async (filters) => {
     set({ isLoadingScholarships: true });
@@ -164,6 +167,15 @@ export const useAppStore = create<AppState>((set, get) => ({
       return await scholarshipsService.getSOPFeedback(content, scholarshipId, studentId);
     } finally {
       set({ isReviewingSOP: false });
+    }
+  },
+
+  generateMagicSOP: async (student, scholarship) => {
+    set({ isGeneratingMagicSOP: true });
+    try {
+      return await scholarshipsService.generateMagicSOP(student, scholarship);
+    } finally {
+      set({ isGeneratingMagicSOP: false });
     }
   },
 
