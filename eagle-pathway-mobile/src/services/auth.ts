@@ -66,7 +66,8 @@ export const authService = {
         id: userId,
         full_name: fullName,
         phone,
-        role,
+        roles: [role],
+        active_role: role,
         email,
       })
       .select()
