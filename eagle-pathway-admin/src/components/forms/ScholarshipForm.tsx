@@ -24,6 +24,19 @@ const COUNTRIES = [
   { name: 'Ethiopia', flag: '🇪🇹' },
 ];
 
+const DEPARTMENTS = [
+  'Any',
+  'Computer Science', 
+  'Mechanical Engineering', 
+  'Medicine', 
+  'Economics', 
+  'Psychology', 
+  'Education', 
+  'Architecture', 
+  'Law', 
+  'International Relations'
+];
+
 interface ScholarshipFormProps {
   scholarship?: any; // For editing
   onClose: () => void;
@@ -43,9 +56,15 @@ export default function ScholarshipForm({ scholarship, onClose, onSuccess }: Sch
     country: scholarship?.country || '',
     country_flag: scholarship?.country_flag || '🌍',
     degree_levels: scholarship?.degree_levels || ['undergraduate'],
+    fields_of_study: scholarship?.fields_of_study || ['any'],
+    min_gpa: scholarship?.min_gpa || '',
     description: scholarship?.description || '',
     requirements: (scholarship?.requirements || []).join('\n'),
-    website_url: scholarship?.website_url || ''
+    website_url: scholarship?.website_url || '',
+    requires_ielts: scholarship?.requires_ielts || false,
+    accepts_english_medium: scholarship?.accepts_english_medium || false,
+    target_departments: scholarship?.target_departments || ['Any'],
+    recommendation_letters_count: scholarship?.recommendation_letters_count || 0
   });
 
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -101,10 +120,16 @@ export default function ScholarshipForm({ scholarship, onClose, onSuccess }: Sch
         country: formData.country,
         country_flag: formData.country_flag,
         degree_levels: formData.degree_levels,
+        fields_of_study: formData.fields_of_study,
+        min_gpa: formData.min_gpa ? parseFloat(formData.min_gpa) : null,
         description: formData.description,
         requirements: reqArray,
         website_url: formData.website_url,
         is_active: true,
+        requires_ielts: formData.requires_ielts,
+        accepts_english_medium: formData.accepts_english_medium,
+        target_departments: formData.target_departments,
+        recommendation_letters_count: formData.recommendation_letters_count,
         // Persist the uploaded image URL; omit if no new image was selected
         ...(publicImageUrl ? { image_url: publicImageUrl } : {}),
       };
@@ -148,7 +173,7 @@ export default function ScholarshipForm({ scholarship, onClose, onSuccess }: Sch
              <div className="sm:col-span-2">
                 <label className="block text-sm font-medium text-gray-700 mb-2">Scholarship Thumbnail</label>
                 <div className="flex items-center gap-4 p-4 border-2 border-dashed border-gray-200 rounded-xl hover:border-brand-blue/30 transition-colors">
-                  <div className="h-20 w-20 bg-gray-50 rounded-lg flex items-center justify-center border border-gray-100 overflow-hidden">
+                   <div className="h-20 w-20 bg-gray-50 rounded-lg flex items-center justify-center border border-gray-100 overflow-hidden">
                     {imageFile ? (
                       <img src={URL.createObjectURL(imageFile)} alt="Preview" className="h-full w-full object-cover" />
                     ) : (
@@ -223,7 +248,12 @@ export default function ScholarshipForm({ scholarship, onClose, onSuccess }: Sch
                </div>
 
                <div>
-                 <label className="block text-sm font-medium text-gray-700 mb-1">Degree Levels (Ctrl+Click to multi-select)</label>
+                 <label className="block text-sm font-medium text-gray-700 mb-1">Min GPA (Optional)</label>
+                 <input type="number" step="0.1" name="min_gpa" value={formData.min_gpa} onChange={handleChange} className="w-full px-4 py-2.5 rounded-xl border border-gray-200" placeholder="e.g. 3.5" />
+               </div>
+
+               <div>
+                 <label className="block text-sm font-medium text-gray-700 mb-1">Degree Levels (Ctrl+Click)</label>
                  <select 
                     multiple 
                     name="degree_levels" 
@@ -232,9 +262,7 @@ export default function ScholarshipForm({ scholarship, onClose, onSuccess }: Sch
                       const options = e.target.options;
                       const value: string[] = [];
                       for (let i = 0, l = options.length; i < l; i++) {
-                        if (options[i].selected) {
-                          value.push(options[i].value);
-                        }
+                        if (options[i].selected) value.push(options[i].value);
                       }
                       setFormData(prev => ({ ...prev, degree_levels: value }));
                     }} 
@@ -246,6 +274,93 @@ export default function ScholarshipForm({ scholarship, onClose, onSuccess }: Sch
                    <option value="all">All Levels</option>
                  </select>
                </div>
+
+               <div>
+                 <label className="block text-sm font-medium text-gray-700 mb-1">Fields of Study (Ctrl+Click)</label>
+                 <select 
+                    multiple 
+                    name="fields_of_study" 
+                    value={formData.fields_of_study} 
+                    onChange={(e) => {
+                      const options = e.target.options;
+                      const value: string[] = [];
+                      for (let i = 0, l = options.length; i < l; i++) {
+                        if (options[i].selected) value.push(options[i].value);
+                      }
+                      setFormData(prev => ({ ...prev, fields_of_study: value }));
+                    }} 
+                    className="w-full px-4 py-2 rounded-xl border border-gray-200 bg-white min-h-[100px]"
+                 >
+                   <option value="any">Any / All Fields</option>
+                   <option value="stem">STEM (Science, Tech, Eng, Math)</option>
+                   <option value="healthcare">Healthcare & Medicine</option>
+                   <option value="business">Business & Economics</option>
+                   <option value="humanities">Humanities & Social Sciences</option>
+                   <option value="arts">Arts & Design</option>
+                   <option value="law">Law & Policy</option>
+                 </select>
+               </div>
+
+                <div className="sm:col-span-2 grid grid-cols-1 sm:grid-cols-3 gap-5 p-4 bg-blue-50 rounded-xl border border-blue-100">
+                  <div>
+                    <label className="block text-xs font-bold text-blue-600 uppercase tracking-wider mb-2">🌐 English Requirements</label>
+                    <div className="space-y-2">
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input 
+                          type="checkbox" 
+                          checked={formData.requires_ielts} 
+                          onChange={(e) => setFormData(f => ({ ...f, requires_ielts: e.target.checked }))} 
+                          className="rounded"
+                        />
+                        <span className="text-sm text-gray-700 font-medium">Requires IELTS/TOEFL</span>
+                      </label>
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input 
+                          type="checkbox" 
+                          checked={formData.accepts_english_medium} 
+                          onChange={(e) => setFormData(f => ({ ...f, accepts_english_medium: e.target.checked }))} 
+                          className="rounded"
+                        />
+                        <span className="text-sm text-gray-700 font-medium">Accepts English Medium</span>
+                      </label>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-blue-600 uppercase tracking-wider mb-2">📝 Recommendation Letters</label>
+                    <input 
+                      type="number" 
+                      min="0" 
+                      max="5"
+                      value={formData.recommendation_letters_count} 
+                      onChange={(e) => setFormData(f => ({ ...f, recommendation_letters_count: parseInt(e.target.value) || 0 }))} 
+                      className="w-full px-4 py-2 rounded-xl border border-gray-200 bg-white"
+                      placeholder="0"
+                    />
+                    <p className="text-[10px] text-gray-400 mt-1">e.g. 2 means two letters needed</p>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-blue-600 uppercase tracking-wider mb-2">🏫 Target Departments <span className="text-gray-400 font-normal">(Ctrl+Click multi)</span></label>
+                    <select 
+                      multiple 
+                      value={formData.target_departments} 
+                      onChange={(e) => {
+                        const options = e.target.options;
+                        const value = [];
+                        for (let i = 0, l = options.length; i < l; i++) {
+                          if (options[i].selected) value.push(options[i].value);
+                        }
+                        setFormData(prev => ({ ...prev, target_departments: value }));
+                      }} 
+                      className="w-full px-3 py-1.5 text-xs rounded-xl border border-gray-200 bg-white min-h-[90px]"
+                    >
+                      {DEPARTMENTS.map(d => (
+                        <option key={d} value={d}>{d}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
 
                <div className="sm:col-span-2">
                  <label className="block text-sm font-medium text-gray-700 mb-1">Website URL</label>
