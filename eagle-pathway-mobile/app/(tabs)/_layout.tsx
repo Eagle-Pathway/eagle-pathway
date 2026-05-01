@@ -2,6 +2,7 @@ import { Tabs, usePathname } from 'expo-router';
 import { View, Text, StyleSheet } from 'react-native';
 import { Colors, Typography } from '../../src/utils/theme';
 import AiAssistantFAB from '../../src/components/AiAssistantFAB';
+import { useAuthStore } from '../../src/store/authStore';
 
 function TabIcon({ emoji, label, focused }: { emoji: string; label: string; focused: boolean }) {
   return (
@@ -21,7 +22,10 @@ const tabStyles = StyleSheet.create({
 
 export default function TabLayout() {
   const pathname = usePathname();
+  const { user } = useAuthStore();
   const isAssistant = pathname === '/assistant' || pathname.includes('/assistant');
+  
+  const activeRole = user?.active_role || 'student';
 
   return (
     <>
@@ -41,19 +45,37 @@ export default function TabLayout() {
       <Tabs.Screen
         name="home"
         options={{
-          tabBarIcon: ({ focused }) => <TabIcon emoji="🏠" label="Home" focused={focused} />,
+          tabBarIcon: ({ focused }) => (
+            <TabIcon 
+              emoji={activeRole === 'tutor' ? '📊' : activeRole === 'parent' ? '👨‍👩‍👧' : '🏠'} 
+              label={activeRole === 'tutor' ? 'Dashboard' : activeRole === 'parent' ? 'Family' : 'Home'} 
+              focused={focused} 
+            />
+          ),
         }}
       />
       <Tabs.Screen
         name="explore"
         options={{
-          tabBarIcon: ({ focused }) => <TabIcon emoji="🔍" label="Explore" focused={focused} />,
+          tabBarIcon: ({ focused }) => (
+            <TabIcon 
+              emoji={activeRole === 'tutor' ? '📅' : '🔍'} 
+              label={activeRole === 'tutor' ? 'Schedule' : 'Explore'} 
+              focused={focused} 
+            />
+          ),
         }}
       />
       <Tabs.Screen
         name="activity"
         options={{
-          tabBarIcon: ({ focused }) => <TabIcon emoji="⚡" label="Activity" focused={focused} />,
+          tabBarIcon: ({ focused }) => (
+            <TabIcon 
+              emoji={activeRole === 'tutor' ? '💰' : '⚡'} 
+              label={activeRole === 'tutor' ? 'Earnings' : 'Activity'} 
+              focused={focused} 
+            />
+          ),
         }}
       />
       <Tabs.Screen
