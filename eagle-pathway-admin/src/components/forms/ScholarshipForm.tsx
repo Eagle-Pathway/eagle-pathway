@@ -4,6 +4,26 @@ import { useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { X, Loader2, Image as ImageIcon } from 'lucide-react';
 
+const COUNTRIES = [
+  { name: 'United Kingdom', flag: '🇬🇧' },
+  { name: 'United States', flag: '🇺🇸' },
+  { name: 'Canada', flag: '🇨🇦' },
+  { name: 'Australia', flag: '🇦🇺' },
+  { name: 'China', flag: '🇨🇳' },
+  { name: 'Germany', flag: '🇩🇪' },
+  { name: 'Hungary', flag: '🇭🇺' },
+  { name: 'Turkey', flag: '🇹🇷' },
+  { name: 'Russia', flag: '🇷🇺' },
+  { name: 'Japan', flag: '🇯🇵' },
+  { name: 'South Korea', flag: '🇰🇷' },
+  { name: 'France', flag: '🇫🇷' },
+  { name: 'Italy', flag: '🇮🇹' },
+  { name: 'Netherlands', flag: '🇳🇱' },
+  { name: 'Norway', flag: '🇳🇴' },
+  { name: 'Sweden', flag: '🇸🇪' },
+  { name: 'Ethiopia', flag: '🇪🇹' },
+];
+
 interface ScholarshipFormProps {
   scholarship?: any; // For editing
   onClose: () => void;
@@ -174,10 +194,27 @@ export default function ScholarshipForm({ scholarship, onClose, onSuccess }: Sch
 
                <div>
                  <label className="block text-sm font-medium text-gray-700 mb-1">Country</label>
-                 <div className="flex gap-2">
-                    <input type="text" name="country_flag" value={formData.country_flag} onChange={handleChange} className="w-16 px-2 py-2.5 rounded-xl border border-gray-200 text-center" placeholder="🌍" />
-                    <input required type="text" name="country" value={formData.country} onChange={handleChange} className="flex-1 px-4 py-2.5 rounded-xl border border-gray-200" placeholder="e.g. United Kingdom" />
-                 </div>
+                 <select 
+                    required 
+                    name="country" 
+                    value={formData.country} 
+                    onChange={(e) => {
+                      const selectedCountry = COUNTRIES.find(c => c.name === e.target.value);
+                      if (selectedCountry) {
+                        setFormData(prev => ({ 
+                          ...prev, 
+                          country: selectedCountry.name, 
+                          country_flag: selectedCountry.flag 
+                        }));
+                      }
+                    }} 
+                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 bg-white"
+                 >
+                   <option value="">Select a Country</option>
+                   {COUNTRIES.map(c => (
+                     <option key={c.name} value={c.name}>{c.flag} {c.name}</option>
+                   ))}
+                 </select>
                </div>
 
                <div>
