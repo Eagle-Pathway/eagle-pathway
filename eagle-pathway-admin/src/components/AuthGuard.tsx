@@ -4,6 +4,15 @@ import { useRouter, usePathname } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/store/useAuthStore';
 
+interface AdminProfile {
+  roles?: string[] | null;
+  active_role?: string | null;
+}
+
+function hasAdminAccess(profile: AdminProfile | null) {
+  return profile?.active_role === 'admin' || profile?.roles?.includes('admin');
+}
+
 export default function AuthGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -23,11 +32,11 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
         // Verify admin role in database
         const { data: profile } = await supabase
           .from('users')
-          .select('role')
+          .select('roles, active_role')
           .eq('id', session.user.id)
           .single();
 
-        if (profile?.role === 'admin') {
+        if (hasAdminAccess(profile)) {
           setSession(session);
           setUser({ id: session.user.id, email: session.user.email, role: 'admin' });
         } else {
@@ -53,11 +62,11 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
         if (user?.id !== session.user.id) {
           const { data: profile } = await supabase
             .from('users')
-            .select('role')
+            .select('roles, active_role')
             .eq('id', session.user.id)
             .single();
           
-          if (profile?.role === 'admin') {
+          if (hasAdminAccess(profile)) {
             setSession(session);
             setUser({ id: session.user.id, email: session.user.email, role: 'admin' });
           } else {

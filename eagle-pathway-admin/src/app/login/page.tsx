@@ -5,6 +5,15 @@ import { useAuthStore } from '@/store/useAuthStore';
 import { useRouter } from 'next/navigation';
 import { Mail, Lock, Loader2 } from 'lucide-react';
 
+interface AdminProfile {
+  roles?: string[] | null;
+  active_role?: string | null;
+}
+
+function hasAdminAccess(profile: AdminProfile | null) {
+  return profile?.active_role === 'admin' || profile?.roles?.includes('admin');
+}
+
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -30,11 +39,11 @@ export default function LoginPage() {
         // Verify admin role 
         const { data: profile } = await supabase
           .from('users')
-          .select('role')
+          .select('roles, active_role')
           .eq('id', data.user.id)
           .single();
 
-        if (profile?.role !== 'admin') {
+        if (!hasAdminAccess(profile)) {
           await supabase.auth.signOut();
           throw new Error('Access denied. Admin privileges required.');
         }

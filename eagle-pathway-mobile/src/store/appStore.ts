@@ -6,7 +6,19 @@ import { notificationsService } from '../services/notifications';
 import { tasksService } from '../services/tasks';
 import { financeService, PayoutRequest } from '../services/finance';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Scholarship, Application, Booking, BookingStatus, Document, Notification, StudentTask, PackageTier, DocumentType } from '../types';
+import {
+  Scholarship,
+  Application,
+  Booking,
+  BookingStatus,
+  Document,
+  Notification,
+  StudentTask,
+  PackageTier,
+  DocumentType,
+  Tutor,
+  User,
+} from '../types';
 
 interface AppState {
   // Scholarships

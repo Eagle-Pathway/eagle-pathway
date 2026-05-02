@@ -1,7 +1,56 @@
 import { supabase } from './supabase';
 import { Scholarship, Application, PackageTier, Document, DocumentType, User } from '../types';
-import * as FileSystem from 'expo-file-system/legacy';
 import * as DocumentPicker from 'expo-document-picker';
+
+const SIGNED_URL_TTL_SECONDS = 60 * 60;
+const SOP_AI_API_URL = process.env.EXPO_PUBLIC_EAGLE_AI_API_URL;
+
+interface SOPFeedback {
+  score: number;
+  feedback: string;
+  suggestions: string[];
+}
+
+async function withSignedDocumentUrl(document: Document): Promise<Document> {
+  const path = document.file_path || (!document.file_url?.startsWith('http') ? document.file_url : undefined);
+  if (!path) return document;
+
+  const { data, error } = await supabase.storage
+    .from('documents')
+    .createSignedUrl(path, SIGNED_URL_TTL_SECONDS);
+
+  if (error || !data?.signedUrl) return document;
+  return { ...document, file_path: path, file_url: data.signedUrl };
+}
+
+async function withSignedApplicationDocuments(application: Application): Promise<Application> {
+  if (!application.documents?.length) return application;
+  const documents = await Promise.all(application.documents.map(withSignedDocumentUrl));
+  return { ...application, documents };
+}
+
+async function requestSOPAI<T>(body: Record<string, unknown>): Promise<T | null> {
+  if (!SOP_AI_API_URL) return null;
+
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session?.access_token) return null;
+
+  const response = await fetch(SOP_AI_API_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${session.access_token}`,
+    },
+    body: JSON.stringify(body),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text().catch(() => '');
+    throw new Error(errorText || `SOP AI request failed with ${response.status}`);
+  }
+
+  return response.json() as Promise<T>;
+}
 
 export const scholarshipsService = {
   async getScholarships(filters?: {
@@ -69,7 +118,7 @@ export const scholarshipsService = {
       .eq('student_id', studentId)
       .order('created_at', { ascending: false });
     if (error) throw error;
-    return data as Application[];
+    return Promise.all((data as Application[]).map(withSignedApplicationDocuments));
   },
 
   async getApplicationById(id: string): Promise<Application> {
@@ -79,7 +128,7 @@ export const scholarshipsService = {
       .eq('id', id)
       .single();
     if (error) throw error;
-    return data as Application;
+    return withSignedApplicationDocuments(data as Application);
   },
 
   async updateApplicationStatus(id: string, status: Application['status']): Promise<void> {
@@ -113,10 +162,10 @@ export const scholarshipsService = {
       });
     if (uploadError) throw uploadError;
 
-    // Get public URL
-    const { data: { publicUrl } } = supabase.storage
+    const { data: signedData, error: signedError } = await supabase.storage
       .from('documents')
-      .getPublicUrl(filePath);
+      .createSignedUrl(filePath, SIGNED_URL_TTL_SECONDS);
+    if (signedError) throw signedError;
 
     // Save document record
     const { data, error } = await supabase
@@ -126,7 +175,8 @@ export const scholarshipsService = {
         application_id: params.applicationId || null,
         document_type: params.documentType,
         file_name: params.fileName,
-        file_url: publicUrl,
+        file_path: filePath,
+        file_url: signedData.signedUrl,
         file_size: blob.size || 0,
         status: 'pending',
       })
@@ -143,7 +193,7 @@ export const scholarshipsService = {
       .eq('user_id', userId)
       .order('uploaded_at', { ascending: false });
     if (error) throw error;
-    return data as Document[];
+    return Promise.all((data as Document[]).map(withSignedDocumentUrl));
   },
 
   async pickDocument(): Promise<DocumentPicker.DocumentPickerResult> {
@@ -173,14 +223,9 @@ export const scholarshipsService = {
     if (error) throw error;
   },
 
-  async getSOPFeedback(content: string, scholarshipId?: string, studentId?: string): Promise<{ score: number; feedback: string; suggestions: string[] }> {
-    // In a real prod environment, this calls a Supabase Edge Function that invokes Gemini Pro
-    // Simulation logic based on content quality and profile alignment
-    await new Promise(r => setTimeout(r, 1500));
-    
+  async getSOPFeedback(content: string, scholarshipId?: string, studentId?: string): Promise<SOPFeedback> {
     const wordCount = content.split(/\s+/).filter(w => w.length > 0).length;
     
-    // Fetch scholarship and student context for better feedback
     let scholarship: Scholarship | null = null;
     let student: User | null = null;
     
@@ -193,7 +238,37 @@ export const scholarshipsService = {
        student = data;
     }
 
-    // AI Logic Simulation
+    try {
+      const remoteReview = await requestSOPAI<SOPFeedback>({
+        action: 'review',
+        content,
+        scholarship,
+        student,
+      });
+
+      if (remoteReview) {
+        if (scholarshipId && studentId) {
+          await supabase
+            .from('applications')
+            .update({
+              ai_feedback: {
+                ...remoteReview,
+                last_reviewed_at: new Date().toISOString(),
+              },
+              updated_at: new Date().toISOString(),
+            })
+            .eq('student_id', studentId)
+            .eq('scholarship_id', scholarshipId);
+        }
+
+        return remoteReview;
+      }
+    } catch (error) {
+      console.warn('Remote SOP AI unavailable, using local fallback:', error);
+    }
+
+    await new Promise(r => setTimeout(r, 600));
+
     if (wordCount < 150) {
       return {
         score: 35,
@@ -245,15 +320,9 @@ export const scholarshipsService = {
 
     if (error) throw error;
 
-    const userInterests = [
-      ...(user.interested_subjects || []),
-      ...(user.academic_summary?.split(' ') || []),
-      ...(user.career_goals?.split(' ') || [])
-    ].map(s => s.toLowerCase());
-
     const scored = (scholarships as Scholarship[]).map(sch => {
       let score = 30; // Base score
-      let reasons: string[] = [];
+      const reasons: string[] = [];
 
       // 1. Degree Level Match (Weight: 35)
       const userLevel = (user.grade_level || '').toLowerCase();
@@ -357,11 +426,19 @@ export const scholarshipsService = {
   },
 
   async generateMagicSOP(student: User, scholarship: Scholarship): Promise<string> {
-    // In production, this would be an Edge Function call to Gemini/OpenAI
-    // The prompt would be: "Given this student's profile (GPA: {gpa}, Interests: {interests}, Summary: {summary}) 
-    // and this scholarship ({name}, {org}, {requirements}), write a compelling 500-word SOP."
+    try {
+      const remoteDraft = await requestSOPAI<{ draft: string }>({
+        action: 'draft',
+        student,
+        scholarship,
+      });
+
+      if (remoteDraft?.draft) return remoteDraft.draft;
+    } catch (error) {
+      console.warn('Remote SOP draft unavailable, using local fallback:', error);
+    }
     
-    await new Promise(r => setTimeout(r, 3000)); // Simulate AI heavy lifting
+    await new Promise(r => setTimeout(r, 900));
 
     const interests = (student.interested_subjects || []).join(', ');
     

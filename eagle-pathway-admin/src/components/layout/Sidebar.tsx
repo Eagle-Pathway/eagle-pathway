@@ -28,6 +28,17 @@ export default function Sidebar() {
 
   const [unreadCount, setUnreadCount] = useState(0);
 
+  async function fetchUnreadCount() {
+    if (!user) return;
+    const { count, error } = await supabase
+      .from('messages')
+      .select('*', { count: 'exact', head: true })
+      .eq('recipient_id', user.id)
+      .eq('is_read', false);
+    
+    if (!error) setUnreadCount(count || 0);
+  }
+
   useEffect(() => {
     if (user) {
       fetchUnreadCount();
@@ -35,7 +46,7 @@ export default function Sidebar() {
       const channel = supabase
         .channel('sidebar-chat-count')
         .on(
-          'postgres_changes' as any,
+          'postgres_changes',
           { event: '*', schema: 'public', table: 'messages', filter: `recipient_id=eq.${user.id}` },
           () => fetchUnreadCount()
         )
@@ -46,17 +57,6 @@ export default function Sidebar() {
       };
     }
   }, [user]);
-
-  const fetchUnreadCount = async () => {
-    if (!user) return;
-    const { count, error } = await supabase
-      .from('messages')
-      .select('*', { count: 'exact', head: true })
-      .eq('recipient_id', user.id)
-      .eq('is_read', false);
-    
-    if (!error) setUnreadCount(count || 0);
-  };
 
   const navigation = [
     { name: 'Overview', href: '/overview', icon: LayoutDashboard },

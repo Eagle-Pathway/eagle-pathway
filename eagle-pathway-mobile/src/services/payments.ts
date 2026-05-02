@@ -2,6 +2,8 @@ import { supabase } from './supabase';
 import * as FileSystem from 'expo-file-system/legacy';
 import { decode } from 'base64-arraybuffer';
 
+const SIGNED_URL_TTL_SECONDS = 60 * 60;
+
 export const paymentsService = {
   async submitPaymentReceipt(params: {
     userId: string;
@@ -29,10 +31,11 @@ export const paymentsService = {
 
     if (uploadError) throw new Error('Failed to upload receipt image. ' + uploadError.message);
 
-    // Get public URL
-    const { data: { publicUrl } } = supabase.storage
+    const { data: signedData, error: signedError } = await supabase.storage
       .from('receipts')
-      .getPublicUrl(filePath);
+      .createSignedUrl(filePath, SIGNED_URL_TTL_SECONDS);
+
+    if (signedError) throw new Error('Failed to secure receipt preview. ' + signedError.message);
 
     // 2. Insert the pending payment record
     const { data, error } = await supabase
@@ -44,7 +47,8 @@ export const paymentsService = {
         method: params.method,
         amount: params.amount,
         transaction_id: params.transactionId,
-        receipt_url: publicUrl,
+        receipt_path: filePath,
+        receipt_url: signedData.signedUrl,
         status: 'pending'
       })
       .select()

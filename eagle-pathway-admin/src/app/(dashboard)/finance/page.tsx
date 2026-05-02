@@ -23,11 +23,15 @@ export default function FinancePage() {
   const [payments, setPayments] = useState<any[]>([]);
   const [payoutRequests, setPayoutRequests] = useState<any[]>([]);
 
-  useEffect(() => {
-    fetchData();
-  }, []);
+  const signReceiptUrl = async (payment: any) => {
+    if (!payment.receipt_path) return payment;
+    const { data } = await supabase.storage
+      .from('receipts')
+      .createSignedUrl(payment.receipt_path, 60 * 60);
+    return data?.signedUrl ? { ...payment, receipt_url: data.signedUrl } : payment;
+  };
 
-  const fetchData = async () => {
+  async function fetchData() {
     setLoading(true);
     
     // Fetch tutor balances
@@ -53,24 +57,32 @@ export default function FinancePage() {
     // Fetch payout requests
     const { data: payRequests } = await supabase
       .from('tutor_payouts')
-      .select('*, tutor:tutors(id, users(full_name, phone))')
+      .select('*, tutor:tutors(id, user_id, users(full_name, phone))')
       .order('created_at', { ascending: false });
 
     if (tutorData) setTutors(tutorData as any);
     if (transData) setTransactions(transData);
-    if (paymentsData) setPayments(paymentsData);
+    if (paymentsData) setPayments(await Promise.all(paymentsData.map(signReceiptUrl)));
     if (payRequests) setPayoutRequests(payRequests);
     
     setLoading(false);
-  };
+  }
+
+  useEffect(() => {
+    fetchData();
+  }, []);
 
   const handleVerifyReceipt = async (paymentId: string, status: 'approved' | 'rejected') => {
-    // Use the secure bypass RPC we created via migration
-    const { error } = await supabase.rpc('admin_update_payment_status', {
-      target_payment_id: paymentId,
-      new_status: status,
-      notes: status === 'rejected' ? 'Invalid receipt. Please try again.' : null
-    });
+    const { data: authData } = await supabase.auth.getUser();
+    const { error } = await supabase
+      .from('payments')
+      .update({
+        status,
+        admin_notes: status === 'rejected' ? 'Invalid receipt. Please try again.' : null,
+        reviewed_by: authData.user?.id || null,
+        reviewed_at: new Date().toISOString(),
+      })
+      .eq('id', paymentId);
     
     if (!error) {
       setPayments(prev => prev.map(p => p.id === paymentId ? { ...p, status } : p));
@@ -118,11 +130,14 @@ export default function FinancePage() {
     const notes = status === 'rejected' ? window.prompt('Reason for rejection:') : null;
     if (status === 'rejected' && notes === null) return;
 
-    const { error } = await supabase.rpc('admin_update_payout_status', {
-      target_payout_id: payoutId,
-      new_status: status,
-      notes: notes
-    });
+    const { error } = await supabase
+      .from('tutor_payouts')
+      .update({
+        status,
+        admin_notes: notes,
+        processed_at: status === 'completed' ? new Date().toISOString() : null,
+      })
+      .eq('id', payoutId);
 
     if (!error) {
       setPayoutRequests(prev => prev.map(p => p.id === payoutId ? { ...p, status, processed_at: status === 'completed' ? new Date().toISOString() : p.processed_at } : p));
@@ -130,7 +145,7 @@ export default function FinancePage() {
       const pData = payoutRequests.find(p => p.id === payoutId);
       if (pData) {
         await supabase.from('notifications').insert({
-          user_id: pData.tutor.users.id, // We need to be sure this is the user_id
+          user_id: pData.tutor.user_id,
           type: 'application_update',
           title: `Payout ${status.charAt(0).toUpperCase() + status.slice(1)} 💰`,
           body: status === 'completed' 

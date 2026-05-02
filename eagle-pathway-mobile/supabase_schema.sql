@@ -11,7 +11,7 @@ CREATE OR REPLACE FUNCTION public.is_admin()
 RETURNS BOOLEAN AS $$
 BEGIN
   RETURN (
-    SELECT role = 'admin'
+    SELECT active_role = 'admin' OR roles @> ARRAY['admin']::TEXT[]
     FROM public.users
     WHERE id = auth.uid()
   );
@@ -52,13 +52,16 @@ CREATE POLICY "Users can insert own profile" ON users FOR INSERT WITH CHECK (aut
 -- Sync auth.users to public.users
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
+DECLARE
+  requested_role TEXT := COALESCE(NEW.raw_user_meta_data->>'role', 'student');
 BEGIN
-  INSERT INTO public.users (id, full_name, email, role, phone)
+  INSERT INTO public.users (id, full_name, email, roles, active_role, phone)
   VALUES (
     NEW.id,
     COALESCE(NEW.raw_user_meta_data->>'full_name', 'User'),
     NEW.email,
-    COALESCE(NEW.raw_user_meta_data->>'role', 'student')::user_role,
+    ARRAY[requested_role],
+    requested_role,
     COALESCE(NEW.raw_user_meta_data->>'phone', '')
   );
   RETURN NEW;
@@ -157,7 +160,11 @@ CREATE POLICY "Participants can update bookings" ON bookings FOR UPDATE USING (a
 CREATE TYPE service_type AS ENUM (
   'application_fee',
   'tuition_fee',
-  'international'
+  'international',
+  'international_payment',
+  'tuition_payment',
+  'bank_transfer',
+  'other'
 );
 
 CREATE TYPE service_status AS ENUM ('pending', 'reviewing', 'approved', 'rejected', 'completed', 'cancelled');
@@ -235,6 +242,8 @@ CREATE TABLE applications (
   status           application_status NOT NULL DEFAULT 'personal_info',
   sop_content      TEXT,
   sop_draft_number INTEGER DEFAULT 0,
+  consultant_feedback TEXT,
+  ai_feedback      JSONB DEFAULT '{"score":0,"feedback":"No AI audit performed yet.","suggestions":[],"last_reviewed_at":null}',
   notes            TEXT,
   submitted_at     TIMESTAMPTZ,
   result_at        TIMESTAMPTZ,
@@ -258,6 +267,7 @@ CREATE TABLE documents (
   application_id  UUID REFERENCES applications(id) ON DELETE SET NULL,
   document_type   document_type NOT NULL DEFAULT 'other',
   file_name       TEXT NOT NULL,
+  file_path       TEXT,
   file_url        TEXT NOT NULL,
   file_size       BIGINT DEFAULT 0,
   status          document_status DEFAULT 'pending',
@@ -301,14 +311,121 @@ CREATE TABLE push_tokens (
 ALTER TABLE push_tokens ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Users manage own tokens" ON push_tokens FOR ALL USING (auth.uid() = user_id);
 
+-- MESSAGES
+CREATE TABLE messages (
+  id             UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  sender_id      UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  recipient_id   UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  application_id UUID REFERENCES applications(id) ON DELETE SET NULL,
+  content        TEXT NOT NULL,
+  image_url      TEXT,
+  is_read        BOOLEAN DEFAULT FALSE,
+  created_at     TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE messages ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Participants can view messages" ON messages FOR SELECT USING (auth.uid() = sender_id OR auth.uid() = recipient_id OR is_admin());
+CREATE POLICY "Participants can send messages" ON messages FOR INSERT WITH CHECK (auth.uid() = sender_id OR is_admin());
+CREATE POLICY "Participants can update messages" ON messages FOR UPDATE USING (auth.uid() = sender_id OR auth.uid() = recipient_id OR is_admin());
+
+-- PAYMENTS
+CREATE TYPE payment_type AS ENUM ('scholarship_package', 'tutor_booking');
+CREATE TYPE payment_method AS ENUM ('telebirr', 'cbe');
+CREATE TYPE payment_status AS ENUM ('pending', 'approved', 'rejected');
+
+CREATE TABLE payments (
+  id             UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id        UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  reference_id   UUID,
+  payment_type   payment_type NOT NULL,
+  method         payment_method NOT NULL,
+  amount         DECIMAL(12,2) NOT NULL CHECK (amount > 0),
+  transaction_id TEXT NOT NULL,
+  receipt_path   TEXT,
+  receipt_url    TEXT,
+  status         payment_status NOT NULL DEFAULT 'pending',
+  admin_notes    TEXT,
+  reviewed_by    UUID REFERENCES users(id),
+  reviewed_at    TIMESTAMPTZ,
+  created_at     TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(method, transaction_id)
+);
+
+ALTER TABLE payments ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users can view own payments" ON payments FOR SELECT USING (auth.uid() = user_id OR is_admin());
+CREATE POLICY "Users can create own payments" ON payments FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Admins can update payments" ON payments FOR UPDATE USING (is_admin());
+
+-- TUTOR PAYOUTS
+CREATE TYPE tutor_payout_status AS ENUM ('pending', 'processing', 'completed', 'rejected');
+
+CREATE TABLE tutor_payouts (
+  id             UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  tutor_id       UUID NOT NULL REFERENCES tutors(id) ON DELETE CASCADE,
+  amount         DECIMAL(12,2) NOT NULL CHECK (amount > 0),
+  bank_name      TEXT NOT NULL,
+  account_number TEXT NOT NULL,
+  account_name   TEXT NOT NULL,
+  status         tutor_payout_status NOT NULL DEFAULT 'pending',
+  admin_notes    TEXT,
+  processed_at   TIMESTAMPTZ,
+  created_at     TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE tutor_payouts ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Tutors can view own payouts" ON tutor_payouts FOR SELECT USING (auth.uid() IN (SELECT user_id FROM tutors WHERE id = tutor_id) OR is_admin());
+CREATE POLICY "Tutors can request payouts" ON tutor_payouts FOR INSERT WITH CHECK (auth.uid() IN (SELECT user_id FROM tutors WHERE id = tutor_id));
+CREATE POLICY "Admins can update payouts" ON tutor_payouts FOR UPDATE USING (is_admin());
+
+-- BOOKING RATINGS
+CREATE TABLE booking_ratings (
+  id         UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  booking_id UUID NOT NULL REFERENCES bookings(id) ON DELETE CASCADE,
+  rating     INTEGER NOT NULL CHECK (rating >= 1 AND rating <= 5),
+  comment    TEXT,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(booking_id)
+);
+
+ALTER TABLE booking_ratings ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Booking participants can view ratings" ON booking_ratings FOR SELECT USING (
+  EXISTS (
+    SELECT 1 FROM bookings b
+    JOIN tutors t ON t.id = b.tutor_id
+    WHERE b.id = booking_id AND (b.student_id = auth.uid() OR t.user_id = auth.uid() OR is_admin())
+  )
+);
+CREATE POLICY "Students can rate completed bookings" ON booking_ratings FOR INSERT WITH CHECK (
+  EXISTS (
+    SELECT 1 FROM bookings b
+    WHERE b.id = booking_id AND b.student_id = auth.uid() AND b.status = 'completed'
+  )
+);
+
 -- ─── STORAGE BUCKETS ──────────────────────────────────────────────────────────
-INSERT INTO storage.buckets (id, name, public) VALUES ('documents', 'documents', false);
+INSERT INTO storage.buckets (id, name, public) VALUES
+  ('documents', 'documents', false),
+  ('receipts', 'receipts', false),
+  ('avatars', 'avatars', true)
+ON CONFLICT (id) DO NOTHING;
 
 CREATE POLICY "Users can upload own documents" ON storage.objects
   FOR INSERT TO authenticated WITH CHECK (bucket_id = 'documents' AND (storage.foldername(name))[1] = auth.uid()::text);
 
 CREATE POLICY "Users can view own documents" ON storage.objects
-  FOR SELECT TO authenticated USING (bucket_id = 'documents' AND (storage.foldername(name))[1] = auth.uid()::text);
+  FOR SELECT TO authenticated USING (bucket_id = 'documents' AND ((storage.foldername(name))[1] = auth.uid()::text OR is_admin()));
+
+CREATE POLICY "Users can upload own receipts" ON storage.objects
+  FOR INSERT TO authenticated WITH CHECK (bucket_id = 'receipts' AND (storage.foldername(name))[1] = auth.uid()::text);
+
+CREATE POLICY "Users can view own receipts" ON storage.objects
+  FOR SELECT TO authenticated USING (bucket_id = 'receipts' AND ((storage.foldername(name))[1] = auth.uid()::text OR is_admin()));
+
+CREATE POLICY "Users can upload own avatars" ON storage.objects
+  FOR INSERT TO authenticated WITH CHECK (bucket_id = 'avatars' AND (storage.foldername(name))[1] = auth.uid()::text);
+
+CREATE POLICY "Avatars are public" ON storage.objects
+  FOR SELECT USING (bucket_id = 'avatars');
 
 -- ─── SEED SAMPLE SCHOLARSHIPS ─────────────────────────────────────────────────
 INSERT INTO scholarships (name, organization, country, country_flag, degree_levels, funding_type, funding_details, description, requirements, benefits, deadline, eagle_success_rate) VALUES

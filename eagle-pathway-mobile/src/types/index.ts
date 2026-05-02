@@ -168,6 +168,7 @@ export interface Document {
   application_id?: string;
   document_type: DocumentType;
   file_name: string;
+  file_path?: string;
   file_url: string;
   file_size: number;
   status: DocumentStatus;

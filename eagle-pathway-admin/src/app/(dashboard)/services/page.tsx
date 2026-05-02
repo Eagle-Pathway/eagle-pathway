@@ -43,11 +43,7 @@ export default function ServiceRequestsPage() {
   const [adminNote, setAdminNote] = useState('');
   const [filter, setFilter] = useState<string>('all');
 
-  useEffect(() => {
-    fetchRequests();
-  }, []);
-
-  const fetchRequests = async () => {
+  async function fetchRequests() {
     setLoading(true);
     const { data, error } = await supabase
       .from('service_requests')
@@ -60,7 +56,11 @@ export default function ServiceRequestsPage() {
       setRequests(data);
     }
     setLoading(false);
-  };
+  }
+
+  useEffect(() => {
+    fetchRequests();
+  }, []);
 
   const handleStatusUpdate = async (requestId: string, newStatus: 'approved' | 'rejected') => {
     if (!user) return;
@@ -81,8 +81,11 @@ export default function ServiceRequestsPage() {
       if (req) {
         const SERVICE_LABELS: Record<string, string> = {
           international_payment: 'Application Fee',
+          application_fee: 'Application Fee',
           tuition_payment: 'Tuition Fee',
+          tuition_fee: 'Tuition Fee',
           bank_transfer: 'Embassy Fee',
+          international: "Other Int'l Fees",
           other: "Other Int'l Fees",
           // legacy / other values
           study_abroad_fund: 'Study Abroad Fund',

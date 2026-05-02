@@ -24,11 +24,7 @@ export default function ScholarshipsPage() {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingScholarship, setEditingScholarship] = useState<Scholarship | null>(null);
 
-  useEffect(() => {
-    fetchScholarships();
-  }, []);
-
-  const fetchScholarships = async () => {
+  async function fetchScholarships() {
     setLoading(true);
     const { data, error } = await supabase
       .from('scholarships')
@@ -39,7 +35,11 @@ export default function ScholarshipsPage() {
       setScholarships(data);
     }
     setLoading(false);
-  };
+  }
+
+  useEffect(() => {
+    fetchScholarships();
+  }, []);
 
   const handleDelete = async (id: string) => {
     if (confirm('Are you sure you want to delete this scholarship?')) {

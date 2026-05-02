@@ -120,7 +120,7 @@ export default function AiAssistantWidget() {
             {messages.length === 0 && (
               <div className="text-center text-gray-500 dark:text-gray-400 mt-10">
                 <Bot className="w-10 h-10 mx-auto mb-3 opacity-50" />
-                <p className="text-sm">Hi! I'm here to help you learn about Eagle Pathway. Ask me anything!</p>
+                <p className="text-sm">Hi! I&apos;m here to help you learn about Eagle Pathway. Ask me anything!</p>
               </div>
             )}
             

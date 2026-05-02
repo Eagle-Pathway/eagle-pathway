@@ -18,6 +18,16 @@ import {
 
 const COLORS = ['#1E4D9B', '#C9A84C', '#9333EA'];
 
+type OpsQueueItem = {
+  title: string;
+  detail: string;
+  count: number;
+  href: string;
+  icon: typeof FileText;
+  color: string;
+  bg: string;
+};
+
 // Returns 'YYYY-MM-DD' in LOCAL time — avoids UTC vs local midnight mismatch
 function toLocalDateStr(d: Date): string {
   const y = d.getFullYear();
@@ -47,6 +57,7 @@ export default function OverviewPage() {
   
   const [roleData, setRoleData] = useState<{name: string, value: number}[]>([]);
   const [activityData, setActivityData] = useState<{name: string, signups: number, apps: number}[]>([]);
+  const [opsQueue, setOpsQueue] = useState<OpsQueueItem[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -71,25 +82,35 @@ export default function OverviewPage() {
           roleCountsRes,
           recentUsersRes,
           recentAppsRes,
+          pendingDocsRes,
+          pendingPaymentsRes,
+          pendingServicesRes,
+          unassignedAppsRes,
         ] = await Promise.all([
           supabase.from('users').select('*', { count: 'exact', head: true }),
           supabase.from('tutors').select('*', { count: 'exact', head: true }).eq('is_verified', false),
           supabase.from('scholarships').select('*', { count: 'exact', head: true }).eq('is_active', true),
           supabase.from('bookings').select('*', { count: 'exact', head: true }),
           supabase.from('applications').select('*', { count: 'exact', head: true }).neq('status', 'accepted'),
-          supabase.from('users').select('role'),
+          supabase.from('users').select('roles, active_role'),
           // Real 7-day activity data
           supabase.from('users').select('created_at').gte('created_at', isoStart),
           supabase.from('applications').select('created_at').gte('created_at', isoStart),
+          supabase.from('documents').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
+          supabase.from('payments').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
+          supabase.from('service_requests').select('*', { count: 'exact', head: true }).in('status', ['pending', 'reviewing']),
+          supabase.from('applications').select('*', { count: 'exact', head: true }).is('consultant_id', null).not('status', 'in', '(accepted,rejected)'),
         ]);
 
         const totalUsers = usersRes.count || 0;
         
         // Process role data locally to avoid 3 separate count queries
         const roles = roleCountsRes.data || [];
-        const students = roles.filter(r => r.role === 'student').length;
-        const tutors = roles.filter(r => r.role === 'tutor').length;
-        const admins = roles.filter(r => r.role === 'admin').length;
+        const hasRole = (row: { roles?: string[] | null; active_role?: string | null }, role: string) =>
+          row.active_role === role || row.roles?.includes(role);
+        const students = roles.filter(r => hasRole(r, 'student')).length;
+        const tutors = roles.filter(r => hasRole(r, 'tutor')).length;
+        const admins = roles.filter(r => hasRole(r, 'admin')).length;
 
         setCounts({
           users: totalUsers,
@@ -127,6 +148,45 @@ export default function OverviewPage() {
           signups: signupsByDate[d.dateStr],
           apps: appsByDate[d.dateStr],
         })));
+
+        setOpsQueue([
+          {
+            title: 'Verify documents',
+            detail: 'Student uploads waiting for approval',
+            count: pendingDocsRes.count || 0,
+            href: '/documents',
+            icon: FileText,
+            color: 'text-purple-600',
+            bg: 'bg-purple-50',
+          },
+          {
+            title: 'Review payments',
+            detail: 'Manual receipts pending finance action',
+            count: pendingPaymentsRes.count || 0,
+            href: '/finance',
+            icon: DollarSign,
+            color: 'text-green-600',
+            bg: 'bg-green-50',
+          },
+          {
+            title: 'Assign consultants',
+            detail: 'Applications without an owner',
+            count: unassignedAppsRes.count || 0,
+            href: '/applications',
+            icon: Briefcase,
+            color: 'text-brand-blue',
+            bg: 'bg-blue-50',
+          },
+          {
+            title: 'Process services',
+            detail: 'International service requests in queue',
+            count: pendingServicesRes.count || 0,
+            href: '/services',
+            icon: UserCheck,
+            color: 'text-amber-600',
+            bg: 'bg-amber-50',
+          },
+        ]);
       } catch (err) {
         console.error('Error fetching dashboard stats:', err);
       } finally {
@@ -238,7 +298,7 @@ export default function OverviewPage() {
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
            <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
              <FileText className="h-5 w-5 text-brand-blue" />
-             Recent Activity
+             Operations Queue
            </h2>
            <div className="space-y-4">
              {loading ? (
@@ -252,21 +312,19 @@ export default function OverviewPage() {
                  </div>
                ))
              ) : (
-               [
-                 { type: 'user', text: 'New student joined from Addis Ababa', time: '2 mins ago', icon: Users, color: 'text-blue-500', bg: 'bg-blue-50' },
-                 { type: 'app', text: 'Premium Scholarship Application received', time: '15 mins ago', icon: Briefcase, color: 'text-gold-500', bg: 'bg-gold-50' },
-                 { type: 'doc', text: 'New document uploaded for verification', time: '1 hour ago', icon: FileText, color: 'text-purple-500', bg: 'bg-purple-50' },
-                 { type: 'tutor', text: 'Tutor profile verified: Dr. Samuel', time: '3 hours ago', icon: UserCheck, color: 'text-green-500', bg: 'bg-green-50' },
-               ].map((item, i) => (
-                 <div key={i} className="flex items-center gap-4 group">
+               opsQueue.map((item) => (
+                 <a key={item.title} href={item.href} className="flex items-center gap-4 group rounded-xl p-2 -mx-2 hover:bg-gray-50 transition-colors">
                     <div className={`w-10 h-10 ${item.bg} rounded-full flex items-center justify-center`}>
                       <item.icon className={`h-5 w-5 ${item.color}`} />
                     </div>
                     <div className="flex-1">
-                      <p className="text-sm font-medium text-gray-800">{item.text}</p>
-                      <p className="text-[11px] text-gray-500 uppercase font-bold tracking-tight">{item.time}</p>
+                      <p className="text-sm font-medium text-gray-800">{item.title}</p>
+                      <p className="text-[11px] text-gray-500 uppercase font-bold tracking-tight">{item.detail}</p>
                     </div>
-                 </div>
+                    <div className={`min-w-8 h-8 rounded-full ${item.count > 0 ? 'bg-red-500 text-white' : 'bg-gray-100 text-gray-400'} flex items-center justify-center text-xs font-bold`}>
+                      {item.count}
+                    </div>
+                 </a>
                ))
              )}
            </div>

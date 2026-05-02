@@ -9,7 +9,8 @@ interface User {
   full_name: string;
   email: string;
   phone: string;
-  role: string;
+  roles?: string[] | null;
+  active_role?: string | null;
   city: string;
   created_at: string;
 }
@@ -19,11 +20,7 @@ export default function UsersPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
 
-  useEffect(() => {
-    fetchUsers();
-  }, []);
-
-  const fetchUsers = async () => {
+  async function fetchUsers() {
     setLoading(true);
     const { data, error } = await supabase
       .from('users')
@@ -34,7 +31,11 @@ export default function UsersPage() {
       setUsers(data);
     }
     setLoading(false);
-  };
+  }
+
+  useEffect(() => {
+    fetchUsers();
+  }, []);
 
   const filtered = users.filter(u => 
     u.full_name?.toLowerCase().includes(search.toLowerCase()) || 
@@ -110,7 +111,9 @@ export default function UsersPage() {
                   <td colSpan={5} className="px-6 py-10 text-center text-sm text-gray-500">No users found.</td>
                 </tr>
               ) : (
-                paginatedUsers.map((user) => (
+                paginatedUsers.map((user) => {
+                  const primaryRole = user.active_role || user.roles?.[0] || 'student';
+                  return (
                   <tr key={user.id} className="hover:bg-gray-50/50 transition-colors">
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
@@ -135,11 +138,11 @@ export default function UsersPage() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full capitalize ${
-                        user.role === 'admin' ? 'bg-purple-100 text-purple-800' :
-                        user.role === 'tutor' ? 'bg-blue-100 text-blue-800' :
+                        primaryRole === 'admin' ? 'bg-purple-100 text-purple-800' :
+                        primaryRole === 'tutor' ? 'bg-blue-100 text-blue-800' :
                         'bg-gray-100 text-gray-800'
                       }`}>
-                        {user.role}
+                        {primaryRole}
                       </span>
                       <div className="text-sm text-gray-500 mt-1 flex items-center">
                          <MapPin className="w-3.5 h-3.5 mr-1.5 text-gray-400" /> {user.city || 'Unknown'}
@@ -154,7 +157,8 @@ export default function UsersPage() {
                       </button>
                     </td>
                   </tr>
-                ))
+                  );
+                })
               )}
             </tbody>
           </table>

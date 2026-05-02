@@ -1204,7 +1204,7 @@ export function BookingsScreen({ hideHeader = false }: { hideHeader?: boolean })
     }
   };
 
-  const isTutor = user?.role?.toLowerCase() === 'tutor';
+  const isTutor = (user?.active_role || user?.roles?.[0] || 'student').toLowerCase() === 'tutor';
 
   useEffect(() => {
     if (user) {

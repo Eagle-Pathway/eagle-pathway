@@ -8,7 +8,7 @@ import { useLocalSearchParams, router } from 'expo-router';
 import { Colors, Typography, Spacing, Radius, CommonStyles } from '@/utils/theme';
 import { useAppStore } from '@/store/appStore';
 import { useAuthStore } from '@/store/authStore';
-import { Button } from '@/components/common/Button';
+import { Button } from '@/components/common';
 
 export default function SOPEditorScreen() {
   const { applicationId, scholarshipName } = useLocalSearchParams<{ applicationId: string, scholarshipName: string }>();

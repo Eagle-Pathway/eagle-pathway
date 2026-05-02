@@ -23,11 +23,7 @@ export default function BookingsPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
 
-  useEffect(() => {
-    fetchBookings();
-  }, []);
-
-  const fetchBookings = async () => {
+  async function fetchBookings() {
     setLoading(true);
     // Explicit joins using foreign key hints if needed, or normal fetch followed by manual user match
     const { data: bData, error } = await supabase
@@ -53,7 +49,11 @@ export default function BookingsPage() {
       setBookings(enrichedBookings as Booking[]);
     }
     setLoading(false);
-  };
+  }
+
+  useEffect(() => {
+    fetchBookings();
+  }, []);
 
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {

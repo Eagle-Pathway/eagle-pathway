@@ -21,6 +21,7 @@ interface UserDocument {
   user_id: string;
   document_type: string;
   file_name: string;
+  file_path?: string | null;
   file_url: string;
   status: 'pending' | 'approved' | 'rejected';
   uploaded_at: string;
@@ -39,11 +40,20 @@ export default function DocumentsPage() {
   const [selectedDoc, setSelectedDoc] = useState<UserDocument | null>(null);
   const [reviewerNotes, setReviewerNotes] = useState('');
 
-  useEffect(() => {
-    fetchDocuments();
-  }, []);
+  const signDocumentUrl = async (document: UserDocument): Promise<UserDocument> => {
+    const path = document.file_path || (!document.file_url?.startsWith('http') ? document.file_url : null);
+    if (!path) return document;
 
-  const fetchDocuments = async () => {
+    const { data } = await supabase.storage
+      .from('documents')
+      .createSignedUrl(path, 60 * 60);
+
+    return data?.signedUrl
+      ? { ...document, file_path: path, file_url: data.signedUrl }
+      : document;
+  };
+
+  async function fetchDocuments() {
     setLoading(true);
     const { data, error } = await supabase
       .from('documents')
@@ -51,10 +61,14 @@ export default function DocumentsPage() {
       .order('uploaded_at', { ascending: false });
 
     if (!error && data) {
-      setDocuments(data as UserDocument[]);
+      setDocuments(await Promise.all((data as UserDocument[]).map(signDocumentUrl)));
     }
     setLoading(false);
-  };
+  }
+
+  useEffect(() => {
+    fetchDocuments();
+  }, []);
 
   const handleUpdateStatus = async (id: string, status: 'approved' | 'rejected') => {
     const { error } = await supabase

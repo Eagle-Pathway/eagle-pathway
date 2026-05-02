@@ -37,6 +37,8 @@ interface Application {
 interface Consultant {
   id: string;
   full_name: string;
+  roles?: string[] | null;
+  active_role?: string | null;
 }
 
 const STAGES = [
@@ -82,15 +84,21 @@ export default function ApplicationsPage() {
     // Fetch potential consultants (users with role tutor or admin)
     const { data: consData, error: consError } = await supabase
       .from('users')
-      .select('id, full_name')
-      .in('role', ['tutor', 'admin']);
+      .select('id, full_name, roles, active_role');
 
     if (consError) {
       console.error('Error fetching consultants:', consError);
     }
 
     if (!appError && appData) setApplications(appData as Application[]);
-    if (consData) setConsultants(consData as Consultant[]);
+    if (consData) {
+      setConsultants((consData as Consultant[]).filter(c =>
+        c.active_role === 'tutor' ||
+        c.active_role === 'admin' ||
+        c.roles?.includes('tutor') ||
+        c.roles?.includes('admin')
+      ));
+    }
     
     setLoading(false);
   };

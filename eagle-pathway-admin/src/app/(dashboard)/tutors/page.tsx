@@ -25,11 +25,7 @@ export default function TutorsPage() {
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [actionError, setActionError] = useState('');
 
-  useEffect(() => {
-    fetchTutors();
-  }, []);
-
-  const fetchTutors = async () => {
+  async function fetchTutors() {
     setLoading(true);
     // Join with users table
     const { data, error } = await supabase
@@ -50,7 +46,11 @@ export default function TutorsPage() {
       setTutors(data as TutorWithUser[]);
     }
     setLoading(false);
-  };
+  }
+
+  useEffect(() => {
+    fetchTutors();
+  }, []);
 
   const toggleVerification = async (id: string, currentStatus: boolean) => {
     const willBeVerified = !currentStatus;

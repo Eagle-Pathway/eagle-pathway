@@ -71,7 +71,7 @@ export const messageService = {
     // Fetch unique users involved in messages
     const { data: rawMessages, error } = await supabase
       .from('messages')
-      .select('*, sender:users!messages_sender_id_fkey(id, full_name, role, avatar_url), recipient:users!messages_recipient_id_fkey(id, full_name, role, avatar_url)')
+      .select('*, sender:users!messages_sender_id_fkey(id, full_name, roles, active_role, avatar_url), recipient:users!messages_recipient_id_fkey(id, full_name, roles, active_role, avatar_url)')
       .or(`sender_id.eq.${userId},recipient_id.eq.${userId}`)
       .order('created_at', { ascending: false });
 
@@ -82,9 +82,13 @@ export const messageService = {
     rawMessages.forEach((msg: any) => {
       const otherUser = msg.sender_id === userId ? msg.recipient : msg.sender;
       if (!otherUser) return;
+      const normalizedUser = {
+        ...otherUser,
+        role: otherUser.active_role || otherUser.roles?.[0] || 'student',
+      };
       if (!userMap.has(otherUser.id)) {
         userMap.set(otherUser.id, {
-          ...otherUser,
+          ...normalizedUser,
           last_message: msg.content,
           last_time: msg.created_at,
           unread_count: msg.recipient_id === userId && !msg.is_read ? 1 : 0
