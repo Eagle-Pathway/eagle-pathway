@@ -36,16 +36,23 @@ export default function LoginPage() {
       if (authError) throw authError;
 
       if (data.user) {
-        // Verify admin role 
-        const { data: profile } = await supabase
+        // Verify admin role - check both RLS auth and legacy role column
+        const { data: profile, error: profileError } = await supabase
           .from('users')
-          .select('roles, active_role')
+          .select('roles, active_role, role')
           .eq('id', data.user.id)
           .single();
 
-        if (!hasAdminAccess(profile)) {
+        // Check new multi-role format OR legacy single role
+        const isAdmin = profile?.active_role === 'admin' || 
+                       profile?.roles?.includes('admin') ||
+                       profile?.role === 'admin';
+
+        if (!profile || profileError || !isAdmin) {
           await supabase.auth.signOut();
-          throw new Error('Access denied. Admin privileges required.');
+          setError('Access denied. Admin privileges required. Please ensure your account has admin role.');
+          setLoading(false);
+          return;
         }
 
         setSession(data.session);
