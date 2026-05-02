@@ -7,6 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Colors, Typography, Spacing, Radius, CommonStyles } from '@/utils/theme';
 import { Pill, EmptyState, Avatar } from '@/components/common';
+import { ListSkeleton } from '@/components/LoadingSkeleton';
 import { tutorsService } from '@/services/tutors';
 import { Tutor } from '@/types';
 
@@ -97,9 +98,18 @@ export default function TutorsScreen() {
       </ScrollView>
 
       {loading ? (
-        <View style={CommonStyles.center}><ActivityIndicator color={Colors.blue} size="large" /></View>
+        <View style={{ flex: 1, paddingTop: Spacing.lg }}>
+          <ListSkeleton count={4} />
+        </View>
       ) : filtered.length === 0 ? (
-        <EmptyState icon="👨‍🏫" title="No tutors found" subtitle="Try adjusting your search or filters" style={{ padding: Spacing.xl }} />
+        <EmptyState 
+          icon="👨‍🏫" 
+          title="No tutors found" 
+          subtitle="Try adjusting your search or filters"
+          actionLabel="Clear Filters"
+          onAction={() => { setSearch(''); setActiveSubject('All'); setActiveMode('All'); }}
+          style={{ padding: Spacing.xl }} 
+        />
       ) : (
         <FlatList
           data={filtered}

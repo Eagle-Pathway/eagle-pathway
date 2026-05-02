@@ -7,6 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Colors, Typography, Spacing, Radius, CommonStyles } from '@/utils/theme';
 import { Avatar, EmptyState } from '@/components/common';
+import { ListSkeleton } from '@/components/LoadingSkeleton';
 import { useAuthStore } from '../../store/authStore';
 import { useChatStore } from '@/store/ChatStore';
 
@@ -76,9 +77,17 @@ export default function ChatListScreen() {
       </View>
 
       {isLoadingConversations && conversations.length === 0 ? (
-        <View style={[CommonStyles.flex1, CommonStyles.center]}>
-          <ActivityIndicator color={Colors.blue} size="large" />
+        <View style={{ flex: 1, paddingTop: Spacing.lg }}>
+          <ListSkeleton count={5} />
         </View>
+      ) : conversations.length === 0 ? (
+        <EmptyState 
+          icon="💬" 
+          title="No messages yet" 
+          subtitle="Direct messages from your consultants and tutors will appear here."
+          actionLabel="Browse Tutors"
+          onAction={() => router.push('/(tabs)/tutors')}
+        />
       ) : (
         <FlatList
           data={conversations}
@@ -88,16 +97,8 @@ export default function ChatListScreen() {
           refreshControl={
             <RefreshControl refreshing={isLoadingConversations} onRefresh={onRefresh} tintColor={Colors.blue} />
           }
-          ListEmptyComponent={
-            <EmptyState 
-              icon="💬" 
-              title="No messages yet" 
-              subtitle="Direct messages from your consultants and tutors will appear here." 
-            />
-          }
         />
       )}
-    </SafeAreaView>
   );
 }
 

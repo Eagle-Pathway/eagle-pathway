@@ -7,6 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Colors, Typography, Spacing, Radius, CommonStyles } from '@/utils/theme';
 import { EmptyState } from '@/components/common';
+import { ListSkeleton } from '@/components/LoadingSkeleton';
 import { useAppStore } from '@/store/appStore';
 import { Scholarship } from '@/types';
 import { format } from 'date-fns';
@@ -76,9 +77,17 @@ export default function ScholarshipsScreen({ hideBack = false }: { hideBack?: bo
       </View>
 
       {isLoadingScholarships ? (
-        <View style={[CommonStyles.flex1, CommonStyles.center]}><ActivityIndicator color={Colors.blue} size="large" /></View>
+        <View style={{ flex: 1, paddingTop: Spacing.lg, paddingHorizontal: Spacing.xl }}>
+          <ListSkeleton count={4} />
+        </View>
       ) : filtered.length === 0 ? (
-        <EmptyState icon="🎓" title="No scholarships found" subtitle="Try adjusting your search or filters" />
+        <EmptyState 
+          icon="🎓" 
+          title="No scholarships found" 
+          subtitle="Try adjusting your search or filters"
+          actionLabel="Clear Filters"
+          onAction={() => { setSearch(''); setActiveFilter('All'); }}
+        />
       ) : (
         <FlatList
           data={filtered}
