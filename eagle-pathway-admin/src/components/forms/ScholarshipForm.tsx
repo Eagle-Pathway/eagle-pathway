@@ -243,7 +243,7 @@ export default function ScholarshipForm({ scholarship, onClose, onSuccess }: Sch
                 <label className="block text-sm font-medium text-gray-700 mb-2">Degree Levels</label>
                 <div className="flex flex-wrap gap-2">
                   {DEGREE_LEVELS.map(level => (
-                    <button type="button" onClick={() => toggleArrayField('degree_levels', level)}
+                    <button type="button" key={level} onClick={() => toggleArrayField('degree_levels', level)}
                       className={`px-4 py-2 rounded-xl text-sm font-medium capitalize transition-colors ${
                         formData.degree_levels.includes(level) ? 'bg-brand-blue text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
                       {level}
@@ -256,7 +256,7 @@ export default function ScholarshipForm({ scholarship, onClose, onSuccess }: Sch
                 <label className="block text-sm font-medium text-gray-700 mb-2">Fields of Study</label>
                 <div className="flex flex-wrap gap-2">
                   {FIELDS_OF_STUDY.map(field => (
-                    <button type="button" onClick={() => toggleArrayField('fields_of_study', field.value)}
+                    <button type="button" key={field.value} onClick={() => toggleArrayField('fields_of_study', field.value)}
                       className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
                         formData.fields_of_study.includes(field.value) ? 'bg-brand-blue text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
                       {field.label}
