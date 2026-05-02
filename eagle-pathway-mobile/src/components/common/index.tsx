@@ -68,11 +68,27 @@ export const SectionTitle: React.FC<{ title: string; style?: TextStyle }> = ({ t
 );
 
 // ─── Empty State ──────────────────────────────────────────────────────────────
-export const EmptyState: React.FC<{ icon: string; title: string; subtitle: string; style?: any }> = ({ icon, title, subtitle, style }) => (
-  <View style={styles.emptyState}>
+interface EmptyStateProps {
+  icon: string;
+  title: string;
+  subtitle: string;
+  actionLabel?: string;
+  onAction?: () => void;
+  style?: ViewStyle;
+}
+
+export const EmptyState: React.FC<EmptyStateProps> = ({
+  icon, title, subtitle, actionLabel, onAction, style,
+}) => (
+  <View style={[styles.emptyState, style]}>
     <Text style={styles.emptyIcon}>{icon}</Text>
     <Text style={styles.emptyTitle}>{title}</Text>
     <Text style={styles.emptySubtitle}>{subtitle}</Text>
+    {actionLabel && onAction && (
+      <TouchableOpacity style={styles.emptyAction} onPress={onAction}>
+        <Text style={styles.emptyActionText}>{actionLabel}</Text>
+      </TouchableOpacity>
+    )}
   </View>
 );
 
@@ -174,6 +190,8 @@ const styles = StyleSheet.create({
   emptyIcon: { fontSize: 40 },
   emptyTitle: { fontSize: Typography.xl, fontWeight: Typography.bold, color: Colors.text, textAlign: 'center' },
   emptySubtitle: { fontSize: Typography.md, color: Colors.textSecondary, textAlign: 'center', lineHeight: 22 },
+  emptyAction: { backgroundColor: Colors.blue, paddingVertical: 12, paddingHorizontal: 24, borderRadius: Radius.lg, marginTop: Spacing.md },
+  emptyActionText: { color: Colors.white, fontSize: Typography.md, fontWeight: Typography.semibold },
   progressTrack: { backgroundColor: Colors.grayLight, borderRadius: Radius.full, overflow: 'hidden' },
   progressFill: { borderRadius: Radius.full },
 });
