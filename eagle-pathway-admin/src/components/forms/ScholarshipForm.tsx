@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { supabase } from '@/lib/supabase';
-import { X, Loader2, Image as ImageIcon } from 'lucide-react';
+import { X, Loader2, Image as ImageIcon, GraduationCap, Globe, FileText, Settings, DollarSign, Calendar } from 'lucide-react';
 
 const COUNTRIES = [
   { name: 'United Kingdom', flag: '🇬🇧' },
@@ -11,34 +11,113 @@ const COUNTRIES = [
   { name: 'Australia', flag: '🇦🇺' },
   { name: 'China', flag: '🇨🇳' },
   { name: 'Germany', flag: '🇩🇪' },
-  { name: 'Hungary', flag: '🇭🇺' },
-  { name: 'Turkey', flag: '🇹🇷' },
-  { name: 'Russia', flag: '🇷🇺' },
+  { name: 'Ethiopia', flag: '🇪🇹' },
+  { name: 'France', flag: '🇫🇷' },
+  { name: 'Netherlands', flag: '🇳🇱' },
   { name: 'Japan', flag: '🇯🇵' },
   { name: 'South Korea', flag: '🇰🇷' },
-  { name: 'France', flag: '🇫🇷' },
-  { name: 'Italy', flag: '🇮🇹' },
-  { name: 'Netherlands', flag: '🇳🇱' },
-  { name: 'Norway', flag: '🇳🇴' },
-  { name: 'Sweden', flag: '🇸🇪' },
-  { name: 'Ethiopia', flag: '🇪🇹' },
 ];
 
 const DEPARTMENTS = [
-  'Any',
-  'Computer Science', 
-  'Mechanical Engineering', 
-  'Medicine', 
-  'Economics', 
-  'Psychology', 
-  'Education', 
-  'Architecture', 
-  'Law', 
-  'International Relations'
+  'Any', 'Computer Science', 'Mechanical Engineering', 'Medicine', 
+  'Economics', 'Psychology', 'Education', 'Architecture', 'Law', 'International Relations'
 ];
 
+const DEGREE_LEVELS = ['undergraduate', 'masters', 'phd'];
+const FIELDS_OF_STUDY = [
+  { value: 'any', label: 'Any / All Fields' },
+  { value: 'stem', label: 'STEM' },
+  { value: 'healthcare', label: 'Healthcare & Medicine' },
+  { value: 'business', label: 'Business & Economics' },
+  { value: 'humanities', label: 'Humanities & Social Sciences' },
+  { value: 'arts', label: 'Arts & Design' },
+  { value: 'law', label: 'Law & Policy' },
+];
+
+interface SectionProps {
+  icon: React.ReactNode;
+  title: string;
+  description: string;
+  children: React.ReactNode;
+}
+
+function Section({ icon, title, description, children }: SectionProps) {
+  return (
+    <div className="bg-gray-50 rounded-2xl p-5 border border-gray-100">
+      <div className="flex items-center gap-3 mb-4">
+        <div className="w-10 h-10 rounded-xl bg-brand-blue/10 flex items-center justify-center text-brand-blue">
+          {icon}
+        </div>
+        <div>
+          <h3 className="font-semibold text-gray-900">{title}</h3>
+          <p className="text-xs text-gray-500">{description}</p>
+        </div>
+      </div>
+      <div className="space-y-4">{children}</div>
+    </div>
+  );
+}
+
+interface InputFieldProps {
+  label: string;
+  name: string;
+  value: string;
+  onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => void;
+  required?: boolean;
+  type?: string;
+  placeholder?: string;
+  rows?: number;
+}
+
+function InputField({ label, name, value, onChange, required, type = 'text', placeholder, rows }: InputFieldProps) {
+  return (
+    <div>
+      <label className="block text-sm font-medium text-gray-700 mb-1.5">{label}</label>
+      {rows ? (
+        <textarea
+          name={name}
+          value={value}
+          onChange={onChange}
+          rows={rows}
+          required={required}
+          placeholder={placeholder}
+          className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-blue/20 focus:border-brand-blue text-gray-900 placeholder:text-gray-400 resize-none"
+        />
+      ) : (
+        <input
+          type={type}
+          name={name}
+          value={value}
+          onChange={onChange}
+          required={required}
+          placeholder={placeholder}
+          className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-blue/20 focus:border-brand-blue text-gray-900 placeholder:text-gray-400"
+        />
+      )}
+    </div>
+  );
+}
+
+interface CheckboxFieldProps {
+  label: string;
+  checked: boolean;
+  onChange: (checked: boolean) => void;
+}
+
+function CheckboxField({ label, checked, onChange }: CheckboxFieldProps) {
+  return (
+    <label className="flex items-center gap-3 cursor-pointer group">
+      <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-colors ${checked ? 'bg-brand-blue border-brand-blue' : 'border-gray-300 group-hover:border-brand-blue/50'}`}>
+        {checked && <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
+      </div>
+      <input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} className="sr-only" />
+      <span className="text-sm text-gray-700 font-medium">{label}</span>
+    </label>
+  );
+}
+
 interface ScholarshipFormProps {
-  scholarship?: any; // For editing
+  scholarship?: any;
   onClose: () => void;
   onSuccess: () => void;
 }
@@ -46,6 +125,7 @@ interface ScholarshipFormProps {
 export default function ScholarshipForm({ scholarship, onClose, onSuccess }: ScholarshipFormProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [imageFile, setImageFile] = useState<File | null>(null);
   
   const [formData, setFormData] = useState({
     name: scholarship?.name || '',
@@ -67,8 +147,6 @@ export default function ScholarshipForm({ scholarship, onClose, onSuccess }: Sch
     recommendation_letters_count: scholarship?.recommendation_letters_count || 0
   });
 
-  const [imageFile, setImageFile] = useState<File | null>(null);
-
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
@@ -80,22 +158,24 @@ export default function ScholarshipForm({ scholarship, onClose, onSuccess }: Sch
     }
   };
 
+  const toggleArrayField = (field: 'degree_levels' | 'fields_of_study' | 'target_departments', value: string) => {
+    setFormData(prev => {
+      const current = prev[field] as string[];
+      const updated = current.includes(value)
+        ? current.filter(v => v !== value)
+        : [...current, value];
+      return { ...prev, [field]: updated };
+    });
+  };
+
   const uploadImage = async () => {
     if (!imageFile) return null;
     const fileExt = imageFile.name.split('.').pop();
     const fileName = `${Math.random().toString(36).substring(2)}.${fileExt}`;
     const filePath = `scholarship-thumbnails/${fileName}`;
-
-    const { error: uploadError } = await supabase.storage
-      .from('scholarship-images')
-      .upload(filePath, imageFile);
-
+    const { error: uploadError } = await supabase.storage.from('scholarship-images').upload(filePath, imageFile);
     if (uploadError) throw uploadError;
-
-    const { data } = supabase.storage
-      .from('scholarship-images')
-      .getPublicUrl(filePath);
-
+    const { data } = supabase.storage.from('scholarship-images').getPublicUrl(filePath);
     return data.publicUrl;
   };
 
@@ -130,7 +210,6 @@ export default function ScholarshipForm({ scholarship, onClose, onSuccess }: Sch
         accepts_english_medium: formData.accepts_english_medium,
         target_departments: formData.target_departments,
         recommendation_letters_count: formData.recommendation_letters_count,
-        // Persist the uploaded image URL; omit if no new image was selected
         ...(publicImageUrl ? { image_url: publicImageUrl } : {}),
       };
 
@@ -140,7 +219,7 @@ export default function ScholarshipForm({ scholarship, onClose, onSuccess }: Sch
 
       if (saveError) {
         if (saveError.code === '42501') {
-          throw new Error('Permission denied: You do not have permission to manage scholarships. Please ensure the admin RLS policies are applied.');
+          throw new Error('Permission denied: You do not have permission to manage scholarships.');
         }
         throw saveError;
       }
@@ -154,239 +233,186 @@ export default function ScholarshipForm({ scholarship, onClose, onSuccess }: Sch
 
   return (
     <div className="fixed inset-0 z-50 flex justify-end bg-gray-900/50 backdrop-blur-sm animate-in fade-in">
-      <div className="w-full max-w-xl h-full bg-white shadow-2xl flex flex-col animate-in slide-in-from-right duration-300">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-           <h2 className="text-xl font-bold text-gray-900">{scholarship ? 'Edit Scholarship' : 'Add Scholarship'}</h2>
-           <button onClick={onClose} className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors">
-              <X className="w-5 h-5" />
-           </button>
+      <div className="w-full max-w-2xl h-full bg-white shadow-2xl flex flex-col animate-in slide-in-from-right duration-300">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-gray-50">
+          <div>
+            <h2 className="text-xl font-bold text-gray-900">
+              {scholarship ? 'Edit Scholarship' : 'Add New Scholarship'}
+            </h2>
+            <p className="text-xs text-gray-500">{scholarship ? 'Update the scholarship details below' : 'Fill in the details to create a new scholarship'}</p>
+          </div>
+          <button onClick={onClose} className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors">
+            <X className="w-5 h-5" />
+          </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto p-6">
+        <div className="flex-1 overflow-y-auto p-6 space-y-5">
           {error && (
-            <div className="mb-6 p-4 bg-red-50 text-red-600 rounded-xl border border-red-100 text-sm">
-               {error}
+            <div className="p-4 bg-red-50 text-red-600 rounded-xl border border-red-100 text-sm flex items-center gap-2">
+              <span className="text-lg">⚠️</span> {error}
             </div>
           )}
 
-          <form id="scholarship-form" onSubmit={handleSubmit} className="space-y-6">
-             <div className="sm:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-2">Scholarship Thumbnail</label>
-                <div className="flex items-center gap-4 p-4 border-2 border-dashed border-gray-200 rounded-xl hover:border-brand-blue/30 transition-colors">
-                   <div className="h-20 w-20 bg-gray-50 rounded-lg flex items-center justify-center border border-gray-100 overflow-hidden">
-                    {imageFile ? (
-                      <img src={URL.createObjectURL(imageFile)} alt="Preview" className="h-full w-full object-cover" />
-                    ) : (
-                      <ImageIcon className="h-8 w-8 text-gray-300" />
-                    )}
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-[11px] text-gray-500 mb-2">Upload a high-quality JPG/PNG image.</p>
-                    <input 
-                      type="file" 
-                      accept="image/*" 
-                      onChange={handleImageChange}
-                      className="text-xs text-gray-500 file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:text-[10px] file:font-bold file:bg-brand-blue/10 file:text-brand-blue hover:file:bg-brand-blue/20 cursor-pointer" 
-                    />
-                  </div>
+          <form id="scholarship-form" onSubmit={handleSubmit} className="space-y-5">
+            {/* Image Upload */}
+            <div className="flex items-center gap-4 p-4 border-2 border-dashed border-gray-200 rounded-xl hover:border-brand-blue/30 transition-colors bg-gray-50">
+              <div className="h-24 w-24 bg-gray-100 rounded-xl flex items-center justify-center border border-gray-200 overflow-hidden">
+                {imageFile ? (
+                  <img src={URL.createObjectURL(imageFile)} alt="Preview" className="h-full w-full object-cover" />
+                ) : scholarship?.image_url ? (
+                  <img src={scholarship.image_url} alt="Current" className="h-full w-full object-cover" />
+                ) : (
+                  <ImageIcon className="h-10 w-10 text-gray-300" />
+                )}
+              </div>
+              <div className="flex-1">
+                <p className="font-medium text-gray-900 mb-1">Scholarship Image</p>
+                <p className="text-xs text-gray-500 mb-3">Upload a thumbnail (JPG/PNG, recommended 600x400)</p>
+                <input 
+                  type="file" 
+                  accept="image/*" 
+                  onChange={handleImageChange}
+                  className="text-xs text-gray-500 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-brand-blue file:text-white hover:file:bg-blue-700 cursor-pointer" 
+                />
+              </div>
+            </div>
+
+            {/* Basic Info */}
+            <Section icon={<GraduationCap className="w-5 h-5" />} title="Basic Information" description="Main scholarship details">
+              <div className="grid grid-cols-1 gap-4">
+                <InputField label="Scholarship Name" name="name" value={formData.name} onChange={handleChange} required placeholder="e.g. Mastercard Foundation Scholars Program" />
+                <div className="grid grid-cols-2 gap-4">
+                  <InputField label="Organization" name="organization" value={formData.organization} onChange={handleChange} required placeholder="e.g. Mastercard Foundation" />
+                  <InputField label="Funding Amount" name="funding_details" value={formData.funding_details} onChange={handleChange} required placeholder="e.g. $50,000 per year" />
                 </div>
-             </div>
+              </div>
+            </Section>
 
-             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-               <div className="sm:col-span-2">
-                 <label className="block text-sm font-medium text-gray-700 mb-1">Scholarship Name</label>
-                 <input required type="text" name="name" value={formData.name} onChange={handleChange} className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-blue/20 focus:border-brand-blue" />
-               </div>
-               
-               <div>
-                 <label className="block text-sm font-medium text-gray-700 mb-1">Organization</label>
-                 <input required type="text" name="organization" value={formData.organization} onChange={handleChange} className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-blue/20 focus:border-brand-blue" />
-               </div>
+            {/* Eligibility */}
+            <Section icon={<Settings className="w-5 h-5" />} title="Eligibility & Requirements" description="Who qualifies for this scholarship">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Funding Type</label>
+                  <select name="funding_type" value={formData.funding_type} onChange={handleChange} className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white">
+                    <option value="fully_funded">Fully Funded</option>
+                    <option value="partial">Partial</option>
+                    <option value="stipend_only">Stipend Only</option>
+                  </select>
+                </div>
+                <InputField label="Minimum GPA" name="min_gpa" value={formData.min_gpa} onChange={handleChange} type="number" placeholder="e.g. 3.5" />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Degree Levels</label>
+                <div className="flex flex-wrap gap-2">
+                  {DEGREE_LEVELS.map(level => (
+                    <button
+                      key={level}
+                      type="button"
+                      onClick={() => toggleArrayField('degree_levels', level)}
+                      className={`px-4 py-2 rounded-xl text-sm font-medium capitalize transition-colors ${
+                        formData.degree_levels.includes(level)
+                          ? 'bg-brand-blue text-white'
+                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      }`}
+                    >
+                      {level}
+                    </button>
+                  ))}
+                </div>
+              </div>
 
-               <div>
-                 <label className="block text-sm font-medium text-gray-700 mb-1">Funding Details (e.g. £15,000)</label>
-                 <input required type="text" name="funding_details" value={formData.funding_details} onChange={handleChange} className="w-full px-4 py-2.5 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-blue/20 focus:border-brand-blue" />
-               </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Fields of Study</label>
+                <div className="flex flex-wrap gap-2">
+                  {FIELDS_OF_STUDY.map(field => (
+                    <button
+                      key={field.value}
+                      type="button"
+                      onClick={() => toggleArrayField('fields_of_study', field.value)}
+                      className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
+                        formData.fields_of_study.includes(field.value)
+                          ? 'bg-brand-blue text-white'
+                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      }`}
+                    >
+                      {field.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </Section>
 
-               <div>
-                 <label className="block text-sm font-medium text-gray-700 mb-1">Funding Type</label>
-                 <select name="funding_type" value={formData.funding_type} onChange={handleChange} className="w-full px-4 py-2.5 rounded-xl border border-gray-200 bg-white">
-                   <option value="fully_funded">Fully Funded</option>
-                   <option value="partial">Partial</option>
-                   <option value="stipend_only">Stipend Only</option>
-                 </select>
-               </div>
-
-               <div>
-                 <label className="block text-sm font-medium text-gray-700 mb-1">Country</label>
-                 <select 
-                    required 
+            {/* Location & Deadline */}
+            <Section icon={<Globe className="w-5 h-5" />} title="Location & Timeline" description="Where and when to apply">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Country</label>
+                  <select 
                     name="country" 
                     value={formData.country} 
                     onChange={(e) => {
-                      const selectedCountry = COUNTRIES.find(c => c.name === e.target.value);
-                      if (selectedCountry) {
-                        setFormData(prev => ({ 
-                          ...prev, 
-                          country: selectedCountry.name, 
-                          country_flag: selectedCountry.flag 
-                        }));
+                      const selected = COUNTRIES.find(c => c.name === e.target.value);
+                      if (selected) {
+                        setFormData(prev => ({ ...prev, country: selected.name, country_flag: selected.flag }));
                       }
                     }} 
-                    className="w-full px-4 py-2.5 rounded-xl border border-gray-200 bg-white"
-                 >
-                   <option value="">Select a Country</option>
-                   {COUNTRIES.map(c => (
-                     <option key={c.name} value={c.name}>{c.flag} {c.name}</option>
-                   ))}
-                 </select>
-               </div>
-
-               <div>
-                 <label className="block text-sm font-medium text-gray-700 mb-1">Deadline</label>
-                 <input required type="date" name="deadline" value={formData.deadline} onChange={handleChange} className="w-full px-4 py-2.5 rounded-xl border border-gray-200" />
-               </div>
-
-               <div>
-                 <label className="block text-sm font-medium text-gray-700 mb-1">Min GPA (Optional)</label>
-                 <input type="number" step="0.1" name="min_gpa" value={formData.min_gpa} onChange={handleChange} className="w-full px-4 py-2.5 rounded-xl border border-gray-200" placeholder="e.g. 3.5" />
-               </div>
-
-               <div>
-                 <label className="block text-sm font-medium text-gray-700 mb-1">Degree Levels (Ctrl+Click)</label>
-                 <select 
-                    multiple 
-                    name="degree_levels" 
-                    value={formData.degree_levels} 
-                    onChange={(e) => {
-                      const options = e.target.options;
-                      const value: string[] = [];
-                      for (let i = 0, l = options.length; i < l; i++) {
-                        if (options[i].selected) value.push(options[i].value);
-                      }
-                      setFormData(prev => ({ ...prev, degree_levels: value }));
-                    }} 
-                    className="w-full px-4 py-2 rounded-xl border border-gray-200 bg-white min-h-[100px]"
-                 >
-                   <option value="undergraduate">Undergraduate</option>
-                   <option value="masters">Masters</option>
-                   <option value="phd">PhD</option>
-                   <option value="all">All Levels</option>
-                 </select>
-               </div>
-
-               <div>
-                 <label className="block text-sm font-medium text-gray-700 mb-1">Fields of Study (Ctrl+Click)</label>
-                 <select 
-                    multiple 
-                    name="fields_of_study" 
-                    value={formData.fields_of_study} 
-                    onChange={(e) => {
-                      const options = e.target.options;
-                      const value: string[] = [];
-                      for (let i = 0, l = options.length; i < l; i++) {
-                        if (options[i].selected) value.push(options[i].value);
-                      }
-                      setFormData(prev => ({ ...prev, fields_of_study: value }));
-                    }} 
-                    className="w-full px-4 py-2 rounded-xl border border-gray-200 bg-white min-h-[100px]"
-                 >
-                   <option value="any">Any / All Fields</option>
-                   <option value="stem">STEM (Science, Tech, Eng, Math)</option>
-                   <option value="healthcare">Healthcare & Medicine</option>
-                   <option value="business">Business & Economics</option>
-                   <option value="humanities">Humanities & Social Sciences</option>
-                   <option value="arts">Arts & Design</option>
-                   <option value="law">Law & Policy</option>
-                 </select>
-               </div>
-
-                <div className="sm:col-span-2 grid grid-cols-1 sm:grid-cols-3 gap-5 p-4 bg-blue-50 rounded-xl border border-blue-100">
-                  <div>
-                    <label className="block text-xs font-bold text-blue-600 uppercase tracking-wider mb-2">🌐 English Requirements</label>
-                    <div className="space-y-2">
-                      <label className="flex items-center gap-2 cursor-pointer">
-                        <input 
-                          type="checkbox" 
-                          checked={formData.requires_ielts} 
-                          onChange={(e) => setFormData(f => ({ ...f, requires_ielts: e.target.checked }))} 
-                          className="rounded"
-                        />
-                        <span className="text-sm text-gray-700 font-medium">Requires IELTS/TOEFL</span>
-                      </label>
-                      <label className="flex items-center gap-2 cursor-pointer">
-                        <input 
-                          type="checkbox" 
-                          checked={formData.accepts_english_medium} 
-                          onChange={(e) => setFormData(f => ({ ...f, accepts_english_medium: e.target.checked }))} 
-                          className="rounded"
-                        />
-                        <span className="text-sm text-gray-700 font-medium">Accepts English Medium</span>
-                      </label>
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-bold text-blue-600 uppercase tracking-wider mb-2">📝 Recommendation Letters</label>
-                    <input 
-                      type="number" 
-                      min="0" 
-                      max="5"
-                      value={formData.recommendation_letters_count} 
-                      onChange={(e) => setFormData(f => ({ ...f, recommendation_letters_count: parseInt(e.target.value) || 0 }))} 
-                      className="w-full px-4 py-2 rounded-xl border border-gray-200 bg-white"
-                      placeholder="0"
-                    />
-                    <p className="text-[10px] text-gray-400 mt-1">e.g. 2 means two letters needed</p>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-bold text-blue-600 uppercase tracking-wider mb-2">🏫 Target Departments <span className="text-gray-400 font-normal">(Ctrl+Click multi)</span></label>
-                    <select 
-                      multiple 
-                      value={formData.target_departments} 
-                      onChange={(e) => {
-                        const options = e.target.options;
-                        const value: string[] = [];
-                        for (let i = 0, l = options.length; i < l; i++) {
-                          if (options[i].selected) value.push(options[i].value);
-                        }
-                        setFormData(prev => ({ ...prev, target_departments: value }));
-                      }} 
-                      className="w-full px-3 py-1.5 text-xs rounded-xl border border-gray-200 bg-white min-h-[90px]"
-                    >
-                      {DEPARTMENTS.map(d => (
-                        <option key={d} value={d}>{d}</option>
-                      ))}
-                    </select>
-                  </div>
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white"
+                  >
+                    <option value="">Select a Country</option>
+                    {COUNTRIES.map(c => (
+                      <option key={c.name} value={c.name}>{c.flag} {c.name}</option>
+                    ))}
+                  </select>
                 </div>
+                <InputField label="Application Deadline" name="deadline" value={formData.deadline} onChange={handleChange} type="date" />
+              </div>
+            </Section>
 
-               <div className="sm:col-span-2">
-                 <label className="block text-sm font-medium text-gray-700 mb-1">Website URL</label>
-                 <input type="url" name="website_url" value={formData.website_url} onChange={handleChange} className="w-full px-4 py-2.5 rounded-xl border border-gray-200" />
-               </div>
+            {/* English Requirements */}
+            <Section icon={<FileText className="w-5 h-5" />} title="Language & Documents" description="English requirements and recommendation letters">
+              <div className="flex flex-wrap gap-6">
+                <CheckboxField label="Requires IELTS/TOEFL" checked={formData.requires_ielts} onChange={(checked) => setFormData(f => ({ ...f, requires_ielts: checked }))} />
+                <CheckboxField label="Accepts English Medium" checked={formData.accepts_english_medium} onChange={(checked) => setFormData(f => ({ ...f, accepts_english_medium: checked }))} />
+              </div>
+              <InputField label="Recommendation Letters Needed" name="recommendation_letters_count" value={String(formData.recommendation_letters_count)} onChange={(e) => setFormData(f => ({ ...f, recommendation_letters_count: parseInt(e.target.value) || 0 }))} type="number" placeholder="0" />
+            </Section>
 
-               <div className="sm:col-span-2">
-                 <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-                 <textarea required name="description" value={formData.description} onChange={handleChange} rows={3} className="w-full px-4 py-2.5 rounded-xl border border-gray-200 resize-none"></textarea>
-               </div>
+            {/* Target Departments */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Target Departments</label>
+              <div className="flex flex-wrap gap-2">
+                {DEPARTMENTS.map(dept => (
+                  <button
+                    key={dept}
+                    type="button"
+                    onClick={() => toggleArrayField('target_departments', dept)}
+                    className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
+                      formData.target_departments.includes(dept)
+                        ? 'bg-brand-gold text-white'
+                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    }`}
+                  >
+                    {dept}
+                  </button>
+                ))}
+              </div>
+            </div>
 
-               <div className="sm:col-span-2">
-                 <label className="block text-sm font-medium text-gray-700 mb-1">Requirements (one per line)</label>
-                 <textarea required name="requirements" value={formData.requirements} onChange={handleChange} rows={4} className="w-full px-4 py-2.5 rounded-xl border border-gray-200 resize-none"></textarea>
-               </div>
-             </div>
+            {/* Additional Info */}
+            <InputField label="Official Website URL" name="website_url" value={formData.website_url} onChange={handleChange} type="url" placeholder="https://..." />
+            <InputField label="Description" name="description" value={formData.description} onChange={handleChange} required rows={4} placeholder="Describe the scholarship, its benefits, and who should apply..." />
+            <InputField label="Requirements List" name="requirements" value={formData.requirements} onChange={handleChange} required rows={4} placeholder="Enter each requirement on a new line" />
           </form>
         </div>
 
-        <div className="p-6 border-t border-gray-100 bg-gray-50 flex justify-end gap-3">
-           <button onClick={onClose} type="button" className="px-5 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-xl hover:bg-gray-50 transition-colors">
-             Cancel
-           </button>
-           <button form="scholarship-form" type="submit" disabled={loading} className="flex items-center justify-center px-6 py-2.5 text-sm font-medium text-white bg-brand-blue rounded-xl hover:bg-blue-800 transition-colors disabled:opacity-70 min-w-[140px]">
-             {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : scholarship ? 'Update Scholarship' : 'Save Scholarship'}
-           </button>
+        <div className="p-5 border-t border-gray-100 bg-gray-50 flex justify-end gap-3">
+          <button onClick={onClose} type="button" className="px-6 py-3 text-sm font-semibold text-gray-700 bg-white border border-gray-300 rounded-xl hover:bg-gray-50 transition-colors">
+            Cancel
+          </button>
+          <button form="scholarship-form" type="submit" disabled={loading} className="flex items-center gap-2 px-8 py-3 text-sm font-semibold text-white bg-brand-blue rounded-xl hover:bg-blue-700 transition-colors disabled:opacity-70">
+            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : scholarship ? 'Update Scholarship' : 'Create Scholarship'}
+          </button>
         </div>
       </div>
     </div>
