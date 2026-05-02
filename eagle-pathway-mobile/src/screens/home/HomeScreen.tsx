@@ -30,7 +30,7 @@ export default function HomeScreen() {
   });
 
   // 1. All Hooks Must Be At The Top
-  const isTutor = user?.role?.toLowerCase() === 'tutor';
+  const isTutor = (user?.active_role || user?.roles?.[0] || 'student').toLowerCase() === 'tutor';
 
   const activeApplications = useMemo(() => 
     (applications || []).filter(a => !['accepted', 'rejected'].includes(a.status)),
