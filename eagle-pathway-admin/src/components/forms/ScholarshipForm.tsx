@@ -11,28 +11,48 @@ const COUNTRIES = [
   { name: 'Australia', flag: '🇦🇺' },
   { name: 'China', flag: '🇨🇳' },
   { name: 'Germany', flag: '🇩🇪' },
-  { name: 'Ethiopia', flag: '🇪🇹' },
-  { name: 'France', flag: '🇫🇷' },
-  { name: 'Netherlands', flag: '🇳🇱' },
+  { name: 'Hungary', flag: '🇭🇺' },
+  { name: 'Turkey', flag: '🇹🇷' },
+  { name: 'Russia', flag: '🇷🇺' },
   { name: 'Japan', flag: '🇯🇵' },
   { name: 'South Korea', flag: '🇰🇷' },
+  { name: 'France', flag: '🇫🇷' },
+  { name: 'Italy', flag: '🇮🇹' },
+  { name: 'Netherlands', flag: '🇳🇱' },
+  { name: 'Norway', flag: '🇳🇴' },
+  { name: 'Sweden', flag: '🇸🇪' },
+  { name: 'Ethiopia', flag: '🇪🇹' },
+  { name: 'Egypt', flag: '🇪🇬' },
+  { name: 'South Africa', flag: '🇿🇦' },
+  { name: 'Kenya', flag: '🇰🇪' },
+  { name: 'Nigeria', flag: '🇳🇬' },
+  { name: 'Ghana', flag: '🇬🇭' },
+  { name: 'Singapore', flag: '🇸🇬' },
+  { name: 'Malaysia', flag: '🇲🇾' },
+  { name: 'India', flag: '🇮🇳' },
+  { name: 'Thailand', flag: '🇹🇭' },
+  { name: 'Vietnam', flag: '🇻🇳' },
+  { name: 'Indonesia', flag: '🇮🇩' },
+  { name: 'Philippines', flag: '🇵🇭' },
+  { name: 'Brazil', flag: '🇧🇷' },
+  { name: 'Mexico', flag: '🇲🇽' },
+  { name: 'Argentina', flag: '🇦🇷' },
+  { name: 'Spain', flag: '🇪🇸' },
+  { name: 'Portugal', flag: '🇵🇹' },
+  { name: 'Switzerland', flag: '🇨🇭' },
+  { name: 'Austria', flag: '🇦🇹' },
+  { name: 'Belgium', flag: '🇧🇪' },
+  { name: 'Poland', flag: '🇵🇱' },
 ];
 
 const DEPARTMENTS = [
   'Any', 'Computer Science', 'Mechanical Engineering', 'Medicine', 
-  'Economics', 'Psychology', 'Education', 'Architecture', 'Law', 'International Relations'
+  'Economics', 'Psychology', 'Education', 'Architecture', 'Law', 'International Relations',
+  'Business', 'Engineering', 'Agriculture', 'Nursing', 'Pharmacy', 'Journalism'
 ];
 
 const DEGREE_LEVELS = ['undergraduate', 'masters', 'phd'];
-const FIELDS_OF_STUDY = [
-  { value: 'any', label: 'Any / All Fields' },
-  { value: 'stem', label: 'STEM' },
-  { value: 'healthcare', label: 'Healthcare & Medicine' },
-  { value: 'business', label: 'Business & Economics' },
-  { value: 'humanities', label: 'Humanities & Social Sciences' },
-  { value: 'arts', label: 'Arts & Design' },
-  { value: 'law', label: 'Law & Policy' },
-];
+const FIELDS_OF_STUDY = ['any', 'stem', 'healthcare', 'business', 'humanities', 'arts', 'law'];
 
 interface SectionProps {
   icon: React.ReactNode;
@@ -88,6 +108,33 @@ function CheckboxField({ label, checked, onChange }: { label: string; checked: b
   );
 }
 
+function MultiSelectField({ label, name, values, options, onChange }: {
+  label: string; name: string; values: string[]; options: { value: string; label: string }[]; onChange: (values: string[]) => void;
+}) {
+  const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const options = e.target.options;
+    const selected: string[] = [];
+    for (let i = 0, l = options.length; i < l; i++) {
+      if (options[i].selected) selected.push(options[i].value);
+    }
+    onChange(selected);
+  };
+
+  return (
+    <div>
+      <label className="block text-sm font-medium text-gray-700 mb-1.5">
+        {label} <span className="text-gray-400 font-normal">(Ctrl+Click to select multiple)</span>
+      </label>
+      <select multiple name={name} value={values} onChange={handleChange}
+        className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white min-h-[100px]">
+        {options.map(opt => (
+          <option key={opt.value} value={opt.value}>{opt.label}</option>
+        ))}
+      </select>
+    </div>
+  );
+}
+
 interface ScholarshipFormProps {
   scholarship?: any;
   onClose: () => void;
@@ -128,12 +175,8 @@ export default function ScholarshipForm({ scholarship, onClose, onSuccess }: Sch
     if (e.target.files && e.target.files[0]) setImageFile(e.target.files[0]);
   };
 
-  const toggleArrayField = (field: 'degree_levels' | 'fields_of_study' | 'target_departments', value: string) => {
-    setFormData(prev => {
-      const current = prev[field] as string[];
-      const updated = current.includes(value) ? current.filter(v => v !== value) : [...current, value];
-      return { ...prev, [field]: updated };
-    });
+  const handleMultiSelect = (field: string) => (values: string[]) => {
+    setFormData(prev => ({ ...prev, [field]: values }));
   };
 
   const uploadImage = async () => {
@@ -239,31 +282,34 @@ export default function ScholarshipForm({ scholarship, onClose, onSuccess }: Sch
                 <InputField label="Minimum GPA" name="min_gpa" value={formData.min_gpa} onChange={handleChange} type="number" placeholder="e.g. 3.5" />
               </div>
               
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Degree Levels</label>
-                <div className="flex flex-wrap gap-2">
-                  {DEGREE_LEVELS.map(level => (
-                    <button type="button" key={level} onClick={() => toggleArrayField('degree_levels', level)}
-                      className={`px-4 py-2 rounded-xl text-sm font-medium capitalize transition-colors ${
-                        formData.degree_levels.includes(level) ? 'bg-brand-blue text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
-                      {level}
-                    </button>
-                  ))}
-                </div>
-              </div>
+              <MultiSelectField
+                label="Degree Levels"
+                name="degree_levels"
+                values={formData.degree_levels}
+                options={[
+                  { value: 'undergraduate', label: 'Undergraduate' },
+                  { value: 'masters', label: "Master's" },
+                  { value: 'phd', label: 'PhD' },
+                  { value: 'all', label: 'All Levels' },
+                ]}
+                onChange={handleMultiSelect('degree_levels')}
+              />
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Fields of Study</label>
-                <div className="flex flex-wrap gap-2">
-                  {FIELDS_OF_STUDY.map(field => (
-                    <button type="button" key={field.value} onClick={() => toggleArrayField('fields_of_study', field.value)}
-                      className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
-                        formData.fields_of_study.includes(field.value) ? 'bg-brand-blue text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
-                      {field.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
+              <MultiSelectField
+                label="Fields of Study"
+                name="fields_of_study"
+                values={formData.fields_of_study}
+                options={[
+                  { value: 'any', label: 'Any / All Fields' },
+                  { value: 'stem', label: 'STEM (Science, Tech, Engineering, Math)' },
+                  { value: 'healthcare', label: 'Healthcare & Medicine' },
+                  { value: 'business', label: 'Business & Economics' },
+                  { value: 'humanities', label: 'Humanities & Social Sciences' },
+                  { value: 'arts', label: 'Arts & Design' },
+                  { value: 'law', label: 'Law & Policy' },
+                ]}
+                onChange={handleMultiSelect('fields_of_study')}
+              />
             </Section>
 
             {/* Location & Deadline */}
@@ -293,18 +339,13 @@ export default function ScholarshipForm({ scholarship, onClose, onSuccess }: Sch
             </Section>
 
             {/* Target Departments */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Target Departments</label>
-              <div className="flex flex-wrap gap-2">
-                {DEPARTMENTS.map(dept => (
-                  <button type="button" key={dept} onClick={() => toggleArrayField('target_departments', dept)}
-                    className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
-                      formData.target_departments.includes(dept) ? 'bg-brand-gold text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
-                    {dept}
-                  </button>
-                ))}
-              </div>
-            </div>
+            <MultiSelectField
+              label="Target Departments"
+              name="target_departments"
+              values={formData.target_departments}
+              options={DEPARTMENTS.map(d => ({ value: d, label: d }))}
+              onChange={handleMultiSelect('target_departments')}
+            />
 
             <InputField label="Official Website URL" name="website_url" value={formData.website_url} onChange={handleChange} type="url" placeholder="https://..." />
             <InputField label="Description" name="description" value={formData.description} onChange={handleChange} required rows={4} placeholder="Describe the scholarship, its benefits, and who should apply..." />
