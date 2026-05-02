@@ -336,37 +336,37 @@ export default function OverviewPage() {
              System Health
            </h2>
            <div className="grid grid-cols-2 gap-4">
-              <div className="p-4 rounded-xl border border-gray-100 bg-gray-50/50">
-                 <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs font-bold text-gray-400 uppercase">Database</span>
-                    <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                 </div>
-                 <p className="text-sm font-bold text-gray-900">Supabase Cloud</p>
-                 <p className="text-[10px] text-green-600 font-medium">99.9% Uptime · Connected</p>
-              </div>
-              <div className="p-4 rounded-xl border border-gray-100 bg-gray-50/50">
-                 <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs font-bold text-gray-400 uppercase">AI Engine</span>
-                    <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                 </div>
-                 <p className="text-sm font-bold text-gray-900">Gemini Pro</p>
-                 <p className="text-[10px] text-green-600 font-medium">Latence: 240ms · Operational</p>
-              </div>
-              <div className="p-4 rounded-xl border border-gray-100 bg-gray-50/50">
-                 <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs font-bold text-gray-400 uppercase">Auth Service</span>
-                    <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                 </div>
-                 <p className="text-sm font-bold text-gray-900">Supabase Auth</p>
-                 <p className="text-[10px] text-green-600 font-medium">Ready for Signups</p>
-              </div>
-              <div className="p-4 rounded-xl border border-gray-100 bg-gray-50/50">
-                 <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs font-bold text-gray-400 uppercase">Storage</span>
-                    <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                 </div>
-                 <p className="text-sm font-bold text-gray-900">Document Bucket</p>
-                 <p className="text-[10px] text-green-600 font-medium">Uploads Active</p>
+<div className="p-4 rounded-xl border border-gray-100 bg-gray-50/50">
+                  <div className="flex items-center justify-between mb-2">
+                     <span className="text-xs font-bold text-gray-400 uppercase">Database</span>
+                     <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                  </div>
+                  <p className="text-sm font-bold text-gray-900">Supabase Cloud</p>
+                  <p className="text-[10px] text-gray-500 font-medium">Connected · {counts.users?.toLocaleString() || 0} users</p>
+               </div>
+               <div className="p-4 rounded-xl border border-gray-100 bg-gray-50/50">
+                  <div className="flex items-center justify-between mb-2">
+                     <span className="text-xs font-bold text-gray-400 uppercase">AI Engine</span>
+                     <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                  </div>
+                  <p className="text-sm font-bold text-gray-900">Groq (Llama 3.3)</p>
+                  <p className="text-[10px] text-gray-500 font-medium">SOP Review API Active</p>
+               </div>
+               <div className="p-4 rounded-xl border border-gray-100 bg-gray-50/50">
+                  <div className="flex items-center justify-between mb-2">
+                     <span className="text-xs font-bold text-gray-400 uppercase">Auth Service</span>
+                     <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                  </div>
+                  <p className="text-sm font-bold text-gray-900">Supabase Auth</p>
+                  <p className="text-[10px] text-gray-500 font-medium">Phone + Email enabled</p>
+               </div>
+               <div className="p-4 rounded-xl border border-gray-100 bg-gray-50/50">
+                  <div className="flex items-center justify-between mb-2">
+                     <span className="text-xs font-bold text-gray-400 uppercase">Storage</span>
+                     <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                  </div>
+                  <p className="text-sm font-bold text-gray-900">Buckets Active</p>
+                  <p className="text-[10px] text-gray-500 font-medium">Ready for uploads</p>
               </div>
            </div>
            <div className="mt-6 p-3 bg-brand-blue/5 rounded-lg border border-brand-blue/10">
