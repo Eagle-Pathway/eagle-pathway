@@ -2,13 +2,15 @@
 import React, { useEffect, useState } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
-  FlatList, Alert, Switch, Linking, ActivityIndicator, TextInput,
+  FlatList, Alert, Switch, Linking, ActivityIndicator, TextInput, Share,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { format } from 'date-fns';
 import { Colors, Typography, Spacing, Radius, CommonStyles } from '@/utils/theme';
 import { Button, Avatar, ProgressBar, EmptyState, Pill, StatusTimeline } from '@/components/common';
+import { DetailSkeleton, CardSkeleton } from '@/components/LoadingSkeleton';
+import { ListSkeleton } from '@/components/LoadingSkeleton';
 import { scholarshipsService } from '@/services/scholarships';
 import { paymentsService } from '@/services/payments';
 import { useAuthStore } from '@/store/authStore';
@@ -59,8 +61,24 @@ export function ScholarshipDetailScreen() {
     }
   }, [scholarshipId]);
 
-  if (loading) return <View style={[CommonStyles.flex1, CommonStyles.center]}><ActivityIndicator color={Colors.blue} size="large" /></View>;
-  if (!scholarship) return null;
+  if (loading) return (
+    <SafeAreaView style={[CommonStyles.flex1, { backgroundColor: Colors.blueDark }]} edges={['top']}>
+      <DetailSkeleton type="scholarship" />
+    </SafeAreaView>
+  );
+  if (!scholarship) {
+    return (
+      <SafeAreaView style={CommonStyles.screenBg} edges={['top']}>
+        <EmptyState 
+          icon="❌" 
+          title="Scholarship not found" 
+          subtitle="This scholarship may have been removed."
+          actionLabel="Go Back"
+          onAction={() => router.back()}
+        />
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={[CommonStyles.flex1, { backgroundColor: Colors.blueDark }]} edges={['top']}>
@@ -863,9 +881,17 @@ export function TrackerScreen({ hideHeader = false }: { hideHeader?: boolean }) 
       </View>
 
       {loading ? (
-        <View style={[CommonStyles.flex1, CommonStyles.center]}><ActivityIndicator color={Colors.blue} size="large" /></View>
+        <View style={{ flex: 1, paddingTop: Spacing.lg, paddingHorizontal: Spacing.xl }}>
+          <CardSkeleton count={3} />
+        </View>
       ) : applications.length === 0 ? (
-        <EmptyState icon="📋" title="No applications yet" subtitle="Find a scholarship and start your application journey" />
+        <EmptyState 
+          icon="📋" 
+          title="No applications yet" 
+          subtitle="Find a scholarship and start your application journey"
+          actionLabel="Browse Scholarships"
+          onAction={() => router.push('/(tabs)/scholarships')}
+        />
       ) : (
         <ScrollView contentContainerStyle={{ padding: Spacing.xl, paddingBottom: 100 }}>
           {[...active, ...completed].map(app => (
@@ -1207,9 +1233,17 @@ export function BookingsScreen({ hideHeader = false }: { hideHeader?: boolean })
         ))}
       </View>
       {loading ? (
-        <View style={[CommonStyles.flex1, CommonStyles.center]}><ActivityIndicator color={Colors.blue} size="large" /></View>
+        <View style={{ flex: 1, paddingTop: Spacing.lg, paddingHorizontal: Spacing.xl }}>
+          <ListSkeleton count={4} />
+        </View>
       ) : filtered.length === 0 ? (
-        <EmptyState icon="📅" title={`No ${activeTab} ${isTutor ? 'sessions' : 'bookings'}`} subtitle={isTutor ? "You don't have any sessions in this category yet." : "Book a session with a tutor to get started"} />
+        <EmptyState 
+          icon="📅" 
+          title={`No ${activeTab} ${isTutor ? 'sessions' : 'bookings'}`} 
+          subtitle={isTutor ? "You don't have any sessions in this category yet." : "Book a session with a tutor to get started"}
+          actionLabel={activeTab === 'upcoming' && !isTutor ? "Find Tutors" : undefined}
+          onAction={activeTab === 'upcoming' && !isTutor ? () => router.push('/(tabs)/tutors') : undefined}
+        />
       ) : (
         <FlatList
           data={filtered}
@@ -1730,6 +1764,11 @@ const profStyles = StyleSheet.create({
   personaBtnActive: { backgroundColor: Colors.white, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 3 },
   personaText: { fontSize: 12, fontWeight: Typography.semibold, color: 'rgba(255,255,255,0.6)' },
   personaTextActive: { color: Colors.blueDark },
+  referralCard: { marginHorizontal: Spacing.xl, marginTop: Spacing.md, backgroundColor: Colors.card, borderRadius: Radius.xl, borderWidth: 1, borderColor: Colors.border, overflow: 'hidden' },
+  referralContent: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md, padding: Spacing.lg },
+  referralIcon: { width: 44, height: 44, borderRadius: 12, backgroundColor: Colors.goldLight, alignItems: 'center', justifyContent: 'center' },
+  referralTitle: { fontSize: Typography.md, fontWeight: Typography.bold, color: Colors.text, marginBottom: 2 },
+  referralSub: { fontSize: Typography.xs, color: Colors.textSecondary, lineHeight: 16 },
 });
 
 // ─── SETTINGS ────────────────────────────────────────────────────────────────
