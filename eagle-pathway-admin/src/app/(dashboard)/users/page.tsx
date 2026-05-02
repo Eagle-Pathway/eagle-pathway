@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
-import { Search, Mail, Phone, MapPin, MoreVertical, Download, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Search, Mail, Phone, MapPin, MoreVertical, Download, ChevronLeft, ChevronRight, Filter } from 'lucide-react';
 import { exportToCSV } from '@/utils/export';
 
 interface User {
@@ -19,6 +19,8 @@ export default function UsersPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [roleFilter, setRoleFilter] = useState('all');
+  const [cityFilter, setCityFilter] = useState('all');
 
   async function fetchUsers() {
     setLoading(true);
@@ -37,11 +39,17 @@ export default function UsersPage() {
     fetchUsers();
   }, []);
 
-  const filtered = users.filter(u => 
-    u.full_name?.toLowerCase().includes(search.toLowerCase()) || 
-    u.email?.toLowerCase().includes(search.toLowerCase()) ||
-    u.phone?.includes(search)
-  );
+  const filtered = users.filter(u => {
+    const matchesSearch = 
+      u.full_name?.toLowerCase().includes(search.toLowerCase()) || 
+      u.email?.toLowerCase().includes(search.toLowerCase()) ||
+      u.phone?.includes(search);
+    const matchesRole = roleFilter === 'all' || (u.active_role || u.roles?.[0] || 'student') === roleFilter;
+    const matchesCity = cityFilter === 'all' || u.city === cityFilter;
+    return matchesSearch && matchesRole && matchesCity;
+  });
+
+  const cities = [...new Set(users.map(u => u.city).filter(Boolean))].sort();
 
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 8;
@@ -55,7 +63,7 @@ export default function UsersPage() {
   // Reset to page 1 on active search
   useEffect(() => {
     setCurrentPage(1);
-  }, [search]);
+  }, [search, roleFilter, cityFilter]);
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
@@ -67,27 +75,48 @@ export default function UsersPage() {
       </div>
 
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-        <div className="p-4 border-b border-gray-100 bg-gray-50/50 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-           <div className="relative w-full max-w-md">
-             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-               <Search className="h-4 w-4 text-gray-400" />
-             </div>
-             <input
-               type="text"
-               placeholder="Search by name, email, or phone..."
-               value={search}
-               onChange={(e) => setSearch(e.target.value)}
-               className="block w-full pl-10 pr-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-brand-blue focus:border-brand-blue"
-             />
-           </div>
-           
-           <button 
-             onClick={() => exportToCSV(filtered, 'users_export')}
-             className="flex items-center px-4 py-2 bg-white text-gray-700 border border-gray-200 rounded-lg shadow-sm hover:bg-gray-50 transition-colors text-sm font-medium whitespace-nowrap"
-           >
-             <Download className="w-4 h-4 mr-2 text-gray-500" />
-             Export CSV
-           </button>
+        <div className="p-4 border-b border-gray-100 bg-gray-50/50">
+          <div className="flex flex-col sm:flex-row gap-3">
+            <div className="relative flex-1 max-w-md">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <Search className="h-4 w-4 text-gray-400" />
+              </div>
+              <input
+                type="text"
+                placeholder="Search by name, email, or phone..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="block w-full pl-10 pr-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-brand-blue focus:border-brand-blue"
+              />
+            </div>
+            <select
+              value={roleFilter}
+              onChange={(e) => setRoleFilter(e.target.value)}
+              className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-brand-blue focus:border-brand-blue bg-white"
+            >
+              <option value="all">All Roles</option>
+              <option value="student">Students</option>
+              <option value="tutor">Tutors</option>
+              <option value="admin">Admins</option>
+            </select>
+            <select
+              value={cityFilter}
+              onChange={(e) => setCityFilter(e.target.value)}
+              className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-brand-blue focus:border-brand-blue bg-white"
+            >
+              <option value="all">All Cities</option>
+              {cities.map(city => (
+                <option key={city} value={city}>{city}</option>
+              ))}
+            </select>
+            <button 
+              onClick={() => exportToCSV(filtered, 'users_export')}
+              className="flex items-center px-4 py-2 bg-white text-gray-700 border border-gray-200 rounded-lg shadow-sm hover:bg-gray-50 transition-colors text-sm font-medium whitespace-nowrap"
+            >
+              <Download className="w-4 h-4 mr-2 text-gray-500" />
+              Export CSV
+            </button>
+          </div>
         </div>
         
         <div className="overflow-x-auto">
