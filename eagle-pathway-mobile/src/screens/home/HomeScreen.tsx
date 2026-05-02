@@ -6,7 +6,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Colors, Typography, Spacing, Radius, CommonStyles } from '@/utils/theme';
-import { ProgressBar, Avatar, SectionTitle } from '@/components/common';
+import { ProgressBar, Avatar, SectionTitle, EmptyState } from '@/components/common';
 import { useAuthStore } from '@/store/authStore';
 import { useAppStore } from '@/store/appStore';
 import { format } from 'date-fns';
@@ -18,7 +18,8 @@ export default function HomeScreen() {
     bookings, applications, unreadCount, tasks, recommendedScholarships,
     tutorPayouts, tutorProfile, isLoadingPayouts,
     loadBookings, loadTutorBookings, loadApplications, loadNotifications, loadTasks, toggleTask,
-    updateBookingStatus, loadRecommendations, loadTutorPayouts, submitPayoutRequest
+    updateBookingStatus, loadRecommendations, loadTutorPayouts, submitPayoutRequest,
+    linkedStudents, linkedStudentApplications, loadLinkedStudents, loadLinkedStudentApplications
   } = useAppStore();
   const [refreshing, setRefreshing] = useState(false);
   const [isPayoutModalVisible, setIsPayoutModalVisible] = useState(false);
@@ -31,6 +32,7 @@ export default function HomeScreen() {
 
   // 1. All Hooks Must Be At The Top
   const isTutor = (user?.active_role || user?.roles?.[0] || 'student').toLowerCase() === 'tutor';
+  const isParent = (user?.active_role || user?.roles?.[0] || 'student').toLowerCase() === 'parent';
 
   const activeApplications = useMemo(() => 
     (applications || []).filter(a => !['accepted', 'rejected'].includes(a.status)),
@@ -53,6 +55,9 @@ export default function HomeScreen() {
     if (isTutor) {
       tasks.push(loadTutorBookings(user.id));
       tasks.push(loadTutorPayouts(user.id));
+    } else if (isParent) {
+      tasks.push(loadLinkedStudents(user.id));
+      tasks.push(loadLinkedStudentApplications(user.id));
     } else {
       tasks.push(loadBookings(user.id));
       tasks.push(loadApplications(user.id));
@@ -86,6 +91,90 @@ export default function HomeScreen() {
   const TASK_ICONS: Record<string, string> = {
     document: '📄', sop: '✍️', payment: '💰', session: '📅', other: '🎯'
   };
+
+  if (isParent) {
+    const children = linkedStudents || [];
+    const hasNoChildren = children.length === 0;
+    
+    return (
+      <SafeAreaView style={CommonStyles.screenBg} edges={['top']}>
+        <ScrollView refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.white} />}>
+          <View style={styles.hero}>
+            <View style={styles.heroTop}>
+              <View>
+                <Text style={styles.greeting}>{greeting} 👨‍👩‍👧</Text>
+                <Text style={styles.userName}>{firstName}</Text>
+              </View>
+              <View style={styles.heroActions}>
+                <TouchableOpacity style={styles.notifBtn} onPress={() => router.push('/notifications')} activeOpacity={0.8}>
+                   <Text style={styles.notifIcon}>🔔</Text>
+                   {unreadCount > 0 && <View style={styles.notifDot}><Text style={styles.notifCount}>{unreadCount}</Text></View>}
+                </TouchableOpacity>
+                <Avatar initials={initials} size={38} borderRadius={11} />
+              </View>
+            </View>
+          </View>
+
+          {hasNoChildren ? (
+            <View style={[CommonStyles.flex1, { padding: Spacing['4xl'] }]}>
+              <EmptyState 
+                icon="👨‍👩‍👧" 
+                title="No linked students" 
+                subtitle="Link your child's account to track their scholarship applications and progress."
+                actionLabel="How It Works"
+                onAction={() => Alert.alert('Link Student', 'Ask your child to go to Profile → Link Parent and enter your phone number.')}
+              />
+            </View>
+          ) : (
+            <>
+              <SectionTitle title="My Children" />
+              {children.map(child => {
+                const childApps = linkedStudentApplications[child.id] || [];
+                const activeApps = childApps.filter((a: any) => !['accepted', 'rejected'].includes(a.status));
+                const completedApps = childApps.filter((a: any) => ['accepted', 'rejected'].includes(a.status));
+                
+                return (
+                  <TouchableOpacity 
+                    key={child.id} 
+                    style={styles.sessionCard}
+                    onPress={() => router.push('/progress')}
+                    activeOpacity={0.9}
+                  >
+                    <Avatar 
+                      initials={child.full_name?.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() || 'S'} 
+                      size={44} 
+                      color={Colors.gold} 
+                    />
+                    <View style={{ flex: 1, marginLeft: Spacing.md }}>
+                      <Text style={styles.sessionName}>{child.full_name}</Text>
+                      <Text style={styles.sessionSub}>
+                        {activeApps.length} active · {completedApps.length} completed
+                      </Text>
+                    </View>
+                    <View style={styles.sessionTime}>
+                      <Text style={styles.sessionTypeBadge}>View</Text>
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
+
+              <SectionTitle title="Recent Activity" />
+              {(Object.values(linkedStudentApplications).flat() as any[]).slice(0, 3).map((app: any) => (
+                <View key={app.id} style={styles.sessionCard}>
+                  <Text style={{ fontSize: 28 }}>{app.scholarship?.country_flag || '🌍'}</Text>
+                  <View style={{ flex: 1, marginLeft: Spacing.md }}>
+                    <Text style={styles.sessionName}>{app.scholarship?.name}</Text>
+                    <Text style={styles.sessionSub}>{app.status.replace(/_/g, ' ').toUpperCase()}</Text>
+                  </View>
+                </View>
+              ))}
+            </>
+          )}
+          <View style={{ height: 40 }} />
+        </ScrollView>
+      </SafeAreaView>
+    );
+  }
 
   if (isTutor) {
     const todaySessions = (bookings || []).filter(b => b.status === 'confirmed');

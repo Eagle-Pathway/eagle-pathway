@@ -377,6 +377,28 @@ CREATE POLICY "Tutors can view own payouts" ON tutor_payouts FOR SELECT USING (a
 CREATE POLICY "Tutors can request payouts" ON tutor_payouts FOR INSERT WITH CHECK (auth.uid() IN (SELECT user_id FROM tutors WHERE id = tutor_id));
 CREATE POLICY "Admins can update payouts" ON tutor_payouts FOR UPDATE USING (is_admin());
 
+-- PARENT-STUDENT LINKS
+CREATE TABLE parent_student_links (
+  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  parent_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  student_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  relationship TEXT NOT NULL DEFAULT 'parent',
+  is_verified BOOLEAN NOT NULL DEFAULT false,
+  verified_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  UNIQUE(parent_id, student_id)
+);
+
+ALTER TABLE parent_student_links ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Parents can view linked students" ON parent_student_links FOR SELECT USING (
+  parent_id = auth.uid() OR EXISTS (SELECT 1 FROM users WHERE id = auth.uid() AND active_role = 'admin')
+);
+
+CREATE POLICY "Parents can create links" ON parent_student_links FOR INSERT WITH CHECK (parent_id = auth.uid());
+
+CREATE POLICY "Parents can update links" ON parent_student_links FOR UPDATE USING (parent_id = auth.uid());
+
 -- BOOKING RATINGS
 CREATE TABLE booking_ratings (
   id         UUID PRIMARY KEY DEFAULT uuid_generate_v4(),

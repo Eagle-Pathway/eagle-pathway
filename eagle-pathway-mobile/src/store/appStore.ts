@@ -39,6 +39,10 @@ interface AppState {
   notifications: Notification[];
   unreadCount: number;
 
+  // Linked children (for parents)
+  linkedStudents: User[];
+  linkedStudentApplications: Record<string, Application[]>;
+
   // Finance
   tutorPayouts: PayoutRequest[];
 
@@ -104,6 +108,10 @@ interface AppState {
   loadTasks: (userId: string) => Promise<void>;
   toggleTask: (taskId: string, currentStatus: string) => Promise<void>;
 
+  // Actions — Parents
+  loadLinkedStudents: (userId: string) => Promise<void>;
+  loadLinkedStudentApplications: (userId: string) => Promise<void>;
+
   // Realtime
   subscribeToUpdates: (userId: string) => void;
   unsubscribeFromUpdates: () => void;
@@ -121,6 +129,8 @@ export const useAppStore = create<AppState>((set, get) => ({
   tasks: [],
   recommendedScholarships: [],
   tutorPayouts: [],
+  linkedStudents: [],
+  linkedStudentApplications: {},
   isLoadingScholarships: false,
   isLoadingBookings: false,
   isLoadingNotifications: false,
@@ -348,6 +358,47 @@ export const useAppStore = create<AppState>((set, get) => ({
       }));
     } catch (e) {
       console.error('Error toggling task:', e);
+    }
+  },
+
+  loadLinkedStudents: async (userId) => {
+    try {
+      const { data, error } = await supabase
+        .from('parent_student_links')
+        .select('student:users!inner(*)')
+        .eq('parent_id', userId)
+        .eq('is_verified', true);
+      if (error) throw error;
+      const students = (data || []).map(d => d.student as User);
+      set({ linkedStudents: students });
+    } catch (e) {
+      console.error('Error loading linked students:', e);
+    }
+  },
+
+  loadLinkedStudentApplications: async (userId) => {
+    try {
+      const { linkedStudents } = get();
+      if (linkedStudents.length === 0) return;
+      
+      const studentIds = linkedStudents.map(s => s.id);
+      const { data, error } = await supabase
+        .from('applications')
+        .select('*, scholarship:scholarships(*), consultant:users!consultant_id(full_name)')
+        .in('student_id', studentIds)
+        .not('status', 'in', '(accepted,rejected)');
+      if (error) throw error;
+      
+      const appsByStudent: Record<string, Application[]> = {};
+      (data || []).forEach(app => {
+        if (!appsByStudent[app.student_id]) {
+          appsByStudent[app.student_id] = [];
+        }
+        appsByStudent[app.student_id].push(app);
+      });
+      set({ linkedStudentApplications: appsByStudent });
+    } catch (e) {
+      console.error('Error loading student applications:', e);
     }
   },
 
