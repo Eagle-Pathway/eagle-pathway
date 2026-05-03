@@ -2,23 +2,44 @@ import Link from "next/link";
 
 export default function LoginPage() {
   return (
-    <main className="login-shell">
-      <section className="card login-card">
-        <div className="badge">Client Portal</div>
-        <h1 style={{ margin: "0.85rem 0 0.55rem" }}>Portal login</h1>
-        <p style={{ marginBottom: "1rem" }}>
-          Secure login is currently managed in the dedicated portal application.
-        </p>
-        <div className="cta-group" style={{ marginTop: 0 }}>
-          <Link href="/" className="btn btn-primary">
-            Return to homepage
-          </Link>
-          <Link href="/" className="btn btn-outline">
-            Explore services
-          </Link>
-        </div>
-        <p className="mini-note">Need access help? Contact Eagle Pathway operations support.</p>
-      </section>
+    <main
+      className="login-card"
+      style={{
+        width: "100%",
+        minHeight: "100vh",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        textAlign: "center",
+        padding: "40px",
+      }}
+    >
+      <div className="badge">Client Portal</div>
+
+      <h1 style={{ marginTop: "10px" }}>
+        Yayy 😊! <br />
+        Cool Portal Coming Soon
+      </h1>
+
+      <div
+        className="cta-group"
+        style={{
+          marginTop: "20px",
+          display: "flex",
+          gap: "12px",
+          justifyContent: "center",
+          flexWrap: "wrap",
+        }}
+      >
+        <Link href="/" className="btn btn-primary">
+          Return to homepage
+        </Link>
+
+        <Link href="/" className="btn btn-outline">
+          Explore services
+        </Link>
+      </div>
     </main>
   );
 }
