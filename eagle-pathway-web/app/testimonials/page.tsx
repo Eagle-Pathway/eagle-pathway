@@ -1,162 +1,75 @@
-import Link from 'next/link';
+'use client';
 
-export const metadata = {
-  title: 'Testimonials | Eagle Pathway',
-  description: 'Read success stories from Ethiopian students who secured scholarships with Eagle Pathway.',
-};
+import Link from 'next/link';
 
 export default function TestimonialsPage() {
   const testimonials = [
-    {
-      name: 'Samuel T.',
-      destination: 'University of British Columbia, Canada',
-      text: 'Eagle Pathway helped me identify scholarships I never knew existed. Their guidance on my SOP was invaluable—I went from rejection to a full scholarship offer within 3 months.',
-      year: 'Computer Science, 2024',
-    },
-    {
-      name: 'Mekdes A.',
-      destination: 'University of Edinburgh, UK',
-      text: 'The weekly tracking kept me accountable. I submitted my UK applications early and received my offer before the deadline rush. The SOP review turned my story into something compelling.',
-      year: 'Medicine, 2024',
-    },
-    {
-      name: 'Dagmawi B.',
-      destination: 'TU Delft, Netherlands',
-      text: 'Coming from a remote town in Ethiopia, I didn\'t think I had a chance at top European universities. Eagle Pathway\'s structured approach proved otherwise.',
-      year: 'Engineering, 2023',
-    },
-    {
-      name: 'Hirut K.',
-      destination: 'University of Michigan, USA',
-      text: 'The test prep support was game-changing. My SAT improved by 200 points, and the application strategy opened doors I didn\'t think were possible.',
-      year: 'Business, 2024',
-    },
-    {
-      name: 'Bereket S.',
-      destination: 'ETH Zurich, Switzerland',
-      text: 'The document coordination was incredible. They caught errors I would have missed and ensured everything was perfectly aligned with each university\'s requirements.',
-      year: 'Physics, 2023',
-    },
-    {
-      name: 'Selam M.',
-      destination: 'McGill University, Canada',
-      text: 'As a first-generation applicant, the process was overwhelming. Eagle Pathway made it manageable and even enjoyable. Now I\'m helping others in my village.',
-      year: 'Nursing, 2024',
-    },
-    {
-      name: 'Tadesse F.',
-      destination: 'University of Oxford, UK',
-      text: 'The interview preparation was exceptional. Mock interviews with advisors who understood what UK universities look for made all the difference.',
-      year: 'Philosophy & Economics, 2023',
-    },
-    {
-      name: 'Frehiwot Y.',
-      destination: 'University of Amsterdam, Netherlands',
-      text: 'From profile assessment to enrollment, every step was clearly explained. The transparent pricing and milestone-based approach gave me confidence.',
-      year: 'Data Science, 2024',
-    },
-  ];
-
-  const stats = [
-    { value: '94%', label: 'Admission Success Rate' },
-    { value: '500+', label: 'Students Placed' },
-    { value: '$12M+', label: 'Scholarship Value' },
-    { value: '15+', label: 'Countries Reached' },
+    { name: 'Samson T.', destination: 'University of British Columbia, Canada', text: 'The weekly tracking kept me accountable. I submitted my UK applications early and received my offer before the deadline rush.', initials: 'ST' },
+    { name: 'Meron Y.', destination: 'University of Edinburgh, UK', text: 'Coming from a remote town in Ethiopia, I didn\'t think I had a chance at top European universities. Eagle Pathway\'s structured approach proved otherwise.', initials: 'MY' },
+    { name: 'Dani L.', destination: 'University of Michigan, USA', text: 'The mock interviews were incredibly helpful. I felt confident walking into my actual interview and got accepted with a partial scholarship.', initials: 'DL' },
+    { name: 'abel K.', destination: 'McGill University, Canada', text: 'From SAT prep to final submission, the team was with me every step. I got into my dream school!', initials: 'AK' },
   ];
 
   return (
-    <>
-      <div className="page-layout">
-        <nav className="navbar">
-          <div className="container">
-            <div className="nav-grid">
-              <Link href="/" className="logo-group">
-                <div className="logo-icon">🦅</div>
-                <span className="logo-text">
-                  Eagle <span className="text-brand">Pathway</span>
-                </span>
-              </Link>
-              <ul className="nav-links">
-                <li><Link href="/#services">Services</Link></li>
-                <li><Link href="/about">About</Link></li>
-                <li><Link href="/team">Team</Link></li>
-                <li><Link href="/contact">Contact</Link></li>
-              </ul>
-              <div className="nav-cta">
-                <Link href="/login" className="btn btn-outline">Client Portal</Link>
-              </div>
-            </div>
-          </div>
-        </nav>
-
-        <header className="page-header">
-          <div className="container">
-            <h1>Success Stories</h1>
-            <p>Real results from Ethiopian students who achieved their global education dreams with Eagle Pathway.</p>
-          </div>
-        </header>
-
-        <section className="section">
-          <div className="container">
-            <div className="grid-4" style={{ gap: '1rem', marginBottom: '2rem' }}>
-              {stats.map((stat) => (
-                <div key={stat.label} style={{ textAlign: 'center', padding: '1.5rem', background: 'var(--surface)', borderRadius: 'var(--radius-xl)', border: '1px solid var(--line)' }}>
-                  <div style={{ fontSize: '1.75rem', fontWeight: 800, color: 'var(--brand)', marginBottom: '0.25rem' }}>{stat.value}</div>
-                  <div style={{ fontSize: '0.85rem', color: 'var(--muted)' }}>{stat.label}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        <section className="section section-soft">
-          <div className="container">
-            <div className="section-head">
-              <h2>Student Voices</h2>
-              <p>What our students say about working with us.</p>
-            </div>
-            <div className="testimonial-list">
-              {testimonials.map((testimonial) => (
-                <article key={testimonial.name} className="testimonial-card">
-                  <p className="testimonial-text">{testimonial.text}</p>
-                  <div className="testimonial-author-info">
-                    <div className="testimonial-avatar">{testimonial.name.split(' ').map(n => n[0]).join('')}</div>
-                    <div>
-                      <div className="testimonial-name">{testimonial.name}</div>
-                      <div className="testimonial-dest">{testimonial.destination} • {testimonial.year}</div>
-                    </div>
-                  </div>
-                </article>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        <section className="section">
-          <div className="container">
-            <div className="cta-band">
-              <div>
-                <h2>Be Our Next Success Story</h2>
-                <p>Book a free consultation and start your journey today.</p>
-              </div>
-              <div className="cta-group">
-                <Link href="/contact" className="btn btn-primary">Book Consultation</Link>
-                <Link href="/team" className="btn btn-outline">Meet Our Team</Link>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <footer className="footer">
-          <div className="container">
-            <div className="logo-group footer-brand">
+    <div className="page-layout">
+      <nav className="navbar">
+        <div className="container">
+          <div className="nav-grid">
+            <Link href="/" className="logo-group">
               <div className="logo-icon">🦅</div>
               <span className="logo-text">Eagle Pathway</span>
+            </Link>
+            <ul className="nav-links">
+              <li><Link href="/">Home</Link></li>
+              <li><Link href="/#services">Services</Link></li>
+              <li><Link href="/#pricing">Pricing</Link></li>
+              <li><Link href="/contact">Contact</Link></li>
+            </ul>
+            <div className="nav-cta">
+              <Link href="/login" className="btn btn-outline">Client Portal</Link>
             </div>
-            <p>&copy; {new Date().getFullYear()} Eagle Pathway Ethiopia. Structured guidance for global study pathways.</p>
           </div>
-        </footer>
-      </div>
-    </>
+        </div>
+      </nav>
+
+      <main style={{ padding: 'calc(var(--nav-height) + 3rem) 0 4rem', minHeight: '100vh' }}>
+        <div className="container">
+          <h1 style={{ fontFamily: 'var(--font-syne)', fontSize: 'clamp(2.5rem, 5vw, 3.5rem)', fontWeight: 800, color: 'var(--white)', textAlign: 'center', marginBottom: '0.75rem' }}>Success Stories</h1>
+          <p style={{ fontSize: '1.1rem', color: 'rgba(255,255,255,0.6)', textAlign: 'center', maxWidth: 500, margin: '0 auto 3rem' }}>Real stories from Ethiopian students who achieved their global education dreams.</p>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1.5rem', marginBottom: '4rem' }}>
+            {testimonials.map((t, i) => (
+              <div key={i} style={{ background: '#111', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 'var(--radius-xl)', padding: '2rem', transition: 'all var(--transition)' }}>
+                <div style={{ width: 50, height: 50, borderRadius: '50%', background: 'linear-gradient(135deg, var(--gold), var(--gold-dark))', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '1rem', fontFamily: 'var(--font-syne)', fontWeight: 700, color: 'var(--black)' }}>{t.initials}</div>
+                <p style={{ fontSize: '0.95rem', color: 'rgba(255,255,255,0.7)', lineHeight: 1.6, marginBottom: '1.25rem', fontStyle: 'italic' }}>"{t.text}"</p>
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  <strong style={{ color: 'var(--white)', fontWeight: 600 }}>{t.name}</strong>
+                  <span style={{ fontSize: '0.85rem', color: 'var(--gold)' }}>{t.destination}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div style={{ background: '#111', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 'var(--radius-xl)', padding: '3rem', textAlign: 'center', maxWidth: 600, margin: '0 auto' }}>
+            <h2 style={{ fontFamily: 'var(--font-syne)', fontWeight: 700, color: 'var(--white)', marginBottom: '0.5rem' }}>Be Our Next Success Story</h2>
+            <p style={{ color: 'rgba(255,255,255,0.5)' }}>Start your journey today and let us help you achieve your dreams.</p>
+            <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', marginTop: '1.5rem' }}>
+              <Link href="/contact" className="btn btn-primary">Get Started</Link>
+              <Link href="/#pricing" className="btn btn-outline">View Plans</Link>
+            </div>
+          </div>
+        </div>
+      </main>
+
+      <footer className="footer">
+        <div className="container">
+          <Link href="/" className="logo-group" style={{ justifyContent: 'center', marginBottom: '0.75rem' }}>
+            <div className="logo-icon">🦅</div>
+            <span className="logo-text">Eagle Pathway</span>
+          </Link>
+          <p>© {new Date().getFullYear()} Eagle Pathway Ethiopia. All rights reserved.</p>
+        </div>
+      </footer>
+    </div>
   );
 }
