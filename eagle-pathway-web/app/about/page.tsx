@@ -1,28 +1,12 @@
-import Head from 'next/head';
-import Link from 'next/link';
+'use client';
 
-export const metadata = {
-  title: 'About Us | Eagle Pathway',
-  description: 'Learn about Eagle Pathway\'s mission to help Ethiopian students achieve their dreams of studying abroad.',
-};
+import Link from 'next/link';
 
 export default function AboutPage() {
   const values = [
-    {
-      icon: '📈',
-      title: 'Data-Driven',
-      description: 'We track outcomes and continuously improve our methods based on what works.',
-    },
-    {
-      icon: '🤝',
-      title: 'Partnership',
-      description: 'We work alongside families as partners, not just consultants.',
-    },
-    {
-      icon: '🌍',
-      title: 'Global Vision',
-      description: 'Deep knowledge of international admissions combined with local context.',
-    },
+    { icon: '📈', title: 'Data-Driven', description: 'We track outcomes and continuously improve our methods based on what works.' },
+    { icon: '🤝', title: 'Partnership', description: 'We work alongside families as partners, not just consultants.' },
+    { icon: '🌍', title: 'Global Vision', description: 'Deep knowledge of international admissions combined with local context.' },
   ];
 
   const milestones = [
@@ -33,148 +17,68 @@ export default function AboutPage() {
   ];
 
   return (
-    <>
-      <Head>
-        <title>{metadata.title}</title>
-        <meta name="description" content={metadata.description} />
-      </Head>
-
-      <div className="page-layout">
-        <nav className="navbar">
-          <div className="container">
-            <div className="nav-grid">
-              <Link href="/" className="logo-group">
-                <div className="logo-icon">🦅</div>
-                <span className="logo-text">
-                  Eagle <span className="text-brand">Pathway</span>
-                </span>
-              </Link>
-              <ul className="nav-links">
-                <li><Link href="/#services">Services</Link></li>
-                <li><Link href="/about">About</Link></li>
-                <li><Link href="/team">Team</Link></li>
-                <li><Link href="/contact">Contact</Link></li>
-              </ul>
-              <div className="nav-cta">
-                <Link href="/login" className="btn btn-outline">Client Portal</Link>
-              </div>
-            </div>
-          </div>
-        </nav>
-
-        <header className="page-header">
-          <div className="container">
-            <h1 className='text-black'>About Eagle Pathway</h1>
-            <p className='text-white' style={{ color: 'blue' }}>Empowering Ethiopian students to achieve their global education dreams through expert guidance and structured execution.</p>
-          </div>
-        </header>
-
-        <section className="section">
-          <div className="container">
-            <div className="grid-2" style={{ alignItems: 'center', gap: '3rem' }}>
-              <div>
-                <h2 style={{ marginBottom: '1rem' }}>Our Story</h2>
-                <p style={{ color: 'var(--muted)', marginBottom: '1rem', lineHeight: 1.7 }}>
-                  Eagle Pathway was founded in 2025 by a group of educators and advisors who saw a gap in international scholarship guidance for Ethiopian students. Many bright students had the grades and ambitions but lacked the strategic knowledge to navigate complex application processes.
-                </p>
-                <p style={{ color: 'var(--muted)', marginBottom: '1rem', lineHeight: 1.7 }}>
-                  What started as small-group advising sessions in Addis Ababa has grown into a comprehensive service helping hundreds of students secure placements at top universities in Canada, the UK, Europe, and the US.
-                </p>
-                <p style={{ color: 'var(--muted)', lineHeight: 1.7 }}>
-                  Today, we combine local understanding of Ethiopian education with deep expertise in international admissions to deliver results that matter.
-                </p>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'center' }}>
-                <div style={{
-                  width: '100%',
-                  maxWidth: '400px',
-                  aspectRatio: '1',
-                  background: 'linear-gradient(135deg, var(--surface-soft), var(--line))',
-                  borderRadius: 'var(--radius-xl)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: '5rem',
-                }}>
-                  🎓
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section className="section section-soft">
-          <div className="container">
-            <div className="section-head">
-              <h2>Our Values</h2>
-              <p>The principles that guide everything we do.</p>
-            </div>
-            <div className="grid-3">
-              {values.map((value) => (
-                <article key={value.title} className="card">
-                  <div style={{ fontSize: '2rem', marginBottom: '0.75rem' }}>{value.icon}</div>
-                  <h3>{value.title}</h3>
-                  <p>{value.description}</p>
-                </article>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        <section className="section">
-          <div className="container">
-            <div className="section-head">
-              <h2>Our Journey</h2>
-              <p>Key milestones that shaped who we are today.</p>
-            </div>
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
-              gap: '1rem',
-            }}>
-              {milestones.map((milestone) => (
-                <article key={milestone.year} className="card" style={{ textAlign: 'center' }}>
-                  <div style={{
-                    fontSize: '1.25rem',
-                    fontWeight: 800,
-                    color: 'var(--brand)',
-                    marginBottom: '0.5rem',
-                  }}>
-                    {milestone.year}
-                  </div>
-                  <h3 style={{ fontSize: '1rem', marginBottom: '0.4rem' }}>{milestone.title}</h3>
-                  <p style={{ fontSize: '0.85rem', color: 'var(--muted)' }}>{milestone.description}</p>
-                </article>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        <section className="section" style={{ background: 'var(--surface-soft)' }}>
-          <div className="container">
-            <div className="cta-band">
-              <div>
-                <h2>Ready to start your journey?</h2>
-                <p>Book a free consultation and get a clear pathway forward.</p>
-              </div>
-              <div className="cta-group">
-                <Link href="/#contact" className="btn btn-primary">Book Consultation</Link>
-                <Link href="/team" className="btn btn-outline">Meet Our Team</Link>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <footer className="footer">
-          <div className="container">
-            <div className="logo-group footer-brand">
+    <div className="page-layout">
+      <nav className="navbar">
+        <div className="container">
+          <div className="nav-grid">
+            <Link href="/" className="logo-group">
               <div className="logo-icon">🦅</div>
               <span className="logo-text">Eagle Pathway</span>
+            </Link>
+            <ul className="nav-links">
+              <li><Link href="/">Home</Link></li>
+              <li><Link href="/#services">Services</Link></li>
+              <li><Link href="/#pricing">Pricing</Link></li>
+              <li><Link href="/contact">Contact</Link></li>
+            </ul>
+            <div className="nav-cta">
+              <Link href="/login" className="btn btn-outline">Client Portal</Link>
             </div>
-            <p>&copy; {new Date().getFullYear()} Eagle Pathway Ethiopia. Structured guidance for global study pathways.</p>
           </div>
-        </footer>
-      </div>
-    </>
+        </div>
+      </nav>
+
+      <main style={{ padding: 'calc(var(--nav-height) + 3rem) 0 4rem', minHeight: '100vh' }}>
+        <div className="container">
+          <h1 style={{ fontFamily: 'var(--font-syne)', fontSize: 'clamp(2.5rem, 5vw, 3.5rem)', fontWeight: 800, color: 'var(--white)', textAlign: 'center', marginBottom: '0.75rem' }}>About Eagle Pathway</h1>
+          <p style={{ fontSize: '1.1rem', color: 'rgba(255,255,255,0.6)', textAlign: 'center', maxWidth: 500, margin: '0 auto 3rem' }}>Helping Ethiopian students achieve their global education dreams since 2023.</p>
+
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1.5rem', marginBottom: '4rem' }}>
+            {values.map((v, i) => (
+              <div key={i} style={{ background: '#111', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 'var(--radius-xl)', padding: '2rem', textAlign: 'center', transition: 'all var(--transition)' }}>
+                <span style={{ fontSize: '2.5rem', display: 'block', marginBottom: '1rem' }}>{v.icon}</span>
+                <h3 style={{ fontFamily: 'var(--font-syne)', fontWeight: 700, fontSize: '1.1rem', color: 'var(--white)', marginBottom: '0.5rem' }}>{v.title}</h3>
+                <p style={{ fontSize: '0.9rem', color: 'rgba(255,255,255,0.5)' }}>{v.description}</p>
+              </div>
+            ))}
+          </div>
+
+          <div style={{ maxWidth: 700, margin: '0 auto' }}>
+            <h2 style={{ fontFamily: 'var(--font-syne)', fontWeight: 700, fontSize: '1.75rem', color: 'var(--white)', textAlign: 'center', marginBottom: '2rem' }}>Our Journey</h2>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+              {milestones.map((m, i) => (
+                <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: '1.5rem', padding: '1.25rem', background: '#111', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 'var(--radius-lg)' }}>
+                  <span style={{ fontFamily: 'var(--font-syne)', fontWeight: 800, fontSize: '1.1rem', color: 'var(--gold)', minWidth: 60 }}>{m.year}</span>
+                  <div>
+                    <h3 style={{ fontFamily: 'var(--font-syne)', fontWeight: 700, color: 'var(--white)', marginBottom: '0.25rem' }}>{m.title}</h3>
+                    <p style={{ fontSize: '0.9rem', color: 'rgba(255,255,255,0.5)' }}>{m.description}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </main>
+
+      <footer className="footer">
+        <div className="container">
+          <Link href="/" className="logo-group" style={{ justifyContent: 'center', marginBottom: '0.75rem' }}>
+            <div className="logo-icon">🦅</div>
+            <span className="logo-text">Eagle Pathway</span>
+          </Link>
+          <p>© {new Date().getFullYear()} Eagle Pathway Ethiopia. All rights reserved.</p>
+        </div>
+      </footer>
+    </div>
   );
 }
