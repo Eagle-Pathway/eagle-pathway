@@ -1,7 +1,7 @@
 'use client';
 
 import { motion, useScroll, useTransform } from 'framer-motion';
-import { useRef } from 'react';
+import { useRef, useEffect } from 'react';
 import Link from 'next/link';
 import {
   faqs,
@@ -11,13 +11,15 @@ import {
   timeline,
   trustPoints,
   whoWeHelp,
+  destinations,
+  stats,
 } from '@/src/content/landing';
 
 function AnimatedSection({ children, className, id }: { children: React.ReactNode; className?: string; id?: string }) {
   return (
     <motion.section
       id={id}
-      className={className}
+      className={`section ${className || ''}`}
       initial={{ opacity: 0, y: 40 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: '-100px' }}
@@ -28,19 +30,43 @@ function AnimatedSection({ children, className, id }: { children: React.ReactNod
   );
 }
 
-function AnimatedCard({ children, className }: { children: React.ReactNode; className?: string }) {
+function AnimatedCard({ children, className, style, ...props }: { children: React.ReactNode; className?: string; style?: React.CSSProperties }) {
   return (
     <motion.article
       className={className}
+      style={style}
       initial={{ opacity: 0, y: 20 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
       transition={{ duration: 0.5 }}
-      whileHover={{ y: -4 }}
+      {...props}
     >
       {children}
     </motion.article>
   );
+}
+
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  return <p className="section-label">{children}</p>;
+}
+
+function useFadeUp() {
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('visible');
+          }
+        });
+      },
+      { threshold: 0.1 }
+    );
+
+    document.querySelectorAll('.fade-up').forEach((el) => observer.observe(el));
+
+    return () => observer.disconnect();
+  }, []);
 }
 
 export function LandingPage() {
@@ -53,7 +79,35 @@ export function LandingPage() {
   const heroY = useTransform(scrollYProgress, [0, 1], [0, 100]);
   const heroOpacity = useTransform(scrollYProgress, [0, 0.5], [1, 0]);
 
-  const primaryCtaLabel = 'Book free consultation';
+  useFadeUp();
+
+  const primaryCtaLabel = 'Start Your Journey';
+
+  const statsData = [
+    { value: stats.totalUsers, label: 'Active Students' },
+    { value: stats.placements, label: 'University Placements' },
+    { value: stats.scholarshipValue, label: 'Scholarship Value' },
+    { value: stats.countries, label: 'Countries' },
+    { value: stats.successRate, label: 'Success Rate' },
+  ];
+
+  const modules = ['LEARN', 'SKILL', 'NET', 'OPP', 'GOAL', 'COACH'];
+
+  const marqueeItems = [
+    'Personal Mentorship',
+    'Application Strategy',
+    'Essay Review',
+    'Interview Prep',
+    'Financial Aid',
+    'Visa Guidance',
+    'AI SOP Generator',
+    'Weekly Tracking',
+  ];
+
+  const audiences = whoWeHelp.map((item, i) => ({
+    number: String(i + 1).padStart(2, '0'),
+    ...item,
+  }));
 
   return (
     <div className="page-layout">
@@ -61,10 +115,8 @@ export function LandingPage() {
         <div className="container">
           <div className="nav-grid">
             <div className="logo-group">
-              <div className="logo-icon">🦅</div>
-              <span className="logo-text">
-                Eagle <span className="text-brand">Pathway</span>
-              </span>
+              <div className="logo-icon"><img src="./favicon.ico" alt="Eagle Pathway logo" width={32} height={32} /></div>
+              <span className="logo-text">Eagle Pathway</span>
             </div>
             <ul className="nav-links">
               <li><Link href="/about">About</Link></li>
@@ -84,96 +136,200 @@ export function LandingPage() {
       <main>
         <motion.section
           ref={heroRef}
-          className="hero section"
+          className="hero"
           style={{ y: heroY, opacity: heroOpacity }}
         >
-          <div className="container">
-            <div className="hero-grid">
-              <motion.div
-                initial={{ opacity: 0, x: -40 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.8, ease: 'easeOut' }}
-              >
-                <motion.span
-                  className="badge"
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: 0.2, duration: 0.5 }}
-                >
-                  Trusted by ambitious Ethiopian students
-                </motion.span>
-                <motion.h1
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.3, duration: 0.6 }}
-                >
-                  Scholarship and tutoring support,
-                  {' '}
-                  <span className="gradient-text">done with precision</span>
-                  {' '}
-                  and clarity
-                </motion.h1>
-                <motion.p
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.4, duration: 0.6 }}
-                >
-                  Eagle Pathway helps students plan, prepare, and submit stronger international
-                  scholarship applications while improving academic performance through high-quality tutoring.
-                </motion.p>
-                <motion.div
-                  className="cta-group"
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.5, duration: 0.6 }}
-                >
-                  <a href="#pathway" className="btn btn-primary">{primaryCtaLabel}</a>
-                  <a href="#services" className="btn btn-outline">View services</a>
-                </motion.div>
-              </motion.div>
+          <div className="hero-shapes">
+            <div className="hero-shape hero-shape-1"></div>
+            <div className="hero-shape hero-shape-2"></div>
+            <div className="hero-shape hero-shape-3"></div>
+            <div className="hero-shape hero-shape-4"></div>
+          </div>
 
-              <motion.aside
-                className="hero-panel"
-                initial={{ opacity: 0, x: 40 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.4, duration: 0.8, ease: 'easeOut' }}
-              >
-                <h3>Outcomes</h3>
-                <p>Clear results from our advising and tutoring operations.</p>
-                <div className="metric-grid">
-                  {[
-                    { value: '94%', label: 'Admission success' },
-                    { value: '500+', label: 'Global placements' },
-                    { value: '$12M+', label: 'Scholarship value' },
-                  ].map((metric, i) => (
-                    <motion.div
-                      key={metric.label}
-                      className="metric"
-                      initial={{ opacity: 0, scale: 0.8 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      transition={{ delay: 0.6 + i * 0.15, duration: 0.4 }}
-                      whileHover={{ scale: 1.02 }}
-                    >
-                      <strong>{metric.value}</strong>
-                      <span>{metric.label}</span>
-                    </motion.div>
-                  ))}
-                </div>
-                <div className="mini-note">Primary destinations: Canada, UK, Europe, and US.</div>
-              </motion.aside>
-            </div>
+          <div className="hero-content">
+            <motion.div
+              className="hero-badge"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2, duration: 0.6 }}
+            >
+              <span className="hero-badge-dot"></span>
+              Trusted by 1500+ Ethiopian students
+            </motion.div>
+
+            <motion.h1
+              className="hero-title"
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3, duration: 0.7 }}
+            >
+              Your gateway to <span className="gold">global education</span>
+            </motion.h1>
+
+            <motion.p
+              className="hero-subtitle"
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4, duration: 0.6 }}
+            >
+              Expert scholarship advising and academic tutoring to help you secure admissions and funding at world-class universities in Canada, UK, USA, and Europe.
+            </motion.p>
+
+            <motion.div
+              className="hero-ctas"
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.55, duration: 0.6 }}
+            >
+              <a href="#contact" className="btn btn-primary">Start Your Journey</a>
+              <a href="#proof" className="btn btn-outline">How It Works</a>
+            </motion.div>
+
+            <motion.div
+              className="hero-stats"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.75, duration: 0.8 }}
+            >
+              <div className="hero-stat">
+                <span className="hero-stat-value">100+</span>
+                <span className="hero-stat-label">Active Students</span>
+              </div>
+              <div className="hero-stat">
+                <span className="hero-stat-value">70+</span>
+                <span className="hero-stat-label">Placements</span>
+              </div>
+              <div className="hero-stat">
+                <span className="hero-stat-value">$1M+</span>
+                <span className="hero-stat-label">Scholarships</span>
+              </div>
+              <div className="hero-stat">
+                <span className="hero-stat-value">4+</span>
+                <span className="hero-stat-label">Countries</span>
+              </div>
+              <div className="hero-stat">
+                <span className="hero-stat-value">94%</span>
+                <span className="hero-stat-label">Success Rate</span>
+              </div>
+            </motion.div>
+
+            <motion.div
+              className="hero-divider"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.9, duration: 0.8 }}
+            >
+              <span>Students placed at</span>
+              <div className="hero-flags">
+                <span>🇬🇧</span>
+                <span>🇨🇦</span>
+                <span>🇺🇸</span>
+                <span>🇪🇺</span>
+                <span>🇦🇺</span>
+              </div>
+              <span>Oxford · McGill · MIT · EPFL · UNSW</span>
+            </motion.div>
           </div>
         </motion.section>
 
+        <div className="marquee-strip">
+          <div className="marquee-track">
+            {[...marqueeItems, ...marqueeItems].map((item, i) => (
+              <span key={i} className="marquee-item">{item}</span>
+            ))}
+          </div>
+        </div>
+
+        <AnimatedSection id="problem" className="section">
+          <div className="container">
+            <div className="grid-2" style={{ alignItems: 'center' }}>
+              <div className="fade-up">
+                <SectionLabel>THE CHALLENGE</SectionLabel>
+                <h2 style={{ marginTop: '0.75rem', marginBottom: '1rem', color: 'var(--white)' }}>
+                  Navigating international admissions is overwhelming
+                </h2>
+                <p>
+                  With thousands of scholarships, endless requirements, and complex applications,
+                  the process feels impossible. Most qualified Ethiopian students never apply because
+                  they don't know where to start.
+                </p>
+              </div>
+              <div className="stats-grid fade-up">
+                {statsData.map((stat, i) => (
+                  <div key={i} className="stat-cell">
+                    <strong>{stat.value}</strong>
+                    <span>{stat.label}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </AnimatedSection>
+
+        <AnimatedSection id="solution" className="section">
+          <div className="container">
+            <div style={{ textAlign: 'center', marginBottom: '2.5rem' }} className="fade-up">
+              <SectionLabel>THE SOLUTION</SectionLabel>
+              <h2 style={{ marginTop: '0.75rem' }}>Your AI-Powered Pathway</h2>
+            </div>
+            <div className="solution-flow fade-up">
+              <div className="flow-node">
+                <div className="flow-circle">YOU</div>
+                <div className="flow-line"></div>
+                <div className="flow-circle" style={{ width: '80px', height: '80px' }}>AI CORE</div>
+                <div className="flow-line"></div>
+              </div>
+              <div className="modules-grid">
+                {modules.map((mod) => (
+                  <div key={mod} className="module-chip">{mod}</div>
+                ))}
+              </div>
+              <div className="stat-bar">
+                <div className="stat-bar-item">
+                  <strong>6 modules</strong>
+                  <span>Continuous support</span>
+                </div>
+                <div className="stat-bar-item">
+                  <strong>&lt; 5 min daily</strong>
+                  <span>Touchpoint</span>
+                </div>
+                <div className="stat-bar-item">
+                  <strong>Weekly tracking</strong>
+                  <span>Always progressing</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </AnimatedSection>
+
+        <AnimatedSection id="destinations" className="section section-soft">
+          <div className="container">
+            <div className="section-head fade-up">
+              <SectionLabel>DESTINATIONS</SectionLabel>
+              <h2>Where our students go</h2>
+            </div>
+            <div className="grid-5" style={{ marginTop: '2rem', display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '1rem' }}>
+              {destinations.map((dest, i) => (
+                <AnimatedCard key={dest.country} className="destination-card" style={{ textAlign: 'center', padding: '1.5rem' }}>
+                  <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>{dest.flag}</div>
+                  <h3 style={{ fontSize: '1rem', color: 'var(--white)' }}>{dest.country}</h3>
+                  <p style={{ fontSize: '0.8rem', color: 'var(--gold)' }}>{dest.programs} programs</p>
+                </AnimatedCard>
+              ))}
+            </div>
+          </div>
+        </AnimatedSection>
+
         <AnimatedSection id="audience" className="section">
           <div className="container">
-            <div className="section-head">
-              <h2>Who we help</h2>
-              <p>Designed for students and families that want structured outcomes.</p>
+            <div className="section-head fade-up">
+              <SectionLabel>WHO WE HELP</SectionLabel>
+              <h2>Tailored for your journey</h2>
             </div>
-            <div className="grid-3">
-              {whoWeHelp.map((item, i) => (
-                <AnimatedCard key={item.title} className="card">
+            <div className="grid-3" style={{ marginTop: '2rem' }}>
+              {audiences.map((item) => (
+                <AnimatedCard key={item.number} className="audience-card">
+                  <span className="audience-number">{item.number}</span>
                   <h3>{item.title}</h3>
                   <p>{item.description}</p>
                 </AnimatedCard>
@@ -184,13 +340,14 @@ export function LandingPage() {
 
         <AnimatedSection id="proof" className="section section-soft">
           <div className="container">
-            <div className="section-head">
-              <h2>Why students choose Eagle Pathway</h2>
-              <p>Focused execution standards that improve consistency and trust.</p>
+            <div className="section-head fade-up">
+              <SectionLabel>WHY EAGLE PATHWAY</SectionLabel>
+              <h2>Standards that deliver results</h2>
             </div>
-            <div className="grid-3">
-              {trustPoints.map((item, i) => (
-                <AnimatedCard key={item.title} className="card">
+            <div className="grid-3" style={{ marginTop: '2rem' }}>
+              {trustPoints.map((item) => (
+                <AnimatedCard key={item.title} className="feature-card">
+                  <div className="feature-icon">✦</div>
                   <h3>{item.title}</h3>
                   <p>{item.description}</p>
                 </AnimatedCard>
@@ -199,17 +356,18 @@ export function LandingPage() {
           </div>
         </AnimatedSection>
 
-<AnimatedSection id="services" className="section">
+        <AnimatedSection id="services" className="section">
           <div className="container">
-            <div className="section-head">
-              <h2>Detailed service tracks</h2>
+            <div className="section-head fade-up">
+              <SectionLabel>SERVICE TRACKS</SectionLabel>
+              <h2>Detailed pathways</h2>
               <p>Specific deliverables, not vague promises.</p>
             </div>
-            <div className="grid-2">
+            <div className="grid-2" style={{ marginTop: '2rem' }}>
               {serviceTracks.map((track) => (
                 <AnimatedCard key={track.title} className="card">
                   <h3>{track.title}</h3>
-                  <p className="service-subtitle">{track.subtitle}</p>
+                  <p style={{ fontSize: '0.85rem', marginBottom: '0.75rem', color: 'rgba(255,255,255,0.5)' }}>{track.subtitle}</p>
                   <ul className="check-list">
                     {track.items.map((item) => (
                       <li key={item}>{item}</li>
@@ -223,66 +381,46 @@ export function LandingPage() {
 
         <AnimatedSection id="intlservices" className="section section-soft">
           <div className="container">
-            <div className="section-head">
-              <h2>International Financial Services</h2>
-              <p>Secure global payment and currency solutions for students and diaspora.</p>
+            <div className="section-head fade-up">
+              <SectionLabel>GLOBAL SERVICES</SectionLabel>
+              <h2>International financial solutions</h2>
             </div>
-            <div className="grid-3">
+            <div className="grid-3" style={{ marginTop: '2rem' }}>
               {internationalServices.map((service) => (
                 <AnimatedCard key={service.type} className="card">
-                  <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>{service.icon}</div>
+                  <div style={{ fontSize: '1.75rem', marginBottom: '0.5rem' }}>{service.icon}</div>
                   <h3>{service.title}</h3>
                   <p>{service.description}</p>
-                  <ul className="check-list">
-                    {service.details.map((d) => (
-                      <li key={d}>{d}</li>
-                    ))}
-                  </ul>
                 </AnimatedCard>
               ))}
             </div>
           </div>
         </AnimatedSection>
 
-        <AnimatedSection id="pathway" className="section">
+        <AnimatedSection id="pricing" className="section">
           <div className="container">
-            <div className="section-head">
-              <h2>How engagement works</h2>
-              <p>What to expect in your first weeks working with us.</p>
+            <div className="section-head fade-up">
+              <SectionLabel>PRICING</SectionLabel>
+              <h2>Transparent packages</h2>
+              <p>Choose the support that fits your needs.</p>
             </div>
-            <div className="grid-2 timeline-grid">
-              {timeline.map((step, i) => (
-                <AnimatedCard key={step.week} className="card timeline-card">
-                  <span className="step-num">{step.week}</span>
-                  <h4>{step.title}</h4>
-                  <p>{step.description}</p>
-                </AnimatedCard>
-              ))}
-            </div>
-          </div>
-        </AnimatedSection>
-
-        <AnimatedSection id="pricing" className="section section-soft">
-          <div className="container">
-            <div className="section-head">
-              <h2>Pricing preview</h2>
-              <p>Transparent package direction before custom scoping.</p>
-            </div>
-            <div className="grid-3">
-              {pricingPlans.map((plan, i) => (
+            <div className="grid-3" style={{ marginTop: '2rem' }}>
+              {pricingPlans.map((plan) => (
                 <AnimatedCard
                   key={plan.name}
-                  className={`card pricing-card${plan.featured ? ' pricing-featured' : ''}`}
+                  className={`pricing-card${plan.featured ? ' pricing-featured' : ''}`}
                 >
                   <h3>{plan.name}</h3>
-                  <p className="price-tag">{plan.price}</p>
-                  <p>{plan.description}</p>
-                  <ul className="check-list">
+                  {plan.price && <div className="price">{plan.price}</div>}
+                  <p style={{ fontSize: '0.85rem' }}>{plan.description}</p>
+                  <ul className="pricing-features">
                     {plan.features.map((feature) => (
                       <li key={feature}>{feature}</li>
                     ))}
                   </ul>
-                  <a href="#contact" className="btn btn-primary">{primaryCtaLabel}</a>
+                  <a href="#contact" className={`btn ${plan.featured ? 'btn-primary' : 'btn-outline'}`}>
+                    {primaryCtaLabel}
+                  </a>
                 </AnimatedCard>
               ))}
             </div>
@@ -291,19 +429,18 @@ export function LandingPage() {
 
         <AnimatedSection id="faq" className="section">
           <div className="container">
-            <div className="section-head">
-              <h2>Frequently asked questions</h2>
-              <p>Practical answers to common concerns before starting.</p>
+            <div className="section-head fade-up">
+              <SectionLabel>FAQ</SectionLabel>
+              <h2>Common questions</h2>
             </div>
-            <div className="faq-wrap">
-              {faqs.map((item, i) => (
+            <div style={{ marginTop: '2rem', maxWidth: '800px', margin: '2rem auto 0' }}>
+              {faqs.map((item) => (
                 <motion.details
                   key={item.question}
                   className="faq-item"
                   initial={{ opacity: 0 }}
                   whileInView={{ opacity: 1 }}
                   viewport={{ once: true }}
-                  transition={{ delay: i * 0.1, duration: 0.4 }}
                 >
                   <summary>{item.question}</summary>
                   <p>{item.answer}</p>
@@ -315,14 +452,17 @@ export function LandingPage() {
 
         <AnimatedSection id="contact" className="section">
           <div className="container">
-            <div className="cta-band">
-              <div>
-                <h2>Ready to plan your next scholarship move?</h2>
-                <p>Book a consultation and get a structured pathway within the first week.</p>
-              </div>
-              <div className="cta-group">
-                <a href="#pathway" className="btn btn-primary">{primaryCtaLabel}</a>
-                <Link href="/login" className="btn btn-outline">Portal login</Link>
+            <div className="cta-band fade-up">
+              <h2>
+                Ready to write your{' '}
+                <span className="gradient-text">success story?</span>
+              </h2>
+              <p style={{ marginTop: '1rem', color: 'rgba(255,255,255,0.55)' }}>
+                Book a consultation and get a structured pathway within your first week.
+              </p>
+              <div className="cta-group" style={{ marginTop: '1.5rem' }}>
+                <a href="#contact" className="btn btn-primary">{primaryCtaLabel}</a>
+                <Link href="/login" className="btn btn-outline">Portal Login</Link>
               </div>
             </div>
           </div>
@@ -331,17 +471,16 @@ export function LandingPage() {
 
       <footer className="footer">
         <div className="container">
-          <div className="logo-group footer-brand">
-            <div className="logo-icon">🦅</div>
+          <div className="logo-group" style={{ justifyContent: 'center', marginBottom: '0.75rem' }}>
+            <div className="logo-icon"><img src="/favicon.ico" alt="Eagle Pathway logo" width={32} height={32} /></div>
             <span className="logo-text">Eagle Pathway</span>
           </div>
-          <p>&copy; {new Date().getFullYear()} Eagle Pathway Ethiopia. Structured guidance for global study pathways.</p>
+          <p>© {new Date().getFullYear()} Eagle Pathway Ethiopia. All rights reserved.</p>
+          <p style={{ marginTop: '0.5rem', fontSize: '0.8rem', opacity: 0.6 }}>
+            Contact: info@eaglepathway.com · +251 912 345 678
+          </p>
         </div>
       </footer>
-
-      <div className="mobile-sticky-cta">
-        <a href="#pathway" className="btn btn-primary">{primaryCtaLabel}</a>
-      </div>
     </div>
   );
 }
