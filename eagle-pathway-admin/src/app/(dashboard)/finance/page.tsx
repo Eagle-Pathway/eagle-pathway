@@ -1,7 +1,8 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Fragment } from 'react';
 import { supabase } from '@/lib/supabase';
-import { DollarSign, TrendingUp, CreditCard, Wallet, Search, Loader2 } from 'lucide-react';
+import { DollarSign, TrendingUp, CreditCard, Wallet, Search, Loader2, X, Banknote } from 'lucide-react';
+import { Dialog, Transition } from '@headlessui/react';
 
 interface TutorFinancials {
   id: string;
@@ -22,6 +23,12 @@ export default function FinancePage() {
   const [activeTab, setActiveTab] = useState<'balances' | 'transactions' | 'receipts' | 'payouts'>('balances');
   const [payments, setPayments] = useState<any[]>([]);
   const [payoutRequests, setPayoutRequests] = useState<any[]>([]);
+  
+  // Payout modal state
+  const [isPayoutModalOpen, setIsPayoutModalOpen] = useState(false);
+  const [selectedTutor, setSelectedTutor] = useState<{id: string; name: string; amount: number} | null>(null);
+  const [payoutForm, setPayoutForm] = useState({ bankName: '', accountNumber: '', referenceNumber: '', notes: '' });
+  const [isProcessingPayout, setIsProcessingPayout] = useState(false);
 
   const signReceiptUrl = async (payment: any) => {
     if (!payment.receipt_path) return payment;
@@ -104,26 +111,52 @@ export default function FinancePage() {
     }
   };
 
-  const handlePayout = async (tutorId: string, tutorName: string, amount: number) => {
-    const refId = window.prompt(`Confirm payout of ${amount.toLocaleString()} ETB to ${tutorName}.\\nEnter Bank/Telebirr Reference Number:`);
-    if (!refId) return;
+const handlePayoutClick = (tutorId: string, tutorName: string, amount: number) => {
+    if (amount <= 0) {
+      alert('Cannot payout - no balance available for this tutor.');
+      return;
+    }
+    setSelectedTutor({ id: tutorId, name: tutorName, amount });
+    setPayoutForm({ bankName: '', accountNumber: '', referenceNumber: '', notes: '' });
+    setIsPayoutModalOpen(true);
+  };
 
+  const processPayout = async () => {
+    if (!selectedTutor) return;
+    if (!payoutForm.bankName || !payoutForm.accountNumber || !payoutForm.referenceNumber) {
+      alert('Please fill in all required fields.');
+      return;
+    }
+
+    setIsProcessingPayout(true);
+    
     const { error } = await supabase.from('tutor_payouts').insert({
-      tutor_id: tutorId,
-      amount,
-      bank_name: 'Manual / Admin Record',
-      account_number: refId,
-      account_name: tutorName,
+      tutor_id: selectedTutor.id,
+      amount: selectedTutor.amount,
+      bank_name: payoutForm.bankName,
+      account_number: payoutForm.accountNumber,
+      reference_number: payoutForm.referenceNumber,
+      account_name: selectedTutor.name,
+      admin_notes: payoutForm.notes,
       status: 'completed',
       processed_at: new Date().toISOString()
     });
 
+    setIsProcessingPayout(false);
+    
     if (!error) {
-      alert(`Payout to ${tutorName} recorded successfully!`);
-      fetchData(); // Refresh list
+      setIsPayoutModalOpen(false);
+      setSelectedTutor(null);
+      alert(`Payout of ${selectedTutor.amount.toLocaleString()} ETB to ${selectedTutor.name} recorded successfully!`);
+      fetchData();
     } else {
       alert('Failed to process payout: ' + error.message);
     }
+  };
+
+  const closePayoutModal = () => {
+    setIsPayoutModalOpen(false);
+    setSelectedTutor(null);
   };
 
   const handleUpdatePayoutStatus = async (payoutId: string, status: 'processing' | 'completed' | 'rejected') => {
@@ -299,7 +332,7 @@ export default function FinancePage() {
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-brand-gold">{net.toLocaleString()}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                           <button 
-                            onClick={() => handlePayout(t.id, t.users?.full_name || 'Tutor', net)}
+                            onClick={() => handlePayoutClick(t.id, t.users?.full_name || 'Tutor', net)}
                             className="px-3 py-1.5 bg-green-50 text-green-700 text-xs font-bold rounded-lg border border-green-200 hover:bg-green-100 transition-colors"
                           >
                             Pay
@@ -501,6 +534,131 @@ export default function FinancePage() {
           </div>
         </div>
       )}
+      </div>
+
+      {/* Payout Modal */}
+      <Transition appear show={isPayoutModalOpen} as={Fragment}>
+        <Dialog as="div" className="relative z-50" onClose={closePayoutModal}>
+          <Transition.Child
+            as={Fragment}
+            enter="ease-out duration-300"
+            enterFrom="opacity-0"
+            enterTo="opacity-100"
+            leave="ease-in duration-200"
+            leaveFrom="opacity-100"
+            leaveTo="opacity-0"
+          >
+            <div className="fixed inset-0 bg-black/50" />
+          </Transition.Child>
+
+          <div className="fixed inset-0 overflow-y-auto">
+            <div className="flex min-h-full items-center justify-center p-4">
+              <Transition.Child
+                as={Fragment}
+                enter="ease-out duration-300"
+                enterFrom="opacity-0 scale-95"
+                enterTo="opacity-100 scale-100"
+                leave="ease-in duration-200"
+                leaveFrom="opacity-100 scale-100"
+                leaveTo="opacity-0 scale-95"
+              >
+                <Dialog.Panel className="w-full max-w-md transform overflow-hidden rounded-2xl bg-white p-6 text-left align-middle shadow-xl transition-all">
+                  <Dialog.Title as="div" className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                      <Banknote className="w-5 h-5 text-green-600" />
+                      Process Payout
+                    </h3>
+                    <button onClick={closePayoutModal} className="p-1 hover:bg-gray-100 rounded-lg">
+                      <X className="w-5 h-5 text-gray-400" />
+                    </button>
+                  </Dialog.Title>
+
+                  {selectedTutor && (
+                    <div className="space-y-4">
+                      <div className="bg-green-50 rounded-xl p-4 border border-green-200">
+                        <div className="text-sm text-gray-600">Payout Amount</div>
+                        <div className="text-2xl font-bold text-green-700">{selectedTutor.amount.toLocaleString()} ETB</div>
+                        <div className="text-sm text-gray-500 mt-1">To: {selectedTutor.name}</div>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Bank / Channel *</label>
+                        <select
+                          value={payoutForm.bankName}
+                          onChange={(e) => setPayoutForm({ ...payoutForm, bankName: e.target.value })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                        >
+                          <option value="">Select payment method</option>
+                          <option value="CBE">CBE Birr</option>
+                          <option value="Telebirr">Telebirr</option>
+                          <option value="Bank Transfer">Bank Transfer</option>
+                          <option value="Cash">Cash</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Account Number / Phone *</label>
+                        <input
+                          type="text"
+                          value={payoutForm.accountNumber}
+                          onChange={(e) => setPayoutForm({ ...payoutForm, accountNumber: e.target.value })}
+                          placeholder="Phone number or account"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Reference Number *</label>
+                        <input
+                          type="text"
+                          value={payoutForm.referenceNumber}
+                          onChange={(e) => setPayoutForm({ ...payoutForm, referenceNumber: e.target.value })}
+                          placeholder="Transaction reference"
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Notes (optional)</label>
+                        <textarea
+                          value={payoutForm.notes}
+                          onChange={(e) => setPayoutForm({ ...payoutForm, notes: e.target.value })}
+                          placeholder="Any additional notes..."
+                          rows={2}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 resize-none"
+                        />
+                      </div>
+
+                      <div className="flex gap-3 pt-2">
+                        <button
+                          onClick={closePayoutModal}
+                          className="flex-1 px-4 py-2.5 border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition-colors"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          onClick={processPayout}
+                          disabled={isProcessingPayout || !payoutForm.bankName || !payoutForm.accountNumber || !payoutForm.referenceNumber}
+                          className="flex-1 px-4 py-2.5 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                        >
+                          {isProcessingPayout ? (
+                            <>
+                              <Loader2 className="w-4 h-4 animate-spin" />
+                              Processing...
+                            </>
+                          ) : (
+                            <>Confirm Payout</>
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </Dialog.Panel>
+              </Transition.Child>
+            </div>
+          </div>
+        </Dialog>
+      </Transition>
     </div>
   );
 }
