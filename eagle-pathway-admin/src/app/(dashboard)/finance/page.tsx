@@ -22,6 +22,7 @@ export default function FinancePage() {
   const [activeTab, setActiveTab] = useState<'balances' | 'transactions' | 'receipts' | 'payouts'>('balances');
   const [payments, setPayments] = useState<any[]>([]);
   const [payoutRequests, setPayoutRequests] = useState<any[]>([]);
+  const [notification, setNotification] = useState<{type: 'error' | 'success' | 'info'; message: string} | null>(null);
 
   const signReceiptUrl = async (payment: any) => {
     if (!payment.receipt_path) return payment;
@@ -115,6 +116,16 @@ export default function FinancePage() {
           <p className="mt-1 text-sm text-gray-500">Track platform revenue and tutor commissions.</p>
         </div>
       </div>
+
+      {notification && (
+        <div className={`p-4 rounded-xl border ${
+          notification.type === 'error' ? 'bg-red-50 border-red-200 text-red-700' :
+          notification.type === 'success' ? 'bg-green-50 border-green-200 text-green-700' :
+          'bg-blue-50 border-blue-200 text-blue-700'
+        }`}>
+          {notification.message}
+        </div>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
@@ -240,7 +251,8 @@ export default function FinancePage() {
                           <button 
                             onClick={() => {
                               if (net <= 0) {
-                                alert('Cannot payout - no balance available for this tutor.');
+                                setNotification({ type: 'error', message: 'Cannot payout - no balance available for this tutor.' });
+                                setTimeout(() => setNotification(null), 3000);
                                 return;
                               }
                               const refId = window.prompt(`Confirm payout of ${net.toLocaleString()} ETB to ${t.users?.full_name || 'Tutor'}.\nEnter Bank/Telebirr Reference Number:`);
