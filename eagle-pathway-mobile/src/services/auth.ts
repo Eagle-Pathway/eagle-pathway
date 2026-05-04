@@ -67,25 +67,25 @@ export const authService = {
         full_name: fullName,
         phone,
         roles: [role],
-        active_role: role,
+        active_role: role, // UI only - for backward compat
         email,
       })
       .select()
       .single();
     if (error) throw error;
     
-    // Automatically initialize tutor profile for tutors
-    if (role === 'tutor') {
-      const { error: tutorError } = await supabase
-        .from('tutors')
-        .insert({
-          user_id: userId,
-          bio: '',
-          is_verified: false,
-        });
-      if (tutorError) console.error('Failed to initialize tutor profile:', tutorError);
-    }
+    // Add role to user_roles table (source of truth)
+    const { error: roleError } = await supabase
+      .from('user_roles')
+      .insert({
+        user_id: userId,
+        role: role,
+      });
+    if (roleError) throw roleError;
 
+    // Note: Tutor/parent profiles are now lazy-created
+    // via database trigger when user switches to that role
+    
     return data as User;
   },
 

@@ -166,15 +166,33 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     const { user } = get();
     if (!user) return;
     
+    const previousUser = user;
+    const previousRole = user.active_role;
+    
     // Optimistically switch in UI
     set({ user: { ...user, active_role: role } });
     
     try {
+      // Update user_roles table (source of truth)
+      // If role doesn't exist for user, add it
+      const { error: roleError } = await supabase
+        .from('user_roles')
+        .upsert({
+          user_id: user.id,
+          role: role,
+        }, { onConflict: 'user_id,role', ignoreDuplicates: true });
+      
+      if (roleError) throw roleError;
+      
+      // Update active_role in users table (UI only)
       await authService.updateProfile(user.id, { active_role: role });
+      
+      // Tutor/parent profile is lazy-created by database trigger
+      // No need to manually create here
     } catch (e) {
       console.error('Failed to persist persona switch:', e);
-      // Revert if failed
-      set({ user });
+      // Revert UI if failed
+      set({ user: previousUser });
     }
   },
 
