@@ -1,8 +1,9 @@
 'use client';
 
-import { motion, useScroll, useTransform } from 'framer-motion';
-import { useRef, useEffect } from 'react';
+import { motion, useScroll, useTransform, AnimatePresence } from 'framer-motion';
+import { useRef, useEffect, useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import {
   faqs,
   internationalServices,
@@ -70,6 +71,7 @@ function useFadeUp() {
 }
 
 export function LandingPage() {
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const heroRef = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({
     target: heroRef,
@@ -80,6 +82,9 @@ export function LandingPage() {
   const heroOpacity = useTransform(scrollYProgress, [0, 0.5], [1, 0]);
 
   useFadeUp();
+
+  const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
+  const closeMenu = () => setIsMenuOpen(false);
 
   const primaryCtaLabel = 'Start Your Journey';
 
@@ -115,7 +120,9 @@ export function LandingPage() {
         <div className="container">
           <div className="nav-grid">
             <div className="logo-group">
-              <div className="logo-icon"><img src="./favicon.ico" alt="Eagle Pathway logo" width={32} height={32} /></div>
+              <div className="logo-icon">
+                <Image src="/favicon.ico" alt="Eagle Pathway logo" width={32} height={32} />
+              </div>
               <span className="logo-text">Eagle Pathway</span>
             </div>
             <ul className="nav-links">
@@ -129,8 +136,43 @@ export function LandingPage() {
             <div className="nav-cta">
               <Link href="/login" className="btn btn-outline">Client Portal</Link>
             </div>
+            <button 
+              className={`mobile-menu-toggle ${isMenuOpen ? 'active' : ''}`} 
+              onClick={toggleMenu}
+              aria-label="Toggle menu"
+            >
+              <span></span>
+              <span></span>
+              <span></span>
+            </button>
           </div>
         </div>
+
+        <AnimatePresence>
+          {isMenuOpen && (
+            <motion.div 
+              className="mobile-menu"
+              initial={{ opacity: 0, x: '100%' }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: '100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+            >
+              <ul className="mobile-nav-links">
+                <li><Link href="/about" onClick={closeMenu}>About</Link></li>
+                <li><Link href="/team" onClick={closeMenu}>Team</Link></li>
+                <li><Link href="/testimonials" onClick={closeMenu}>Success Stories</Link></li>
+                <li><Link href="/blog" onClick={closeMenu}>Blog</Link></li>
+                <li><a href="#services" onClick={closeMenu}>Services</a></li>
+                <li><a href="#pricing" onClick={closeMenu}>Pricing</a></li>
+                <li style={{ marginTop: '1.5rem' }}>
+                  <Link href="/login" className="btn btn-primary" style={{ width: '100%' }} onClick={closeMenu}>
+                    Client Portal
+                  </Link>
+                </li>
+              </ul>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </nav>
 
       <main>
@@ -191,26 +233,12 @@ export function LandingPage() {
               animate={{ opacity: 1 }}
               transition={{ delay: 0.75, duration: 0.8 }}
             >
-              <div className="hero-stat">
-                <span className="hero-stat-value">100+</span>
-                <span className="hero-stat-label">Active Students</span>
-              </div>
-              <div className="hero-stat">
-                <span className="hero-stat-value">70+</span>
-                <span className="hero-stat-label">Placements</span>
-              </div>
-              <div className="hero-stat">
-                <span className="hero-stat-value">$1M+</span>
-                <span className="hero-stat-label">Scholarships</span>
-              </div>
-              <div className="hero-stat">
-                <span className="hero-stat-value">4+</span>
-                <span className="hero-stat-label">Countries</span>
-              </div>
-              <div className="hero-stat">
-                <span className="hero-stat-value">94%</span>
-                <span className="hero-stat-label">Success Rate</span>
-              </div>
+              {statsData.map((stat, i) => (
+                <div key={i} className="hero-stat">
+                  <span className="hero-stat-value">{stat.value}</span>
+                  <span className="hero-stat-label">{stat.label}</span>
+                </div>
+              ))}
             </motion.div>
 
             <motion.div

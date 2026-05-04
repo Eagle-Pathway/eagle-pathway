@@ -1,8 +1,7 @@
 'use client';
-import { useState, useEffect, Fragment } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { DollarSign, TrendingUp, CreditCard, Wallet, Search, Loader2, X, Banknote } from 'lucide-react';
-import { Dialog, Transition } from '@headlessui/react';
 
 interface TutorFinancials {
   id: string;
@@ -23,12 +22,6 @@ export default function FinancePage() {
   const [activeTab, setActiveTab] = useState<'balances' | 'transactions' | 'receipts' | 'payouts'>('balances');
   const [payments, setPayments] = useState<any[]>([]);
   const [payoutRequests, setPayoutRequests] = useState<any[]>([]);
-  
-  // Payout modal state
-  const [isPayoutModalOpen, setIsPayoutModalOpen] = useState(false);
-  const [selectedTutor, setSelectedTutor] = useState<{id: string; name: string; amount: number} | null>(null);
-  const [payoutForm, setPayoutForm] = useState({ bankName: '', accountNumber: '', referenceNumber: '', notes: '' });
-  const [isProcessingPayout, setIsProcessingPayout] = useState(false);
 
   const signReceiptUrl = async (payment: any) => {
     if (!payment.receipt_path) return payment;
@@ -41,13 +34,11 @@ export default function FinancePage() {
   async function fetchData() {
     setLoading(true);
     
-    // Fetch tutor balances
     const { data: tutorData } = await supabase
       .from('tutors')
       .select(`id, user_id, hourly_rate, total_sessions, users ( full_name, phone )`)
       .order('total_sessions', { ascending: false });
 
-    // Fetch transactions
     const { data: transData } = await supabase
       .from('bookings')
       .select('*, student:users!bookings_student_id_fkey(full_name), tutor:tutors(id, users(full_name))')
@@ -55,13 +46,11 @@ export default function FinancePage() {
       .order('created_at', { ascending: false })
       .limit(20);
 
-    // Fetch manual local payments (Telebirr/CBE receipts)
     const { data: paymentsData } = await supabase
       .from('payments')
       .select('*, user:users(full_name, phone)')
       .order('created_at', { ascending: false });
 
-    // Fetch payout requests
     const { data: payRequests } = await supabase
       .from('tutor_payouts')
       .select('*, tutor:tutors(id, user_id, users(full_name, phone))')
@@ -94,7 +83,6 @@ export default function FinancePage() {
     if (!error) {
       setPayments(prev => prev.map(p => p.id === paymentId ? { ...p, status } : p));
       
-      // Optionally fire notification to student here about payment
       const pData = payments.find(p => p.id === paymentId);
       if (pData) {
         await supabase.from('notifications').insert({
@@ -108,88 +96,6 @@ export default function FinancePage() {
       }
     } else {
       alert('Verification failed: ' + error.message);
-    }
-  };
-
-const handlePayoutClick = (tutorId: string, tutorName: string, amount: number) => {
-    if (amount <= 0) {
-      alert('Cannot payout - no balance available for this tutor.');
-      return;
-    }
-    setSelectedTutor({ id: tutorId, name: tutorName, amount });
-    setPayoutForm({ bankName: '', accountNumber: '', referenceNumber: '', notes: '' });
-    setIsPayoutModalOpen(true);
-  };
-
-  const processPayout = async () => {
-    if (!selectedTutor) return;
-    if (!payoutForm.bankName || !payoutForm.accountNumber || !payoutForm.referenceNumber) {
-      alert('Please fill in all required fields.');
-      return;
-    }
-
-    setIsProcessingPayout(true);
-    
-    const { error } = await supabase.from('tutor_payouts').insert({
-      tutor_id: selectedTutor.id,
-      amount: selectedTutor.amount,
-      bank_name: payoutForm.bankName,
-      account_number: payoutForm.accountNumber,
-      reference_number: payoutForm.referenceNumber,
-      account_name: selectedTutor.name,
-      admin_notes: payoutForm.notes,
-      status: 'completed',
-      processed_at: new Date().toISOString()
-    });
-
-    setIsProcessingPayout(false);
-    
-    if (!error) {
-      setIsPayoutModalOpen(false);
-      setSelectedTutor(null);
-      alert(`Payout of ${selectedTutor.amount.toLocaleString()} ETB to ${selectedTutor.name} recorded successfully!`);
-      fetchData();
-    } else {
-      alert('Failed to process payout: ' + error.message);
-    }
-  };
-
-  const closePayoutModal = () => {
-    setIsPayoutModalOpen(false);
-    setSelectedTutor(null);
-  };
-
-  const handleUpdatePayoutStatus = async (payoutId: string, status: 'processing' | 'completed' | 'rejected') => {
-    const notes = status === 'rejected' ? window.prompt('Reason for rejection:') : null;
-    if (status === 'rejected' && notes === null) return;
-
-    const { error } = await supabase
-      .from('tutor_payouts')
-      .update({
-        status,
-        admin_notes: notes,
-        processed_at: status === 'completed' ? new Date().toISOString() : null,
-      })
-      .eq('id', payoutId);
-
-    if (!error) {
-      setPayoutRequests(prev => prev.map(p => p.id === payoutId ? { ...p, status, processed_at: status === 'completed' ? new Date().toISOString() : p.processed_at } : p));
-      
-      const pData = payoutRequests.find(p => p.id === payoutId);
-      if (pData) {
-        await supabase.from('notifications').insert({
-          user_id: pData.tutor.user_id,
-          type: 'application_update',
-          title: `Payout ${status.charAt(0).toUpperCase() + status.slice(1)} 💰`,
-          body: status === 'completed' 
-            ? `Your payout of ${pData.amount} ETB has been successfully transferred.` 
-            : status === 'processing' 
-              ? `We are processing your payout request of ${pData.amount} ETB.`
-              : `Your payout request was rejected: ${notes}`,
-        });
-      }
-    } else {
-      alert('Update failed: ' + error.message);
     }
   };
 
@@ -211,7 +117,7 @@ const handlePayoutClick = (tutorId: string, tutorName: string, amount: number) =
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col justify-between hover:shadow-md transition-shadow">
+        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-widest">Gross Volume</h3>
             <div className="p-2 bg-blue-50 rounded-lg text-brand-blue"><TrendingUp className="w-5 h-5" /></div>
@@ -222,18 +128,18 @@ const handlePayoutClick = (tutorId: string, tutorName: string, amount: number) =
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col justify-between hover:shadow-md transition-shadow border-t-4 border-t-green-500">
+        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 border-t-4 border-t-green-500">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-widest">Platform Profit</h3>
             <div className="p-2 bg-green-50 rounded-lg text-green-600"><DollarSign className="w-5 h-5" /></div>
           </div>
           <div>
             <div className="text-3xl font-bold text-gray-900">{totalPlatformProfit.toLocaleString()} ETB</div>
-            <p className="text-xs text-green-600 font-medium mt-2 flex items-center">Real-time revenue from fees</p>
+            <p className="text-xs text-green-600 font-medium mt-2">Real-time revenue from fees</p>
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col justify-between hover:shadow-md transition-shadow">
+        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-widest">Owed to Tutors</h3>
             <div className="p-2 bg-amber-50 rounded-lg text-brand-gold"><Wallet className="w-5 h-5" /></div>
@@ -281,7 +187,7 @@ const handlePayoutClick = (tutorId: string, tutorName: string, amount: number) =
         </button>
       </div>
 
-      {activeTab === 'balances' ? (
+      {activeTab === 'balances' && (
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
           <div className="p-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
              <h2 className="font-bold text-gray-900 ml-2">Net Earnings</h2>
@@ -332,7 +238,31 @@ const handlePayoutClick = (tutorId: string, tutorName: string, amount: number) =
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-brand-gold">{net.toLocaleString()}</td>
                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                           <button 
-                            onClick={() => handlePayoutClick(t.id, t.users?.full_name || 'Tutor', net)}
+                            onClick={() => {
+                              if (net <= 0) {
+                                alert('Cannot payout - no balance available for this tutor.');
+                                return;
+                              }
+                              const refId = window.prompt(`Confirm payout of ${net.toLocaleString()} ETB to ${t.users?.full_name || 'Tutor'}.\nEnter Bank/Telebirr Reference Number:`);
+                              if (!refId) return;
+                              (async () => {
+                                const { error } = await supabase.from('tutor_payouts').insert({
+                                  tutor_id: t.id,
+                                  amount: net,
+                                  bank_name: 'Manual / Admin Record',
+                                  account_number: refId,
+                                  account_name: t.users?.full_name || 'Tutor',
+                                  status: 'completed',
+                                  processed_at: new Date().toISOString()
+                                });
+                                if (!error) {
+                                  alert(`Payout to ${t.users?.full_name || 'Tutor'} recorded successfully!`);
+                                  fetchData();
+                                } else {
+                                  alert('Failed to process payout: ' + error.message);
+                                }
+                              })();
+                            }}
                             className="px-3 py-1.5 bg-green-50 text-green-700 text-xs font-bold rounded-lg border border-green-200 hover:bg-green-100 transition-colors"
                           >
                             Pay
@@ -346,8 +276,10 @@ const handlePayoutClick = (tutorId: string, tutorName: string, amount: number) =
             </table>
           </div>
         </div>
-      ) : activeTab === 'payouts' ? (
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden animate-in slide-in-from-bottom-2 duration-300">
+      )}
+
+      {activeTab === 'payouts' && (
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
           <div className="p-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
              <h2 className="font-bold text-gray-900 ml-2">Tutor Withdrawal Requests</h2>
           </div>
@@ -396,30 +328,44 @@ const handlePayoutClick = (tutorId: string, tutorName: string, amount: number) =
                           <div className="flex justify-end gap-2">
                              {p.status === 'pending' && (
                                <button 
-                                 onClick={() => handleUpdatePayoutStatus(p.id, 'processing')}
+                                 onClick={async () => {
+                                   const { error } = await supabase
+                                     .from('tutor_payouts')
+                                     .update({ status: 'processing' })
+                                     .eq('id', p.id);
+                                   if (!error) fetchData();
+                                 }}
                                  className="px-3 py-1 bg-blue-50 text-brand-blue text-[10px] font-bold rounded border border-blue-100 hover:bg-blue-100"
                                >
                                  Process
                                </button>
                              )}
                              <button 
-                               onClick={() => handleUpdatePayoutStatus(p.id, 'completed')}
+                               onClick={async () => {
+                                 const { error } = await supabase
+                                   .from('tutor_payouts')
+                                   .update({ status: 'completed', processed_at: new Date().toISOString() })
+                                   .eq('id', p.id);
+                                 if (!error) fetchData();
+                               }}
                                className="px-3 py-1 bg-green-50 text-green-700 text-[10px] font-bold rounded border border-green-100 hover:bg-green-100"
                              >
                                Complete
                              </button>
                              <button 
-                               onClick={() => handleUpdatePayoutStatus(p.id, 'rejected')}
+                               onClick={async () => {
+                                 const notes = window.prompt('Reason for rejection:');
+                                 if (!notes) return;
+                                 const { error } = await supabase
+                                   .from('tutor_payouts')
+                                   .update({ status: 'rejected', admin_notes: notes })
+                                   .eq('id', p.id);
+                                 if (!error) fetchData();
+                               }}
                                className="px-3 py-1 bg-red-50 text-red-700 text-[10px] font-bold rounded border border-red-100 hover:bg-red-100"
                              >
                                Reject
                              </button>
-                          </div>
-                        )}
-                        {(p.status === 'completed' || p.status === 'rejected') && (
-                          <div className="text-[10px] text-gray-400 font-medium">
-                             {p.status === 'completed' ? 'Fulfilled ' : 'Rejected '} 
-                             {p.processed_at && new Date(p.processed_at).toLocaleDateString()}
                           </div>
                         )}
                       </td>
@@ -430,8 +376,10 @@ const handlePayoutClick = (tutorId: string, tutorName: string, amount: number) =
             </table>
           </div>
         </div>
-      ) : activeTab === 'transactions' ? (
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden animate-in slide-in-from-bottom-2 duration-300">
+      )}
+
+      {activeTab === 'transactions' && (
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
           <div className="p-4 border-b border-gray-100 bg-gray-50/50">
              <h2 className="font-bold text-gray-900 ml-2">Recent Booking Payments</h2>
           </div>
@@ -474,8 +422,10 @@ const handlePayoutClick = (tutorId: string, tutorName: string, amount: number) =
             </table>
           </div>
         </div>
-      ) : (
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden animate-in slide-in-from-bottom-2 duration-300">
+      )}
+
+      {activeTab === 'receipts' && (
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
           <div className="p-4 border-b border-gray-100 bg-gray-50/50">
              <h2 className="font-bold text-gray-900 ml-2">Approve Manual Payments</h2>
           </div>
@@ -534,131 +484,6 @@ const handlePayoutClick = (tutorId: string, tutorName: string, amount: number) =
           </div>
         </div>
       )}
-      </div>
-
-      {/* Payout Modal */}
-      <Transition appear show={isPayoutModalOpen} as={Fragment}>
-        <Dialog as="div" className="relative z-50" onClose={closePayoutModal}>
-          <Transition.Child
-            as={Fragment}
-            enter="ease-out duration-300"
-            enterFrom="opacity-0"
-            enterTo="opacity-100"
-            leave="ease-in duration-200"
-            leaveFrom="opacity-100"
-            leaveTo="opacity-0"
-          >
-            <div className="fixed inset-0 bg-black/50" />
-          </Transition.Child>
-
-          <div className="fixed inset-0 overflow-y-auto">
-            <div className="flex min-h-full items-center justify-center p-4">
-              <Transition.Child
-                as={Fragment}
-                enter="ease-out duration-300"
-                enterFrom="opacity-0 scale-95"
-                enterTo="opacity-100 scale-100"
-                leave="ease-in duration-200"
-                leaveFrom="opacity-100 scale-100"
-                leaveTo="opacity-0 scale-95"
-              >
-                <Dialog.Panel className="w-full max-w-md transform overflow-hidden rounded-2xl bg-white p-6 text-left align-middle shadow-xl transition-all">
-                  <Dialog.Title as="div" className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-                      <Banknote className="w-5 h-5 text-green-600" />
-                      Process Payout
-                    </h3>
-                    <button onClick={closePayoutModal} className="p-1 hover:bg-gray-100 rounded-lg">
-                      <X className="w-5 h-5 text-gray-400" />
-                    </button>
-                  </Dialog.Title>
-
-                  {selectedTutor && (
-                    <div className="space-y-4">
-                      <div className="bg-green-50 rounded-xl p-4 border border-green-200">
-                        <div className="text-sm text-gray-600">Payout Amount</div>
-                        <div className="text-2xl font-bold text-green-700">{selectedTutor.amount.toLocaleString()} ETB</div>
-                        <div className="text-sm text-gray-500 mt-1">To: {selectedTutor.name}</div>
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Bank / Channel *</label>
-                        <select
-                          value={payoutForm.bankName}
-                          onChange={(e) => setPayoutForm({ ...payoutForm, bankName: e.target.value })}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                        >
-                          <option value="">Select payment method</option>
-                          <option value="CBE">CBE Birr</option>
-                          <option value="Telebirr">Telebirr</option>
-                          <option value="Bank Transfer">Bank Transfer</option>
-                          <option value="Cash">Cash</option>
-                        </select>
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Account Number / Phone *</label>
-                        <input
-                          type="text"
-                          value={payoutForm.accountNumber}
-                          onChange={(e) => setPayoutForm({ ...payoutForm, accountNumber: e.target.value })}
-                          placeholder="Phone number or account"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Reference Number *</label>
-                        <input
-                          type="text"
-                          value={payoutForm.referenceNumber}
-                          onChange={(e) => setPayoutForm({ ...payoutForm, referenceNumber: e.target.value })}
-                          placeholder="Transaction reference"
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                        />
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Notes (optional)</label>
-                        <textarea
-                          value={payoutForm.notes}
-                          onChange={(e) => setPayoutForm({ ...payoutForm, notes: e.target.value })}
-                          placeholder="Any additional notes..."
-                          rows={2}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 resize-none"
-                        />
-                      </div>
-
-                      <div className="flex gap-3 pt-2">
-                        <button
-                          onClick={closePayoutModal}
-                          className="flex-1 px-4 py-2.5 border border-gray-300 text-gray-700 font-medium rounded-lg hover:bg-gray-50 transition-colors"
-                        >
-                          Cancel
-                        </button>
-                        <button
-                          onClick={processPayout}
-                          disabled={isProcessingPayout || !payoutForm.bankName || !payoutForm.accountNumber || !payoutForm.referenceNumber}
-                          className="flex-1 px-4 py-2.5 bg-green-600 text-white font-medium rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                        >
-                          {isProcessingPayout ? (
-                            <>
-                              <Loader2 className="w-4 h-4 animate-spin" />
-                              Processing...
-                            </>
-                          ) : (
-                            <>Confirm Payout</>
-                          )}
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </Dialog.Panel>
-              </Transition.Child>
-            </div>
-          </div>
-        </Dialog>
-      </Transition>
     </div>
   );
 }
