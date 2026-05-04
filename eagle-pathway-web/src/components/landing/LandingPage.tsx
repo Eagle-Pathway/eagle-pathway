@@ -148,31 +148,6 @@ export function LandingPage() {
           </div>
         </div>
 
-        <AnimatePresence>
-          {isMenuOpen && (
-            <motion.div 
-              className="mobile-menu"
-              initial={{ opacity: 0, x: '100%' }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: '100%' }}
-              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-            >
-              <ul className="mobile-nav-links">
-                <li><Link href="/about" onClick={closeMenu}>About</Link></li>
-                <li><Link href="/team" onClick={closeMenu}>Team</Link></li>
-                <li><Link href="/testimonials" onClick={closeMenu}>Success Stories</Link></li>
-                <li><Link href="/blog" onClick={closeMenu}>Blog</Link></li>
-                <li><a href="#services" onClick={closeMenu}>Services</a></li>
-                <li><a href="#pricing" onClick={closeMenu}>Pricing</a></li>
-                <li style={{ marginTop: '1.5rem' }}>
-                  <Link href="/login" className="btn btn-primary" style={{ width: '100%' }} onClick={closeMenu}>
-                    Client Portal
-                  </Link>
-                </li>
-              </ul>
-            </motion.div>
-          )}
-        </AnimatePresence>
       </nav>
 
       <main>
@@ -509,6 +484,28 @@ export function LandingPage() {
           </p>
         </div>
       </footer>
+      <AnimatePresence>
+        {isMenuOpen && (
+          <motion.div 
+            className="mobile-overlay"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <div className="mobile-overlay-content">
+              <nav className="mobile-nav">
+                <Link href="/about" onClick={closeMenu}>About</Link>
+                <Link href="/team" onClick={closeMenu}>Team</Link>
+                <Link href="/testimonials" onClick={closeMenu}>Success Stories</Link>
+                <Link href="/blog" onClick={closeMenu}>Blog</Link>
+                <a href="#services" onClick={closeMenu}>Services</a>
+                <a href="#pricing" onClick={closeMenu}>Pricing</a>
+                <Link href="/login" className="btn btn-primary" onClick={closeMenu}>Client Portal</Link>
+              </nav>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
