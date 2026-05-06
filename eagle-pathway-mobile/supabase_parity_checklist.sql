@@ -34,12 +34,12 @@ WHERE table_name = 'tutor_payouts' AND table_schema = 'public'
 ORDER BY ordinal_position;
 
 -- Check 5: RLS policies on tutor_payouts
-SELECT polname, polcmd 
+SELECT policyname AS polname, cmd AS polcmd 
 FROM pg_policies 
 WHERE tablename = 'tutor_payouts';
 
 -- Check 6: Helper functions exist
-SELECT proname, prosrc 
+SELECT proname 
 FROM pg_proc 
 WHERE proname IN ('is_admin', 'has_role', 'update_updated_at_column');
 

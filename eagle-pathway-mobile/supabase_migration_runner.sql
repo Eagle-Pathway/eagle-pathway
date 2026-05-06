@@ -34,7 +34,7 @@ CREATE TABLE IF NOT EXISTS schema_migrations (
 
 -- ============================================================
 -- CHECK: Current schema version
--- ============================================================
+-- (No rows = table doesn't exist yet, run the CREATE TABLE first)
 SELECT version, name, applied_at 
 FROM schema_migrations 
 ORDER BY applied_at DESC;
