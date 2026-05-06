@@ -1979,6 +1979,7 @@ export function EditProfileScreen() {
     target_departments: user?.target_departments || [],
     grade_level: user?.grade_level || '',
     gpa: user?.gpa || '',
+    gpa_max: user?.gpa_max || '4.0',
     city: user?.city || '',
     phone: user?.phone || '',
   });
@@ -2002,7 +2003,8 @@ export function EditProfileScreen() {
         has_extracurriculars: formData.has_extracurriculars,
         target_departments: formData.target_departments,
         grade_level: formData.grade_level,
-        gpa: formData.gpa ? parseFloat(formData.gpa) : undefined,
+        gpa: formData.gpa ? parseFloat(formData.gpa.toString()) : undefined,
+        gpa_max: formData.gpa_max ? parseFloat(formData.gpa_max.toString()) : undefined,
       });
       Alert.alert('Success', 'Profile updated successfully!');
       router.back();
@@ -2099,14 +2101,30 @@ export function EditProfileScreen() {
             ))}
           </View>
 
-          <Text style={editProfStyles.fieldLabel}>Cumulative GPA (Optional)</Text>
-          <TextInput 
-            style={editProfStyles.input} 
-            keyboardType='numeric'
-            value={formData.gpa} 
-            onChangeText={t => setFormData(f => ({ ...f, gpa: t }))} 
-            placeholder="e.g. 3.8"
-          />
+          <Text style={editProfStyles.fieldLabel}>Cumulative GPA</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: 10, color: Colors.textSecondary, marginBottom: 4, fontWeight: '600' }}>ACTUAL GPA</Text>
+              <TextInput 
+                style={editProfStyles.input} 
+                keyboardType='numeric'
+                value={formData.gpa.toString()} 
+                onChangeText={t => setFormData(f => ({ ...f, gpa: t }))} 
+                placeholder="e.g. 3.8"
+              />
+            </View>
+            <Text style={{ fontSize: 18, color: Colors.textSecondary, marginTop: 15 }}>/</Text>
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: 10, color: Colors.textSecondary, marginBottom: 4, fontWeight: '600' }}>OUT OF</Text>
+              <TextInput 
+                style={editProfStyles.input} 
+                keyboardType='numeric'
+                value={formData.gpa_max.toString()} 
+                onChangeText={t => setFormData(f => ({ ...f, gpa_max: t }))} 
+                placeholder="e.g. 4.0"
+              />
+            </View>
+          </View>
         </Section>
 
         <Section title="🌐 Language & Tests">
