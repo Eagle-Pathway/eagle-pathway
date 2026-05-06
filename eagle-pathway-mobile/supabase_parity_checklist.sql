@@ -59,7 +59,7 @@ FROM tutors t
 JOIN users u ON t.user_id = u.id 
 WHERE u.phone = '+251932508910';
 
--- Check 10: student_tasks table exists with correct columns
+-- Check 10: student_tasks table - verify columns
 SELECT column_name, data_type 
 FROM information_schema.columns 
 WHERE table_name = 'student_tasks' AND table_schema = 'public'
