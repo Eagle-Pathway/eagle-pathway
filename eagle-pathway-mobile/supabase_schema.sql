@@ -10,13 +10,34 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 CREATE OR REPLACE FUNCTION public.is_admin()
 RETURNS BOOLEAN AS $$
 BEGIN
-  RETURN (
-    SELECT active_role = 'admin' OR roles @> ARRAY['admin']::TEXT[]
-    FROM public.users
-    WHERE id = auth.uid()
+  RETURN EXISTS (
+    SELECT 1 FROM public.user_roles ur
+    WHERE ur.user_id = auth.uid()
+      AND ur.role = 'admin'
   );
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Helper function to check if user has a specific role
+CREATE OR REPLACE FUNCTION public.has_role(target_role TEXT)
+RETURNS BOOLEAN AS $$
+BEGIN
+  RETURN EXISTS (
+    SELECT 1 FROM public.user_roles ur
+    WHERE ur.user_id = auth.uid()
+      AND ur.role = target_role
+  );
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Helper function to update updated_at column
+CREATE OR REPLACE FUNCTION public.update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+  NEW.updated_at = NOW();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
 
 -- ─── USERS ────────────────────────────────────────────────────────────────────
 CREATE TYPE user_role AS ENUM ('student', 'parent', 'tutor', 'admin');
@@ -41,8 +62,27 @@ CREATE TABLE users (
   target_degree_level   TEXT,
   has_extracurriculars  BOOLEAN DEFAULT FALSE,
   target_departments    TEXT[] DEFAULT '{}',
-  created_at            TIMESTAMPTZ DEFAULT NOW()
+  created_at            TIMESTAMPTZ DEFAULT NOW(),
+  updated_at            TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- ─── USER ROLES ──────────────────────────────────────────────────────────────
+CREATE TABLE user_roles (
+  id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  user_id         UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  role            TEXT NOT NULL CHECK (role IN ('student', 'parent', 'tutor', 'admin')),
+  created_at      TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(user_id, role)
+);
+
+ALTER TABLE user_roles ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users can view own roles" ON user_roles FOR SELECT USING (auth.uid() = user_id OR is_admin());
+CREATE POLICY "Admins can manage roles" ON user_roles FOR ALL USING (is_admin());
+
+-- Trigger to auto-update updated_at
+CREATE TRIGGER update_users_updated_at
+  BEFORE UPDATE ON users
+  FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
 
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Users can view own profile" ON users FOR SELECT USING (auth.uid() = id OR is_admin());
@@ -298,6 +338,31 @@ ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Users can view own notifications" ON notifications FOR SELECT USING (auth.uid() = user_id OR is_admin());
 CREATE POLICY "Users can update own notifications" ON notifications FOR UPDATE USING (auth.uid() = user_id OR is_admin());
 CREATE POLICY "Admins can insert notifications" ON notifications FOR INSERT WITH CHECK (is_admin());
+
+-- ─── STUDENT TASKS ────────────────────────────────────────────────────────────
+CREATE TYPE task_status AS ENUM ('pending', 'completed', 'overdue');
+CREATE TYPE task_type AS ENUM ('document', 'sop', 'payment', 'session', 'other');
+
+CREATE TABLE student_tasks (
+  id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  student_id      UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  application_id  UUID REFERENCES applications(id) ON DELETE SET NULL,
+  title           TEXT NOT NULL,
+  description     TEXT,
+  due_date        TIMESTAMPTZ,
+  status          task_status NOT NULL DEFAULT 'pending',
+  type            task_type NOT NULL DEFAULT 'other',
+  created_at      TIMESTAMPTZ DEFAULT NOW(),
+  updated_at      TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE student_tasks ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Users can view relevant tasks" ON student_tasks FOR SELECT USING (auth.uid() = student_id OR is_admin());
+CREATE POLICY "Admins can manage tasks" ON student_tasks FOR ALL USING (is_admin());
+
+CREATE TRIGGER update_student_tasks_updated_at
+  BEFORE UPDATE ON student_tasks
+  FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
 
 -- ─── PUSH TOKENS ──────────────────────────────────────────────────────────────
 CREATE TABLE push_tokens (
