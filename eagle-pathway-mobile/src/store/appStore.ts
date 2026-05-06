@@ -5,6 +5,7 @@ import { tutorsService } from '../services/tutors';
 import { notificationsService } from '../services/notifications';
 import { tasksService } from '../services/tasks';
 import { financeService, PayoutRequest } from '../services/finance';
+import { parentsService } from '../services/parents';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   Scholarship,
@@ -111,6 +112,11 @@ interface AppState {
   // Actions — Parents
   loadLinkedStudents: (userId: string) => Promise<void>;
   loadLinkedStudentApplications: (userId: string) => Promise<void>;
+  inviteParent: (studentId: string, parentPhone: string) => Promise<void>;
+  linkStudent: (parentId: string, studentPhone: string) => Promise<void>;
+  loadPendingLinks: (userId: string, role: 'parent' | 'student') => Promise<any[]>;
+  verifyLink: (linkId: string) => Promise<void>;
+  removeLink: (linkId: string) => Promise<void>;
 
   // Realtime
   subscribeToUpdates: (userId: string) => void;
@@ -399,6 +405,35 @@ export const useAppStore = create<AppState>((set, get) => ({
       set({ linkedStudentApplications: appsByStudent });
     } catch (e) {
       console.error('Error loading student applications:', e);
+    }
+  },
+
+  inviteParent: async (studentId, parentPhone) => {
+    await parentsService.inviteParent(studentId, parentPhone);
+  },
+
+  linkStudent: async (parentId, studentPhone) => {
+    await parentsService.linkStudent(parentId, studentPhone);
+  },
+
+  loadPendingLinks: async (userId, role) => {
+    return await parentsService.getPendingLinks(userId, role);
+  },
+
+  verifyLink: async (linkId) => {
+    await parentsService.verifyLink(linkId);
+    const { user } = useAuthStore.getState();
+    if (user) {
+      get().loadLinkedStudents(user.id);
+      get().loadLinkedStudentApplications(user.id);
+    }
+  },
+
+  removeLink: async (linkId) => {
+    await parentsService.removeLink(linkId);
+    const { user } = useAuthStore.getState();
+    if (user) {
+      get().loadLinkedStudents(user.id);
     }
   },
 
