@@ -44,11 +44,11 @@ FROM pg_proc
 WHERE proname IN ('is_admin', 'has_role', 'update_updated_at_column');
 
 -- Check 7: Triggers on users
-SELECT tgname, tgrelname::regclass, tgtype 
+SELECT tgname 
 FROM pg_trigger 
 WHERE tgrelid = 'users'::regclass;
 
--- Check 8: is_admin() should check user_roles (not users.active_role)
+-- Check 8: is_admin() implementation
 SELECT prosrc 
 FROM pg_proc 
 WHERE proname = 'is_admin';
