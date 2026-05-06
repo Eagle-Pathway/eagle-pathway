@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
-import { DollarSign, TrendingUp, Wallet, Search, Loader2, Banknote } from 'lucide-react';
+import { DollarSign, TrendingUp, Wallet, Loader2, Banknote } from 'lucide-react';
 
 interface TutorFinancials {
   id: string;
@@ -28,6 +28,12 @@ export default function FinancePage() {
   const [selectedPayout, setSelectedPayout] = useState<{tutor: TutorFinancials; amount: number} | null>(null);
   const [payoutDetails, setPayoutDetails] = useState({ bankName: '', accountNumber: '', reference: '', notes: '' });
   const [isProcessingPayout, setIsProcessingPayout] = useState(false);
+  const [isUpdatingPayoutRequestId, setIsUpdatingPayoutRequestId] = useState<string | null>(null);
+
+  const showNotification = (type: 'error' | 'success' | 'info', message: string, timeoutMs = 3500) => {
+    setNotification({ type, message });
+    window.setTimeout(() => setNotification(null), timeoutMs);
+  };
 
   const signReceiptUrl = async (payment: any) => {
     if (!payment.receipt_path) return payment;
@@ -39,35 +45,38 @@ export default function FinancePage() {
 
   async function fetchData() {
     setLoading(true);
-    
-    const { data: tutorData } = await supabase
-      .from('tutors')
-      .select(`id, user_id, hourly_rate, total_sessions, users ( full_name, phone )`)
-      .order('total_sessions', { ascending: false });
+    try {
+      const { data: tutorData } = await supabase
+        .from('tutors')
+        .select(`id, user_id, hourly_rate, total_sessions, users ( full_name, phone )`)
+        .order('total_sessions', { ascending: false });
 
-    const { data: transData } = await supabase
-      .from('bookings')
-      .select('*, student:users!bookings_student_id_fkey(full_name), tutor:tutors(id, users(full_name))')
-      .neq('status', 'cancelled')
-      .order('created_at', { ascending: false })
-      .limit(20);
+      const { data: transData } = await supabase
+        .from('bookings')
+        .select('*, student:users!bookings_student_id_fkey(full_name), tutor:tutors(id, users(full_name))')
+        .neq('status', 'cancelled')
+        .order('created_at', { ascending: false })
+        .limit(20);
 
-    const { data: paymentsData } = await supabase
-      .from('payments')
-      .select('*, user:users(full_name, phone)')
-      .order('created_at', { ascending: false });
+      const { data: paymentsData } = await supabase
+        .from('payments')
+        .select('*, user:users(full_name, phone)')
+        .order('created_at', { ascending: false });
 
-    const { data: payRequests } = await supabase
-      .from('tutor_payouts')
-      .select('*, tutor:tutors(id, user_id, users(full_name, phone))')
-      .order('created_at', { ascending: false });
+      const { data: payRequests } = await supabase
+        .from('tutor_payouts')
+        .select('*, tutor:tutors(id, user_id, users(full_name, phone))')
+        .order('created_at', { ascending: false });
 
-    if (tutorData) setTutors(tutorData as any);
-    if (transData) setTransactions(transData);
-    if (paymentsData) setPayments(await Promise.all(paymentsData.map(signReceiptUrl)));
-    if (payRequests) setPayoutRequests(payRequests);
-    
-    setLoading(false);
+      if (tutorData) setTutors(tutorData as any[]);
+      if (transData) setTransactions(transData);
+      if (paymentsData) setPayments(await Promise.all(paymentsData.map(signReceiptUrl)));
+      if (payRequests) setPayoutRequests(payRequests);
+    } catch (error: any) {
+      showNotification('error', error?.message || 'Failed to load finance data.');
+    } finally {
+      setLoading(false);
+    }
   }
 
   useEffect(() => {
@@ -88,7 +97,29 @@ export default function FinancePage() {
     
     if (!error) {
       setPayments(prev => prev.map(p => p.id === paymentId ? { ...p, status } : p));
+      showNotification('success', `Receipt ${status}.`);
+      return;
     }
+
+    showNotification('error', error.message || 'Failed to verify receipt.');
+  };
+
+  const handleCompletePayoutRequest = async (requestId: string) => {
+    setIsUpdatingPayoutRequestId(requestId);
+    const { error } = await supabase
+      .from('tutor_payouts')
+      .update({ status: 'completed', processed_at: new Date().toISOString() })
+      .eq('id', requestId);
+
+    setIsUpdatingPayoutRequestId(null);
+
+    if (error) {
+      showNotification('error', error.message || 'Failed to complete payout request.');
+      return;
+    }
+
+    showNotification('success', 'Payout request marked as completed.');
+    await fetchData();
   };
 
   const totalPlatformVolume = tutors.reduce((acc, t) => acc + ((t.hourly_rate || 0) * (t.total_sessions || 0)), 0);
@@ -219,8 +250,7 @@ export default function FinancePage() {
                       <button 
                         onClick={() => {
                           if (net <= 0) {
-                            setNotification({ type: 'error', message: 'No balance available' });
-                            setTimeout(() => setNotification(null), 3000);
+                            showNotification('error', 'No balance available');
                             return;
                           }
                           setSelectedPayout({ tutor: t, amount: net });
@@ -280,13 +310,13 @@ export default function FinancePage() {
                   <td className="px-4 py-3 text-right">
                     {p.status !== 'completed' && p.status !== 'rejected' && (
                       <div className="flex gap-1 justify-end">
-                        <button onClick={async () => {
-                          const { error } = await supabase
-                            .from('tutor_payouts')
-                            .update({ status: 'completed', processed_at: new Date().toISOString() })
-                            .eq('id', p.id);
-                          if (!error) fetchData();
-                        }} className="px-2 py-1 bg-green-50 text-green-700 text-xs rounded">Complete</button>
+                        <button
+                          onClick={() => handleCompletePayoutRequest(p.id)}
+                          disabled={isUpdatingPayoutRequestId === p.id}
+                          className="px-2 py-1 bg-green-50 text-green-700 text-xs rounded disabled:opacity-60"
+                        >
+                          {isUpdatingPayoutRequestId === p.id ? 'Completing...' : 'Complete'}
+                        </button>
                       </div>
                     )}
                   </td>
@@ -446,8 +476,7 @@ export default function FinancePage() {
               <button
                 onClick={async () => {
                   if (!payoutDetails.bankName || !payoutDetails.accountNumber || !payoutDetails.reference) {
-                    setNotification({ type: 'error', message: 'Please fill all required fields.' });
-                    setTimeout(() => setNotification(null), 3000);
+                    showNotification('error', 'Please fill all required fields.');
                     return;
                   }
                   setIsProcessingPayout(true);
@@ -465,12 +494,10 @@ export default function FinancePage() {
                   setIsProcessingPayout(false);
                   if (!error) {
                     setShowPayoutModal(false);
-                    setNotification({ type: 'success', message: `Payout of ${selectedPayout.amount.toLocaleString()} ETB recorded!` });
-                    setTimeout(() => setNotification(null), 3000);
+                    showNotification('success', `Payout of ${selectedPayout.amount.toLocaleString()} ETB recorded!`);
                     fetchData();
                   } else {
-                    setNotification({ type: 'error', message: 'Failed: ' + error.message });
-                    setTimeout(() => setNotification(null), 5000);
+                    showNotification('error', 'Failed: ' + error.message, 5000);
                   }
                 }}
                 disabled={isProcessingPayout}

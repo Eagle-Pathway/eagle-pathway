@@ -61,6 +61,7 @@ export default function ApplicationsPage() {
   const [savingNotes, setSavingNotes] = useState(false);
   const [savingFeedback, setSavingFeedback] = useState(false);
   const [savingStatus, setSavingStatus] = useState(false);
+  const [notification, setNotification] = useState<{type: 'error' | 'success' | 'info'; message: string} | null>(null);
 
   useEffect(() => {
     fetchData();
@@ -129,12 +130,15 @@ export default function ApplicationsPage() {
       if (!error) {
         setApplications(prev => prev.map(app => app.id === appId ? { ...app, status, updated_at: new Date().toISOString() } : app));
         if (selectedApp?.id === appId) setSelectedApp(prev => prev ? { ...prev, status, updated_at: new Date().toISOString() } : null);
-        // Optional: Alert success for status update too
+        setNotification({ type: 'success', message: 'Status updated successfully!' });
+        setTimeout(() => setNotification(null), 3000);
       } else {
-        alert('Failed to update status: ' + error.message);
+        setNotification({ type: 'error', message: 'Failed to update status: ' + error.message });
+        setTimeout(() => setNotification(null), 5000);
       }
     } catch (err: any) {
-      alert('An unexpected error occurred: ' + err.message);
+      setNotification({ type: 'error', message: 'An unexpected error occurred: ' + err.message });
+      setTimeout(() => setNotification(null), 5000);
     } finally {
       setSavingStatus(false);
     }
@@ -151,15 +155,19 @@ export default function ApplicationsPage() {
     if (!error) {
       setApplications(prev => prev.map(app => app.id === selectedApp.id ? { ...app, notes: notesInput } : app));
       setSelectedApp({ ...selectedApp, notes: notesInput });
+      setNotification({ type: 'success', message: 'Notes saved!' });
+      setTimeout(() => setNotification(null), 3000);
     } else {
-      alert('Failed to save notes: ' + error.message);
+      setNotification({ type: 'error', message: 'Failed to save notes: ' + error.message });
+      setTimeout(() => setNotification(null), 5000);
     }
     setSavingNotes(false);
   };
 
   const handleSaveFeedback = async (appId: string, feedback: string) => {
     if (!feedback.trim()) {
-      alert('Please enter some feedback before sending.');
+      setNotification({ type: 'error', message: 'Please enter some feedback before sending.' });
+      setTimeout(() => setNotification(null), 3000);
       return;
     }
 
@@ -174,23 +182,24 @@ export default function ApplicationsPage() {
         setApplications(prev => prev.map(app => app.id === appId ? { ...app, consultant_feedback: feedback, updated_at: new Date().toISOString() } : app));
         if (selectedApp?.id === appId) setSelectedApp(prev => prev ? { ...prev, consultant_feedback: feedback, updated_at: new Date().toISOString() } : null);
         
-        // Notify student
         const appData = applications.find(a => a.id === appId);
         if (appData?.student_id) {
           await supabase.from('notifications').insert({
             user_id: appData.student_id,
             type: 'sop_reviewed',
-            title: 'SOP Feedback Available ✍️',
+            title: 'SOP Feedback Available',
             body: `Consultant left some feedback on your ${appData.scholarship?.name} application.`,
           });
         }
-        alert('Feedback sent to student successfully! ✨');
+        setNotification({ type: 'success', message: 'Feedback sent to student!' });
+        setTimeout(() => setNotification(null), 3000);
       } else {
-        alert('Failed to save feedback: ' + error.message);
+        setNotification({ type: 'error', message: 'Failed to save feedback: ' + error.message });
+        setTimeout(() => setNotification(null), 5000);
       }
     } catch (err: any) {
-      alert('An unexpected error occurred while saving feedback.');
-      console.error(err);
+      setNotification({ type: 'error', message: 'An unexpected error occurred.' });
+      setTimeout(() => setNotification(null), 5000);
     } finally {
       setSavingFeedback(false);
     }
@@ -216,6 +225,16 @@ export default function ApplicationsPage() {
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
+      {notification && (
+        <div className={`p-4 rounded-xl border ${
+          notification.type === 'error' ? 'bg-red-50 border-red-200 text-red-700' :
+          notification.type === 'success' ? 'bg-green-50 border-green-200 text-green-700' :
+          'bg-blue-50 border-blue-200 text-blue-700'
+        }`}>
+          {notification.message}
+        </div>
+      )}
+
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Application Tracking</h1>

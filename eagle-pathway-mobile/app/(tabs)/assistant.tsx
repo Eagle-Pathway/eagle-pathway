@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import {
   View,
   Text,
@@ -13,7 +13,7 @@ import {
   ScrollView,
 } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
-import { Colors, Typography, Spacing, Radius } from '../../src/utils/theme';
+import { Colors } from '../../src/utils/theme';
 import { Ionicons } from '@expo/vector-icons';
 
 interface Message {
@@ -28,6 +28,26 @@ const QUICK_ACTIONS = [
   { id: '4', label: 'Visa Guide', icon: '🌍', prompt: 'How do I start the visa process for Hungary?' },
   { id: '5', label: 'Package info', icon: '💰', prompt: 'Tell me about the Standard and Premium packages.' },
 ];
+
+const ASSISTANT_API_URL = process.env.EXPO_PUBLIC_EAGLE_ASSISTANT_API_URL;
+const SHARED_AI_API_URL = process.env.EXPO_PUBLIC_EAGLE_AI_API_URL;
+
+function getAssistantApiUrl(): string {
+  const rawUrl = ASSISTANT_API_URL || SHARED_AI_API_URL;
+  if (!rawUrl) {
+    throw new Error('Assistant endpoint is not configured.');
+  }
+
+  if (rawUrl.endsWith('/api/assistant')) {
+    return rawUrl;
+  }
+
+  if (rawUrl.endsWith('/api/sop-review')) {
+    return rawUrl.replace('/api/sop-review', '/api/assistant');
+  }
+
+  return `${rawUrl.replace(/\/$/, '')}/api/assistant`;
+}
 
 export default function AssistantScreen() {
   const router = useRouter();
@@ -46,8 +66,7 @@ export default function AssistantScreen() {
     setIsLoading(true);
 
     try {
-      const baseUrl = 'https://eagle-pathway-79kn.vercel.app';
-      const apiUrl = `${baseUrl}/api/assistant`;
+      const apiUrl = getAssistantApiUrl();
 
       const response = await fetch(apiUrl, {
         method: 'POST',
@@ -73,7 +92,7 @@ export default function AssistantScreen() {
       console.error('Failed to send message:', error);
       setMessages((prev) => [
         ...prev,
-        { role: 'assistant', content: 'Sorry, I am currently unavailable. Please check your network connection.' },
+        { role: 'assistant', content: 'Sorry, I am currently unavailable. Please check your network connection or assistant configuration.' },
       ]);
     } finally {
       setIsLoading(false);
