@@ -1,10 +1,22 @@
 -- ============================================================
 -- EAGLE PATHWAY — SUPABASE DATABASE SCHEMA
--- Run this entire file in your Supabase SQL editor
+-- Run this entire file in your Supabase SQL editor for fresh setup.
+-- For existing environments, see MIGRATION NOTES at the bottom.
 -- ============================================================
 
 -- Enable UUID extension
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
+-- ─── SCHEMA VERSIONING ────────────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS schema_versions (
+  version       TEXT PRIMARY KEY,
+  description   TEXT,
+  applied_at    TIMESTAMPTZ DEFAULT NOW()
+);
+
+INSERT INTO schema_versions (version, description) 
+VALUES ('1.0.0', 'Initial reconciled base schema')
+ON CONFLICT (version) DO NOTHING;
 
 -- Helper function to check if current user is an admin
 CREATE OR REPLACE FUNCTION public.is_admin()
@@ -47,21 +59,22 @@ CREATE TABLE users (
   full_name             TEXT NOT NULL,
   phone                 TEXT UNIQUE NOT NULL,
   email                 TEXT,
-  roles                 TEXT[] NOT NULL DEFAULT ARRAY['student'],
-  active_role           TEXT NOT NULL DEFAULT 'student',
+  role                  TEXT NOT NULL DEFAULT 'student',
   avatar_url            TEXT,
   grade_level           TEXT,
   city                  TEXT DEFAULT 'Addis Ababa',
   academic_summary      TEXT,
   career_goals          TEXT,
   interested_subjects   TEXT[] DEFAULT '{}',
-  gpa                   DECIMAL(3,2),
+  gpa                   NUMERIC,
   target_countries      TEXT[] DEFAULT '{}',
   has_ielts             BOOLEAN DEFAULT FALSE,
   is_english_medium     BOOLEAN DEFAULT FALSE,
   target_degree_level   TEXT,
   has_extracurriculars  BOOLEAN DEFAULT FALSE,
   target_departments    TEXT[] DEFAULT '{}',
+  roles                 TEXT[] DEFAULT ARRAY['student'],
+  active_role           TEXT DEFAULT 'student',
   created_at            TIMESTAMPTZ DEFAULT NOW(),
   updated_at            TIMESTAMPTZ DEFAULT NOW()
 );
@@ -70,7 +83,7 @@ CREATE TABLE users (
 CREATE TABLE user_roles (
   id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id         UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  role            TEXT NOT NULL CHECK (role IN ('student', 'parent', 'tutor', 'admin')),
+  role            TEXT NOT NULL CHECK (role = ANY (ARRAY['student'::text, 'parent'::text, 'tutor'::text, 'admin'::text])),
   created_at      TIMESTAMPTZ DEFAULT NOW(),
   UNIQUE(user_id, role)
 );
@@ -104,9 +117,33 @@ BEGIN
     requested_role,
     COALESCE(NEW.raw_user_meta_data->>'phone', '')
   );
+
+  -- Also insert into user_roles
+  INSERT INTO public.user_roles (user_id, role)
+  VALUES (NEW.id, requested_role);
+
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Handle lazy profile creation on role switch
+CREATE OR REPLACE FUNCTION public.handle_role_switch()
+RETURNS TRIGGER AS $$
+BEGIN
+  -- If switching to tutor, create tutor profile if not exists
+  IF NEW.role = 'tutor' THEN
+    INSERT INTO tutors (user_id, bio, is_verified)
+    VALUES (NEW.user_id, '', FALSE)
+    ON CONFLICT (user_id) DO NOTHING;
+  END IF;
+  
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE TRIGGER role_switch_trigger
+  AFTER INSERT ON user_roles
+  FOR EACH ROW EXECUTE FUNCTION public.handle_role_switch();
 
 CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
@@ -130,8 +167,14 @@ CREATE TABLE tutors (
   education       TEXT,
   availability    JSONB DEFAULT '{}',
   is_verified     BOOLEAN DEFAULT FALSE,
-  created_at      TIMESTAMPTZ DEFAULT NOW()
+  created_at      TIMESTAMPTZ DEFAULT NOW(),
+  updated_at      TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(user_id)
 );
+
+CREATE TRIGGER update_tutors_updated_at
+  BEFORE UPDATE ON tutors
+  FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
 
 ALTER TABLE tutors ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Tutors are viewable by all" ON tutors FOR SELECT USING (true);
@@ -188,8 +231,13 @@ CREATE TABLE bookings (
   platform_fee    INTEGER NOT NULL DEFAULT 0,
   zoom_link       TEXT,
   location        TEXT,
-  created_at      TIMESTAMPTZ DEFAULT NOW()
+  created_at      TIMESTAMPTZ DEFAULT NOW(),
+  updated_at      TIMESTAMPTZ DEFAULT NOW()
 );
+
+CREATE TRIGGER update_bookings_updated_at
+  BEFORE UPDATE ON bookings
+  FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
 
 ALTER TABLE bookings ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Users can view relevant bookings" ON bookings FOR SELECT USING (auth.uid() = student_id OR auth.uid() IN (SELECT user_id FROM tutors WHERE id = tutor_id) OR is_admin());
@@ -231,6 +279,10 @@ CREATE TABLE service_requests (
   updated_at        TIMESTAMPTZ DEFAULT NOW()
 );
 
+CREATE TRIGGER update_service_requests_updated_at
+  BEFORE UPDATE ON service_requests
+  FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
 ALTER TABLE service_requests ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Users can view own requests" ON service_requests FOR SELECT USING (auth.uid() = user_id OR is_admin());
 CREATE POLICY "Users can create requests" ON service_requests FOR INSERT WITH CHECK (auth.uid() = user_id);
@@ -254,7 +306,7 @@ CREATE TABLE scholarships (
   benefits                     JSONB DEFAULT '{}',
   deadline                     DATE NOT NULL,
   fields_of_study              TEXT[],
-  min_gpa                      DECIMAL(3,2),
+  min_gpa                      NUMERIC,
   eagle_success_rate           INTEGER,
   website_url                  TEXT,
   image_url                    TEXT,
@@ -291,6 +343,10 @@ CREATE TABLE applications (
   updated_at       TIMESTAMPTZ DEFAULT NOW()
 );
 
+CREATE TRIGGER update_applications_updated_at
+  BEFORE UPDATE ON applications
+  FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
 ALTER TABLE applications ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Users can view relevant applications" ON applications FOR SELECT USING (auth.uid() = student_id OR auth.uid() = consultant_id OR is_admin());
 CREATE POLICY "Students can create applications" ON applications FOR INSERT WITH CHECK (auth.uid() = student_id OR is_admin());
@@ -312,8 +368,13 @@ CREATE TABLE documents (
   file_size       BIGINT DEFAULT 0,
   status          document_status DEFAULT 'pending',
   reviewer_notes  TEXT,
-  uploaded_at     TIMESTAMPTZ DEFAULT NOW()
+  uploaded_at     TIMESTAMPTZ DEFAULT NOW(),
+  updated_at      TIMESTAMPTZ DEFAULT NOW()
 );
+
+CREATE TRIGGER update_documents_updated_at
+  BEFORE UPDATE ON documents
+  FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
 
 ALTER TABLE documents ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Users can view relevant documents" ON documents FOR SELECT USING (auth.uid() = user_id OR is_admin() OR auth.uid() IN (SELECT consultant_id FROM applications WHERE id = application_id));
@@ -345,13 +406,13 @@ CREATE TYPE task_type AS ENUM ('document', 'sop', 'payment', 'session', 'other')
 
 CREATE TABLE student_tasks (
   id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-  student_id      UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  student_id      UUID REFERENCES users(id) ON DELETE CASCADE,
   application_id  UUID REFERENCES applications(id) ON DELETE SET NULL,
   title           TEXT NOT NULL,
   description     TEXT,
-  due_date        TIMESTAMPTZ,
-  status          task_status NOT NULL DEFAULT 'pending',
-  type            task_type NOT NULL DEFAULT 'other',
+  due_date        DATE,
+  status          TEXT DEFAULT 'pending'::text CHECK (status = ANY (ARRAY['pending'::text, 'completed'::text, 'overdue'::text])),
+  type            TEXT CHECK (type = ANY (ARRAY['document'::text, 'sop'::text, 'payment'::text, 'session'::text, 'other'::text])),
   created_at      TIMESTAMPTZ DEFAULT NOW(),
   updated_at      TIMESTAMPTZ DEFAULT NOW()
 );
@@ -402,9 +463,9 @@ CREATE TABLE payments (
   id             UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   user_id        UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   reference_id   UUID,
-  payment_type   payment_type NOT NULL,
-  method         payment_method NOT NULL,
-  amount         DECIMAL(12,2) NOT NULL CHECK (amount > 0),
+  payment_type   TEXT NOT NULL,
+  method         TEXT NOT NULL,
+  amount         INTEGER NOT NULL CHECK (amount > 0),
   transaction_id TEXT NOT NULL,
   receipt_path   TEXT,
   receipt_url    TEXT,
@@ -422,16 +483,16 @@ CREATE POLICY "Users can create own payments" ON payments FOR INSERT WITH CHECK 
 CREATE POLICY "Admins can update payments" ON payments FOR UPDATE USING (is_admin());
 
 -- TUTOR PAYOUTS
-CREATE TYPE tutor_payout_status AS ENUM ('pending', 'processing', 'completed', 'rejected');
+CREATE TYPE payout_status AS ENUM ('pending', 'processing', 'completed', 'rejected');
 
 CREATE TABLE tutor_payouts (
   id             UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   tutor_id       UUID NOT NULL REFERENCES tutors(id) ON DELETE CASCADE,
-  amount         DECIMAL(12,2) NOT NULL CHECK (amount > 0),
+  amount         INTEGER NOT NULL CHECK (amount > 0),
   bank_name      TEXT NOT NULL,
   account_number TEXT NOT NULL,
   account_name   TEXT NOT NULL,
-  status         tutor_payout_status NOT NULL DEFAULT 'pending',
+  status         payout_status NOT NULL DEFAULT 'pending',
   admin_notes    TEXT,
   processed_at   TIMESTAMPTZ,
   created_at     TIMESTAMPTZ DEFAULT NOW()
@@ -586,3 +647,17 @@ INSERT INTO scholarships (name, organization, country, country_flag, degree_leve
   '2025-12-15',
   50
 );
+
+-- ─── MIGRATION NOTES (FOR EXISTING ENVIRONMENTS) ──────────────────────────────
+/*
+  IF YOU HAVE AN EXISTING DATABASE, RUN THESE STEPS:
+  
+  1. Sync user_roles table:
+     INSERT INTO user_roles (user_id, role, created_at)
+     SELECT id, unnest(roles), created_at FROM users
+     ON CONFLICT (user_id, role) DO NOTHING;
+     
+  2. Add updated_at columns if missing:
+     ALTER TABLE users ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW();
+     -- Repeat for tutors, applications, etc.
+*/
