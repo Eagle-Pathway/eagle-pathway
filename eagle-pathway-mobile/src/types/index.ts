@@ -16,6 +16,7 @@ export interface User {
   career_goals?: string;
   interested_subjects?: string[];
   gpa?: number;
+  gpa_max?: number;
   target_countries?: string[];
   has_ielts?: boolean;
   is_english_medium?: boolean;
@@ -98,6 +99,7 @@ export interface Scholarship {
   deadline: string;
   fields_of_study?: string[];
   min_gpa?: number;
+  min_gpa_max?: number;
   eagle_success_rate?: number;
   website_url?: string;
   image_url?: string;
