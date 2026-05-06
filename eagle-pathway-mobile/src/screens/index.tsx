@@ -1489,17 +1489,15 @@ const progStyles = StyleSheet.create({
 export function NotificationsScreen() {
   const { user } = useAuthStore();
   const { notifications, unreadCount, loadNotifications, markAllNotificationsRead, markNotificationRead } = useAppStore();
-  // Track in-flight read requests per notification to prevent double-taps
   const [markingIds, setMarkingIds] = useState<Set<string>>(new Set());
 
   const handleMarkRead = async (id: string) => {
-    if (markingIds.has(id)) return; // already in-flight
+    if (markingIds.has(id)) return;
     setMarkingIds(prev => new Set(prev).add(id));
     try {
       await markNotificationRead(id);
     } catch (err) {
       console.error('[Notifications] Failed to mark read:', err);
-      // Graceful — no crash, no alert for connectivity blip
     } finally {
       setMarkingIds(prev => { const s = new Set(prev); s.delete(id); return s; });
     }
@@ -1542,7 +1540,6 @@ export function NotificationsScreen() {
                   handleMarkRead(n.id);
                 }
 
-                // Navigation logic based on notification type
                 const data = n.data as any;
                 switch (n.type) {
                   case 'application_update':
@@ -1576,7 +1573,6 @@ export function NotificationsScreen() {
                     }
                     break;
                   default:
-                    // If no specific route, just mark as read (already done)
                     break;
                 }
               }}
@@ -1617,10 +1613,19 @@ const notifStyles = StyleSheet.create({
 // ─── PROFILE ─────────────────────────────────────────────────────────────────
 export function ProfileScreen() {
   const { user, signOut, uploadAvatar, switchPersona } = useAuthStore();
-  const { applications, documents, unreadCount } = useAppStore();
+  const { applications, documents, unreadCount, inviteParent, linkStudent, loadPendingLinks, verifyLink, removeLink } = useAppStore();
   const [uploading, setUploading] = useState(false);
+  const [pendingLinks, setPendingLinks] = useState<any[]>([]);
+  const [linkingPhone, setLinkingPhone] = useState('');
+  const [isLinking, setIsLinking] = useState(false);
 
   const initials = user?.full_name?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || 'EP';
+
+  useEffect(() => {
+    if (user) {
+      loadPendingLinks(user.id, user.active_role as any).then(setPendingLinks);
+    }
+  }, [user?.id, user?.active_role]);
 
   const handlePickAvatar = async () => {
     try {
@@ -1643,6 +1648,38 @@ export function ProfileScreen() {
       { text: 'Cancel', style: 'cancel' },
       { text: 'Sign Out', style: 'destructive', onPress: async () => { await signOut(); router.replace('/(auth)/splash'); } },
     ]);
+  };
+
+  const handleLinkAction = async () => {
+    if (!linkingPhone) return Alert.alert('Error', 'Please enter a phone number');
+    setIsLinking(true);
+    try {
+      if (user?.active_role === 'student') {
+        await inviteParent(user.id, linkingPhone);
+        Alert.alert('Success', 'Invitation sent to your parent! They need to verify it in their app.');
+      } else {
+        await linkStudent(user!.id, linkingPhone);
+        Alert.alert('Success', 'Link request sent to the student!');
+      }
+      setLinkingPhone('');
+      const updated = await loadPendingLinks(user!.id, user!.active_role as any);
+      setPendingLinks(updated);
+    } catch (e: any) {
+      Alert.alert('Error', e.message);
+    } finally {
+      setIsLinking(false);
+    }
+  };
+
+  const handleVerifyLink = async (linkId: string) => {
+    try {
+      await verifyLink(linkId);
+      Alert.alert('Success', 'Link verified successfully! ✨');
+      const updated = await loadPendingLinks(user!.id, user!.active_role as any);
+      setPendingLinks(updated);
+    } catch (e: any) {
+      Alert.alert('Error', 'Failed to verify link');
+    }
   };
 
   const MENU_ITEMS = [
@@ -1675,7 +1712,7 @@ export function ProfileScreen() {
             )}
           </View>
         </TouchableOpacity>
-        <Text style={profStyles.name}>{user?.full_name || 'Student'}</Text>
+        <Text style={profStyles.name}>{user?.full_name || 'User'}</Text>
         <Text style={profStyles.role}>
           {(user?.active_role || 'student').charAt(0).toUpperCase()}{(user?.active_role || 'student').slice(1)} Mode
         </Text>
@@ -1718,6 +1755,71 @@ export function ProfileScreen() {
       </View>
 
       <ScrollView contentContainerStyle={{ paddingBottom: 100 }}>
+        {/* Family Link Section */}
+        {(user?.active_role === 'student' || user?.active_role === 'parent') && (
+          <View style={profStyles.referralCard}>
+            <View style={profStyles.referralContent}>
+              <View style={profStyles.referralIcon}>
+                <Text style={{ fontSize: 24 }}>{user.active_role === 'student' ? '👨‍👩‍👧' : '🎓'}</Text>
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={profStyles.referralTitle}>
+                  {user.active_role === 'student' ? 'Link Your Parent' : 'Link Your Child'}
+                </Text>
+                <Text style={profStyles.referralSub}>
+                  {user.active_role === 'student' 
+                    ? 'Let your parents track your scholarship progress.' 
+                    : 'Track your child\'s applications and help them succeed.'}
+                </Text>
+              </View>
+            </View>
+            
+            <View style={{ padding: Spacing.lg, paddingTop: 0 }}>
+              <View style={{ flexDirection: 'row', gap: Spacing.sm }}>
+                <TextInput
+                  style={[profStyles.input, { flex: 1, backgroundColor: Colors.bg }]}
+                  placeholder={user.active_role === 'student' ? "Parent's Phone Number" : "Student's Phone Number"}
+                  value={linkingPhone}
+                  onChangeText={setLinkingPhone}
+                  keyboardType="phone-pad"
+                  placeholderTextColor={Colors.textSecondary}
+                />
+                <TouchableOpacity 
+                  style={[profStyles.linkBtnSmall, isLinking && { opacity: 0.7 }]} 
+                  onPress={handleLinkAction}
+                  disabled={isLinking}
+                >
+                  {isLinking ? <ActivityIndicator size="small" color={Colors.white} /> : <Text style={profStyles.linkBtnText}>Link</Text>}
+                </TouchableOpacity>
+              </View>
+
+              {/* Pending Links */}
+              {pendingLinks.length > 0 && (
+                <View style={{ marginTop: Spacing.md }}>
+                  <Text style={profStyles.pendingTitle}>Pending Verification</Text>
+                  {pendingLinks.map(link => (
+                    <View key={link.id} style={profStyles.pendingRow}>
+                      <Text style={profStyles.pendingName}>
+                        {user.active_role === 'student' ? link.parent?.full_name : link.student?.full_name}
+                      </Text>
+                      <View style={{ flexDirection: 'row', gap: 8 }}>
+                        {user.active_role === 'parent' && (
+                          <TouchableOpacity onPress={() => handleVerifyLink(link.id)} style={profStyles.verifyBtn}>
+                            <Text style={profStyles.verifyBtnText}>Verify</Text>
+                          </TouchableOpacity>
+                        )}
+                        <TouchableOpacity onPress={() => removeLink(link.id)} style={profStyles.cancelBtn}>
+                          <Text style={profStyles.cancelBtnText}>✕</Text>
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  ))}
+                </View>
+              )}
+            </View>
+          </View>
+        )}
+
         {MENU_ITEMS.map((item, i) => (
           <TouchableOpacity
             key={item.label}
@@ -1757,7 +1859,6 @@ const profStyles = StyleSheet.create({
   menuArrow: { fontSize: Typography.xl, color: Colors.textSecondary },
   version: { textAlign: 'center', fontSize: Typography.sm, color: Colors.textSecondary, padding: Spacing.xl },
   editBadge: { position: 'absolute', bottom: 15, right: -5, backgroundColor: Colors.blue, width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: Colors.blueDark },
-  editProfileBtn: { marginTop: Spacing.xl, backgroundColor: 'rgba(255,255,255,0.15)', paddingHorizontal: 20, paddingVertical: 10, borderRadius: 12, borderWidth: 1, borderColor: 'rgba(255,255,255,0.2)' },
   editProfileBtn: { marginTop: Spacing.xl, backgroundColor: 'rgba(255,255,255,0.15)', paddingHorizontal: 20, paddingVertical: 10, borderRadius: 12, borderWidth: 1, borderColor: 'rgba(255,255,255,0.2)' },
   personaContainer: { flexDirection: 'row', gap: Spacing.sm, marginTop: Spacing.xl, backgroundColor: 'rgba(0,0,0,0.1)', padding: 4, borderRadius: 16 },
   personaBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 10, borderRadius: 12 },
