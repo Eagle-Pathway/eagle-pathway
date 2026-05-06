@@ -157,6 +157,7 @@ export default function ScholarshipForm({ scholarship, onClose, onSuccess }: Sch
     degree_levels: scholarship?.degree_levels || ['undergraduate'],
     fields_of_study: scholarship?.fields_of_study || ['any'],
     min_gpa: scholarship?.min_gpa || '',
+    min_gpa_max: scholarship?.min_gpa_max || '4.0',
     description: scholarship?.description || '',
     requirements: (scholarship?.requirements || []).join('\n'),
     website_url: scholarship?.website_url || '',
@@ -202,7 +203,9 @@ export default function ScholarshipForm({ scholarship, onClose, onSuccess }: Sch
         name: formData.name, organization: formData.organization, funding_details: formData.funding_details,
         funding_type: formData.funding_type, deadline: formData.deadline, country: formData.country, country_flag: formData.country_flag,
         degree_levels: formData.degree_levels, fields_of_study: formData.fields_of_study,
-        min_gpa: formData.min_gpa ? parseFloat(formData.min_gpa) : null, description: formData.description,
+        min_gpa: formData.min_gpa ? parseFloat(formData.min_gpa) : null,
+        min_gpa_max: formData.min_gpa_max ? parseFloat(formData.min_gpa_max) : 4.0,
+        description: formData.description,
         requirements: reqArray, website_url: formData.website_url, is_active: true,
         requires_ielts: formData.requires_ielts, accepts_english_medium: formData.accepts_english_medium,
         target_departments: formData.target_departments, recommendation_letters_count: formData.recommendation_letters_count,
@@ -279,7 +282,10 @@ export default function ScholarshipForm({ scholarship, onClose, onSuccess }: Sch
                     <option value="stipend_only">Stipend Only</option>
                   </select>
                 </div>
-                <InputField label="Minimum GPA" name="min_gpa" value={formData.min_gpa} onChange={handleChange} type="number" placeholder="e.g. 3.5" />
+                <div className="grid grid-cols-2 gap-4">
+                  <InputField label="Min Actual GPA" name="min_gpa" value={formData.min_gpa} onChange={handleChange} type="number" placeholder="e.g. 3.5" />
+                  <InputField label="Out Of" name="min_gpa_max" value={formData.min_gpa_max} onChange={handleChange} type="number" placeholder="e.g. 4.0" />
+                </div>
               </div>
               
               <MultiSelectField
