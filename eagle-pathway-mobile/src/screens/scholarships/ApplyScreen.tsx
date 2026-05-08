@@ -62,7 +62,11 @@ export function ApplyScreen() {
 
   const handleSubmit = async () => {
     if (!user || !scholarshipId || !packageTier) return;
-    if (selectedPaymentMethod && selectedPaymentMethod !== 'Chapa (Card/Transfer)' && (!transactionId || !receiptAsset)) {
+    if (!selectedPaymentMethod) {
+      Alert.alert('Missing Info', 'Please select a payment method before submitting your application.');
+      return;
+    }
+    if (selectedPaymentMethod !== 'Chapa (Card/Transfer)' && (!transactionId || !receiptAsset)) {
       Alert.alert('Missing Info', 'Please provide the transaction ID and upload the receipt screenshot for manual verification.');
       return;
     }
