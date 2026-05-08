@@ -25,7 +25,8 @@ export const truncateText = (text: string, maxLength: number): string => {
 
 export const getInitials = (name: string): string => {
   return name
-    .split(' ')
+    .split(/\s+/)
+    .filter(Boolean)
     .map(part => part[0])
     .join('')
     .toUpperCase()

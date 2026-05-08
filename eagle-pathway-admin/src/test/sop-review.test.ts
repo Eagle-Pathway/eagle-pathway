@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { parseJson } from './sop-review-route';
+import { parseJson } from '@eagle-pathway/shared';
 
 describe('SOP Review API', () => {
   describe('parseJson', () => {

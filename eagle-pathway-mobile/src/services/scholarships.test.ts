@@ -44,7 +44,7 @@ import { scholarshipsService } from '../scholarships';
 
 describe('scholarshipsService', () => {
   describe('getScholarships', () => {
-    it('should fetcheactive scholarships', async () => {
+    it('should fetch active scholarships', async () => {
       const mockData = [
         { id: '1', name: 'Test Scholarship', is_active: true },
       ];

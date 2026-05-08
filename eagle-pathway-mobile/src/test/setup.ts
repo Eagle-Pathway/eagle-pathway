@@ -1,21 +1,21 @@
-import '@testing-library/jest-native/extend-expect';
+import { vi } from 'vitest';
 
-const mockAlert = jest.fn();
-jest.mock('react-native/Libraries/Alert/Alert', () => ({
+const mockAlert = vi.fn();
+vi.mock('react-native/Libraries/Alert/Alert', () => ({
   alert: mockAlert,
 }));
 
 Object.defineProperty(window, 'matchMedia', {
   writable: true,
-  value: jest.fn().mockImplementation(query => ({
+  value: vi.fn().mockImplementation(query => ({
     matches: false,
     media: query,
     onchange: null,
-    addListener: jest.fn(),
-    removeListener: jest.fn(),
-    addEventListener: jest.fn(),
-    removeEventListener: jest.fn(),
-    dispatchEvent: jest.fn(),
+    addListener: vi.fn(),
+    removeListener: vi.fn(),
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+    dispatchEvent: vi.fn(),
   })),
 });
 
