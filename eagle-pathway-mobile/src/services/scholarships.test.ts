@@ -55,7 +55,7 @@ describe('scholarshipsService', () => {
             order: vi.fn().mockResolvedValue({ data: mockData, error: null }),
           }),
         }),
-      } });
+      });
 
       const result = await scholarshipsService.getScholarships();
       expect(result).toEqual(mockData);
