@@ -7,9 +7,12 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "test": "vitest",
+    "test:coverage": "vitest --coverage",
     "test:smoke": "node tests/smoke-test.js"
   },
   "dependencies": {
+    "@eagle-pathway/shared": "file:../packages/eagle-shared",
     "@supabase/supabase-js": "^2.100.0",
     "lucide-react": "^1.6.0",
     "next": "16.2.1",
@@ -20,6 +23,7 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
+    "@testing-library/react": "^16.0.0",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
@@ -27,6 +31,8 @@
     "eslint": "^9",
     "eslint-config-next": "16.2.1",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^3.0.0",
+    "jsdom": "^25.0.0"
   }
 }
