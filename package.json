@@ -1,0 +1,10 @@
+{
+  "name": "eagle-pathway-monorepo",
+  "private": true,
+  "workspaces": [
+    "eagle-pathway-admin",
+    "eagle-pathway-mobile",
+    "eagle-pathway-web",
+    "packages/*"
+  ]
+}
