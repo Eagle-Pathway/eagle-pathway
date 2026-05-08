@@ -22,17 +22,19 @@
     "zustand": "^5.0.12"
   },
   "devDependencies": {
-    "@tailwindcss/postcss": "^4",
+    "@tailwindcss/postcss": "^4.2.4",
     "@testing-library/react": "^16.0.0",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "autoprefixer": "^10.5.0",
     "babel-plugin-react-compiler": "1.0.0",
     "eslint": "^9",
     "eslint-config-next": "16.2.1",
-    "tailwindcss": "^4",
+    "jsdom": "^25.0.0",
+    "postcss": "^8.5.14",
+    "tailwindcss": "^4.2.4",
     "typescript": "^5",
-    "vitest": "^3.0.0",
-    "jsdom": "^25.0.0"
+    "vitest": "^3.0.0"
   }
 }
