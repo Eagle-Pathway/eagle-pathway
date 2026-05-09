@@ -23,7 +23,7 @@ export const financeService = {
       .order('created_at', { ascending: false });
 
     if (error) throw error;
-    return data as any[];
+    return data as PayoutRequest[];
   },
 
   async requestPayout(params: {
