@@ -11,7 +11,9 @@
       "@store/*": ["src/store/*"],
       "@hooks/*": ["src/hooks/*"],
       "@utils/*": ["src/utils/*"],
-      "@types/*": ["src/types/*"]
+      "@types/*": ["src/types/*"],
+      "@eagle-pathway/shared": ["../packages/eagle-shared/src/index"],
+      "@eagle-pathway/shared/*": ["../packages/eagle-shared/src/*"]
     }
   }
 }
