@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
+import { updateApplicationStatus, assignConsultant, saveApplicationNotes, saveApplicationFeedback } from '@/app/actions/applications';
 import { 
   Search, 
   Briefcase, 
@@ -105,37 +106,36 @@ export default function ApplicationsPage() {
   };
 
   const handleAssignConsultant = async (appId: string, consultantId: string) => {
-    const { error } = await supabase
-      .from('applications')
-      .update({ consultant_id: consultantId })
-      .eq('id', appId);
+    try {
+      const session = await supabase.auth.getSession();
+      const token = session.data.session?.access_token;
+      if (!token) throw new Error('Not authenticated');
 
-    if (!error) {
+      await assignConsultant(appId, consultantId, token);
+
       setApplications(prev => prev.map(app => 
         app.id === appId 
           ? { ...app, consultant_id: consultantId, consultant: consultants.find(c => c.id === consultantId) } 
           : app
       ));
+    } catch (err: any) {
+      alert('Failed to assign consultant: ' + err.message);
     }
   };
 
   const handleUpdateStatus = async (appId: string, status: string) => {
     setSavingStatus(true);
     try {
-      const { error } = await supabase
-        .from('applications')
-        .update({ status, updated_at: new Date().toISOString() })
-        .eq('id', appId);
+      const session = await supabase.auth.getSession();
+      const token = session.data.session?.access_token;
+      if (!token) throw new Error('Not authenticated');
 
-      if (!error) {
-        setApplications(prev => prev.map(app => app.id === appId ? { ...app, status, updated_at: new Date().toISOString() } : app));
-        if (selectedApp?.id === appId) setSelectedApp(prev => prev ? { ...prev, status, updated_at: new Date().toISOString() } : null);
-        setNotification({ type: 'success', message: 'Status updated successfully!' });
-        setTimeout(() => setNotification(null), 3000);
-      } else {
-        setNotification({ type: 'error', message: 'Failed to update status: ' + error.message });
-        setTimeout(() => setNotification(null), 5000);
-      }
+      await updateApplicationStatus(appId, status, token);
+
+      setApplications(prev => prev.map(app => app.id === appId ? { ...app, status, updated_at: new Date().toISOString() } : app));
+      if (selectedApp?.id === appId) setSelectedApp(prev => prev ? { ...prev, status, updated_at: new Date().toISOString() } : null);
+      setNotification({ type: 'success', message: 'Status updated successfully!' });
+      setTimeout(() => setNotification(null), 3000);
     } catch (err: any) {
       setNotification({ type: 'error', message: 'An unexpected error occurred: ' + err.message });
       setTimeout(() => setNotification(null), 5000);
@@ -147,21 +147,23 @@ export default function ApplicationsPage() {
   const handleSaveNotes = async () => {
     if (!selectedApp) return;
     setSavingNotes(true);
-    const { error } = await supabase
-      .from('applications')
-      .update({ notes: notesInput })
-      .eq('id', selectedApp.id);
+    try {
+      const session = await supabase.auth.getSession();
+      const token = session.data.session?.access_token;
+      if (!token) throw new Error('Not authenticated');
+
+      await saveApplicationNotes(selectedApp.id, notesInput, token);
       
-    if (!error) {
       setApplications(prev => prev.map(app => app.id === selectedApp.id ? { ...app, notes: notesInput } : app));
       setSelectedApp({ ...selectedApp, notes: notesInput });
       setNotification({ type: 'success', message: 'Notes saved!' });
       setTimeout(() => setNotification(null), 3000);
-    } else {
-      setNotification({ type: 'error', message: 'Failed to save notes: ' + error.message });
+    } catch (err: any) {
+      setNotification({ type: 'error', message: 'Failed to save notes: ' + err.message });
       setTimeout(() => setNotification(null), 5000);
+    } finally {
+      setSavingNotes(false);
     }
-    setSavingNotes(false);
   };
 
   const handleSaveFeedback = async (appId: string, feedback: string) => {
@@ -173,32 +175,27 @@ export default function ApplicationsPage() {
 
     setSavingFeedback(true);
     try {
-      const { error } = await supabase
-        .from('applications')
-        .update({ consultant_feedback: feedback, updated_at: new Date().toISOString() })
-        .eq('id', appId);
+      const session = await supabase.auth.getSession();
+      const token = session.data.session?.access_token;
+      if (!token) throw new Error('Not authenticated');
+
+      const appData = applications.find(a => a.id === appId);
+
+      await saveApplicationFeedback(
+        appId, 
+        feedback, 
+        appData?.student_id || '', 
+        appData?.scholarship?.name,
+        token
+      );
         
-      if (!error) {
-        setApplications(prev => prev.map(app => app.id === appId ? { ...app, consultant_feedback: feedback, updated_at: new Date().toISOString() } : app));
-        if (selectedApp?.id === appId) setSelectedApp(prev => prev ? { ...prev, consultant_feedback: feedback, updated_at: new Date().toISOString() } : null);
-        
-        const appData = applications.find(a => a.id === appId);
-        if (appData?.student_id) {
-          await supabase.from('notifications').insert({
-            user_id: appData.student_id,
-            type: 'sop_reviewed',
-            title: 'SOP Feedback Available',
-            body: `Consultant left some feedback on your ${appData.scholarship?.name} application.`,
-          });
-        }
-        setNotification({ type: 'success', message: 'Feedback sent to student!' });
-        setTimeout(() => setNotification(null), 3000);
-      } else {
-        setNotification({ type: 'error', message: 'Failed to save feedback: ' + error.message });
-        setTimeout(() => setNotification(null), 5000);
-      }
+      setApplications(prev => prev.map(app => app.id === appId ? { ...app, consultant_feedback: feedback, updated_at: new Date().toISOString() } : app));
+      if (selectedApp?.id === appId) setSelectedApp(prev => prev ? { ...prev, consultant_feedback: feedback, updated_at: new Date().toISOString() } : null);
+      
+      setNotification({ type: 'success', message: 'Feedback sent to student!' });
+      setTimeout(() => setNotification(null), 3000);
     } catch (err: any) {
-      setNotification({ type: 'error', message: 'An unexpected error occurred.' });
+      setNotification({ type: 'error', message: err.message || 'An unexpected error occurred.' });
       setTimeout(() => setNotification(null), 5000);
     } finally {
       setSavingFeedback(false);
