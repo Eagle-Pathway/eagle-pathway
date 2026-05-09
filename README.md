@@ -8,8 +8,6 @@ A monorepo for the Eagle Pathway ecosystem, managed via npm workspaces.
 - **`eagle-pathway-mobile`** — Student and tutor mobile app (Expo + React Native)
 - **`packages/eagle-shared`** — Shared utilities and types
 
-*(Note: The marketing website, `eagle-pathway-web`, is hosted in a separate, independent repository).*
-
 ## Tech Stack
 
 - **Admin**: Next.js, React, Tailwind CSS, TypeScript
