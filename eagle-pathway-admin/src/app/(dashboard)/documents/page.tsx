@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
+import { updateDocumentStatus } from '@/app/actions/documents';
 import { 
   Search, 
   FileText, 
@@ -71,30 +72,30 @@ export default function DocumentsPage() {
   }, []);
 
   const handleUpdateStatus = async (id: string, status: 'approved' | 'rejected') => {
-    const { error } = await supabase
-      .from('documents')
-      .update({ status, reviewer_notes: status === 'rejected' ? reviewerNotes : null })
-      .eq('id', id);
+    try {
+      const session = await supabase.auth.getSession();
+      const token = session.data.session?.access_token;
+      if (!token) throw new Error('Not authenticated');
 
-    if (!error) {
-      setDocuments(prev => prev.map(doc => doc.id === id ? { ...doc, status, reviewer_notes: status === 'rejected' ? reviewerNotes : undefined } : doc));
+      const doc = documents.find(d => d.id === id);
       
-      // Also send a push notification to the student about the status
-      await supabase.from('notifications').insert({
-        user_id: selectedDoc?.user_id,
-        type: status === 'approved' ? 'document_approved' : 'document_rejected',
-        title: status === 'approved' ? 'Document Approved 🟢' : 'Document Rejected 🔴',
-        body: status === 'approved' 
-          ? `Your ${selectedDoc?.document_type?.replace('_',' ')} has been verified.` 
-          : `Your ${selectedDoc?.document_type?.replace('_',' ')} was rejected. Reason: ${reviewerNotes || 'Please upload a clearer copy.'}`,
-      });
+      await updateDocumentStatus(
+        id, 
+        status, 
+        status === 'rejected' ? reviewerNotes : null, 
+        doc?.user_id,
+        doc?.document_type,
+        token
+      );
 
+      setDocuments(prev => prev.map(d => d.id === id ? { ...d, status, reviewer_notes: status === 'rejected' ? reviewerNotes : undefined } : d));
+      
       if (selectedDoc?.id === id) {
         setSelectedDoc(null);
         setReviewerNotes('');
       }
-    } else {
-      alert('Failed to update document status.');
+    } catch (err: any) {
+      alert('Failed to update document status: ' + err.message);
     }
   };
 
