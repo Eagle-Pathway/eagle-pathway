@@ -3,56 +3,9 @@
 import { useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { X, Loader2, Image as ImageIcon, GraduationCap, Globe, FileText, Settings } from 'lucide-react';
+import { COUNTRIES, DEPARTMENTS, DEGREE_LEVELS, FIELDS_OF_STUDY } from '@eagle-pathway/shared';
 
-const COUNTRIES = [
-  { name: 'United Kingdom', flag: '🇬🇧' },
-  { name: 'United States', flag: '🇺🇸' },
-  { name: 'Canada', flag: '🇨🇦' },
-  { name: 'Australia', flag: '🇦🇺' },
-  { name: 'China', flag: '🇨🇳' },
-  { name: 'Germany', flag: '🇩🇪' },
-  { name: 'Hungary', flag: '🇭🇺' },
-  { name: 'Turkey', flag: '🇹🇷' },
-  { name: 'Russia', flag: '🇷🇺' },
-  { name: 'Japan', flag: '🇯🇵' },
-  { name: 'South Korea', flag: '🇰🇷' },
-  { name: 'France', flag: '🇫🇷' },
-  { name: 'Italy', flag: '🇮🇹' },
-  { name: 'Netherlands', flag: '🇳🇱' },
-  { name: 'Norway', flag: '🇳🇴' },
-  { name: 'Sweden', flag: '🇸🇪' },
-  { name: 'Ethiopia', flag: '🇪🇹' },
-  { name: 'Egypt', flag: '🇪🇬' },
-  { name: 'South Africa', flag: '🇿🇦' },
-  { name: 'Kenya', flag: '🇰🇪' },
-  { name: 'Nigeria', flag: '🇳🇬' },
-  { name: 'Ghana', flag: '🇬🇭' },
-  { name: 'Singapore', flag: '🇸🇬' },
-  { name: 'Malaysia', flag: '🇲🇾' },
-  { name: 'India', flag: '🇮🇳' },
-  { name: 'Thailand', flag: '🇹🇭' },
-  { name: 'Vietnam', flag: '🇻🇳' },
-  { name: 'Indonesia', flag: '🇮🇩' },
-  { name: 'Philippines', flag: '🇵🇭' },
-  { name: 'Brazil', flag: '🇧🇷' },
-  { name: 'Mexico', flag: '🇲🇽' },
-  { name: 'Argentina', flag: '🇦🇷' },
-  { name: 'Spain', flag: '🇪🇸' },
-  { name: 'Portugal', flag: '🇵🇹' },
-  { name: 'Switzerland', flag: '🇨🇭' },
-  { name: 'Austria', flag: '🇦🇹' },
-  { name: 'Belgium', flag: '🇧🇪' },
-  { name: 'Poland', flag: '🇵🇱' },
-];
-
-const DEPARTMENTS = [
-  'Any', 'Computer Science', 'Mechanical Engineering', 'Medicine', 
-  'Economics', 'Psychology', 'Education', 'Architecture', 'Law', 'International Relations',
-  'Business', 'Engineering', 'Agriculture', 'Nursing', 'Pharmacy', 'Journalism'
-];
-
-const DEGREE_LEVELS = ['undergraduate', 'masters', 'phd'];
-const FIELDS_OF_STUDY = ['any', 'stem', 'healthcare', 'business', 'humanities', 'arts', 'law'];
+// Using centralized metadata from @eagle-pathway/shared
 
 interface SectionProps {
   icon: React.ReactNode;
