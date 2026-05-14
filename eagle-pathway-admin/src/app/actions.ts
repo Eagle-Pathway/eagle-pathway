@@ -166,3 +166,73 @@ export async function verifyPaymentReceipt(
 
   return { success: true };
 }
+
+/**
+ * ACTION: Get unified financial stats
+ */
+export async function getFinanceStats(accessToken: string) {
+  await verifyAdmin(accessToken);
+  const supabase = getSupabaseAdmin();
+
+  // 1. Fetch Tutors with their counters for comparison
+  const { data: tutors } = await supabase
+    .from('tutors')
+    .select('user_id, hourly_rate, total_sessions, users(full_name, phone)');
+
+  // 2. Fetch all non-cancelled bookings to calculate real volume
+  const { data: bookings } = await supabase
+    .from('bookings')
+    .select('id, tutor_id, platform_fee, status')
+    .neq('status', 'cancelled');
+
+  // 3. Fetch all approved payments
+  const { data: payments } = await supabase
+    .from('payments')
+    .select('amount, status')
+    .eq('status', 'approved');
+
+  // 4. Fetch all completed payouts
+  const { data: payouts } = await supabase
+    .from('tutor_payouts')
+    .select('amount, status')
+    .eq('status', 'completed');
+
+  if (!tutors || !bookings || !payments || !payouts) {
+    throw new Error('Failed to fetch financial data components.');
+  }
+
+  // PLATFORM TOTALS
+  // Gross Volume = Sum of all approved payments
+  const platformGrossVolume = payments.reduce((acc, p) => acc + (p.amount || 0), 0);
+  
+  // Platform Profit = Sum of platform fees from completed/approved bookings
+  const platformProfit = bookings.reduce((acc, b) => acc + (b.platform_fee || 0), 0);
+  
+  // Total Payouts = Sum of all completed payout requests
+  const totalPayouts = payouts.reduce((acc, p) => acc + (p.amount || 0), 0);
+
+  // Stats per Tutor
+  const tutorStats = tutors.map(t => {
+    const tutorBookings = bookings.filter(b => b.tutor_id === t.user_id);
+    const gross = (t.hourly_rate || 0) * (t.total_sessions || 0);
+    const net = gross * 0.85; 
+
+    return {
+      ...t,
+      calculated_sessions: tutorBookings.length,
+      gross_value: gross,
+      net_earnings: net
+    };
+  });
+
+  return {
+    summary: {
+      grossVolume: platformGrossVolume,
+      platformProfit: platformProfit,
+      totalPayouts: totalPayouts,
+      payoutsDue: platformGrossVolume - platformProfit - totalPayouts,
+    },
+    tutorStats
+  };
+}
+

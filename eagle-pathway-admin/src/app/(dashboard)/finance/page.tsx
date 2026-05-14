@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { DollarSign, TrendingUp, Wallet, Loader2, Banknote } from 'lucide-react';
-import { verifyPaymentReceipt, completePayoutRequest } from '@/app/actions';
+import { verifyPaymentReceipt, completePayoutRequest, getFinanceStats } from '@/app/actions';
 import { useAuthStore } from '@/store/useAuthStore';
 
 interface TutorFinancials {
@@ -31,6 +31,12 @@ export default function FinancePage() {
   const [payoutDetails, setPayoutDetails] = useState({ bankName: '', accountNumber: '', reference: '', notes: '' });
   const [isProcessingPayout, setIsProcessingPayout] = useState(false);
   const [isUpdatingPayoutRequestId, setIsUpdatingPayoutRequestId] = useState<string | null>(null);
+  const [summary, setSummary] = useState({
+    grossVolume: 0,
+    platformProfit: 0,
+    totalPayouts: 0,
+    payoutsDue: 0
+  });
 
   const showNotification = (type: 'error' | 'success' | 'info', message: string, timeoutMs = 3500) => {
     setNotification({ type, message });
@@ -48,10 +54,11 @@ export default function FinancePage() {
   async function fetchData() {
     setLoading(true);
     try {
-      const { data: tutorData } = await supabase
-        .from('tutors')
-        .select(`id, user_id, hourly_rate, total_sessions, users ( full_name, phone )`)
-        .order('total_sessions', { ascending: false });
+      if (!session?.access_token) return;
+
+      const { summary: financeSummary, tutorStats } = await getFinanceStats(session.access_token);
+      setSummary(financeSummary);
+      setTutors(tutorStats as any[]);
 
       const { data: transData } = await supabase
         .from('bookings')
@@ -70,7 +77,6 @@ export default function FinancePage() {
         .select('*, tutor:tutors(id, user_id, users(full_name, phone))')
         .order('created_at', { ascending: false });
 
-      if (tutorData) setTutors(tutorData as any[]);
       if (transData) setTransactions(transData);
       if (paymentsData) setPayments(await Promise.all(paymentsData.map(signReceiptUrl)));
       if (payRequests) setPayoutRequests(payRequests);
@@ -119,10 +125,6 @@ export default function FinancePage() {
     }
   };
 
-  const totalPlatformVolume = tutors.reduce((acc, t) => acc + ((t.hourly_rate || 0) * (t.total_sessions || 0)), 0);
-  const totalPlatformProfit = transactions.reduce((acc, b) => acc + (b.platform_fee || 0), 0);
-  const totalPayoutsDue = totalPlatformVolume * 0.85;
-
   const filteredTutors = tutors.filter(t => 
     t.users?.full_name?.toLowerCase().includes(search.toLowerCase())
   );
@@ -153,8 +155,8 @@ export default function FinancePage() {
             <div className="p-2 bg-blue-50 rounded-lg text-blue-600"><TrendingUp className="w-5 h-5" /></div>
           </div>
           <div>
-            <div className="text-3xl font-bold text-gray-900">{totalPlatformVolume.toLocaleString()} ETB</div>
-            <p className="text-xs text-gray-400 mt-2">All session value</p>
+            <div className="text-3xl font-bold text-gray-900">{summary.grossVolume.toLocaleString()} ETB</div>
+            <p className="text-xs text-gray-400 mt-2">All approved payments</p>
           </div>
         </div>
 
@@ -164,7 +166,7 @@ export default function FinancePage() {
             <div className="p-2 bg-green-50 rounded-lg text-green-600"><DollarSign className="w-5 h-5" /></div>
           </div>
           <div>
-            <div className="text-3xl font-bold text-gray-900">{totalPlatformProfit.toLocaleString()} ETB</div>
+            <div className="text-3xl font-bold text-gray-900">{summary.platformProfit.toLocaleString()} ETB</div>
             <p className="text-xs text-green-600 font-medium mt-2">Revenue from fees</p>
           </div>
         </div>
@@ -175,8 +177,8 @@ export default function FinancePage() {
             <div className="p-2 bg-amber-50 rounded-lg text-amber-600"><Wallet className="w-5 h-5" /></div>
           </div>
           <div>
-            <div className="text-3xl font-bold text-gray-900">{totalPayoutsDue.toLocaleString()} ETB</div>
-            <p className="text-xs text-gray-400 mt-2">Net (85%)</p>
+            <div className="text-3xl font-bold text-gray-900">{summary.payoutsDue.toLocaleString()} ETB</div>
+            <p className="text-xs text-gray-400 mt-2">Net unpaid earnings</p>
           </div>
         </div>
       </div>
@@ -228,9 +230,9 @@ export default function FinancePage() {
                 <tr><td colSpan={5} className="p-8 text-center"><Loader2 className="w-6 h-6 animate-spin mx-auto" /></td></tr>
               ) : filteredTutors.length === 0 ? (
                 <tr><td colSpan={5} className="p-8 text-center text-gray-500">No records</td></tr>
-              ) : filteredTutors.map((t) => {
-                const gross = (t.hourly_rate || 0) * (t.total_sessions || 0);
-                const net = gross * 0.85;
+              ) : filteredTutors.map((t: any) => {
+                const gross = t.gross_value || 0;
+                const net = t.net_earnings || 0;
                 return (
                   <tr key={t.user_id}>
                     <td className="px-4 py-3">
