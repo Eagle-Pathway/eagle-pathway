@@ -9,13 +9,13 @@ import { Colors, Typography, Spacing, Radius, CommonStyles } from '@/utils/theme
 import { Button } from '@/components/common';
 import { scholarshipsService } from '@/services/scholarships';
 import { useAuthStore } from '@/store/authStore';
-import { useAppStore } from '@/store/appStore';
+import { useScholarshipStore } from '@/store/scholarshipStore';
 import type { Scholarship } from '@/types';
 
 export function MagicDraftScreen() {
   const { scholarshipId } = useLocalSearchParams<{ scholarshipId: string }>();
   const { user } = useAuthStore();
-  const { generateMagicSOP, isGeneratingMagicSOP } = useAppStore();
+  const { generateMagicSOP, isGeneratingMagicSOP } = useScholarshipStore();
   const [scholarship, setScholarship] = useState<Scholarship | null>(null);
   const [draft, setDraft] = useState('');
 

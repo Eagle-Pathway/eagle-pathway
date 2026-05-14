@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { parentsService } from '../services/parents';
 import { User, Application } from '../types';
+import { useAuthStore } from './authStore';
 
 interface ParentState {
   linkedStudents: User[];
@@ -44,9 +45,18 @@ export const useParentStore = create<ParentState>((set, get) => ({
 
   verifyLink: async (linkId) => {
     await parentsService.verifyLink(linkId);
+    const { user } = useAuthStore.getState();
+    if (user) {
+      get().loadLinkedStudents(user.id);
+      get().loadLinkedStudentApplications(user.id);
+    }
   },
 
   removeLink: async (linkId) => {
     await parentsService.removeLink(linkId);
+    const { user } = useAuthStore.getState();
+    if (user) {
+      get().loadLinkedStudents(user.id);
+    }
   },
 }));

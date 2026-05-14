@@ -6,14 +6,14 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, router } from 'expo-router';
 import { Colors, Typography, Spacing, Radius, CommonStyles } from '@/utils/theme';
-import { useAppStore } from '@/store/appStore';
+import { useScholarshipStore } from '@/store/scholarshipStore';
 import { useAuthStore } from '@/store/authStore';
 import { Button } from '@/components/common';
 
 export default function SOPEditorScreen() {
   const { applicationId, scholarshipName } = useLocalSearchParams<{ applicationId: string, scholarshipName: string }>();
   const { user } = useAuthStore();
-  const { applications, updateSOP, reviewSOP, isReviewingSOP } = useAppStore();
+  const { applications, updateSOP, reviewSOP, isReviewingSOP } = useScholarshipStore();
   
   const application = applications.find(a => a.id === applicationId);
   const [content, setContent] = useState(application?.sop_content || '');

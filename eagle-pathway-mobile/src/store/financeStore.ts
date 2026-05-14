@@ -33,8 +33,8 @@ export const useFinanceStore = create<FinanceState>((set, get) => ({
   submitPayoutRequest: async (params) => {
     set({ isLoadingPayouts: true });
     try {
-      await financeService.requestPayout(params);
-      // Payouts list will be refreshed by the caller or a reload
+      const newPayout = await financeService.requestPayout(params);
+      set(state => ({ tutorPayouts: [newPayout, ...state.tutorPayouts] }));
     } finally {
       set({ isLoadingPayouts: false });
     }

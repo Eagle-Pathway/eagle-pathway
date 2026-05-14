@@ -10,13 +10,15 @@ import { Button } from '@/components/common';
 import { scholarshipsService } from '@/services/scholarships';
 import { paymentsService } from '@/services/payments';
 import { useAuthStore } from '@/store/authStore';
-import { useAppStore } from '@/store/appStore';
+import { useScholarshipStore } from '@/store/scholarshipStore';
+import { useDocumentStore } from '@/store/documentStore';
 import type { PackageTier, DocumentType } from '@/types';
 
 export function ApplyScreen() {
   const { scholarshipId, packageTier } = useLocalSearchParams<{ scholarshipId: string; packageTier: PackageTier }>();
   const { user } = useAuthStore();
-  const { createApplication, loadDocuments, uploadDocument, documents } = useAppStore();
+  const { createApplication, reviewSOP, isReviewingSOP } = useScholarshipStore();
+  const { loadDocuments, uploadDocument, documents } = useDocumentStore();
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState<number>(1);
   const [sopContent, setSopContent] = useState('');
@@ -228,10 +230,10 @@ export function ApplyScreen() {
                   Alert.alert('Too short', 'Please write at least 50 characters to get meaningful feedback.');
                   return;
                 }
-                const result = await useAppStore.getState().reviewSOP(sopContent);
+                const result = await useScholarshipStore.getState().reviewSOP(sopContent);
                 Alert.alert(`AI Score: ${result.score}/100`, result.feedback + '\n\n' + result.suggestions.map(s => '• ' + s).join('\n'));
               }}
-              loading={useAppStore.getState().isReviewingSOP}
+              loading={useScholarshipStore.getState().isReviewingSOP}
               style={{ marginTop: Spacing.md }}
             />
             

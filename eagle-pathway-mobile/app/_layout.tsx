@@ -6,7 +6,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import * as SplashScreen from 'expo-splash-screen';
 import { supabase } from '../src/services/supabase';
 import { useAuthStore } from '../src/store/authStore';
-import { useAppStore } from '../src/store/appStore';
+import { useRealtimeStore } from '../src/store/realtimeStore';
 import { useScholarshipStore } from '../src/store/scholarshipStore';
 import { notificationsService } from '../src/services/notifications';
 import { ErrorBoundary } from '../src/components/ErrorBoundary';
@@ -15,7 +15,7 @@ SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   const { setSession, loadProfile, setUser } = useAuthStore();
-  const { subscribeToUpdates, unsubscribeFromUpdates } = useAppStore();
+  const { subscribeToUpdates, unsubscribeFromUpdates } = useRealtimeStore();
   const { loadSavedScholarships } = useScholarshipStore();
 
   useEffect(() => {
