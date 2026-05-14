@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { supabase } from '../services/supabase';
+import { RealtimeChannel } from '@supabase/supabase-js';
 import { scholarshipsService } from '../services/scholarships';
 import { tutorsService } from '../services/tutors';
 import { notificationsService } from '../services/notifications';
@@ -60,8 +61,11 @@ interface AppState {
   isReviewingSOP: boolean;
   isGeneratingMagicSOP: boolean;
 
+  // Realtime
+  activeSubscription: RealtimeChannel | null;
+
   // Actions — Scholarships
-  loadScholarships: (filters?: any) => Promise<void>;
+  loadScholarships: (filters?: Record<string, unknown>) => Promise<void>;
   loadRecommendations: (userId: string) => Promise<void>;
   loadApplications: (userId: string) => Promise<void>;
   createApplication: (userId: string, scholarshipId: string, packageTier: PackageTier, sopContent?: string) => Promise<Application>;
@@ -144,6 +148,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   isLoadingPayouts: false,
   isReviewingSOP: false,
   isGeneratingMagicSOP: false,
+  activeSubscription: null,
 
   loadScholarships: async (filters) => {
     set({ isLoadingScholarships: true });
@@ -356,10 +361,10 @@ export const useAppStore = create<AppState>((set, get) => ({
   toggleTask: async (taskId, currentStatus) => {
     try {
       const nextStatus = currentStatus === 'completed' ? 'pending' : 'completed';
-      await tasksService.updateTaskStatus(taskId, nextStatus as any);
+      await tasksService.updateTaskStatus(taskId, nextStatus as 'pending' | 'completed');
       set(state => ({
         tasks: state.tasks.map(t =>
-          t.id === taskId ? { ...t, status: nextStatus as any } : t
+          t.id === taskId ? { ...t, status: nextStatus as 'pending' | 'completed' } : t
         ),
       }));
     } catch (e) {
@@ -460,14 +465,14 @@ export const useAppStore = create<AppState>((set, get) => ({
       )
       .subscribe();
 
-    (global as any).supabaseSubscription = channel;
+    set({ activeSubscription: channel });
   },
 
   unsubscribeFromUpdates: () => {
-    const channel = (global as any).supabaseSubscription;
+    const channel = get().activeSubscription;
     if (channel) {
       supabase.removeChannel(channel);
-      (global as any).supabaseSubscription = null;
+      set({ activeSubscription: null });
     }
   },
 }));

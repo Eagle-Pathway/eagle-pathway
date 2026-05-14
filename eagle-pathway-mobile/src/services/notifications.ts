@@ -1,7 +1,7 @@
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 import { supabase } from './supabase';
-import { Notification } from '../types';
+import { Notification, Scholarship } from '../types';
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -97,8 +97,8 @@ export const notificationsService = {
     });
   },
 
-  async checkAndNotifyMatches(userId: string, scholarships: any[]): Promise<void> {
-    const highMatches = scholarships.filter((s: any) => (s.matchScore || 0) >= 85);
+  async checkAndNotifyMatches(userId: string, scholarships: (Scholarship & { matchScore?: number })[]): Promise<void> {
+    const highMatches = scholarships.filter(s => (s.matchScore || 0) >= 85);
     for (const match of highMatches.slice(0, 2)) {
       await this.sendMatchNotification(match.name, match.matchScore);
       // Store notification in DB
