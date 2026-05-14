@@ -203,23 +203,10 @@ export const scholarshipsService = {
     });
   },
   async updateSOPContent(applicationId: string, content: string): Promise<void> {
-    // First, fetch current draft number to increment safely client-side
-    const { data: current } = await supabase
-      .from('applications')
-      .select('sop_draft_number')
-      .eq('id', applicationId)
-      .single();
-
-    const nextDraft = ((current?.sop_draft_number) ?? 0) + 1;
-
-    const { error } = await supabase
-      .from('applications')
-      .update({ 
-        sop_content: content,
-        sop_draft_number: nextDraft,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', applicationId);
+    const { error } = await supabase.rpc('increment_sop_draft', { 
+      application_id: applicationId, 
+      new_content: content 
+    });
     if (error) throw error;
   },
 
