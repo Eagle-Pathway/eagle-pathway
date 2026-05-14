@@ -15,6 +15,8 @@ import {
   ChevronRight
 } from 'lucide-react';
 import { exportToCSV } from '@/utils/export';
+import { updateDocumentStatus } from '@/app/actions';
+import { useAuthStore } from '@/store/useAuthStore';
 
 interface UserDocument {
   id: string;
@@ -76,32 +78,25 @@ export default function DocumentsPage() {
     fetchDocuments();
   }, []);
 
-  const handleUpdateStatus = async (id: string, status: 'approved' | 'rejected') => {
-    const { error } = await supabase
-      .from('documents')
-      .update({ status, reviewer_notes: status === 'rejected' ? reviewerNotes : null })
-      .eq('id', id);
+  const { session } = useAuthStore();
 
-    if (!error) {
+  const handleUpdateStatus = async (id: string, status: 'approved' | 'rejected') => {
+    try {
+      if (!session?.access_token) {
+        throw new Error('You must be logged in to perform this action.');
+      }
+
+      await updateDocumentStatus(session.access_token, id, status, status === 'rejected' ? reviewerNotes : undefined);
+      
       setDocuments(prev => prev.map(doc => doc.id === id ? { ...doc, status, reviewer_notes: status === 'rejected' ? reviewerNotes : undefined } : doc));
       
-      // Also send a push notification to the student about the status
-      await supabase.from('notifications').insert({
-        user_id: selectedDoc?.user_id,
-        type: status === 'approved' ? 'document_approved' : 'document_rejected',
-        title: status === 'approved' ? 'Document Approved 🟢' : 'Document Rejected 🔴',
-        body: status === 'approved' 
-          ? `Your ${selectedDoc?.document_type?.replaceAll('_',' ')} has been verified.` 
-          : `Your ${selectedDoc?.document_type?.replaceAll('_',' ')} was rejected. Reason: ${reviewerNotes || 'Please upload a clearer copy.'}`,
-      });
-
       if (selectedDoc?.id === id) {
         setSelectedDoc(null);
         setReviewerNotes('');
       }
       showNotification('success', `Document ${status}.`);
-    } else {
-      showNotification('error', 'Failed to update document status.');
+    } catch (error: any) {
+      showNotification('error', error.message || 'Failed to update document status.');
     }
   };
 

@@ -2,6 +2,8 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { DollarSign, TrendingUp, Wallet, Loader2, Banknote } from 'lucide-react';
+import { verifyPaymentReceipt, completePayoutRequest } from '@/app/actions';
+import { useAuthStore } from '@/store/useAuthStore';
 
 interface TutorFinancials {
   id: string;
@@ -83,43 +85,38 @@ export default function FinancePage() {
     fetchData();
   }, []);
 
+  const { session } = useAuthStore();
+
   const handleVerifyReceipt = async (paymentId: string, status: 'approved' | 'rejected') => {
-    const { data: authData } = await supabase.auth.getUser();
-    const { error } = await supabase
-      .from('payments')
-      .update({
-        status,
-        admin_notes: status === 'rejected' ? 'Invalid receipt. Please try again.' : null,
-        reviewed_by: authData.user?.id || null,
-        reviewed_at: new Date().toISOString(),
-      })
-      .eq('id', paymentId);
-    
-    if (!error) {
+    try {
+      if (!session?.access_token) {
+        throw new Error('You must be logged in to perform this action.');
+      }
+
+      await verifyPaymentReceipt(session.access_token, paymentId, status);
+      
       setPayments(prev => prev.map(p => p.id === paymentId ? { ...p, status } : p));
       showNotification('success', `Receipt ${status}.`);
-      return;
+    } catch (error: any) {
+      showNotification('error', error.message || 'Failed to verify receipt.');
     }
-
-    showNotification('error', error.message || 'Failed to verify receipt.');
   };
 
   const handleCompletePayoutRequest = async (requestId: string) => {
     setIsUpdatingPayoutRequestId(requestId);
-    const { error } = await supabase
-      .from('tutor_payouts')
-      .update({ status: 'completed', processed_at: new Date().toISOString() })
-      .eq('id', requestId);
+    try {
+      if (!session?.access_token) {
+        throw new Error('You must be logged in to perform this action.');
+      }
 
-    setIsUpdatingPayoutRequestId(null);
-
-    if (error) {
+      await completePayoutRequest(session.access_token, requestId);
+      showNotification('success', 'Payout request marked as completed.');
+      await fetchData();
+    } catch (error: any) {
       showNotification('error', error.message || 'Failed to complete payout request.');
-      return;
+    } finally {
+      setIsUpdatingPayoutRequestId(null);
     }
-
-    showNotification('success', 'Payout request marked as completed.');
-    await fetchData();
   };
 
   const totalPlatformVolume = tutors.reduce((acc, t) => acc + ((t.hourly_rate || 0) * (t.total_sessions || 0)), 0);
