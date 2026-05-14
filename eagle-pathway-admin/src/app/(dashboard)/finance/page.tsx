@@ -31,6 +31,7 @@ export default function FinancePage() {
   const [payoutDetails, setPayoutDetails] = useState({ bankName: '', accountNumber: '', reference: '', notes: '' });
   const [isProcessingPayout, setIsProcessingPayout] = useState(false);
   const [isUpdatingPayoutRequestId, setIsUpdatingPayoutRequestId] = useState<string | null>(null);
+  const [isUpdatingPaymentId, setIsUpdatingPaymentId] = useState<string | null>(null);
   const [summary, setSummary] = useState({
     grossVolume: 0,
     platformProfit: 0,
@@ -94,6 +95,8 @@ export default function FinancePage() {
   const { session } = useAuthStore();
 
   const handleVerifyReceipt = async (paymentId: string, status: 'approved' | 'rejected') => {
+    if (isUpdatingPaymentId) return;
+    setIsUpdatingPaymentId(paymentId);
     try {
       if (!session?.access_token) {
         throw new Error('You must be logged in to perform this action.');
@@ -105,6 +108,8 @@ export default function FinancePage() {
       showNotification('success', `Receipt ${status}.`);
     } catch (error: any) {
       showNotification('error', error.message || 'Failed to verify receipt.');
+    } finally {
+      setIsUpdatingPaymentId(null);
     }
   };
 
@@ -385,8 +390,21 @@ export default function FinancePage() {
                   <td className="px-4 py-3">
                     {p.status === 'pending' ? (
                       <div className="flex gap-1">
-                        <button onClick={() => handleVerifyReceipt(p.id, 'rejected')} className="px-2 py-1 bg-red-50 text-red-600 text-xs rounded">Reject</button>
-                        <button onClick={() => handleVerifyReceipt(p.id, 'approved')} className="px-2 py-1 bg-green-50 text-green-700 text-xs rounded">Approve</button>
+                        <button 
+                          disabled={isUpdatingPaymentId === p.id}
+                          onClick={() => handleVerifyReceipt(p.id, 'rejected')} 
+                          className="px-2 py-1 bg-red-50 text-red-600 text-xs rounded disabled:opacity-50"
+                        >
+                          Reject
+                        </button>
+                        <button 
+                          disabled={isUpdatingPaymentId === p.id}
+                          onClick={() => handleVerifyReceipt(p.id, 'approved')} 
+                          className="px-2 py-1 bg-green-50 text-green-700 text-xs rounded disabled:opacity-50 flex items-center gap-1"
+                        >
+                          {isUpdatingPaymentId === p.id && <Loader2 className="w-3 h-3 animate-spin" />}
+                          Approve
+                        </button>
                       </div>
                     ) : (
                       <span className={`px-2 py-1 text-xs rounded-full ${p.status === 'approved' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
