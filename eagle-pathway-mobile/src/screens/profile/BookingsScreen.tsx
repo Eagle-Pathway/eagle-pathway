@@ -10,12 +10,12 @@ import { Colors, Typography, Spacing, Radius, CommonStyles } from '@/utils/theme
 import { EmptyState, Avatar } from '@/components/common';
 import { ListSkeleton } from '@/components/LoadingSkeleton';
 import { useAuthStore } from '@/store/authStore';
-import { useAppStore } from '@/store/appStore';
+import { useBookingStore } from '@/store/bookingStore';
 import { supabase } from '@/services/supabase';
 
 export function BookingsScreen({ hideHeader = false }: { hideHeader?: boolean }) {
   const { user } = useAuthStore();
-  const { bookings, loadBookings, loadTutorBookings, updateBookingStatus, cancelBooking } = useAppStore();
+  const { bookings, loadBookings, loadTutorBookings, updateBookingStatus, cancelBooking } = useBookingStore();
   const [activeTab, setActiveTab] = useState<'upcoming' | 'past' | 'cancelled'>('upcoming');
   const [loading, setLoading] = useState(true);
   const [ratingBookingId, setRatingBookingId] = useState<string | null>(null);
@@ -36,7 +36,7 @@ export function BookingsScreen({ hideHeader = false }: { hideHeader?: boolean })
   }, [user?.id, isTutor]);
 
   const handleMarkCompleted = async (bookingId: string) => {
-    await updateBookingStatus(bookingId, 'completed' as any);
+    await updateBookingStatus(bookingId, 'completed');
     setRatingBookingId(bookingId);
     setRating(0);
     setRatingComment('');
@@ -135,7 +135,7 @@ export function BookingsScreen({ hideHeader = false }: { hideHeader?: boolean })
                     ) : (
                       <>
                         {b.status === 'pending' ? (
-                          <TouchableOpacity style={bkgStyles.btnJoin} onPress={() => updateBookingStatus(b.id, 'confirmed' as any)} activeOpacity={0.85}>
+                          <TouchableOpacity style={bkgStyles.btnJoin} onPress={() => updateBookingStatus(b.id, 'confirmed')} activeOpacity={0.85}>
                             <Text style={bkgStyles.btnJoinText}>Accept Request</Text>
                           </TouchableOpacity>
                         ) : (
@@ -143,7 +143,7 @@ export function BookingsScreen({ hideHeader = false }: { hideHeader?: boolean })
                             <Text style={bkgStyles.btnJoinText}>Mark Completed ⭐</Text>
                           </TouchableOpacity>
                         )}
-                        <TouchableOpacity style={bkgStyles.btnCancel} onPress={() => updateBookingStatus(b.id, 'cancelled' as any)} activeOpacity={0.85}>
+                        <TouchableOpacity style={bkgStyles.btnCancel} onPress={() => updateBookingStatus(b.id, 'cancelled')} activeOpacity={0.85}>
                           <Text style={bkgStyles.btnCancelText}>Decline/Cancel</Text>
                         </TouchableOpacity>
                       </>
