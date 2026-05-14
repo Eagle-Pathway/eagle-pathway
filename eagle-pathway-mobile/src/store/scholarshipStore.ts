@@ -100,17 +100,16 @@ export const useScholarshipStore = create<ScholarshipState>((set, get) => ({
   },
 
   toggleSaveScholarship: (id) => {
-    set(state => {
-      const saved = state.savedScholarshipIds.includes(id)
-        ? state.savedScholarshipIds.filter(s => s !== id)
-        : [...state.savedScholarshipIds, id];
-        
-      AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(saved)).catch(err => 
-        console.error('Persistence failed:', err)
-      );
+    const { savedScholarshipIds } = get();
+    const newSaved = savedScholarshipIds.includes(id)
+      ? savedScholarshipIds.filter(s => s !== id)
+      : [...savedScholarshipIds, id];
       
-      return { savedScholarshipIds: saved };
-    });
+    set({ savedScholarshipIds: newSaved });
+    
+    AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(newSaved)).catch(err => 
+      console.error('Persistence failed:', err)
+    );
   },
 
   loadSavedScholarships: async () => {

@@ -183,9 +183,9 @@ export const StudentHome: React.FC<StudentHomeProps> = ({
                 >
                   <View style={styles.discoverCardTop}>
                     <View style={styles.discoverFlag}><Text style={{ fontSize: 28 }}>{s.country_flag}</Text></View>
-                    {(s as any).matchScore && (
+                    {(s as any).match_score && (
                       <View style={styles.matchScoreBadge}>
-                        <Text style={styles.matchScoreText}>{(s as any).matchScore}%</Text>
+                        <Text style={styles.matchScoreText}>{(s as any).match_score}%</Text>
                       </View>
                     )}
                   </View>

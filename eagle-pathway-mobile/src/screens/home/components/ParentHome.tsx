@@ -65,8 +65,8 @@ export const ParentHome: React.FC<ParentHomeProps> = ({
             <SectionTitle title="My Children" />
             {children.map(child => {
               const childApps = linkedStudentApplications[child.id] || [];
-              const activeApps = childApps.filter((a: any) => !['accepted', 'rejected'].includes(a.status));
-              const completedApps = childApps.filter((a: any) => ['accepted', 'rejected'].includes(a.status));
+              const activeApps = childApps.filter(a => !['accepted', 'rejected'].includes(a.status));
+              const completedApps = childApps.filter(a => ['accepted', 'rejected'].includes(a.status));
               
               return (
                 <TouchableOpacity 
@@ -94,7 +94,7 @@ export const ParentHome: React.FC<ParentHomeProps> = ({
             })}
 
             <SectionTitle title="Recent Activity" />
-            {(Object.values(linkedStudentApplications).flat() as any[]).slice(0, 3).map((app: any) => (
+            {(Object.values(linkedStudentApplications).flat() as Application[]).slice(0, 3).map(app => (
               <View key={app.id} style={styles.sessionCard}>
                 <Text style={{ fontSize: 28 }}>{app.scholarship?.country_flag || '🌍'}</Text>
                 <View style={{ flex: 1, marginLeft: Spacing.md }}>

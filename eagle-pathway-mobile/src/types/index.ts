@@ -216,6 +216,20 @@ export interface StudentTask {
   created_at: string;
 }
 
+// ─── FINANCE ─────────────────────────────────────────────────────────────────
+export interface PayoutRequest {
+  id: string;
+  tutor_id: string;
+  amount: number;
+  bank_name: string;
+  account_number: string;
+  account_name: string;
+  status: 'pending' | 'processing' | 'completed' | 'rejected';
+  admin_notes?: string;
+  created_at: string;
+  processed_at?: string;
+}
+
 // ─── NAVIGATION TYPES ─────────────────────────────────────────────────────────
 export type RootStackParamList = {
   '(auth)': undefined;

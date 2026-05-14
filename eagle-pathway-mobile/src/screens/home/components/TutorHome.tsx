@@ -19,8 +19,14 @@ interface TutorHomeProps {
   tutorProfile: Tutor | null;
   tutorPayouts: PayoutRequest[];
   isLoadingPayouts: boolean;
-  updateBookingStatus: (bookingId: string, status: any) => Promise<void>;
-  submitPayoutRequest: (params: any) => Promise<void>;
+  updateBookingStatus: (bookingId: string, status: BookingStatus) => Promise<void>;
+  submitPayoutRequest: (params: {
+    tutorId: string;
+    amount: number;
+    bankName: string;
+    accountNumber: string;
+    accountName: string;
+  }) => Promise<void>;
 }
 
 export const TutorHome: React.FC<TutorHomeProps> = ({
