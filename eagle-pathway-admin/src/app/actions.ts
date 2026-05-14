@@ -40,7 +40,7 @@ async function verifyAdmin(accessToken: string) {
  * ACTION: Update tutor verification status
  */
 export async function toggleTutorVerification(accessToken: string, userId: string, verified: boolean) {
-  const adminUser = await verifyAdmin(accessToken);
+  await verifyAdmin(accessToken);
   const supabase = getSupabaseAdmin();
 
   const { error } = await supabase
@@ -81,7 +81,7 @@ export async function updateDocumentStatus(
   status: 'approved' | 'rejected', 
   notes?: string
 ) {
-  const adminUser = await verifyAdmin(accessToken);
+  await verifyAdmin(accessToken);
   const supabase = getSupabaseAdmin();
 
   // 1. Get document to find user_id and type
@@ -125,7 +125,7 @@ export async function completePayoutRequest(
   accessToken: string,
   requestId: string
 ) {
-  const adminUser = await verifyAdmin(accessToken);
+  await verifyAdmin(accessToken);
   const supabase = getSupabaseAdmin();
 
   const { error } = await supabase

@@ -1,5 +1,5 @@
-import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { getSupabaseAdmin } from '@/lib/supabaseServer';
 
 const SYSTEM_PROMPT = `You are the Eagle Pathway AI Assistant, a specialized expert on the Eagle Pathway platform.
 Your ONLY purpose is to help users with:
@@ -26,6 +26,18 @@ async function requireAuthenticatedUser(req: Request) {
   });
   const { data, error } = await supabase.auth.getUser(token);
   if (error || !data.user) throw new Error('Invalid or expired session.');
+
+  // Check the database for the admin role
+  const adminClient = getSupabaseAdmin();
+  const { data: profile } = await adminClient
+    .from('users')
+    .select('roles, active_role')
+    .eq('id', data.user.id)
+    .single();
+
+  const isAdmin = profile?.active_role === 'admin' || profile?.roles?.includes('admin');
+  if (!isAdmin) throw new Error('Unauthorized: Admin access required.');
+
   return data.user;
 }
 
