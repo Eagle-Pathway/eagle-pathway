@@ -61,15 +61,15 @@ export const parentsService = {
   },
 
   async getPendingLinks(userId: string, role: 'parent' | 'student'): Promise<any[]> {
-    const query = supabase
+    let query = supabase
       .from('parent_student_links')
       .select('*, parent:users!parent_id(*), student:users!student_id(*)')
       .eq('is_verified', false);
     
     if (role === 'parent') {
-      query.eq('parent_id', userId);
+      query = query.eq('parent_id', userId);
     } else {
-      query.eq('student_id', userId);
+      query = query.eq('student_id', userId);
     }
 
     const { data, error } = await query;
