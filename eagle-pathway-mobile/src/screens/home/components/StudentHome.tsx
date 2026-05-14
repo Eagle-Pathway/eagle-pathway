@@ -70,8 +70,10 @@ export const StudentHome: React.FC<StudentHomeProps> = ({
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.white} />}
       >
         <View style={styles.hero}>
-          <View style={styles.heroOverlay1} />
-          <View style={styles.heroOverlay2} />
+          <View style={styles.heroBg}>
+            <View style={styles.heroOverlay1} />
+            <View style={styles.heroOverlay2} />
+          </View>
           <View style={styles.heroTop}>
             <View>
               <Text style={styles.greeting}>{greeting} 👋</Text>
@@ -133,19 +135,19 @@ export const StudentHome: React.FC<StudentHomeProps> = ({
 
         {(!user.gpa || !user.interested_subjects?.length) && (
           <TouchableOpacity 
-            style={styles.readinessBanner} 
+            style={[styles.readinessBanner, { backgroundColor: Colors.blueDark, borderColor: 'rgba(255,255,255,0.1)' }]} 
             onPress={() => router.push('/profile/edit')}
             activeOpacity={0.9}
           >
-            <View style={styles.readinessIconWrap}>
+            <View style={[styles.readinessIconWrap, { backgroundColor: 'rgba(255,255,255,0.1)' }]}>
               <Text style={{ fontSize: 20 }}>🧠</Text>
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={styles.readinessTitle}>Personalize Your Feed</Text>
-              <Text style={styles.readinessSub}>Add your GPA and interests to get 100% matched scholarships.</Text>
+              <Text style={[styles.readinessTitle, { color: Colors.white }]}>Personalize Your Feed</Text>
+              <Text style={[styles.readinessSub, { color: 'rgba(255,255,255,0.6)' }]}>Add your GPA and interests to get 100% matched scholarships.</Text>
               <View style={{ flexDirection: 'row', gap: 6, marginTop: 8 }}>
                 <View style={{ width: 40, height: 4, borderRadius: 2, backgroundColor: Colors.gold }} />
-                <View style={{ width: 40, height: 4, borderRadius: 2, backgroundColor: Colors.border }} />
+                <View style={{ width: 40, height: 4, borderRadius: 2, backgroundColor: 'rgba(255,255,255,0.2)' }} />
               </View>
             </View>
           </TouchableOpacity>
@@ -280,14 +282,17 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.blueDark, 
     paddingHorizontal: Spacing.xl, 
     paddingTop: Spacing.lg, 
-    paddingBottom: Spacing['3xl'], // Extra padding for the curve
-    borderBottomLeftRadius: 30,
-    borderBottomRightRadius: 30,
-    zIndex: 1,
+    paddingBottom: Spacing['2xl'],
+    position: 'relative',
+  },
+  heroBg: {
+    ...StyleSheet.absoluteFillObject,
+    overflow: 'hidden',
+    backgroundColor: Colors.blueDark,
   },
   heroOverlay1: { position: 'absolute', top: -40, right: -40, width: 200, height: 200, borderRadius: 100, backgroundColor: 'rgba(255,255,255,0.04)' },
   heroOverlay2: { position: 'absolute', bottom: -60, right: 20, width: 140, height: 140, borderRadius: 70, backgroundColor: 'rgba(255,255,255,0.03)' },
-  heroTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.xl },
+  heroTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.xl, zIndex: 2 },
   greeting: { fontSize: Typography.base, color: 'rgba(255,255,255,0.6)' },
   userName: { fontSize: Typography['4xl'], fontWeight: Typography.bold, color: Colors.white, marginTop: 2 },
   heroActions: { flexDirection: 'row', gap: Spacing.md, alignItems: 'center' },
@@ -298,24 +303,20 @@ const styles = StyleSheet.create({
   quickCards: { 
     flexDirection: 'row', 
     gap: Spacing.sm,
-    marginTop: Spacing.xs,
+    zIndex: 2,
   },
   quickCard: { 
     flex: 1, 
-    backgroundColor: 'rgba(255,255,255,0.15)', 
+    backgroundColor: 'rgba(255,255,255,0.12)', 
     borderRadius: Radius.xl, 
     padding: Spacing.md, 
     borderWidth: 1, 
     borderColor: 'rgba(255,255,255,0.1)',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
   },
   quickCardIcon: { width: 32, height: 32, backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 8, alignItems: 'center', justifyContent: 'center', marginBottom: 8 },
   quickCardLabel: { fontSize: 12, fontWeight: Typography.bold, color: Colors.white },
   quickCardSub: { fontSize: 10, color: 'rgba(255,255,255,0.6)', marginTop: 2 },
-  premiumCard: { marginHorizontal: Spacing.xl, marginTop: -30, marginBottom: Spacing.xl, borderRadius: Radius.xl, overflow: 'hidden', backgroundColor: Colors.white, elevation: 5, shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.12, shadowRadius: 16, zIndex: 10 },
+  premiumCard: { marginHorizontal: Spacing.xl, marginTop: Spacing.lg, marginBottom: Spacing.xl, borderRadius: Radius.xl, overflow: 'hidden', backgroundColor: Colors.white, elevation: 3, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 8 },
   premiumContent: { padding: Spacing.lg, backgroundColor: '#fff' },
   premiumHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.md },
   vipBadge: { backgroundColor: Colors.gold, paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 },
@@ -325,28 +326,11 @@ const styles = StyleSheet.create({
   consultantName: { fontSize: Typography.lg, fontWeight: Typography.bold, color: Colors.text },
   consultantSub: { fontSize: Typography.xs, color: Colors.textSecondary, marginTop: 2 },
   waIcon: { width: 40, height: 40, backgroundColor: '#e8f5e9', borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
-  readinessBanner: { 
-    marginHorizontal: Spacing.xl, 
-    padding: Spacing.lg, 
-    backgroundColor: Colors.white, 
-    borderRadius: Radius.xl, 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    borderWidth: 1, 
-    borderColor: Colors.border, 
-    marginBottom: Spacing.xl,
-    marginTop: -40, // Float over the curve
-    zIndex: 5,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.1,
-    shadowRadius: 20,
-    elevation: 8,
-  },
+  readinessBanner: { marginHorizontal: Spacing.xl, padding: Spacing.lg, backgroundColor: Colors.white, borderRadius: Radius.xl, flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: Colors.border, marginBottom: Spacing.xl, marginTop: Spacing.lg },
   readinessIconWrap: { width: 44, height: 44, backgroundColor: '#fffbeb', borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginRight: Spacing.md },
   readinessTitle: { fontSize: Typography.base, fontWeight: Typography.bold, color: Colors.text },
   readinessSub: { fontSize: Typography.xs, color: Colors.textSecondary, marginTop: 2 },
-  discoverCard: { width: 220, backgroundColor: Colors.white, borderRadius: Radius.xl, padding: Spacing.md, borderWidth: 1, borderColor: Colors.border, shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.05, shadowRadius: 10, elevation: 2 },
+  discoverCard: { width: 220, backgroundColor: Colors.white, borderRadius: Radius.xl, padding: Spacing.md, borderWidth: 1, borderColor: Colors.border },
   discoverCardTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
   discoverFlag: { width: 50, height: 50, backgroundColor: '#f3f4f6', borderRadius: Radius.lg, alignItems: 'center', justifyContent: 'center' },
   matchScoreBadge: { backgroundColor: '#ecfdf5', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 },
