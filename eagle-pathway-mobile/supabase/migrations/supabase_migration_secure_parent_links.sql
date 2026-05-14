@@ -73,6 +73,6 @@ USING (
   EXISTS (
     SELECT 1 FROM public.users 
     WHERE id = auth.uid() 
-    AND (active_role = 'admin' OR roles @> ARRAY['admin']::varchar[])
+    AND (active_role = 'admin' OR 'admin' = ANY(roles))
   )
 );
