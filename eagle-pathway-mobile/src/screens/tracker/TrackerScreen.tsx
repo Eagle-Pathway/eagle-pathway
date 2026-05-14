@@ -10,7 +10,7 @@ import { Button, Pill, StatusTimeline } from '@/components/common';
 import { CardSkeleton } from '@/components/LoadingSkeleton';
 import { EmptyState } from '@/components/common';
 import { useAuthStore } from '@/store/authStore';
-import { useAppStore } from '@/store/appStore';
+import { useScholarshipStore } from '@/store/scholarshipStore';
 import type { Application } from '@/types';
 
 const AuthenticationTracker = ({ isPremium }: { isPremium: boolean }) => (
@@ -54,7 +54,7 @@ const AuthenticationTracker = ({ isPremium }: { isPremium: boolean }) => (
 export function TrackerScreen() {
   const { user } = useAuthStore();
   const { applicationId } = useLocalSearchParams<{ applicationId: string }>();
-  const { applications, loadApplications } = useAppStore();
+  const { applications, loadApplications } = useScholarshipStore();
   const [loading, setLoading] = useState(true);
   const [selectedApp, setSelectedApp] = useState<Application | null>(null);
 
@@ -67,14 +67,14 @@ export function TrackerScreen() {
   }, [user?.id]);
 
   useEffect(() => {
-    if (!loading && applicationId && applications.length > 0) {
-      const found = applications.find(a => a.id === applicationId);
+    if (!loading && applicationId && (applications || []).length > 0) {
+      const found = (applications || []).find(a => a.id === applicationId);
       if (found) setSelectedApp(found);
     }
   }, [loading, applicationId, applications]);
 
-  const active = applications.filter(a => !['accepted', 'rejected'].includes(a.status));
-  const completed = applications.filter(a => ['accepted', 'rejected'].includes(a.status));
+  const active = (applications || []).filter(a => !['accepted', 'rejected'].includes(a.status));
+  const completed = (applications || []).filter(a => ['accepted', 'rejected'].includes(a.status));
 
   if (selectedApp) {
     return (
@@ -176,9 +176,9 @@ export function TrackerScreen() {
         <View style={trackerStyles.statsRow}>
           {[
             { num: active.length, lbl: 'Active' },
-            { num: applications.filter(a => a.status === 'submitted').length, lbl: 'Submitted' },
-            { num: applications.filter(a => a.status === 'accepted').length, lbl: 'Accepted' },
-            { num: applications.length, lbl: 'Total' },
+            { num: (applications || []).filter(a => a.status === 'submitted').length, lbl: 'Submitted' },
+            { num: (applications || []).filter(a => a.status === 'accepted').length, lbl: 'Accepted' },
+            { num: (applications || []).length, lbl: 'Total' },
           ].map(s => (
             <View key={s.lbl} style={trackerStyles.stat}>
               <Text style={trackerStyles.statNum}>{s.num}</Text>
@@ -192,7 +192,7 @@ export function TrackerScreen() {
         <View style={{ flex: 1, paddingTop: Spacing.lg, paddingHorizontal: Spacing.xl }}>
           <CardSkeleton count={3} />
         </View>
-      ) : applications.length === 0 ? (
+      ) : (applications || []).length === 0 ? (
         <EmptyState 
           icon="📋" 
           title="No applications yet" 

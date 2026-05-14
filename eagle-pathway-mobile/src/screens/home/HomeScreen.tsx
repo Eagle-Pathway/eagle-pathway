@@ -3,7 +3,14 @@ import { View, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors, CommonStyles } from '@/utils/theme';
 import { useAuthStore } from '@/store/authStore';
-import { useAppStore } from '@/store/appStore';
+
+// Specialized Domain Stores
+import { useScholarshipStore } from '@/store/scholarshipStore';
+import { useBookingStore } from '@/store/bookingStore';
+import { useNotificationStore } from '@/store/notificationStore';
+import { useTaskStore } from '@/store/taskStore';
+import { useFinanceStore } from '@/store/financeStore';
+import { useParentStore } from '@/store/parentStore';
 
 // Role-specific home components
 import { StudentHome } from './components/StudentHome';
@@ -12,14 +19,36 @@ import { ParentHome } from './components/ParentHome';
 
 export default function HomeScreen() {
   const { user } = useAuthStore();
+  
+  // Scholarship Store
   const { 
-    bookings, applications, unreadCount, tasks, recommendedScholarships,
-    tutorPayouts, tutorProfile, isLoadingPayouts,
-    loadBookings, loadTutorBookings, loadApplications, loadNotifications, loadTasks, toggleTask,
-    loadRecommendations, loadTutorPayouts, submitPayoutRequest,
-    linkedStudents, linkedStudentApplications, loadLinkedStudents, loadLinkedStudentApplications,
-    updateBookingStatus
-  } = useAppStore();
+    applications, recommendedScholarships, loadApplications, loadRecommendations 
+  } = useScholarshipStore();
+  
+  // Booking Store
+  const { 
+    bookings, tutorProfile, loadBookings, loadTutorBookings, updateBookingStatus 
+  } = useBookingStore();
+  
+  // Notification Store
+  const { 
+    unreadCount, loadNotifications 
+  } = useNotificationStore();
+  
+  // Task Store
+  const { 
+    tasks, loadTasks, toggleTask 
+  } = useTaskStore();
+  
+  // Finance Store
+  const { 
+    tutorPayouts, isLoadingPayouts, loadTutorPayouts, submitPayoutRequest 
+  } = useFinanceStore();
+  
+  // Parent Store
+  const { 
+    linkedStudents, linkedStudentApplications, loadLinkedStudents, loadLinkedStudentApplications 
+  } = useParentStore();
 
   const [refreshing, setRefreshing] = useState(false);
 
@@ -49,7 +78,7 @@ export default function HomeScreen() {
 
   useEffect(() => { 
     load(); 
-  }, [user?.id, activeRole]); // Reload when role changes too
+  }, [user?.id, activeRole]);
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -72,7 +101,6 @@ export default function HomeScreen() {
   const hour = new Date().getHours();
   const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
 
-  // Render the appropriate home view based on role
   if (isParent) {
     return (
       <ParentHome 
@@ -109,7 +137,6 @@ export default function HomeScreen() {
     );
   }
 
-  // Default to Student Home
   return (
     <StudentHome 
       user={user}
