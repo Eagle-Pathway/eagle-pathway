@@ -1,38 +1,21 @@
 # Eagle Pathway
 
-A monorepo for the Eagle Pathway ecosystem, managed via npm workspaces.
+A single monorepo containing all Eagle Pathway products.
 
-## Structure
+## What is inside
 
-- **`eagle-pathway-admin`** — Internal admin dashboard (Next.js)
-- **`eagle-pathway-mobile`** — Student and tutor mobile app (Expo + React Native)
-- **`packages/eagle-shared`** — Shared utilities and types
+- `eagle-pathway-web` — public website (landing/marketing)
+- `eagle-pathway-mobile` — student/tutor mobile app (Expo + React Native)
+- `eagle-pathway-admin` — internal admin dashboard (Next.js)
 
-## Tech Stack
+## Stack
 
-- **Admin**: Next.js, React, Tailwind CSS, TypeScript
-- **Mobile**: Expo, React Native, TypeScript
-- **Backend**: Supabase (PostgreSQL, Auth, Storage, Realtime)
+- Next.js + React + TypeScript (Web/Admin)
+- Expo + React Native + TypeScript (Mobile)
+- Supabase (Auth, PostgreSQL, Storage, Realtime)
 
-## Getting Started
+## Prerequisites
 
-### Prerequisites
 - Node.js 18+
 - npm 9+
-
-### Installation
-Install dependencies for all workspaces from the root directory:
-```bash
-npm install
-```
-
-### Development
-Start the admin dashboard:
-```bash
-npm run dev -w eagle-pathway-admin
-```
-
-Start the mobile app:
-```bash
-npm run start -w eagle-pathway-mobile
-```
+- Git
