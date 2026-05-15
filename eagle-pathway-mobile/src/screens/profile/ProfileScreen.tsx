@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
-  ActivityIndicator, Alert, TextInput, Share,
+  ActivityIndicator, Alert, TextInput,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -9,18 +9,11 @@ import { Colors, Typography, Spacing, Radius, CommonStyles } from '@/utils/theme
 import { Avatar } from '@/components/common';
 import { scholarshipsService } from '@/services/scholarships';
 import { useAuthStore } from '@/store/authStore';
-import { useScholarshipStore } from '@/store/scholarshipStore';
-import { useDocumentStore } from '@/store/documentStore';
-import { useNotificationStore } from '@/store/notificationStore';
-import { useParentStore } from '@/store/parentStore';
+import { useAppStore } from '@/store/appStore';
 
 export function ProfileScreen() {
   const { user, signOut, uploadAvatar, switchPersona } = useAuthStore();
-  const { applications } = useScholarshipStore();
-  const { documents } = useDocumentStore();
-  const { unreadCount } = useNotificationStore();
-  const { inviteParent, linkStudent, loadPendingLinks, verifyLink, removeLink } = useParentStore();
-  
+  const { applications, documents, unreadCount, inviteParent, linkStudent, loadPendingLinks, verifyLink, removeLink } = useAppStore();
   const [uploading, setUploading] = useState(false);
   const [pendingLinks, setPendingLinks] = useState<any[]>([]);
   const [linkingPhone, setLinkingPhone] = useState('');
@@ -91,8 +84,8 @@ export function ProfileScreen() {
 
   const MENU_ITEMS = [
     { icon: '📊', label: 'My Progress', badge: null, color: Colors.blueLight, route: '/progress', danger: false },
-    { icon: '🎓', label: 'My Applications', badge: `${(applications || []).filter(a => !['accepted','rejected'].includes(a.status)).length} Active`, color: Colors.goldLight, route: '/tracker', danger: false },
-    { icon: '📁', label: 'Documents', badge: (documents || []).filter(d => d.status !== 'approved').length > 0 ? 'Action needed' : null, color: Colors.greenLight, route: '/documents', danger: false },
+    { icon: '🎓', label: 'My Applications', badge: `${applications.filter(a => !['accepted','rejected'].includes(a.status)).length} Active`, color: Colors.goldLight, route: '/tracker', danger: false },
+    { icon: '📁', label: 'Documents', badge: documents.filter(d => d.status !== 'approved').length > 0 ? 'Action needed' : null, color: Colors.greenLight, route: '/documents', danger: false },
     { icon: '📅', label: 'My Bookings', badge: null, color: Colors.grayLight, route: '/(tabs)/bookings', danger: false },
     { icon: '🔔', label: 'Notifications', badge: unreadCount > 0 ? `${unreadCount} New` : null, color: Colors.blueLight, route: '/notifications', danger: false },
     { icon: '⚙️', label: 'Settings', badge: null, color: Colors.grayLight, route: '/settings', danger: false },
@@ -223,33 +216,6 @@ export function ProfileScreen() {
             </View>
           </View>
         )}
-
-        {/* Referral Card */}
-        <TouchableOpacity 
-          style={profStyles.referralCard} 
-          onPress={async () => {
-            const code = (user?.full_name?.replace(/\s+/g, '').slice(0, 6) || 'EAGLE').toUpperCase() + Math.floor(1000 + Math.random() * 9000);
-            try {
-              await Share.share({
-                message: `🦅 Join me on Eagle Pathway — the smartest way to find and win scholarships abroad!\n\nUse my code: ${code}\n\nDownload: https://eaglepathway.app/invite/${code}`,
-              });
-            } catch (e) {
-              console.error('Error sharing referral code:', e);
-            }
-          }}
-          activeOpacity={0.9}
-        >
-          <View style={profStyles.referralContent}>
-            <View style={profStyles.referralIcon}>
-              <Text style={{ fontSize: 24 }}>🎁</Text>
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={profStyles.referralTitle}>Invite Friends, Get Rewards</Text>
-              <Text style={profStyles.referralSub}>Share your code and earn free premium SOP reviews when friends sign up</Text>
-            </View>
-            <Text style={{ fontSize: 18, color: Colors.gold }}>→</Text>
-          </View>
-        </TouchableOpacity>
 
         {MENU_ITEMS.map((item, i) => (
           <TouchableOpacity
