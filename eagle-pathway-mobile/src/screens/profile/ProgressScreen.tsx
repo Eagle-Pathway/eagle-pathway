@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
 } from 'react-native';
@@ -7,10 +7,23 @@ import { router } from 'expo-router';
 import { Colors, Typography, Spacing, Radius, CommonStyles } from '@/utils/theme';
 import { ProgressBar } from '@/components/common';
 import { useAuthStore } from '@/store/authStore';
-import { useAppStore } from '@/store/appStore';
+import { useScholarshipStore } from '@/store/scholarshipStore';
+import { useBookingStore } from '@/store/bookingStore';
+import { useDocumentStore } from '@/store/documentStore';
 
 export function ProgressScreen() {
-  const { applications, bookings, documents } = useAppStore();
+  const { user } = useAuthStore();
+  const { applications, loadApplications } = useScholarshipStore();
+  const { bookings, loadBookings } = useBookingStore();
+  const { documents, loadDocuments } = useDocumentStore();
+
+  useEffect(() => {
+    if (user) {
+      loadApplications(user.id);
+      loadBookings(user.id);
+      loadDocuments(user.id);
+    }
+  }, [user?.id]);
 
   const checklist = [
     { label: "Bachelor's degree completed", done: true },
@@ -61,14 +74,14 @@ export function ProgressScreen() {
         ))}
 
         <Text style={CommonStyles.sectionTitle}>Scholarship Pipeline</Text>
-        {applications.length === 0 ? (
+        {(applications || []).length === 0 ? (
           <View style={{ paddingHorizontal: Spacing.xl }}>
             <TouchableOpacity style={progStyles.startBtn} onPress={() => router.push('/(tabs)/scholarships')} activeOpacity={0.8}>
               <Text style={progStyles.startBtnText}>+ Start Your First Application</Text>
             </TouchableOpacity>
           </View>
         ) : (
-          applications.map(app => (
+          (applications || []).map(app => (
             <View key={app.id} style={progStyles.journeyCard}>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                 <View style={{ flexDirection: 'row', gap: Spacing.sm, alignItems: 'center', flex: 1 }}>

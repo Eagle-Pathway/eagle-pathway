@@ -4,14 +4,16 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import { Colors, Typography, Spacing, Radius } from '@/utils/theme';
+import { Colors, Typography, Spacing } from '@/utils/theme';
 import { EmptyState } from '@/components/common';
 import { useAuthStore } from '@/store/authStore';
-import { useAppStore } from '@/store/appStore';
+import { useNotificationStore } from '@/store/notificationStore';
 
 export function NotificationsScreen() {
   const { user } = useAuthStore();
-  const { notifications, unreadCount, loadNotifications, markAllNotificationsRead, markNotificationRead } = useAppStore();
+  const { 
+    notifications, unreadCount, loadNotifications, markAllNotificationsRead, markNotificationRead 
+  } = useNotificationStore();
   const [markingIds, setMarkingIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {

@@ -10,7 +10,7 @@ import { Colors, Typography, Spacing, Radius, CommonStyles } from '@/utils/theme
 import { Button, Avatar } from '@/components/common';
 import { tutorsService } from '@/services/tutors';
 import { useAuthStore } from '@/store/authStore';
-import { useAppStore } from '@/store/appStore';
+import { useBookingStore } from '@/store/bookingStore';
 import { Tutor } from '@/types';
 
 const TIME_SLOTS = ['9:00 AM','10:00 AM','11:00 AM','12:00 PM','2:00 PM','3:00 PM','4:00 PM','5:00 PM','7:00 PM'];
@@ -19,7 +19,7 @@ const PLATFORM_FEE_RATE = 0.10;
 export default function BookingScreen() {
   const { tutorId } = useLocalSearchParams<{ tutorId: string }>();
   const { user } = useAuthStore();
-  const { loadBookings } = useAppStore();
+  const { loadBookings } = useBookingStore();
   const [tutor, setTutor] = useState<Tutor | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date>(addDays(new Date(), 1));
   const [selectedTime, setSelectedTime] = useState<string>('');

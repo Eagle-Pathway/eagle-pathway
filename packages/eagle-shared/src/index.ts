@@ -99,17 +99,7 @@ export const sleep = (ms: number): Promise<void> => {
 
 export const parseJson = <T>(content: string | undefined): T => {
   if (!content) throw new Error('AI provider returned an empty response.');
-  try {
-    // Try parsing the entire content first
-    return JSON.parse(content) as T;
-  } catch (e) {
-    // Fallback: try to extract JSON from markdown or raw text
-    const match = content.match(/\{[\s\S]*\}|\[[\s\S]*\]/);
-    if (!match) throw new Error('AI provider returned invalid JSON.');
-    try {
-      return JSON.parse(match[0]) as T;
-    } catch (innerError) {
-      throw new Error(`Failed to parse extracted JSON: ${(innerError as Error).message}`);
-    }
-  }
+  const match = content.match(/\{[\s\S]*\}/);
+  if (!match) throw new Error('AI provider returned invalid JSON.');
+  return JSON.parse(match[0]) as T;
 };

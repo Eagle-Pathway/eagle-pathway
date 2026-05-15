@@ -68,37 +68,21 @@ export const messageService = {
   },
 
   async getConversations(userId: string) {
-    // Fetch unique users involved in messages
-    const { data: rawMessages, error } = await supabase
-      .from('messages')
-      .select('*, sender:users!messages_sender_id_fkey(id, full_name, roles, active_role, avatar_url), recipient:users!messages_recipient_id_fkey(id, full_name, roles, active_role, avatar_url)')
-      .or(`sender_id.eq.${userId},recipient_id.eq.${userId}`)
-      .order('created_at', { ascending: false });
-
-    if (error) throw error;
-    if (!rawMessages) return [];
-
-    const userMap = new Map<string, any>();
-    rawMessages.forEach((msg: any) => {
-      const otherUser = msg.sender_id === userId ? msg.recipient : msg.sender;
-      if (!otherUser) return;
-      const normalizedUser = {
-        ...otherUser,
-        role: otherUser.active_role || otherUser.roles?.[0] || 'student',
-      };
-      if (!userMap.has(otherUser.id)) {
-        userMap.set(otherUser.id, {
-          ...normalizedUser,
-          last_message: msg.content,
-          last_time: msg.created_at,
-          unread_count: msg.recipient_id === userId && !msg.is_read ? 1 : 0
-        });
-      } else if (msg.recipient_id === userId && !msg.is_read) {
-        const existing = userMap.get(otherUser.id);
-        existing.unread_count += 1;
-      }
+    const { data, error } = await supabase.rpc('get_user_conversations', { 
+      p_user_id: userId 
     });
 
-    return Array.from(userMap.values());
+    if (error) throw error;
+    if (!data) return [];
+
+    return data.map((conv: any) => ({
+      id: conv.other_user_id,
+      full_name: conv.full_name,
+      avatar_url: conv.avatar_url,
+      role: conv.active_role || conv.roles?.[0] || 'student',
+      last_message: conv.last_message,
+      last_time: conv.last_time,
+      unread_count: parseInt(conv.unread_count)
+    }));
   }
 };

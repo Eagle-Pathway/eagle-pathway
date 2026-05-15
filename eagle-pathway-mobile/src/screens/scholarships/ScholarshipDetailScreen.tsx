@@ -10,7 +10,7 @@ import { Colors, Typography, Spacing, Radius, CommonStyles } from '@/utils/theme
 import { Button, EmptyState } from '@/components/common';
 import { DetailSkeleton } from '@/components/LoadingSkeleton';
 import { scholarshipsService } from '@/services/scholarships';
-import { useAppStore } from '@/store/appStore';
+import { useScholarshipStore } from '@/store/scholarshipStore';
 import type { Scholarship } from '@/types';
 
 // Helper to render text with clickable links
@@ -36,7 +36,7 @@ const renderLinkedText = (text: string) => {
 
 export function ScholarshipDetailScreen() {
   const { scholarshipId } = useLocalSearchParams<{ scholarshipId: string }>();
-  const { savedScholarshipIds, toggleSaveScholarship } = useAppStore();
+  const { savedScholarshipIds, toggleSaveScholarship } = useScholarshipStore();
   const [scholarship, setScholarship] = useState<Scholarship | null>(null);
   const [loading, setLoading] = useState(true);
   const isSaved = scholarshipId ? savedScholarshipIds.includes(scholarshipId) : false;

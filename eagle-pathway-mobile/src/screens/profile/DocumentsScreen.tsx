@@ -9,12 +9,12 @@ import { Colors, Typography, Spacing, Radius, CommonStyles } from '@/utils/theme
 import { EmptyState } from '@/components/common';
 import { scholarshipsService } from '@/services/scholarships';
 import { useAuthStore } from '@/store/authStore';
-import { useAppStore } from '@/store/appStore';
+import { useDocumentStore } from '@/store/documentStore';
 import type { DocumentType } from '@/types';
 
 export function DocumentsScreen() {
   const { user } = useAuthStore();
-  const { documents, loadDocuments, uploadDocument } = useAppStore();
+  const { documents, loadDocuments, uploadDocument } = useDocumentStore();
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState<'all' | 'academic' | 'identity' | 'other'>('all');
 
@@ -41,8 +41,8 @@ export function DocumentsScreen() {
     selectedCategory === 'all' || getCategory(d.document_type) === selectedCategory
   );
 
-  const approved = documents.filter(d => d.status === 'approved').length;
-  const pending = documents.filter(d => d.status === 'pending').length;
+  const approved = (documents || []).filter(d => d.status === 'approved').length;
+  const pending = (documents || []).filter(d => d.status === 'pending').length;
   
   const hasDoc = (type: DocumentType) => (documents || []).some(d => d.document_type === type);
 

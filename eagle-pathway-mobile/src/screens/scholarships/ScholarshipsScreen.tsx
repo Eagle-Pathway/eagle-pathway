@@ -1,14 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import {
   View, Text, ScrollView, TextInput, TouchableOpacity,
-  StyleSheet, FlatList, ActivityIndicator, Image
+  StyleSheet, FlatList, Image
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Colors, Typography, Spacing, Radius, CommonStyles } from '@/utils/theme';
 import { EmptyState } from '@/components/common';
 import { ListSkeleton } from '@/components/LoadingSkeleton';
-import { useAppStore } from '@/store/appStore';
+import { useScholarshipStore } from '@/store/scholarshipStore';
 import { Scholarship } from '@/types';
 import { format } from 'date-fns';
 import { Ionicons } from '@expo/vector-icons';
@@ -16,13 +16,13 @@ import { Ionicons } from '@expo/vector-icons';
 const DEGREE_FILTERS = ['All', 'Undergraduate', 'Masters', 'PhD', 'Fully Funded'];
 
 export default function ScholarshipsScreen({ hideBack = false }: { hideBack?: boolean }) {
-  const { scholarships, savedScholarshipIds, loadScholarships, toggleSaveScholarship, isLoadingScholarships } = useAppStore();
+  const { scholarships, savedScholarshipIds, loadScholarships, toggleSaveScholarship, isLoadingScholarships } = useScholarshipStore();
   const [search, setSearch] = useState('');
   const [activeFilter, setActiveFilter] = useState('All');
 
   useEffect(() => { loadScholarships(); }, []);
 
-  const filtered = scholarships.filter(s => {
+  const filtered = (scholarships || []).filter(s => {
     const matchSearch = !search || (s.name || '').toLowerCase().includes(search.toLowerCase()) || (s.country || '').toLowerCase().includes(search.toLowerCase());
     const matchFilter = activeFilter === 'All' ||
       (activeFilter === 'Fully Funded' && s.funding_type === 'fully_funded') ||
@@ -46,7 +46,7 @@ export default function ScholarshipsScreen({ hideBack = false }: { hideBack?: bo
         <View style={styles.heroTop}>
           <View>
             <Text style={styles.heroTitle}>Scholarships</Text>
-            <Text style={styles.heroSub}>{scholarships.length} opportunities available</Text>
+            <Text style={styles.heroSub}>{(scholarships || []).length} opportunities available</Text>
           </View>
           <TouchableOpacity style={styles.filterIconBtn} activeOpacity={0.8}>
             <Text style={{ fontSize: 16, color: Colors.white }}>⚙️</Text>
@@ -108,8 +108,6 @@ export default function ScholarshipsScreen({ hideBack = false }: { hideBack?: bo
 }
 
 function ScholarshipCard({ scholarship: s, isSaved, onSave }: { scholarship: Scholarship; isSaved: boolean; onSave: () => void }) {
-  const isDeadlineSoon = s.deadline ? new Date(s.deadline) < new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) : false;
-
   return (
     <TouchableOpacity
       style={styles.card}
@@ -195,7 +193,6 @@ const styles = StyleSheet.create({
   imageOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.1)' },
   imageBadge: { position: 'absolute', top: 12, right: 12, backgroundColor: 'rgba(0,0,0,0.5)', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
   imageBadgeText: { color: Colors.white, fontSize: 10, fontWeight: 'bold' },
-  
   cardContent: { padding: Spacing.lg },
   cardTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: Spacing.lg },
   flagAndTitle: { flexDirection: 'row', gap: Spacing.md, flex: 1, alignItems: 'center' },
@@ -203,7 +200,6 @@ const styles = StyleSheet.create({
   schName: { fontSize: Typography.md, fontWeight: Typography.bold, color: Colors.text, marginBottom: 2 },
   schOrg: { fontSize: Typography.xs, color: Colors.textSecondary, fontWeight: '500' },
   saveBtn: { width: 36, height: 36, backgroundColor: Colors.bg, borderRadius: 12, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: Colors.border },
-  
   cardFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingTop: Spacing.md, borderTopWidth: 1, borderTopColor: '#f1f5f9' },
   metaRow: { flexDirection: 'row', gap: Spacing.sm },
   metaPill: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 10 },

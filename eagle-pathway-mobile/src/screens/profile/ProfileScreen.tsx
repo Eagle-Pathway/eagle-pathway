@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
-  ActivityIndicator, Alert, TextInput, Share,
+  ActivityIndicator, Alert, TextInput,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -216,33 +216,6 @@ export function ProfileScreen() {
             </View>
           </View>
         )}
-
-        {/* Referral Card */}
-        <TouchableOpacity 
-          style={profStyles.referralCard} 
-          onPress={async () => {
-            const code = (user?.full_name?.replace(/\s+/g, '').slice(0, 6) || 'EAGLE').toUpperCase() + Math.floor(1000 + Math.random() * 9000);
-            try {
-              await Share.share({
-                message: `🦅 Join me on Eagle Pathway — the smartest way to find and win scholarships abroad!\n\nUse my code: ${code}\n\nDownload: https://eaglepathway.app/invite/${code}`,
-              });
-            } catch (e) {
-              console.error('Error sharing referral code:', e);
-            }
-          }}
-          activeOpacity={0.9}
-        >
-          <View style={profStyles.referralContent}>
-            <View style={profStyles.referralIcon}>
-              <Text style={{ fontSize: 24 }}>🎁</Text>
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={profStyles.referralTitle}>Invite Friends, Get Rewards</Text>
-              <Text style={profStyles.referralSub}>Share your code and earn free premium SOP reviews when friends sign up</Text>
-            </View>
-            <Text style={{ fontSize: 18, color: Colors.gold }}>→</Text>
-          </View>
-        </TouchableOpacity>
 
         {MENU_ITEMS.map((item, i) => (
           <TouchableOpacity
