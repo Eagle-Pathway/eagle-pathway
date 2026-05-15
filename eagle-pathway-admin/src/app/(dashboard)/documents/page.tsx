@@ -15,8 +15,6 @@ import {
   ChevronRight
 } from 'lucide-react';
 import { exportToCSV } from '@/utils/export';
-import { updateDocumentStatus } from '@/app/actions';
-import { useAuthStore } from '@/store/useAuthStore';
 
 interface UserDocument {
   id: string;
@@ -41,12 +39,6 @@ export default function DocumentsPage() {
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [selectedDoc, setSelectedDoc] = useState<UserDocument | null>(null);
   const [reviewerNotes, setReviewerNotes] = useState('');
-  const [notification, setNotification] = useState<{type: 'error' | 'success' | 'info'; message: string} | null>(null);
-
-  const showNotification = (type: 'error' | 'success' | 'info', message: string, timeoutMs = 3500) => {
-    setNotification({ type, message });
-    window.setTimeout(() => setNotification(null), timeoutMs);
-  };
 
   const signDocumentUrl = async (document: UserDocument): Promise<UserDocument> => {
     const path = document.file_path || (!document.file_url?.startsWith('http') ? document.file_url : null);
@@ -78,25 +70,31 @@ export default function DocumentsPage() {
     fetchDocuments();
   }, []);
 
-  const { session } = useAuthStore();
-
   const handleUpdateStatus = async (id: string, status: 'approved' | 'rejected') => {
-    try {
-      if (!session?.access_token) {
-        throw new Error('You must be logged in to perform this action.');
-      }
+    const { error } = await supabase
+      .from('documents')
+      .update({ status, reviewer_notes: status === 'rejected' ? reviewerNotes : null })
+      .eq('id', id);
 
-      await updateDocumentStatus(session.access_token, id, status, status === 'rejected' ? reviewerNotes : undefined);
-      
+    if (!error) {
       setDocuments(prev => prev.map(doc => doc.id === id ? { ...doc, status, reviewer_notes: status === 'rejected' ? reviewerNotes : undefined } : doc));
       
+      // Also send a push notification to the student about the status
+      await supabase.from('notifications').insert({
+        user_id: selectedDoc?.user_id,
+        type: status === 'approved' ? 'document_approved' : 'document_rejected',
+        title: status === 'approved' ? 'Document Approved 🟢' : 'Document Rejected 🔴',
+        body: status === 'approved' 
+          ? `Your ${selectedDoc?.document_type?.replace('_',' ')} has been verified.` 
+          : `Your ${selectedDoc?.document_type?.replace('_',' ')} was rejected. Reason: ${reviewerNotes || 'Please upload a clearer copy.'}`,
+      });
+
       if (selectedDoc?.id === id) {
         setSelectedDoc(null);
         setReviewerNotes('');
       }
-      showNotification('success', `Document ${status}.`);
-    } catch (error: any) {
-      showNotification('error', error.message || 'Failed to update document status.');
+    } else {
+      alert('Failed to update document status.');
     }
   };
 
@@ -134,21 +132,6 @@ export default function DocumentsPage() {
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
-      {notification && (
-        <div className={`fixed top-6 right-6 z-[100] px-6 py-4 rounded-2xl shadow-2xl border animate-in slide-in-from-top-5 duration-300 flex items-center gap-3 ${
-          notification.type === 'error' ? 'bg-red-50 border-red-100 text-red-800' :
-          notification.type === 'success' ? 'bg-green-50 border-green-100 text-green-800' :
-          'bg-blue-50 border-blue-100 text-blue-800'
-        }`}>
-          <div className={`w-2 h-2 rounded-full ${
-            notification.type === 'error' ? 'bg-red-500' :
-            notification.type === 'success' ? 'bg-green-500' :
-            'bg-blue-500'
-          }`} />
-          <p className="font-semibold text-sm">{notification.message}</p>
-        </div>
-      )}
-
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Document Verification</h1>
@@ -228,7 +211,7 @@ export default function DocumentsPage() {
                         <FileText className="w-4 h-4 text-gray-400 mr-2" />
                         <span className="text-sm font-medium text-gray-900 truncate max-w-[200px]">{doc.file_name}</span>
                       </div>
-                      <div className="text-xs text-gray-500 mt-1 uppercase tracking-wider font-semibold">{doc.document_type.replaceAll('_', ' ')}</div>
+                      <div className="text-xs text-gray-500 mt-1 uppercase tracking-wider font-semibold">{doc.document_type.replace('_', ' ')}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <span className={`px-2.5 py-1 inline-flex text-xs leading-5 font-semibold rounded-full capitalize ${getStatusStyle(doc.status)}`}>
@@ -312,7 +295,7 @@ export default function DocumentsPage() {
                 </div>
                 <div>
                   <h3 className="text-xl font-bold text-gray-900">{selectedDoc.file_name}</h3>
-                  <p className="text-sm text-gray-500 uppercase tracking-wide font-medium">{selectedDoc.document_type.replaceAll('_', ' ')} · {selectedDoc.user?.full_name}</p>
+                  <p className="text-sm text-gray-500 uppercase tracking-wide font-medium">{selectedDoc.document_type.replace('_', ' ')} · {selectedDoc.user?.full_name}</p>
                 </div>
               </div>
               <button 

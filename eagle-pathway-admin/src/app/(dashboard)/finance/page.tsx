@@ -2,8 +2,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { DollarSign, TrendingUp, Wallet, Loader2, Banknote } from 'lucide-react';
-import { verifyPaymentReceipt, completePayoutRequest, getFinanceStats } from '@/app/actions';
-import { useAuthStore } from '@/store/useAuthStore';
 
 interface TutorFinancials {
   id: string;
@@ -31,13 +29,6 @@ export default function FinancePage() {
   const [payoutDetails, setPayoutDetails] = useState({ bankName: '', accountNumber: '', reference: '', notes: '' });
   const [isProcessingPayout, setIsProcessingPayout] = useState(false);
   const [isUpdatingPayoutRequestId, setIsUpdatingPayoutRequestId] = useState<string | null>(null);
-  const [isUpdatingPaymentId, setIsUpdatingPaymentId] = useState<string | null>(null);
-  const [summary, setSummary] = useState({
-    grossVolume: 0,
-    platformProfit: 0,
-    totalPayouts: 0,
-    payoutsDue: 0
-  });
 
   const showNotification = (type: 'error' | 'success' | 'info', message: string, timeoutMs = 3500) => {
     setNotification({ type, message });
@@ -55,11 +46,10 @@ export default function FinancePage() {
   async function fetchData() {
     setLoading(true);
     try {
-      if (!session?.access_token) return;
-
-      const { summary: financeSummary, tutorStats } = await getFinanceStats(session.access_token);
-      setSummary(financeSummary);
-      setTutors(tutorStats as any[]);
+      const { data: tutorData } = await supabase
+        .from('tutors')
+        .select(`id, user_id, hourly_rate, total_sessions, users ( full_name, phone )`)
+        .order('total_sessions', { ascending: false });
 
       const { data: transData } = await supabase
         .from('bookings')
@@ -78,6 +68,7 @@ export default function FinancePage() {
         .select('*, tutor:tutors(id, user_id, users(full_name, phone))')
         .order('created_at', { ascending: false });
 
+      if (tutorData) setTutors(tutorData as any[]);
       if (transData) setTransactions(transData);
       if (paymentsData) setPayments(await Promise.all(paymentsData.map(signReceiptUrl)));
       if (payRequests) setPayoutRequests(payRequests);
@@ -92,43 +83,48 @@ export default function FinancePage() {
     fetchData();
   }, []);
 
-  const { session } = useAuthStore();
-
   const handleVerifyReceipt = async (paymentId: string, status: 'approved' | 'rejected') => {
-    if (isUpdatingPaymentId) return;
-    setIsUpdatingPaymentId(paymentId);
-    try {
-      if (!session?.access_token) {
-        throw new Error('You must be logged in to perform this action.');
-      }
-
-      await verifyPaymentReceipt(session.access_token, paymentId, status);
-      
+    const { data: authData } = await supabase.auth.getUser();
+    const { error } = await supabase
+      .from('payments')
+      .update({
+        status,
+        admin_notes: status === 'rejected' ? 'Invalid receipt. Please try again.' : null,
+        reviewed_by: authData.user?.id || null,
+        reviewed_at: new Date().toISOString(),
+      })
+      .eq('id', paymentId);
+    
+    if (!error) {
       setPayments(prev => prev.map(p => p.id === paymentId ? { ...p, status } : p));
       showNotification('success', `Receipt ${status}.`);
-    } catch (error: any) {
-      showNotification('error', error.message || 'Failed to verify receipt.');
-    } finally {
-      setIsUpdatingPaymentId(null);
+      return;
     }
+
+    showNotification('error', error.message || 'Failed to verify receipt.');
   };
 
   const handleCompletePayoutRequest = async (requestId: string) => {
     setIsUpdatingPayoutRequestId(requestId);
-    try {
-      if (!session?.access_token) {
-        throw new Error('You must be logged in to perform this action.');
-      }
+    const { error } = await supabase
+      .from('tutor_payouts')
+      .update({ status: 'completed', processed_at: new Date().toISOString() })
+      .eq('id', requestId);
 
-      await completePayoutRequest(session.access_token, requestId);
-      showNotification('success', 'Payout request marked as completed.');
-      await fetchData();
-    } catch (error: any) {
+    setIsUpdatingPayoutRequestId(null);
+
+    if (error) {
       showNotification('error', error.message || 'Failed to complete payout request.');
-    } finally {
-      setIsUpdatingPayoutRequestId(null);
+      return;
     }
+
+    showNotification('success', 'Payout request marked as completed.');
+    await fetchData();
   };
+
+  const totalPlatformVolume = tutors.reduce((acc, t) => acc + ((t.hourly_rate || 0) * (t.total_sessions || 0)), 0);
+  const totalPlatformProfit = transactions.reduce((acc, b) => acc + (b.platform_fee || 0), 0);
+  const totalPayoutsDue = totalPlatformVolume * 0.85;
 
   const filteredTutors = tutors.filter(t => 
     t.users?.full_name?.toLowerCase().includes(search.toLowerCase())
@@ -160,8 +156,8 @@ export default function FinancePage() {
             <div className="p-2 bg-blue-50 rounded-lg text-blue-600"><TrendingUp className="w-5 h-5" /></div>
           </div>
           <div>
-            <div className="text-3xl font-bold text-gray-900">{summary.grossVolume.toLocaleString()} ETB</div>
-            <p className="text-xs text-gray-400 mt-2">All approved payments</p>
+            <div className="text-3xl font-bold text-gray-900">{totalPlatformVolume.toLocaleString()} ETB</div>
+            <p className="text-xs text-gray-400 mt-2">All session value</p>
           </div>
         </div>
 
@@ -171,7 +167,7 @@ export default function FinancePage() {
             <div className="p-2 bg-green-50 rounded-lg text-green-600"><DollarSign className="w-5 h-5" /></div>
           </div>
           <div>
-            <div className="text-3xl font-bold text-gray-900">{summary.platformProfit.toLocaleString()} ETB</div>
+            <div className="text-3xl font-bold text-gray-900">{totalPlatformProfit.toLocaleString()} ETB</div>
             <p className="text-xs text-green-600 font-medium mt-2">Revenue from fees</p>
           </div>
         </div>
@@ -182,8 +178,8 @@ export default function FinancePage() {
             <div className="p-2 bg-amber-50 rounded-lg text-amber-600"><Wallet className="w-5 h-5" /></div>
           </div>
           <div>
-            <div className="text-3xl font-bold text-gray-900">{summary.payoutsDue.toLocaleString()} ETB</div>
-            <p className="text-xs text-gray-400 mt-2">Net unpaid earnings</p>
+            <div className="text-3xl font-bold text-gray-900">{totalPayoutsDue.toLocaleString()} ETB</div>
+            <p className="text-xs text-gray-400 mt-2">Net (85%)</p>
           </div>
         </div>
       </div>
@@ -235,9 +231,9 @@ export default function FinancePage() {
                 <tr><td colSpan={5} className="p-8 text-center"><Loader2 className="w-6 h-6 animate-spin mx-auto" /></td></tr>
               ) : filteredTutors.length === 0 ? (
                 <tr><td colSpan={5} className="p-8 text-center text-gray-500">No records</td></tr>
-              ) : filteredTutors.map((t: any) => {
-                const gross = t.gross_value || 0;
-                const net = t.net_earnings || 0;
+              ) : filteredTutors.map((t) => {
+                const gross = (t.hourly_rate || 0) * (t.total_sessions || 0);
+                const net = gross * 0.85;
                 return (
                   <tr key={t.user_id}>
                     <td className="px-4 py-3">
@@ -390,21 +386,8 @@ export default function FinancePage() {
                   <td className="px-4 py-3">
                     {p.status === 'pending' ? (
                       <div className="flex gap-1">
-                        <button 
-                          disabled={isUpdatingPaymentId === p.id}
-                          onClick={() => handleVerifyReceipt(p.id, 'rejected')} 
-                          className="px-2 py-1 bg-red-50 text-red-600 text-xs rounded disabled:opacity-50"
-                        >
-                          Reject
-                        </button>
-                        <button 
-                          disabled={isUpdatingPaymentId === p.id}
-                          onClick={() => handleVerifyReceipt(p.id, 'approved')} 
-                          className="px-2 py-1 bg-green-50 text-green-700 text-xs rounded disabled:opacity-50 flex items-center gap-1"
-                        >
-                          {isUpdatingPaymentId === p.id && <Loader2 className="w-3 h-3 animate-spin" />}
-                          Approve
-                        </button>
+                        <button onClick={() => handleVerifyReceipt(p.id, 'rejected')} className="px-2 py-1 bg-red-50 text-red-600 text-xs rounded">Reject</button>
+                        <button onClick={() => handleVerifyReceipt(p.id, 'approved')} className="px-2 py-1 bg-green-50 text-green-700 text-xs rounded">Approve</button>
                       </div>
                     ) : (
                       <span className={`px-2 py-1 text-xs rounded-full ${p.status === 'approved' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>

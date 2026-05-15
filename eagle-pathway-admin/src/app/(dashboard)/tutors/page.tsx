@@ -3,8 +3,6 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { CheckCircle, XCircle, Search, Shield, ShieldAlert, FileText, Download } from 'lucide-react';
 import { exportToCSV } from '@/utils/export';
-import { toggleTutorVerification } from '@/app/actions';
-import { useAuthStore } from '@/store/useAuthStore';
 
 interface TutorWithUser {
   user_id: string;
@@ -54,25 +52,48 @@ export default function TutorsPage() {
     fetchTutors();
   }, []);
 
-  const { session } = useAuthStore();
-
   const toggleVerification = async (id: string, currentStatus: boolean) => {
     const willBeVerified = !currentStatus;
     setActionLoading(id);
     setActionError('');
 
-    try {
-      if (!session?.access_token) {
-        throw new Error('You must be logged in to perform this action.');
-      }
+    const { error: updateError } = await supabase
+      .from('tutors')
+      .update({ is_verified: willBeVerified })
+      .eq('user_id', id);
 
-      await toggleTutorVerification(session.access_token, id, willBeVerified);
-      await fetchTutors();
-    } catch (error: any) {
-      setActionError(error.message || 'Failed to update tutor.');
-    } finally {
+    if (updateError) {
+      setActionError(`Failed to update tutor: ${updateError.message}`);
       setActionLoading(null);
+      return;
     }
+
+    // Send in-app notification to the tutor
+    const notif = willBeVerified
+      ? {
+          user_id: id,
+          title: "You've been approved! 🎉",
+          body: 'Your tutor profile is now live on Eagle Pathway. Students can now find and book you.',
+          type: 'application_update',
+          is_read: false,
+        }
+      : {
+          user_id: id,
+          title: 'Account Status Update',
+          body: 'Your tutor verification has been revoked by an administrator. Please contact support for more information.',
+          type: 'application_update',
+          is_read: false,
+        };
+
+    const { error: notifError } = await supabase.from('notifications').insert(notif);
+    if (notifError) {
+      console.error('Failed to send tutor notification:', notifError.message);
+      // Status change succeeded but notification failed — warn admin explicitly
+      setActionError(`Status updated ✓, but notification not sent to tutor: ${notifError.message}`);
+    }
+
+    await fetchTutors();
+    setActionLoading(null);
   };
 
   const filtered = tutors.filter(t => 
