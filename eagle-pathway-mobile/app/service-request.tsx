@@ -6,9 +6,10 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Colors, Typography, Spacing, Radius, CommonStyles } from '@/utils/theme';
-import { Button } from '@/components/common/index';
+import { Button, Dropdown } from '@/components/common/index';
 import { supabase } from '@/services/supabase';
 import { useAuthStore } from '@/store/authStore';
+import { ALL_COUNTRIES } from '@/utils/countries';
 import { format } from 'date-fns';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -21,17 +22,7 @@ const SERVICE_TYPES = [
 ];
 
 const CURRENCIES = ['ETB', 'USD', 'EUR', 'GBP', 'CAD'];
-
-const COUNTRIES = [
-  { code: 'ET', name: 'Ethiopia' },
-  { code: 'US', name: 'United States' },
-  { code: 'GB', name: 'United Kingdom' },
-  { code: 'CA', name: 'Canada' },
-  { code: 'DE', name: 'Germany' },
-  { code: 'NL', name: 'Netherlands' },
-  { code: 'AU', name: 'Australia' },
-  { code: 'KE', name: 'Kenya' },
-];
+const CURRENCY_OPTIONS = CURRENCIES.map(c => ({ label: c, value: c }));
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string; icon: string }> = {
   pending:   { label: 'Pending',   color: '#92400e', bg: '#fef3c7', icon: '⏳' },
@@ -306,86 +297,67 @@ function NewRequestForm({
       <Text style={[styles.sectionTitle, { marginTop: Spacing.xl }]}>Amount & Currency *</Text>
       <View style={styles.row}>
         <View style={{ flex: 1 }}>
-          <Text style={styles.inputLabel}>From</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            <View style={{ flexDirection: 'row', gap: 8 }}>
-              {CURRENCIES.map(c => (
-                <TouchableOpacity
-                  key={c}
-                  style={[styles.chip, fromCurrency === c && styles.chipSelected]}
-                  onPress={() => setFromCurrency(c)}
-                >
-                  <Text style={[styles.chipText, fromCurrency === c && { color: Colors.blue }]}>{c}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </ScrollView>
+          <Dropdown
+            label="From Currency"
+            options={CURRENCY_OPTIONS}
+            selectedValue={fromCurrency}
+            onValueChange={(val) => setFromCurrency(val)}
+          />
         </View>
-        <Text style={{ paddingHorizontal: 8, alignSelf: 'center', color: Colors.textSecondary }}>→</Text>
         <View style={{ flex: 1 }}>
-          <Text style={styles.inputLabel}>To</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            <View style={{ flexDirection: 'row', gap: 8 }}>
-              {CURRENCIES.map(c => (
-                <TouchableOpacity
-                  key={c}
-                  style={[styles.chip, toCurrency === c && styles.chipSelected]}
-                  onPress={() => setToCurrency(c)}
-                >
-                  <Text style={[styles.chipText, toCurrency === c && { color: Colors.blue }]}>{c}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </ScrollView>
+          <Dropdown
+            label="To Currency"
+            options={CURRENCY_OPTIONS}
+            selectedValue={toCurrency}
+            onValueChange={(val) => setToCurrency(val)}
+          />
         </View>
       </View>
 
       <View style={styles.inputWrap}>
         <Text style={styles.inputLabel}>Amount *</Text>
-        <TextInput
-          style={[styles.input, errors.amount && styles.inputError]}
-          value={amount}
-          onChangeText={setAmount}
-          placeholder="e.g. 5000"
-          keyboardType="numeric"
-          placeholderTextColor={Colors.textSecondary}
-        />
+        <View style={{ flexDirection: 'row', gap: Spacing.sm, alignItems: 'center' }}>
+          <View style={{ width: 100 }}>
+            <Dropdown
+              options={CURRENCY_OPTIONS}
+              selectedValue={fromCurrency}
+              onValueChange={(val) => setFromCurrency(val)}
+              placeholder="Currency"
+            />
+          </View>
+          <View style={{ flex: 1 }}>
+            <TextInput
+              style={[styles.input, errors.amount && styles.inputError]}
+              value={amount}
+              onChangeText={setAmount}
+              placeholder="e.g. 5000"
+              keyboardType="numeric"
+              placeholderTextColor={Colors.textSecondary}
+            />
+          </View>
+        </View>
         <FieldError message={errors.amount} />
       </View>
 
       {/* Countries */}
       <Text style={styles.sectionTitle}>Countries</Text>
       <View style={styles.inputWrap}>
-        <Text style={styles.inputLabel}>From Country</Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          <View style={{ flexDirection: 'row', gap: 8 }}>
-            {COUNTRIES.map(c => (
-              <TouchableOpacity
-                key={c.code}
-                style={[styles.chip, countryFrom === c.code && styles.chipSelected]}
-                onPress={() => setCountryFrom(c.code)}
-              >
-                <Text style={[styles.chipText, countryFrom === c.code && { color: Colors.blue }]}>{c.code}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </ScrollView>
+        <Dropdown
+          label="From Country"
+          options={ALL_COUNTRIES}
+          selectedValue={countryFrom}
+          onValueChange={(val) => setCountryFrom(val)}
+          searchable={true}
+        />
       </View>
       <View style={styles.inputWrap}>
-        <Text style={styles.inputLabel}>To Country</Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-          <View style={{ flexDirection: 'row', gap: 8 }}>
-            {COUNTRIES.map(c => (
-              <TouchableOpacity
-                key={c.code}
-                style={[styles.chip, countryTo === c.code && styles.chipSelected]}
-                onPress={() => setCountryTo(c.code)}
-              >
-                <Text style={[styles.chipText, countryTo === c.code && { color: Colors.blue }]}>{c.code}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </ScrollView>
+        <Dropdown
+          label="To Country"
+          options={ALL_COUNTRIES}
+          selectedValue={countryTo}
+          onValueChange={(val) => setCountryTo(val)}
+          searchable={true}
+        />
       </View>
 
       {/* Recipient */}
