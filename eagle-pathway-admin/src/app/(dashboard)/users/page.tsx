@@ -1,8 +1,10 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
-import { Search, Mail, Phone, MapPin, MoreVertical, Download, ChevronLeft, ChevronRight, Filter } from 'lucide-react';
+import { Search, Mail, Phone, MapPin, MoreVertical, Download, ChevronLeft, ChevronRight, Filter, MessageSquare } from 'lucide-react';
 import { exportToCSV } from '@/utils/export';
+import { TableSkeleton } from '@/components/ui/TableSkeleton';
+import { useRouter } from 'next/navigation';
 
 interface User {
   id: string;
@@ -16,6 +18,7 @@ interface User {
 }
 
 export default function UsersPage() {
+  const router = useRouter();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -132,9 +135,7 @@ export default function UsersPage() {
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {loading ? (
-                <tr>
-                  <td colSpan={5} className="px-6 py-10 text-center text-sm text-gray-500">Loading users...</td>
-                </tr>
+                <TableSkeleton cols={5} rows={5} />
               ) : filtered.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="px-6 py-10 text-center text-sm text-gray-500">No users found.</td>
@@ -180,8 +181,15 @@ export default function UsersPage() {
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {new Date(user.created_at).toLocaleDateString()}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <button className="text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-100 transition-colors">
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
+                      <button 
+                        onClick={() => router.push(`/chat?userId=${user.id}`)}
+                        className="inline-flex items-center p-1.5 rounded-full hover:bg-gray-100 text-gray-500 hover:text-brand-blue transition-colors"
+                        title="Chat with user"
+                      >
+                        <MessageSquare className="h-4 w-4" />
+                      </button>
+                      <button className="text-gray-400 hover:text-gray-600 p-1 inline-flex items-center rounded-full hover:bg-gray-100 transition-colors">
                         <MoreVertical className="h-5 w-5" />
                       </button>
                     </td>
