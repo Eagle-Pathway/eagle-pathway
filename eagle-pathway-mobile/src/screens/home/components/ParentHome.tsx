@@ -3,7 +3,7 @@ import { View, Text, ScrollView, RefreshControl, TouchableOpacity, Alert, StyleS
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Colors, Typography, Spacing, CommonStyles } from '@/utils/theme';
-import { Avatar, SectionTitle, EmptyState } from '@/components/common';
+import { Avatar, SectionTitle, EmptyState, Skeleton } from '@/components/common';
 import { User, Application } from '@/types';
 
 interface ParentHomeProps {
@@ -16,6 +16,7 @@ interface ParentHomeProps {
   onRefresh: () => Promise<void>;
   linkedStudents: User[];
   linkedStudentApplications: Record<string, Application[]>;
+  loading?: boolean;
 }
 
 export const ParentHome: React.FC<ParentHomeProps> = ({
@@ -26,8 +27,61 @@ export const ParentHome: React.FC<ParentHomeProps> = ({
   refreshing,
   onRefresh,
   linkedStudents,
-  linkedStudentApplications
+  linkedStudentApplications,
+  loading,
 }) => {
+  if (loading) {
+    return (
+      <SafeAreaView style={CommonStyles.screenBg} edges={['top']}>
+        <ScrollView>
+          <View style={styles.hero}>
+            <View style={styles.heroTop}>
+              <View>
+                <Text style={styles.greeting}>{greeting} 👨‍👩‍👧</Text>
+                <Text style={styles.userName}>{firstName}</Text>
+              </View>
+              <View style={styles.heroActions}>
+                <TouchableOpacity style={styles.notifBtn} activeOpacity={0.8}>
+                  <Text style={styles.notifIcon}>🔔</Text>
+                </TouchableOpacity>
+                <Avatar initials={initials} size={38} borderRadius={11} />
+              </View>
+            </View>
+          </View>
+
+          {/* Children List Skeletons */}
+          <SectionTitle title="My Children" />
+          <View style={{ paddingHorizontal: Spacing.xl, gap: Spacing.sm }}>
+            {[1].map(i => (
+              <View key={i} style={[styles.sessionCard, { marginHorizontal: 0 }]}>
+                <Skeleton width={44} height={44} borderRadius={22} />
+                <View style={{ flex: 1, marginLeft: Spacing.md, gap: 6 }}>
+                  <Skeleton width="60%" height={16} />
+                  <Skeleton width="40%" height={12} />
+                </View>
+                <Skeleton width={60} height={20} borderRadius={8} />
+              </View>
+            ))}
+          </View>
+
+          {/* Recent Activity Skeletons */}
+          <SectionTitle title="Recent Activity" />
+          <View style={{ paddingHorizontal: Spacing.xl, gap: Spacing.sm }}>
+            {[1, 2].map(i => (
+              <View key={i} style={[styles.sessionCard, { marginHorizontal: 0 }]}>
+                <Skeleton width={40} height={40} borderRadius={8} />
+                <View style={{ flex: 1, marginLeft: Spacing.md, gap: 6 }}>
+                  <Skeleton width="80%" height={14} />
+                  <Skeleton width="50%" height={10} />
+                </View>
+              </View>
+            ))}
+          </View>
+        </ScrollView>
+      </SafeAreaView>
+    );
+  }
+
   const children = linkedStudents || [];
   const hasNoChildren = children.length === 0;
 
