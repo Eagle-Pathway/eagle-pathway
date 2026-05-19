@@ -4,7 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { format } from 'date-fns';
 import { Colors, Typography, Spacing, Radius, CommonStyles } from '@/utils/theme';
-import { ProgressBar, Avatar, SectionTitle } from '@/components/common';
+import { ProgressBar, Avatar, SectionTitle, Skeleton } from '@/components/common';
 import { openWhatsApp } from '@/utils/linking';
 import { User, Application, Scholarship, Booking, StudentTask } from '@/types';
 
@@ -21,6 +21,7 @@ interface StudentHomeProps {
   tasks: StudentTask[];
   recommendedScholarships: Scholarship[];
   toggleTask: (taskId: string, currentStatus: string) => Promise<void>;
+  loading?: boolean;
 }
 
 export const StudentHome: React.FC<StudentHomeProps> = ({
@@ -36,7 +37,100 @@ export const StudentHome: React.FC<StudentHomeProps> = ({
   tasks,
   recommendedScholarships,
   toggleTask,
+  loading,
 }) => {
+  if (loading) {
+    return (
+      <SafeAreaView style={CommonStyles.screenBg} edges={['top']}>
+        <ScrollView showsVerticalScrollIndicator={false}>
+          <View style={styles.hero}>
+            <View style={styles.heroBg}>
+              <View style={styles.heroOverlay1} />
+              <View style={styles.heroOverlay2} />
+            </View>
+            <View style={styles.heroTop}>
+              <View>
+                <Text style={styles.greeting}>{greeting} 👋</Text>
+                <Text style={styles.userName}>{firstName}</Text>
+              </View>
+              <View style={styles.heroActions}>
+                <TouchableOpacity style={styles.notifBtn} activeOpacity={0.8}>
+                  <Text style={styles.notifIcon}>🔔</Text>
+                </TouchableOpacity>
+                <Avatar initials={initials} size={38} borderRadius={11} />
+              </View>
+            </View>
+
+            <View style={styles.quickCards}>
+              {[1, 2, 3].map(i => (
+                <View key={i} style={[styles.quickCard, { opacity: 0.6 }]}>
+                  <Skeleton width={32} height={32} borderRadius={8} style={{ marginBottom: 8 }} />
+                  <Skeleton width="80%" height={12} style={{ marginBottom: 6 }} />
+                  <Skeleton width="50%" height={8} />
+                </View>
+              ))}
+            </View>
+          </View>
+
+          {/* Top matches skeleton */}
+          <View style={{ marginTop: Spacing.xl }}>
+            <View style={{ paddingHorizontal: Spacing.xl, marginBottom: Spacing.md }}>
+              <Skeleton width={180} height={18} style={{ marginBottom: 6 }} />
+              <Skeleton width={120} height={10} />
+            </View>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: Spacing.xl, gap: Spacing.lg }}>
+              {[1, 2].map(i => (
+                <View key={i} style={[styles.discoverCard, { width: 220 }]}>
+                  <View style={styles.discoverCardTop}>
+                    <Skeleton width={50} height={50} borderRadius={Radius.lg} />
+                    <Skeleton width={40} height={20} borderRadius={8} />
+                  </View>
+                  <View style={{ marginTop: 12, gap: 6 }}>
+                    <Skeleton width="90%" height={14} />
+                    <Skeleton width="60%" height={10} />
+                  </View>
+                  <View style={[styles.discoverFooter, { marginTop: 12 }]}>
+                    <Skeleton width={40} height={18} borderRadius={6} />
+                    <Skeleton width={60} height={10} />
+                  </View>
+                </View>
+              ))}
+            </ScrollView>
+          </View>
+
+          {/* Tasks skeleton */}
+          <SectionTitle title="Action Items" />
+          <View style={styles.taskContainer}>
+            {[1, 2, 3].map(i => (
+              <View key={i} style={styles.taskCard}>
+                <Skeleton width={20} height={20} borderRadius={10} />
+                <View style={{ flex: 1, marginLeft: Spacing.md, gap: 6 }}>
+                  <Skeleton width="70%" height={14} />
+                  <Skeleton width="40%" height={10} />
+                </View>
+              </View>
+            ))}
+          </View>
+
+          {/* Upcoming Sessions skeleton */}
+          <SectionTitle title="Upcoming Sessions" />
+          {[1, 2].map(i => (
+            <View key={i} style={styles.sessionCard}>
+              <Skeleton width={44} height={44} borderRadius={13} />
+              <View style={{ flex: 1, marginLeft: Spacing.md, gap: 6 }}>
+                <Skeleton width="60%" height={16} />
+                <Skeleton width="40%" height={12} />
+              </View>
+              <Skeleton width={80} height={24} borderRadius={10} />
+            </View>
+          ))}
+
+          <View style={{ height: Spacing['4xl'] }} />
+        </ScrollView>
+      </SafeAreaView>
+    );
+  }
+
   const activeApplications = (applications || []).filter(a => !['accepted', 'rejected'].includes(a.status));
   
   const readinessScore = React.useMemo(() => {
