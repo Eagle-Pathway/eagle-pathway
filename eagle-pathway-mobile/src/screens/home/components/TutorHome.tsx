@@ -4,8 +4,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { format } from 'date-fns';
 import { Colors, Typography, Spacing, Radius, CommonStyles } from '@/utils/theme';
-import { Avatar, SectionTitle } from '@/components/common';
-import { User, Booking, Tutor, PayoutRequest } from '@/types';
+import { Avatar, SectionTitle, Skeleton } from '@/components/common';
+import { User, Booking, Tutor, PayoutRequest, BookingStatus } from '@/types';
 
 interface TutorHomeProps {
   user: User;
@@ -27,6 +27,7 @@ interface TutorHomeProps {
     accountNumber: string;
     accountName: string;
   }) => Promise<void>;
+  loading?: boolean;
 }
 
 export const TutorHome: React.FC<TutorHomeProps> = ({
@@ -42,7 +43,88 @@ export const TutorHome: React.FC<TutorHomeProps> = ({
   isLoadingPayouts,
   updateBookingStatus,
   submitPayoutRequest,
+  loading,
 }) => {
+  if (loading) {
+    return (
+      <SafeAreaView style={CommonStyles.screenBg} edges={['top']}>
+        <ScrollView>
+          <View style={styles.hero}>
+            <View style={styles.heroTop}>
+              <View>
+                <Text style={styles.greeting}>{greeting} Tutor 👋</Text>
+                <Text style={styles.userName}>{firstName}</Text>
+              </View>
+              <View style={styles.heroActions}>
+                <TouchableOpacity style={styles.notifBtn} activeOpacity={0.8}>
+                  <Text style={styles.notifIcon}>🔔</Text>
+                </TouchableOpacity>
+                <Avatar initials={initials} size={38} borderRadius={11} />
+              </View>
+            </View>
+          </View>
+
+          {/* Earnings Card Skeleton */}
+          <View style={[styles.sessionCard, { padding: Spacing.lg }]}>
+            <View style={{ gap: 6, flex: 1 }}>
+              <Skeleton width={120} height={12} />
+              <Skeleton width={180} height={28} />
+            </View>
+            <View style={{ borderTopWidth: 1, borderTopColor: Colors.border, marginTop: 12, paddingTop: 12, flexDirection: 'row', justifyContent: 'space-between' }}>
+              <View style={{ gap: 4, flex: 1 }}>
+                <Skeleton width={60} height={10} />
+                <Skeleton width={80} height={14} />
+              </View>
+              <View style={{ gap: 4, flex: 1, alignItems: 'flex-end' }}>
+                <Skeleton width={60} height={10} />
+                <Skeleton width={80} height={14} />
+              </View>
+            </View>
+          </View>
+
+          {/* Today's Sessions Skeleton */}
+          <SectionTitle title="Today's Sessions" />
+          <View style={{ paddingHorizontal: Spacing.xl }}>
+            <View style={[styles.sessionCard, { marginHorizontal: 0 }]}>
+              <Skeleton width={44} height={44} borderRadius={13} />
+              <View style={{ flex: 1, marginLeft: Spacing.md, gap: 6 }}>
+                <Skeleton width="60%" height={16} />
+                <Skeleton width="40%" height={12} />
+              </View>
+              <Skeleton width={60} height={20} borderRadius={8} />
+            </View>
+          </View>
+
+          {/* Pending Bookings Skeleton */}
+          <SectionTitle title="Pending Requests" />
+          <View style={{ paddingHorizontal: Spacing.xl }}>
+            <View style={[styles.sessionCard, { marginHorizontal: 0 }]}>
+              <Skeleton width={44} height={44} borderRadius={13} />
+              <View style={{ flex: 1, marginLeft: Spacing.md, gap: 6 }}>
+                <Skeleton width="60%" height={16} />
+                <Skeleton width="40%" height={12} />
+              </View>
+              <Skeleton width={60} height={20} borderRadius={8} />
+            </View>
+          </View>
+
+          {/* Payout History Skeleton */}
+          <SectionTitle title="Recent Payouts" />
+          <View style={{ paddingHorizontal: Spacing.xl, gap: Spacing.sm }}>
+            {[1, 2].map(i => (
+              <View key={i} style={[styles.sessionCard, { marginHorizontal: 0, justifyContent: 'space-between' }]}>
+                <View style={{ gap: 6 }}>
+                  <Skeleton width={100} height={14} />
+                  <Skeleton width={80} height={10} />
+                </View>
+                <Skeleton width={60} height={16} borderRadius={8} />
+              </View>
+            ))}
+          </View>
+        </ScrollView>
+      </SafeAreaView>
+    );
+  }
   const [isPayoutModalVisible, setIsPayoutModalVisible] = React.useState(false);
   const [payoutForm, setPayoutForm] = React.useState({
     amount: '',
