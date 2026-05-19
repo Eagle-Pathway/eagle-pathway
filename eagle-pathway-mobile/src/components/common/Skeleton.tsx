@@ -31,7 +31,12 @@ export const Skeleton: React.FC<SkeletonProps> = ({
       }),
     ]);
 
-    Animated.loop(pulse).start();
+    const loop = Animated.loop(pulse);
+    loop.start();
+
+    return () => {
+      loop.stop();
+    };
   }, [pulseAnim]);
 
   return (
