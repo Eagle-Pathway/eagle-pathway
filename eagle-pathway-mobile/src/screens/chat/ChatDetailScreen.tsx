@@ -9,9 +9,11 @@ import { Colors, Typography, Spacing, Radius, CommonStyles } from '@/utils/theme
 import { Avatar } from '@/components/common';
 import { useAuthStore } from '@/store/authStore';
 import { useChatStore } from '@/store/ChatStore';
+import { supabase } from '@/services/supabase';
 
 export default function ChatDetailScreen() {
-  const { otherId, fullName } = useLocalSearchParams<{ otherId: string, fullName: string }>();
+  const { id, fullName: paramFullName } = useLocalSearchParams<{ id: string, fullName?: string }>();
+  const otherId = id;
   const { user } = useAuthStore();
   const { 
     activeMessages, 
@@ -22,7 +24,33 @@ export default function ChatDetailScreen() {
   } = useChatStore();
   
   const [inputText, setInputText] = useState('');
+  const [chatUserFullName, setChatUserFullName] = useState(paramFullName || '');
   const flatListRef = useRef<FlatList>(null);
+
+  useEffect(() => {
+    if (paramFullName) {
+      setChatUserFullName(paramFullName);
+    }
+  }, [paramFullName]);
+
+  useEffect(() => {
+    const fetchTargetUser = async () => {
+      if (!otherId || chatUserFullName) return;
+      try {
+        const { data, error } = await supabase
+          .from('users')
+          .select('full_name')
+          .eq('id', otherId)
+          .single();
+        if (!error && data) {
+          setChatUserFullName(data.full_name);
+        }
+      } catch (e) {
+        console.error('Error fetching chat target user:', e);
+      }
+    };
+    fetchTargetUser();
+  }, [otherId, chatUserFullName]);
 
   useEffect(() => {
     if (user && otherId) {
@@ -48,7 +76,7 @@ export default function ChatDetailScreen() {
     const isMine = item.sender_id === user?.id;
     return (
       <View style={[styles.messageRow, isMine ? styles.myRow : styles.theirRow]}>
-        {!isMine && <Avatar initials={fullName?.charAt(0) || 'T'} size={28} style={styles.miniAvatar} color={Colors.blue} />}
+        {!isMine && <Avatar initials={chatUserFullName?.charAt(0) || 'T'} size={28} style={styles.miniAvatar} color={Colors.blue} />}
         <View style={[styles.bubble, isMine ? styles.myBubble : styles.theirBubble]}>
           <Text style={[styles.messageText, isMine ? styles.myText : styles.theirText]}>
             {item.content}
@@ -68,9 +96,9 @@ export default function ChatDetailScreen() {
         <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
           <Text style={{ fontSize: 20 }}>←</Text>
         </TouchableOpacity>
-        <Avatar initials={fullName?.charAt(0) || 'T'} size={36} color={Colors.blue} />
+        <Avatar initials={chatUserFullName?.charAt(0) || 'T'} size={36} color={Colors.blue} />
         <View style={{ flex: 1, marginLeft: Spacing.sm }}>
-          <Text style={styles.headerName}>{fullName}</Text>
+          <Text style={styles.headerName}>{chatUserFullName}</Text>
           <Text style={styles.statusText}>Online</Text>
         </View>
       </View>
