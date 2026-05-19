@@ -7,7 +7,6 @@ import { tasksService } from '../services/tasks';
 import { financeService, PayoutRequest } from '../services/finance';
 import { parentsService } from '../services/parents';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useAuthStore } from './authStore';
 import {
   Scholarship,
   Application,
