@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/store/useAuthStore';
 import { Eye, Check, X, Clock, AlertCircle } from 'lucide-react';
+import { TableSkeleton } from '@/components/ui/TableSkeleton';
 
 interface ServiceRequest {
   id: string;
@@ -142,31 +143,30 @@ export default function ServiceRequestsPage() {
         </div>
       </div>
 
-      {loading ? (
-        <div className="flex items-center justify-center py-20">
-          <div className="animate-spin h-8 w-8 border-4 border-brand-blue border-t-transparent rounded-full" />
-        </div>
-      ) : filtered.length === 0 ? (
-        <div className="text-center py-20 bg-white rounded-2xl border border-gray-200">
-          <Clock className="h-12 w-12 text-gray-300 mx-auto mb-4" />
-          <p className="text-gray-500">No service requests found</p>
-        </div>
-      ) : (
-        <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
-          <table className="w-full">
-            <thead className="bg-gray-50 border-b border-gray-200">
+      <div className="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+        <table className="w-full">
+          <thead className="bg-gray-50 border-b border-gray-200">
+            <tr>
+              <th className="text-left px-6 py-4 text-xs font-semibold text-gray-500 uppercase">User</th>
+              <th className="text-left px-6 py-4 text-xs font-semibold text-gray-500 uppercase">Service</th>
+              <th className="text-left px-6 py-4 text-xs font-semibold text-gray-500 uppercase">Amount</th>
+              <th className="text-left px-6 py-4 text-xs font-semibold text-gray-500 uppercase">Route</th>
+              <th className="text-left px-6 py-4 text-xs font-semibold text-gray-500 uppercase">Status</th>
+              <th className="text-left px-6 py-4 text-xs font-semibold text-gray-500 uppercase">Date</th>
+              <th className="text-left px-6 py-4 text-xs font-semibold text-gray-500 uppercase">Actions</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-100">
+            {loading ? (
+              <TableSkeleton cols={7} rows={5} />
+            ) : filtered.length === 0 ? (
               <tr>
-                <th className="text-left px-6 py-4 text-xs font-semibold text-gray-500 uppercase">User</th>
-                <th className="text-left px-6 py-4 text-xs font-semibold text-gray-500 uppercase">Service</th>
-                <th className="text-left px-6 py-4 text-xs font-semibold text-gray-500 uppercase">Amount</th>
-                <th className="text-left px-6 py-4 text-xs font-semibold text-gray-500 uppercase">Route</th>
-                <th className="text-left px-6 py-4 text-xs font-semibold text-gray-500 uppercase">Status</th>
-                <th className="text-left px-6 py-4 text-xs font-semibold text-gray-500 uppercase">Date</th>
-                <th className="text-left px-6 py-4 text-xs font-semibold text-gray-500 uppercase">Actions</th>
+                <td colSpan={7} className="px-6 py-10 text-center text-sm text-gray-500">
+                  No service requests found
+                </td>
               </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {filtered.map((req) => (
+            ) : (
+              filtered.map((req) => (
                 <tr key={req.id} className="hover:bg-gray-50/50">
                   <td className="px-6 py-4">
                     <p className="font-medium text-gray-900">{req.users?.full_name || 'Unknown'}</p>
@@ -201,11 +201,11 @@ export default function ServiceRequestsPage() {
                     </button>
                   </td>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
 
       {/* Detail Modal */}
       {selectedRequest && (
