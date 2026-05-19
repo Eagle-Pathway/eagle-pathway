@@ -7,6 +7,7 @@ import { tasksService } from '../services/tasks';
 import { financeService, PayoutRequest } from '../services/finance';
 import { parentsService } from '../services/parents';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useAuthStore } from './authStore';
 import {
   Scholarship,
   Application,
@@ -276,6 +277,24 @@ export const useAppStore = create<AppState>((set, get) => ({
         b.id === bookingId ? { ...b, status } : b
       ),
     }));
+  },
+
+  loadTutorProfile: async (userId) => {
+    try {
+      const { data: tutor, error } = await supabase
+        .from('tutors')
+        .select('*, user:users(*)')
+        .eq('user_id', userId)
+        .single();
+      if (!error && tutor) {
+        set({ tutorProfile: tutor });
+      } else {
+        set({ tutorProfile: null });
+      }
+    } catch (e) {
+      console.error('Error loading tutor profile:', e);
+      set({ tutorProfile: null });
+    }
   },
 
   loadDocuments: async (userId) => {
