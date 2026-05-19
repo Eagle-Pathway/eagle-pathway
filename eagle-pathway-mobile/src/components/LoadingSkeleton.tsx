@@ -35,7 +35,7 @@ export function Skeleton({ width = '100%', height = 16, borderRadius, style }: S
     <Animated.View
       style={[
         styles.skeleton,
-        { width, height, borderRadius: borderRadius || height / 2 },
+        { width, height, borderRadius: borderRadius || height / 2 } as any,
         { opacity },
         style,
       ]}
