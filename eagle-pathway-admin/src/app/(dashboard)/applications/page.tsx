@@ -298,78 +298,97 @@ export default function ApplicationsPage() {
                 }
               }}
             >
-              {filtered.filter(a => a.status === stage.id).map(app => (
-                <div key={app.id} 
-                  draggable
-                  onDragStart={(e) => {
-                    e.dataTransfer.setData('applicationId', app.id);
-                  }}
-                  onClick={(e) => {
-                    if ((e.target as HTMLElement).closest('button') || (e.target as HTMLElement).closest('select')) return;
-                    setSelectedApp(app);
-                    setNotesInput(app.notes || '');
-                  }}
-                  className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow group cursor-grab active:cursor-grabbing"
-                >
-                  <div className="flex justify-between items-start mb-2">
-                    <span className={`text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded ${
-                      app.package_tier === 'premium' ? 'bg-brand-gold/10 text-brand-gold' : 'bg-gray-100 text-gray-500'
-                    }`}>
-                      {app.package_tier}
-                    </span>
-                  </div>
-                  
-                  <h4 className="font-bold text-gray-900 text-sm mb-1">{app.student?.full_name}</h4>
-                  <p className="text-xs text-brand-blue font-medium mb-3 truncate" title={app.scholarship?.name}>
-                    {app.scholarship?.name}
-                  </p>
-                  
-                  <div className="flex items-center justify-between mt-4 pt-3 border-t border-gray-50">
-                    <div className="flex -space-x-2">
-                      <div className="h-6 w-6 rounded-full bg-brand-gold flex items-center justify-center text-[10px] font-bold text-white border-2 border-white ring-1 ring-gray-100">
-                        {app.student?.full_name?.charAt(0)}
+              {loading ? (
+                <div className="space-y-3 w-full">
+                  {[1, 2].map(i => (
+                    <div key={i} className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm h-32 flex flex-col justify-between animate-pulse">
+                      <div className="space-y-2">
+                        <div className="h-4 bg-gray-100 rounded w-3/4"></div>
+                        <div className="h-3 bg-gray-100 rounded w-1/2"></div>
                       </div>
-                      {app.consultant ? (
-                        <div className="h-6 w-6 rounded-full bg-brand-blue flex items-center justify-center text-[10px] font-bold text-white border-2 border-white ring-1 ring-gray-100" title={`Assigned to ${app.consultant.full_name}`}>
-                          {app.consultant.full_name.charAt(0)}
-                        </div>
-                      ) : (
-                        <div className="h-6 w-6 rounded-full bg-gray-200 flex items-center justify-center border-2 border-white ring-1 ring-gray-100">
-                          <UserPlus className="w-3 h-3 text-gray-400" />
-                        </div>
-                      )}
+                      <div className="flex justify-between items-center pt-2">
+                        <div className="h-6 w-6 bg-gray-100 rounded-full"></div>
+                        <div className="h-4 bg-gray-100 rounded w-12"></div>
+                      </div>
                     </div>
-                    
-                    <div className="flex items-center gap-1.5">
-                      <select 
-                        className="text-[10px] font-bold bg-transparent text-gray-400 hover:text-brand-blue cursor-pointer border-none p-0 focus:ring-0"
-                        onChange={(e) => handleAssignConsultant(app.id, e.target.value)}
-                        value={app.consultant_id || ''}
-                      >
-                        <option value="">Assign</option>
-                        {consultants.map(c => (
-                          <option key={c.id} value={c.id}>{c.full_name}</option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
+                  ))}
+                </div>
+              ) : (
+                <>
+                  {filtered.filter(a => a.status === stage.id).map(app => (
+                    <div key={app.id} 
+                      draggable
+                      onDragStart={(e) => {
+                        e.dataTransfer.setData('applicationId', app.id);
+                      }}
+                      onClick={(e) => {
+                        if ((e.target as HTMLElement).closest('button') || (e.target as HTMLElement).closest('select')) return;
+                        setSelectedApp(app);
+                        setNotesInput(app.notes || '');
+                      }}
+                      className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow group cursor-grab active:cursor-grabbing w-full"
+                    >
+                      <div className="flex justify-between items-start mb-2">
+                        <span className={`text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded ${
+                          app.package_tier === 'premium' ? 'bg-brand-gold/10 text-brand-gold' : 'bg-gray-100 text-gray-500'
+                        }`}>
+                          {app.package_tier}
+                        </span>
+                      </div>
+                      
+                      <h4 className="font-bold text-gray-900 text-sm mb-1">{app.student?.full_name}</h4>
+                      <p className="text-xs text-brand-blue font-medium mb-3 truncate max-w-full" title={app.scholarship?.name}>
+                        {app.scholarship?.name}
+                      </p>
+                      
+                      <div className="flex items-center justify-between mt-4 pt-3 border-t border-gray-50">
+                        <div className="flex -space-x-2">
+                          <div className="h-6 w-6 rounded-full bg-brand-gold flex items-center justify-center text-[10px] font-bold text-white border-2 border-white ring-1 ring-gray-100">
+                            {app.student?.full_name?.charAt(0)}
+                          </div>
+                          {app.consultant ? (
+                            <div className="h-6 w-6 rounded-full bg-brand-blue flex items-center justify-center text-[10px] font-bold text-white border-2 border-white ring-1 ring-gray-100" title={`Assigned to ${app.consultant.full_name}`}>
+                              {app.consultant.full_name.charAt(0)}
+                            </div>
+                          ) : (
+                            <div className="h-6 w-6 rounded-full bg-gray-200 flex items-center justify-center border-2 border-white ring-1 ring-gray-100">
+                              <UserPlus className="w-3 h-3 text-gray-400" />
+                            </div>
+                          )}
+                        </div>
+                        
+                        <div className="flex items-center gap-1.5">
+                          <select 
+                            className="text-[10px] font-bold bg-transparent text-gray-400 hover:text-brand-blue cursor-pointer border-none p-0 focus:ring-0"
+                            onChange={(e) => handleAssignConsultant(app.id, e.target.value)}
+                            value={app.consultant_id || ''}
+                          >
+                            <option value="">Assign</option>
+                            {consultants.map(c => (
+                              <option key={c.id} value={c.id}>{c.full_name}</option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
 
-                  <div className="mt-3 flex items-center gap-2">
-                     <button 
-                       onClick={() => handleUpdateStatus(app.id, STAGES[Math.min(STAGES.length-1, STAGES.findIndex(s => s.id === stage.id) + 1)].id)}
-                       className="w-full py-1.5 bg-gray-50 hover:bg-brand-blue/5 text-gray-400 hover:text-brand-blue rounded-lg text-[10px] font-bold transition-colors flex items-center justify-center gap-1"
-                     >
-                        Next Stage <ChevronRight className="w-3 h-3" />
-                     </button>
-                  </div>
-                </div>
-              ))}
-              
-              {!loading && filtered.filter(a => a.status === stage.id).length === 0 && (
-                <div className="flex flex-col items-center justify-center py-10 opacity-30">
-                  <Clock className="w-8 h-8 text-gray-400 mb-2" />
-                  <span className="text-xs font-medium">Empty</span>
-                </div>
+                      <div className="mt-3 flex items-center gap-2">
+                         <button 
+                           onClick={() => handleUpdateStatus(app.id, STAGES[Math.min(STAGES.length-1, STAGES.findIndex(s => s.id === stage.id) + 1)].id)}
+                           className="w-full py-1.5 bg-gray-50 hover:bg-brand-blue/5 text-gray-400 hover:text-brand-blue rounded-lg text-[10px] font-bold transition-colors flex items-center justify-center gap-1"
+                         >
+                            Next Stage <ChevronRight className="w-3 h-3" />
+                         </button>
+                      </div>
+                    </div>
+                  ))}
+                  
+                  {filtered.filter(a => a.status === stage.id).length === 0 && (
+                    <div className="flex flex-col items-center justify-center py-10 opacity-30 w-full">
+                      <Clock className="w-8 h-8 text-gray-400 mb-2" />
+                      <span className="text-xs font-medium">Empty</span>
+                    </div>
+                  )}
+                </>
               )}
             </div>
           </div>
