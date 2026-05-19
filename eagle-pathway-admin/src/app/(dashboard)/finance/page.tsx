@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { DollarSign, TrendingUp, Wallet, Loader2, Banknote } from 'lucide-react';
+import { TableSkeleton } from '@/components/ui/TableSkeleton';
 
 interface TutorFinancials {
   id: string;
@@ -228,9 +229,9 @@ export default function FinancePage() {
             </thead>
             <tbody className="divide-y">
               {loading ? (
-                <tr><td colSpan={5} className="p-8 text-center"><Loader2 className="w-6 h-6 animate-spin mx-auto" /></td></tr>
+                <TableSkeleton cols={5} rows={5} avatarCol={false} />
               ) : filteredTutors.length === 0 ? (
-                <tr><td colSpan={5} className="p-8 text-center text-gray-500">No records</td></tr>
+                <tr><td colSpan={5} className="px-6 py-10 text-center text-sm text-gray-500">No records found.</td></tr>
               ) : filteredTutors.map((t) => {
                 const gross = (t.hourly_rate || 0) * (t.total_sessions || 0);
                 const net = gross * 0.85;
@@ -284,8 +285,10 @@ export default function FinancePage() {
               </tr>
             </thead>
             <tbody className="divide-y">
-              {payoutRequests.length === 0 ? (
-                <tr><td colSpan={5} className="p-8 text-center text-gray-500">No payouts</td></tr>
+              {loading ? (
+                <TableSkeleton cols={5} rows={5} avatarCol={false} />
+              ) : payoutRequests.length === 0 ? (
+                <tr><td colSpan={5} className="px-6 py-10 text-center text-sm text-gray-500">No payouts found.</td></tr>
               ) : payoutRequests.map((p) => (
                 <tr key={p.id}>
                   <td className="px-4 py-3">
@@ -341,8 +344,10 @@ export default function FinancePage() {
               </tr>
             </thead>
             <tbody className="divide-y">
-              {transactions.length === 0 ? (
-                <tr><td colSpan={5} className="p-8 text-center text-gray-500">No transactions</td></tr>
+              {loading ? (
+                <TableSkeleton cols={5} rows={5} avatarCol={false} />
+              ) : transactions.length === 0 ? (
+                <tr><td colSpan={5} className="px-6 py-10 text-center text-sm text-gray-500">No transactions found.</td></tr>
               ) : transactions.map((b) => (
                 <tr key={b.id}>
                   <td className="px-4 py-3">{new Date(b.created_at).toLocaleDateString()}</td>
@@ -373,8 +378,10 @@ export default function FinancePage() {
               </tr>
             </thead>
             <tbody className="divide-y">
-              {payments.length === 0 ? (
-                <tr><td colSpan={5} className="p-8 text-center text-gray-500">No payments</td></tr>
+              {loading ? (
+                <TableSkeleton cols={5} rows={5} avatarCol={false} />
+              ) : payments.length === 0 ? (
+                <tr><td colSpan={5} className="px-6 py-10 text-center text-sm text-gray-500">No payments found.</td></tr>
               ) : payments.map((p) => (
                 <tr key={p.id}>
                   <td className="px-4 py-3">
