@@ -7,6 +7,7 @@ import { Colors, Typography, Spacing, Radius, CommonStyles } from '@/utils/theme
 import { ProgressBar, Avatar, SectionTitle, Skeleton } from '@/components/common';
 import { openWhatsApp } from '@/utils/linking';
 import { User, Application, Scholarship, Booking, StudentTask } from '@/types';
+import { getFlagEmoji } from '@eagle-pathway/shared';
 
 interface StudentHomeProps {
   user: User;
@@ -278,7 +279,7 @@ export const StudentHome: React.FC<StudentHomeProps> = ({
                   activeOpacity={0.9}
                 >
                   <View style={styles.discoverCardTop}>
-                    <View style={styles.discoverFlag}><Text style={{ fontSize: 28 }}>{s.country_flag}</Text></View>
+                    <View style={styles.discoverFlag}><Text style={{ fontSize: 28 }}>{getFlagEmoji(s.country_flag)}</Text></View>
                     {(s as any).match_score && (
                       <View style={styles.matchScoreBadge}>
                         <Text style={styles.matchScoreText}>{(s as any).match_score}%</Text>

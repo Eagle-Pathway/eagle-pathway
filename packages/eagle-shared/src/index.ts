@@ -103,3 +103,62 @@ export const parseJson = <T>(content: string | undefined): T => {
   if (!match) throw new Error('AI provider returned invalid JSON.');
   return JSON.parse(match[0]) as T;
 };
+
+export const getFlagEmoji = (flagOrName: string | undefined | null): string => {
+  if (!flagOrName) return '🌍';
+  const clean = flagOrName.trim().toLowerCase();
+  
+  const nameToFlag: Record<string, string> = {
+    'united kingdom': '🇬🇧',
+    'uk': '🇬🇧',
+    'united states': '🇺🇸',
+    'us': '🇺🇸',
+    'usa': '🇺🇸',
+    'canada': '🇨🇦',
+    'australia': '🇦🇺',
+    'china': '🇨🇳',
+    'germany': '🇩🇪',
+    'hungary': '🇭🇺',
+    'turkey': '🇹🇷',
+    'russia': '🇷🇺',
+    'japan': '🇯🇵',
+    'south korea': '🇰🇷',
+    'france': '🇫🇷',
+    'italy': '🇮🇹',
+    'netherlands': '🇳🇱',
+    'norway': '🇳🇴',
+    'sweden': '🇸🇪',
+    'ethiopia': '🇪🇹',
+    'egypt': '🇪🇬',
+    'south africa': '🇿🇦',
+    'kenya': '🇰🇪',
+    'nigeria': '🇳🇬',
+    'ghana': '🇬🇭',
+    'singapore': '🇸🇬',
+    'malaysia': '🇲🇾',
+    'india': '🇮🇳',
+    'thailand': '🇹🇭',
+    'vietnam': '🇻🇳',
+    'indonesia': '🇮🇩',
+    'philippines': '🇵🇭',
+    'brazil': '🇧🇷',
+    'mexico': '🇲🇽',
+    'argentina': '🇦🇷',
+    'spain': '🇪🇸',
+    'portugal': '🇵🇹',
+    'switzerland': '🇨🇭',
+    'austria': '🇦🇹',
+    'belgium': '🇧🇪',
+    'poland': '🇵🇱',
+  };
+
+  if (nameToFlag[clean]) {
+    return nameToFlag[clean];
+  }
+
+  if (flagOrName.length <= 4) {
+    return flagOrName;
+  }
+
+  return '🌍';
+};

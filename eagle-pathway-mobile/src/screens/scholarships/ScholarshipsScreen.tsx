@@ -12,6 +12,7 @@ import { useScholarshipStore } from '@/store/scholarshipStore';
 import { Scholarship } from '@/types';
 import { format } from 'date-fns';
 import { Ionicons } from '@expo/vector-icons';
+import { getFlagEmoji } from '@eagle-pathway/shared';
 
 const DEGREE_FILTERS = ['All', 'Undergraduate', 'Masters', 'PhD', 'Fully Funded'];
 
@@ -128,7 +129,7 @@ function ScholarshipCard({ scholarship: s, isSaved, onSave }: { scholarship: Sch
         <View style={styles.cardTop}>
           <View style={styles.flagAndTitle}>
             <View style={styles.flagCircle}>
-              <Text style={{ fontSize: 22 }}>{s.country_flag || '🌍'}</Text>
+              <Text style={{ fontSize: 22 }}>{getFlagEmoji(s.country_flag)}</Text>
             </View>
             <View style={{ flex: 1 }}>
               <Text style={styles.schName} numberOfLines={2}>{s.name}</Text>
