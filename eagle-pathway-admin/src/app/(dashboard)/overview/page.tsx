@@ -74,56 +74,30 @@ export default function OverviewPage() {
         const isoStart = sevenDaysAgo.toISOString();
 
         const [
-          usersRes, 
-          tutorsRes, 
-          scholarshipsRes, 
-          bookingsRes,
-          appRes,
-          roleCountsRes,
+          summaryRes,
           recentUsersRes,
           recentAppsRes,
-          pendingDocsRes,
-          pendingPaymentsRes,
-          pendingServicesRes,
-          unassignedAppsRes,
         ] = await Promise.all([
-          supabase.from('users').select('*', { count: 'exact', head: true }),
-          supabase.from('tutors').select('*', { count: 'exact', head: true }).eq('is_verified', false),
-          supabase.from('scholarships').select('*', { count: 'exact', head: true }).eq('is_active', true),
-          supabase.from('bookings').select('*', { count: 'exact', head: true }),
-          supabase.from('applications').select('*', { count: 'exact', head: true }).neq('status', 'accepted'),
-          supabase.from('users').select('roles, active_role'),
-          // Real 7-day activity data
+          supabase.rpc('get_dashboard_summary'),
           supabase.from('users').select('created_at').gte('created_at', isoStart),
           supabase.from('applications').select('created_at').gte('created_at', isoStart),
-          supabase.from('documents').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
-          supabase.from('payments').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
-          supabase.from('service_requests').select('*', { count: 'exact', head: true }).in('status', ['pending', 'reviewing']),
-          supabase.from('applications').select('*', { count: 'exact', head: true }).is('consultant_id', null).not('status', 'in', '(accepted,rejected)'),
         ]);
 
-        const totalUsers = usersRes.count || 0;
-        
-        // Process role data locally to avoid 3 separate count queries
-        const roles = roleCountsRes.data || [];
-        const hasRole = (row: { roles?: string[] | null; active_role?: string | null }, role: string) =>
-          row.active_role === role || row.roles?.includes(role);
-        const students = roles.filter(r => hasRole(r, 'student')).length;
-        const tutors = roles.filter(r => hasRole(r, 'tutor')).length;
-        const admins = roles.filter(r => hasRole(r, 'admin')).length;
+        if (summaryRes.error) throw summaryRes.error;
+        const summary = summaryRes.data || {};
 
         setCounts({
-          users: totalUsers,
-          tutorsPending: tutorsRes.count || 0,
-          activeScholarships: scholarshipsRes.count || 0,
-          bookings: bookingsRes.count || 0,
-          applicationsPending: appRes.count || 0
+          users: Number(summary.total_users) || 0,
+          tutorsPending: Number(summary.tutors_pending) || 0,
+          activeScholarships: Number(summary.active_scholarships) || 0,
+          bookings: Number(summary.bookings) || 0,
+          applicationsPending: Number(summary.applications_pending) || 0,
         });
 
         setRoleData([
-          { name: 'Students', value: students },
-          { name: 'Tutors', value: tutors },
-          { name: 'Admins', value: admins },
+          { name: 'Students', value: Number(summary.students_count) || 0 },
+          { name: 'Tutors', value: Number(summary.tutors_count) || 0 },
+          { name: 'Admins', value: Number(summary.admins_count) || 0 },
         ]);
 
         // Build real 7-day activity — bucket by date string using local timezone
@@ -153,7 +127,7 @@ export default function OverviewPage() {
           {
             title: 'Verify documents',
             detail: 'Student uploads waiting for approval',
-            count: pendingDocsRes.count || 0,
+            count: Number(summary.pending_docs) || 0,
             href: '/documents',
             icon: FileText,
             color: 'text-purple-600',
@@ -162,7 +136,7 @@ export default function OverviewPage() {
           {
             title: 'Review payments',
             detail: 'Manual receipts pending finance action',
-            count: pendingPaymentsRes.count || 0,
+            count: Number(summary.pending_payments) || 0,
             href: '/finance',
             icon: DollarSign,
             color: 'text-green-600',
@@ -171,7 +145,7 @@ export default function OverviewPage() {
           {
             title: 'Assign consultants',
             detail: 'Applications without an owner',
-            count: unassignedAppsRes.count || 0,
+            count: Number(summary.unassigned_apps) || 0,
             href: '/applications',
             icon: Briefcase,
             color: 'text-brand-blue',
@@ -180,7 +154,7 @@ export default function OverviewPage() {
           {
             title: 'Process services',
             detail: 'International service requests in queue',
-            count: pendingServicesRes.count || 0,
+            count: Number(summary.pending_services) || 0,
             href: '/services',
             icon: UserCheck,
             color: 'text-amber-600',
