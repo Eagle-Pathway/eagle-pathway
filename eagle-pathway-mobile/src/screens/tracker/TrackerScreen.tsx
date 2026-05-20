@@ -12,6 +12,7 @@ import { EmptyState } from '@/components/common';
 import { useAuthStore } from '@/store/authStore';
 import { useScholarshipStore } from '@/store/scholarshipStore';
 import type { Application } from '@/types';
+import { getFlagEmoji } from '@eagle-pathway/shared';
 
 const AuthenticationTracker = ({ isPremium }: { isPremium: boolean }) => (
   <View style={[CommonStyles.card, { marginTop: Spacing.xl, marginHorizontal: Spacing.xl }]}>
@@ -87,7 +88,27 @@ export function TrackerScreen() {
         </View>
         <ScrollView contentContainerStyle={{ paddingBottom: 60 }}>
           <View style={trackerStyles.summaryCard}>
-            <Text style={trackerStyles.summaryFlag}>{selectedApp.scholarship?.country_flag}</Text>
+            <View style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: Colors.bg, alignItems: 'center', justifyContent: 'center', marginBottom: Spacing.sm, padding: 6, borderWidth: 1, borderColor: Colors.border }}>
+              {(() => {
+                const flag = getFlagEmoji(selectedApp.scholarship?.country_flag);
+                const isWord = /[a-zA-Z]/.test(flag);
+                return (
+                  <Text 
+                    numberOfLines={1} 
+                    adjustsFontSizeToFit 
+                    minimumFontScale={0.5} 
+                    style={{ 
+                      fontSize: isWord ? 12 : 38, 
+                      fontWeight: isWord ? 'bold' : 'normal', 
+                      textAlign: 'center', 
+                      color: Colors.text 
+                    }}
+                  >
+                    {flag}
+                  </Text>
+                );
+              })()}
+            </View>
             <Text style={trackerStyles.summaryName}>{selectedApp.scholarship?.name}</Text>
             <Text style={trackerStyles.summaryOrg}>{selectedApp.scholarship?.organization}</Text>
             <View style={trackerStyles.badgeRow}>
@@ -205,7 +226,27 @@ export function TrackerScreen() {
           {[...active, ...completed].map(app => (
             <TouchableOpacity key={app.id} style={{ marginBottom: Spacing.xl }} onPress={() => setSelectedApp(app)} activeOpacity={0.9}>
               <View style={trackerStyles.appHeader}>
-                <Text style={trackerStyles.appFlag}>{app.scholarship?.country_flag || '🌍'}</Text>
+                <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: Colors.bg, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: Colors.border, padding: 4 }}>
+                  {(() => {
+                    const flag = getFlagEmoji(app.scholarship?.country_flag);
+                    const isWord = /[a-zA-Z]/.test(flag);
+                    return (
+                      <Text 
+                        numberOfLines={1} 
+                        adjustsFontSizeToFit 
+                        minimumFontScale={0.5} 
+                        style={{ 
+                          fontSize: isWord ? 9 : 22, 
+                          fontWeight: isWord ? 'bold' : 'normal', 
+                          textAlign: 'center', 
+                          color: Colors.text 
+                        }}
+                      >
+                        {flag}
+                      </Text>
+                    );
+                  })()}
+                </View>
                 <Text style={trackerStyles.appName}>{app.scholarship?.name || 'Scholarship'}</Text>
                 {app.consultant && (
                   <View style={trackerStyles.consultantBtn}>
