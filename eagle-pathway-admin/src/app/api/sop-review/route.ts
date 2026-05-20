@@ -37,7 +37,7 @@ function json(data: unknown, init?: ResponseInit) {
   });
 }
 
-async function requireAuthenticatedUser(req: Request) {
+export async function requireAuthenticatedUser(req: Request) {
   const token = req.headers.get('authorization')?.replace(/^Bearer\s+/i, '');
   if (!token) throw new Error('Authentication required.');
 
