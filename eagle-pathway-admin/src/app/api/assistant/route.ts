@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { requireAuthenticatedUser } from '../sop-review/route';
 
 const SYSTEM_PROMPT = `You are the Eagle Pathway AI Assistant, a specialized expert on the Eagle Pathway platform.
 Your ONLY purpose is to help users with:
@@ -14,6 +15,7 @@ STRICT GUARDRAILS:
 
 export async function POST(req: Request) {
   try {
+    await requireAuthenticatedUser(req);
     const { messages } = await req.json();
 
     // Debug: Check if key exists (don't log the full key for security)
@@ -68,8 +70,10 @@ export async function POST(req: Request) {
     });
   } catch (error: any) {
     console.error('Assistant API Error:', error);
-    return new Response(JSON.stringify({ error: error.message }), {
-      status: 500,
+    const message = error instanceof Error ? error.message : 'Assistant AI request failed.';
+    const status = message.includes('Authentication') || message.includes('session') ? 401 : 500;
+    return new Response(JSON.stringify({ error: message }), {
+      status,
       headers: {
         'Content-Type': 'application/json',
         'Access-Control-Allow-Origin': '*',
