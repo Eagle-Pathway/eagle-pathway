@@ -21,7 +21,12 @@ BEGIN
 
     -- Permit active_role updates, but only if the user actually possesses that role
     IF (OLD.active_role IS DISTINCT FROM NEW.active_role) THEN
-      IF NOT (NEW.active_role = ANY(COALESCE(NEW.roles, ARRAY[]::TEXT[]))) THEN
+      IF NOT EXISTS (
+        SELECT 1
+        FROM public.user_roles ur
+        WHERE ur.user_id = NEW.id
+          AND ur.role = NEW.active_role
+      ) THEN
         RAISE EXCEPTION 'Unauthorized: Cannot switch active persona to a role you do not possess.';
       END IF;
     END IF;
