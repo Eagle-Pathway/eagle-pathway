@@ -128,8 +128,26 @@ function ScholarshipCard({ scholarship: s, isSaved, onSave }: { scholarship: Sch
       <View style={styles.cardContent}>
         <View style={styles.cardTop}>
           <View style={styles.flagAndTitle}>
-            <View style={styles.flagCircle}>
-              <Text style={{ fontSize: 22 }}>{getFlagEmoji(s.country_flag)}</Text>
+            <View style={[styles.flagCircle, { padding: 4 }]}>
+              {(() => {
+                const flag = getFlagEmoji(s.country_flag);
+                const isWord = /[a-zA-Z]/.test(flag);
+                return (
+                  <Text 
+                    numberOfLines={1} 
+                    adjustsFontSizeToFit 
+                    minimumFontScale={0.5} 
+                    style={{ 
+                      fontSize: isWord ? 9 : 22, 
+                      fontWeight: isWord ? 'bold' : 'normal', 
+                      textAlign: 'center', 
+                      color: Colors.text 
+                    }}
+                  >
+                    {flag}
+                  </Text>
+                );
+              })()}
             </View>
             <View style={{ flex: 1 }}>
               <Text style={styles.schName} numberOfLines={2}>{s.name}</Text>
