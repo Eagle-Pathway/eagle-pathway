@@ -7,7 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { format } from 'date-fns';
 import { Colors, Typography, Spacing, Radius, CommonStyles } from '@/utils/theme';
-import { Button, EmptyState } from '@/components/common';
+import { Button, EmptyState, ScaleBounce } from '@/components/common';
 import { DetailSkeleton } from '@/components/LoadingSkeleton';
 import { scholarshipsService } from '@/services/scholarships';
 import { useScholarshipStore } from '@/store/scholarshipStore';
@@ -78,12 +78,12 @@ export function ScholarshipDetailScreen() {
     <SafeAreaView style={[CommonStyles.flex1, { backgroundColor: Colors.blueDark }]} edges={['top']}>
       <View style={sdStyles.hero}>
         <View style={sdStyles.heroNav}>
-          <TouchableOpacity style={sdStyles.backBtn} onPress={() => router.back()} activeOpacity={0.8}><Text style={{ color: Colors.white, fontSize: 20 }}>←</Text></TouchableOpacity>
+          <ScaleBounce style={sdStyles.backBtn} onPress={() => router.back()}><Text style={{ color: Colors.white, fontSize: 20 }}>←</Text></ScaleBounce>
           <View style={{ flexDirection: 'row', gap: Spacing.sm }}>
-            <TouchableOpacity style={sdStyles.iconBtn} activeOpacity={0.8}><Text style={{ fontSize: 16 }}>↗</Text></TouchableOpacity>
-            <TouchableOpacity style={sdStyles.iconBtn} onPress={() => toggleSaveScholarship(scholarship.id)} activeOpacity={0.8}>
+            <ScaleBounce style={sdStyles.iconBtn}><Text style={{ fontSize: 16 }}>↗</Text></ScaleBounce>
+            <ScaleBounce style={sdStyles.iconBtn} onPress={() => toggleSaveScholarship(scholarship.id)}>
               <Text style={{ fontSize: 16 }}>{isSaved ? '🔖' : '🏷️'}</Text>
-            </TouchableOpacity>
+            </ScaleBounce>
           </View>
         </View>
         <View style={{ width: 60, height: 60, borderRadius: 30, backgroundColor: 'rgba(255,255,255,0.12)', alignItems: 'center', justifyContent: 'center', marginBottom: Spacing.sm, padding: 6 }}>
@@ -128,13 +128,12 @@ export function ScholarshipDetailScreen() {
           {scholarship.website_url && (
             <View style={sdStyles.section}>
               <Text style={sdStyles.sectionTitle}>Official Website</Text>
-              <TouchableOpacity 
+              <ScaleBounce 
                 style={sdStyles.linkButton} 
                 onPress={() => Linking.openURL(scholarship.website_url!)}
-                activeOpacity={0.7}
               >
                 <Text style={sdStyles.linkButtonText}>🌐 Open Official Link</Text>
-              </TouchableOpacity>
+              </ScaleBounce>
               <Text style={sdStyles.linkSubtext}>Visit the university's portal for raw details and official forms.</Text>
             </View>
           )}
@@ -158,7 +157,22 @@ export function ScholarshipDetailScreen() {
             ))}
           </View>
           
-          <View style={[sdStyles.section, { backgroundColor: Colors.blueDark, margin: Spacing.md, borderRadius: Radius.xl, borderBottomWidth: 0 }]}>
+          <View style={[
+            sdStyles.section, 
+            { 
+              backgroundColor: Colors.blueDark, 
+              margin: Spacing.md, 
+              borderRadius: Radius.xl, 
+              borderBottomWidth: 0,
+              borderWidth: 1,
+              borderColor: 'rgba(255,255,255,0.08)',
+              shadowColor: Colors.gold,
+              shadowOffset: { width: 0, height: 6 },
+              shadowOpacity: 0.12,
+              shadowRadius: 12,
+              elevation: 3,
+            }
+          ]}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 8 }}>
               <Text style={{ fontSize: 24 }}>✨</Text>
               <Text style={[sdStyles.sectionTitle, { color: Colors.gold, marginBottom: 0 }]}>Eagle AI Assistant</Text>
@@ -166,13 +180,12 @@ export function ScholarshipDetailScreen() {
             <Text style={[sdStyles.bodyText, { color: 'rgba(255,255,255,0.8)', fontSize: 13, marginBottom: 16 }]}>
               Stop struggling with your essay. We'll use your academic profile to draft a winning Statement of Purpose for this scholarship in seconds.
             </Text>
-            <TouchableOpacity 
+            <ScaleBounce 
               style={{ backgroundColor: Colors.gold, padding: 14, borderRadius: 12, alignItems: 'center' }}
               onPress={() => router.push({ pathname: '/scholarship/magic-draft', params: { scholarshipId: scholarship.id } })}
-              activeOpacity={0.8}
             >
               <Text style={{ color: Colors.blueDark, fontWeight: 'bold', fontSize: 15 }}>Generate Magic Draft ✨</Text>
-            </TouchableOpacity>
+            </ScaleBounce>
           </View>
 
           {scholarship.eagle_success_rate && (
@@ -196,10 +209,34 @@ export function ScholarshipDetailScreen() {
 }
 
 const sdStyles = StyleSheet.create({
-  hero: { backgroundColor: Colors.blueDark, padding: Spacing.xl, paddingBottom: Spacing['3xl'] },
+  hero: { 
+    backgroundColor: Colors.blueDark, 
+    padding: Spacing.xl, 
+    paddingBottom: Spacing['3xl'],
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255,255,255,0.08)',
+  },
   heroNav: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: Spacing.md },
-  backBtn: { width: 36, height: 36, backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
-  iconBtn: { width: 36, height: 36, backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+  backBtn: { 
+    width: 36, 
+    height: 36, 
+    backgroundColor: 'rgba(255,255,255,0.12)', 
+    borderRadius: 10, 
+    alignItems: 'center', 
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
+  },
+  iconBtn: { 
+    width: 36, 
+    height: 36, 
+    backgroundColor: 'rgba(255,255,255,0.12)', 
+    borderRadius: 10, 
+    alignItems: 'center', 
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
+  },
   flag: { fontSize: 40, marginBottom: Spacing.sm },
   name: { fontSize: Typography['4xl'], fontWeight: Typography.bold, color: Colors.white },
   org: { fontSize: Typography.base, color: 'rgba(255,255,255,0.65)', marginTop: 4 },

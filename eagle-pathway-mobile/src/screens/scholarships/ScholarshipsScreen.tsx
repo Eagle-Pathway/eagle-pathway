@@ -6,7 +6,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Colors, Typography, Spacing, Radius, CommonStyles } from '@/utils/theme';
-import { EmptyState } from '@/components/common';
+import { EmptyState, ScaleBounce } from '@/components/common';
 import { ListSkeleton } from '@/components/LoadingSkeleton';
 import { useScholarshipStore } from '@/store/scholarshipStore';
 import { Scholarship } from '@/types';
@@ -110,10 +110,9 @@ export default function ScholarshipsScreen({ hideBack = false }: { hideBack?: bo
 
 function ScholarshipCard({ scholarship: s, isSaved, onSave }: { scholarship: Scholarship; isSaved: boolean; onSave: () => void }) {
   return (
-    <TouchableOpacity
+    <ScaleBounce
       style={styles.card}
       onPress={() => router.push({ pathname: '/scholarship-detail', params: { scholarshipId: s.id } })}
-      activeOpacity={0.9}
     >
       {s.image_url && (
         <View style={styles.imageContainer}>
@@ -158,7 +157,7 @@ function ScholarshipCard({ scholarship: s, isSaved, onSave }: { scholarship: Sch
             <Ionicons name={isSaved ? "bookmark" : "bookmark-outline"} size={20} color={isSaved ? Colors.blue : Colors.textSecondary} />
           </TouchableOpacity>
         </View>
-
+ 
         <View style={styles.cardFooter}>
           <View style={styles.metaRow}>
             {s.deadline && (
@@ -177,7 +176,7 @@ function ScholarshipCard({ scholarship: s, isSaved, onSave }: { scholarship: Sch
           <Ionicons name="chevron-forward" size={18} color={Colors.border} />
         </View>
       </View>
-    </TouchableOpacity>
+    </ScaleBounce>
   );
 }
 

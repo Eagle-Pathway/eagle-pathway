@@ -6,7 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { format } from 'date-fns';
 import { Colors, Typography, Spacing, Radius, CommonStyles } from '@/utils/theme';
-import { Button, Pill, StatusTimeline } from '@/components/common';
+import { Button, Pill, StatusTimeline, ScaleBounce } from '@/components/common';
 import { CardSkeleton } from '@/components/LoadingSkeleton';
 import { EmptyState } from '@/components/common';
 import { useAuthStore } from '@/store/authStore';
@@ -81,9 +81,9 @@ export function TrackerScreen() {
     return (
       <SafeAreaView style={CommonStyles.screenBg} edges={['top']}>
         <View style={trackerStyles.detailHeader}>
-          <TouchableOpacity style={trackerStyles.backBtn} onPress={() => setSelectedApp(null)} activeOpacity={0.8}>
+          <ScaleBounce style={trackerStyles.backBtn} onPress={() => setSelectedApp(null)}>
             <Text style={{ fontSize: 20 }}>←</Text>
-          </TouchableOpacity>
+          </ScaleBounce>
           <Text style={trackerStyles.detailTitle}>Application Status</Text>
         </View>
         <ScrollView contentContainerStyle={{ paddingBottom: 60 }}>
@@ -143,7 +143,7 @@ export function TrackerScreen() {
                   <Text style={trackerStyles.aiActionTitle}>✨ AI SOP Assistant</Text>
                   <Text style={trackerStyles.aiActionSub}>Get real-time feedback on your Statement of Purpose from Eagle AI.</Text>
                 </View>
-                <TouchableOpacity 
+                <ScaleBounce 
                    style={trackerStyles.aiActionBtn} 
                    onPress={() => router.push({ 
                      pathname: '/scholarship/sop', 
@@ -151,7 +151,7 @@ export function TrackerScreen() {
                    })}
                 >
                   <Text style={trackerStyles.aiActionBtnText}>Edit & Review</Text>
-                </TouchableOpacity>
+                </ScaleBounce>
               </View>
             </View>
           )}
@@ -181,18 +181,18 @@ export function TrackerScreen() {
     <SafeAreaView style={CommonStyles.screenBg} edges={[]}>
       <View style={trackerStyles.hero}>
         <View style={trackerStyles.heroHeader}>
-          <TouchableOpacity style={trackerStyles.backBtnCircle} onPress={() => router.back()} activeOpacity={0.8}>
+          <ScaleBounce style={trackerStyles.backBtnCircle} onPress={() => router.back()}>
             <Text style={{ fontSize: 20, color: Colors.white }}>←</Text>
-          </TouchableOpacity>
+          </ScaleBounce>
         </View>
         <View style={trackerStyles.heroTop}>
           <View>
             <Text style={trackerStyles.heroLabel}>Application Tracker</Text>
             <Text style={trackerStyles.heroTitle}>Your Journey</Text>
           </View>
-          <TouchableOpacity style={trackerStyles.newBtn} onPress={() => router.push('/(tabs)/scholarships')} activeOpacity={0.8}>
+          <ScaleBounce style={trackerStyles.newBtn} onPress={() => router.push('/(tabs)/scholarships')}>
             <Text style={trackerStyles.newBtnText}>+ New Application</Text>
-          </TouchableOpacity>
+          </ScaleBounce>
         </View>
         <View style={trackerStyles.statsRow}>
           {[
@@ -224,7 +224,7 @@ export function TrackerScreen() {
       ) : (
         <ScrollView contentContainerStyle={{ padding: Spacing.xl, paddingBottom: 100 }}>
           {[...active, ...completed].map(app => (
-            <TouchableOpacity key={app.id} style={{ marginBottom: Spacing.xl }} onPress={() => setSelectedApp(app)} activeOpacity={0.9}>
+            <ScaleBounce key={app.id} style={{ marginBottom: Spacing.xl }} onPress={() => setSelectedApp(app)}>
               <View style={trackerStyles.appHeader}>
                 <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: Colors.bg, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: Colors.border, padding: 4 }}>
                   {(() => {
@@ -267,7 +267,7 @@ export function TrackerScreen() {
                 <Text style={trackerStyles.footerTxt}>Last update: {new Date(app.updated_at).toLocaleDateString()}</Text>
                 <Text style={[trackerStyles.footerTxt, { color: Colors.blue, fontWeight: 'bold' }]}>View Details ›</Text>
               </View>
-            </TouchableOpacity>
+            </ScaleBounce>
           ))}
         </ScrollView>
       )}

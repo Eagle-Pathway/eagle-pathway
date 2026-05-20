@@ -4,6 +4,7 @@ import {
   StyleSheet, ViewStyle, TextStyle,
 } from 'react-native';
 import { Colors, Typography, Radius, Spacing, CommonStyles } from '../../utils/theme';
+import { ScaleBounce } from './ScaleBounce';
 
 // ─── Button ──────────────────────────────────────────────────────────────────
 interface ButtonProps {
@@ -39,11 +40,11 @@ export const Button: React.FC<ButtonProps> = ({
   ];
 
   return (
-    <TouchableOpacity style={btnStyle} onPress={onPress} disabled={disabled || loading} activeOpacity={0.85}>
+    <ScaleBounce style={btnStyle} onPress={onPress} disabled={disabled || loading}>
       {loading
         ? <ActivityIndicator color={variant === 'primary' ? Colors.white : Colors.blue} size="small" />
         : <Text style={txtStyle}>{title}</Text>}
-    </TouchableOpacity>
+    </ScaleBounce>
   );
 };
 
@@ -163,6 +164,7 @@ export const Card: React.FC<{ children: React.ReactNode; style?: ViewStyle; onPr
 export { StatusTimeline } from './StatusTimeline';
 export { Skeleton } from './Skeleton';
 export { Dropdown } from './Dropdown';
+export { ScaleBounce } from './ScaleBounce';
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({

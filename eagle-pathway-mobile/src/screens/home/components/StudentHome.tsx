@@ -4,7 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { format } from 'date-fns';
 import { Colors, Typography, Spacing, Radius, CommonStyles } from '@/utils/theme';
-import { ProgressBar, Avatar, SectionTitle, Skeleton } from '@/components/common';
+import { ProgressBar, Avatar, SectionTitle, Skeleton, ScaleBounce } from '@/components/common';
 import { openWhatsApp } from '@/utils/linking';
 import { User, Application, Scholarship, Booking, StudentTask } from '@/types';
 import { getFlagEmoji } from '@eagle-pathway/shared';
@@ -272,11 +272,10 @@ export const StudentHome: React.FC<StudentHomeProps> = ({
             </View>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: Spacing.xl, gap: Spacing.lg, paddingBottom: 10 }}>
               {recommendedScholarships.map(s => (
-                <TouchableOpacity 
+                 <ScaleBounce 
                   key={s.id} 
                   style={styles.discoverCard}
                   onPress={() => router.push({ pathname: '/scholarship-detail', params: { scholarshipId: s.id } })}
-                  activeOpacity={0.9}
                 >
                   <View style={styles.discoverCardTop}>
                     <View style={[styles.discoverFlag, { padding: 4 }]}>
@@ -320,7 +319,7 @@ export const StudentHome: React.FC<StudentHomeProps> = ({
                       </Text>
                     )}
                   </View>
-                </TouchableOpacity>
+                </ScaleBounce>
               ))}
             </ScrollView>
           </View>
@@ -445,10 +444,32 @@ const styles = StyleSheet.create({
   readinessIconWrap: { width: 44, height: 44, backgroundColor: '#fffbeb', borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginRight: Spacing.md },
   readinessTitle: { fontSize: Typography.base, fontWeight: Typography.bold, color: Colors.text },
   readinessSub: { fontSize: Typography.xs, color: Colors.textSecondary, marginTop: 2 },
-  discoverCard: { width: 220, backgroundColor: Colors.white, borderRadius: Radius.xl, padding: Spacing.md, borderWidth: 1, borderColor: Colors.border },
+  discoverCard: { 
+    width: 220, 
+    backgroundColor: Colors.white, 
+    borderRadius: Radius.xl, 
+    padding: Spacing.md, 
+    borderWidth: 1, 
+    borderColor: Colors.border,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.04,
+    shadowRadius: 10,
+    elevation: 2,
+  },
   discoverCardTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
   discoverFlag: { width: 50, height: 50, backgroundColor: '#f3f4f6', borderRadius: Radius.lg, alignItems: 'center', justifyContent: 'center' },
-  matchScoreBadge: { backgroundColor: '#ecfdf5', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 },
+  matchScoreBadge: { 
+    backgroundColor: '#ecfdf5', 
+    paddingHorizontal: 8, 
+    paddingVertical: 4, 
+    borderRadius: 8,
+    shadowColor: '#10b981',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    elevation: 1,
+  },
   matchScoreText: { fontSize: 12, fontWeight: Typography.bold, color: '#10b981' },
   discoverName: { fontSize: Typography.base, fontWeight: Typography.bold, color: Colors.text },
   discoverOrg: { fontSize: Typography.xs, color: Colors.textSecondary, marginTop: 2 },

@@ -3,7 +3,7 @@ import { View, Text, ScrollView, RefreshControl, TouchableOpacity, Alert, StyleS
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Colors, Typography, Spacing, CommonStyles } from '@/utils/theme';
-import { Avatar, SectionTitle, EmptyState, Skeleton } from '@/components/common';
+import { Avatar, SectionTitle, EmptyState, Skeleton, ScaleBounce } from '@/components/common';
 import { User, Application } from '@/types';
 import { getFlagEmoji } from '@eagle-pathway/shared';
 
@@ -124,11 +124,10 @@ export const ParentHome: React.FC<ParentHomeProps> = ({
               const completedApps = childApps.filter(a => ['accepted', 'rejected'].includes(a.status));
               
               return (
-                <TouchableOpacity 
+                <ScaleBounce 
                   key={child.id} 
                   style={styles.sessionCard}
                   onPress={() => router.push('/progress')}
-                  activeOpacity={0.9}
                 >
                   <Avatar 
                     initials={child.full_name?.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() || 'S'} 
@@ -144,13 +143,17 @@ export const ParentHome: React.FC<ParentHomeProps> = ({
                   <View style={styles.sessionTime}>
                     <Text style={styles.sessionTypeBadge}>View</Text>
                   </View>
-                </TouchableOpacity>
+                </ScaleBounce>
               );
             })}
 
             <SectionTitle title="Recent Activity" />
             {(Object.values(linkedStudentApplications).flat() as Application[]).slice(0, 3).map(app => (
-              <View key={app.id} style={styles.sessionCard}>
+              <ScaleBounce 
+                key={app.id} 
+                style={styles.sessionCard}
+                onPress={() => router.push('/progress')}
+              >
                 <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: Colors.bg, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: Colors.border, padding: 4 }}>
                   {(() => {
                     const flag = getFlagEmoji(app.scholarship?.country_flag);
@@ -176,7 +179,7 @@ export const ParentHome: React.FC<ParentHomeProps> = ({
                   <Text style={styles.sessionName}>{app.scholarship?.name}</Text>
                   <Text style={styles.sessionSub}>{app.status.replace(/_/g, ' ').toUpperCase()}</Text>
                 </View>
-              </View>
+              </ScaleBounce>
             ))}
           </>
         )}
