@@ -51,6 +51,7 @@ export default function HomeScreen() {
   } = useParentStore();
 
   const [refreshing, setRefreshing] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   const activeRole = (user?.active_role || user?.roles?.[0] || 'student').toLowerCase();
   const isTutor = activeRole === 'tutor';
@@ -77,7 +78,12 @@ export default function HomeScreen() {
   };
 
   useEffect(() => { 
-    load(); 
+    const init = async () => {
+      setLoading(true);
+      await load();
+      setLoading(false);
+    };
+    init();
   }, [user?.id, activeRole]);
 
   const onRefresh = async () => {
@@ -113,6 +119,7 @@ export default function HomeScreen() {
         onRefresh={onRefresh}
         linkedStudents={linkedStudents}
         linkedStudentApplications={linkedStudentApplications}
+        loading={loading}
       />
     );
   }
@@ -133,6 +140,7 @@ export default function HomeScreen() {
         isLoadingPayouts={isLoadingPayouts}
         updateBookingStatus={updateBookingStatus}
         submitPayoutRequest={submitPayoutRequest}
+        loading={loading}
       />
     );
   }
@@ -151,6 +159,7 @@ export default function HomeScreen() {
       tasks={tasks}
       recommendedScholarships={recommendedScholarships}
       toggleTask={toggleTask}
+      loading={loading}
     />
   );
 }

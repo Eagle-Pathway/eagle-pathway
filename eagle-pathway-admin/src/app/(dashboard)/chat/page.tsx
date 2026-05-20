@@ -34,11 +34,46 @@ export default function AdminChatPage() {
   const { user } = useAuthStore();
   const [conversations, setConversations] = useState<UserPreview[]>([]);
   const [selectedUser, setSelectedUser] = useState<UserPreview | null>(null);
+  const [selectedUserSetFromUrl, setSelectedUserSetFromUrl] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputText, setInputText] = useState('');
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || selectedUserSetFromUrl || loading) return;
+    
+    const params = new URLSearchParams(window.location.search);
+    const userId = params.get('userId');
+    
+    if (userId) {
+      setSelectedUserSetFromUrl(true);
+      const existing = conversations.find(c => c.id === userId);
+      if (existing) {
+        setSelectedUser(existing);
+      } else {
+        const fetchUser = async () => {
+          const { data, error } = await supabase
+            .from('users')
+            .select('id, full_name, email, role')
+            .eq('id', userId)
+            .single();
+          if (!error && data) {
+            const userPrev: UserPreview = {
+              id: data.id,
+              full_name: data.full_name,
+              email: data.email,
+              role: data.role || 'student',
+            };
+            setSelectedUser(userPrev);
+            setConversations(prev => [userPrev, ...prev]);
+          }
+        };
+        fetchUser();
+      }
+    }
+  }, [conversations, loading, selectedUserSetFromUrl]);
 
   useEffect(() => {
     fetchConversations();

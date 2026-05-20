@@ -4,6 +4,7 @@ import { supabase } from '@/lib/supabase';
 import { Plus, Edit2, Trash2, ExternalLink, Search, Download } from 'lucide-react';
 import ScholarshipForm from '@/components/forms/ScholarshipForm';
 import { exportToCSV } from '@/utils/export';
+import { TableSkeleton } from '@/components/ui/TableSkeleton';
 
 interface Scholarship {
   id: string;
@@ -132,9 +133,7 @@ export default function ScholarshipsPage() {
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {loading ? (
-                <tr>
-                  <td colSpan={5} className="px-6 py-10 text-center text-sm text-gray-500">Loading scholarships...</td>
-                </tr>
+                <TableSkeleton cols={5} rows={5} avatarCol={false} />
               ) : filtered.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="px-6 py-10 text-center text-sm text-gray-500">No scholarships found.</td>

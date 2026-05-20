@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Search, Calendar, User, CreditCard, Download, ChevronLeft, ChevronRight } from 'lucide-react';
 import { exportToCSV } from '@/utils/export';
+import { TableSkeleton } from '@/components/ui/TableSkeleton';
 
 interface Booking {
   id: string;
@@ -132,9 +133,7 @@ export default function BookingsPage() {
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {loading ? (
-                <tr>
-                  <td colSpan={4} className="px-6 py-10 text-center text-sm text-gray-500">Loading bookings...</td>
-                </tr>
+                <TableSkeleton cols={4} rows={5} avatarCol={false} />
               ) : filtered.length === 0 ? (
                 <tr>
                   <td colSpan={4} className="px-6 py-10 text-center text-sm text-gray-500">No bookings found.</td>

@@ -1,13 +1,12 @@
 import React, { useEffect } from 'react';
 import {
   View, Text, FlatList, TouchableOpacity,
-  StyleSheet, ActivityIndicator, RefreshControl,
+  StyleSheet, ActivityIndicator, RefreshControl, ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Colors, Typography, Spacing, Radius, CommonStyles } from '@/utils/theme';
-import { Avatar, EmptyState } from '@/components/common';
-import { ListSkeleton } from '@/components/LoadingSkeleton';
+import { Avatar, EmptyState, Skeleton } from '@/components/common';
 import { useAuthStore } from '../../store/authStore';
 import { useChatStore } from '@/store/ChatStore';
 
@@ -38,7 +37,7 @@ export default function ChatListScreen() {
     return (
       <TouchableOpacity 
         style={styles.convCard} 
-        onPress={() => router.push({ pathname: '/chat/[id]', params: { id: item.id } })}
+        onPress={() => router.push({ pathname: '/chat/[id]', params: { id: item.id, fullName: item.full_name } })}
         activeOpacity={0.7}
       >
         <Avatar initials={initials} size={50} color={item.role === 'admin' ? Colors.blue : Colors.gold} />
@@ -77,9 +76,21 @@ export default function ChatListScreen() {
       </View>
 
       {isLoadingConversations && conversations.length === 0 ? (
-        <View style={{ flex: 1, paddingTop: Spacing.lg }}>
-          <ListSkeleton count={5} />
-        </View>
+        <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingVertical: Spacing.md }}>
+          {[1, 2, 3, 4, 5].map(i => (
+            <View key={i} style={styles.convCard}>
+              <Skeleton width={50} height={50} borderRadius={25} />
+              <View style={[styles.convInfo, { gap: 6 }]}>
+                <View style={[styles.convHeader, { gap: Spacing.md }]}>
+                  <Skeleton width="40%" height={16} />
+                  <Skeleton width="15%" height={12} />
+                </View>
+                <Skeleton width="70%" height={12} />
+                <Skeleton width={60} height={14} borderRadius={10} style={{ marginTop: 4 }} />
+              </View>
+            </View>
+          ))}
+        </ScrollView>
       ) : conversations.length === 0 ? (
         <EmptyState 
           icon="💬" 

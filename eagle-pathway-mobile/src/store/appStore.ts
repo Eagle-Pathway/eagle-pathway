@@ -278,6 +278,24 @@ export const useAppStore = create<AppState>((set, get) => ({
     }));
   },
 
+  loadTutorProfile: async (userId) => {
+    try {
+      const { data: tutor, error } = await supabase
+        .from('tutors')
+        .select('*, user:users(*)')
+        .eq('user_id', userId)
+        .single();
+      if (!error && tutor) {
+        set({ tutorProfile: tutor });
+      } else {
+        set({ tutorProfile: null });
+      }
+    } catch (e) {
+      console.error('Error loading tutor profile:', e);
+      set({ tutorProfile: null });
+    }
+  },
+
   loadDocuments: async (userId) => {
     const documents = await scholarshipsService.getUserDocuments(userId);
     set({ documents });

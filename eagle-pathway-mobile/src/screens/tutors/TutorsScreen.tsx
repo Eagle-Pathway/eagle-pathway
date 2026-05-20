@@ -1,31 +1,39 @@
 import React, { useEffect, useState } from 'react';
 import {
   View, Text, ScrollView, TextInput, TouchableOpacity,
-  StyleSheet, FlatList, ActivityIndicator,
+  StyleSheet, FlatList,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Colors, Typography, Spacing, Radius, CommonStyles } from '@/utils/theme';
-import { Pill, EmptyState, Avatar } from '@/components/common';
-import { ListSkeleton } from '@/components/LoadingSkeleton';
+import { Pill, EmptyState, Avatar, Dropdown, Skeleton } from '@/components/common';
 import { tutorsService } from '@/services/tutors';
 import { Tutor } from '@/types';
 
-const SUBJECTS = ['All', 'Mathematics', 'English', 'Physics', 'Chemistry', 'Biology', 'IELTS Prep', 'History'];
+const SUBJECT_OPTIONS = [
+  { label: 'Mathematics', value: 'Mathematics' },
+  { label: 'English', value: 'English' },
+  { label: 'Physics', value: 'Physics' },
+  { label: 'Chemistry', value: 'Chemistry' },
+  { label: 'Biology', value: 'Biology' },
+  { label: 'IELTS Prep', value: 'IELTS Prep' },
+  { label: 'History', value: 'History' },
+];
+
 const MODES = ['All', 'Online', 'In-Person', 'Top Rated'];
 
 export default function TutorsScreen() {
   const [tutors, setTutors] = useState<Tutor[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
-  const [activeSubject, setActiveSubject] = useState('All');
+  const [selectedSubjects, setSelectedSubjects] = useState<string[]>([]);
+  const [selectedLocation, setSelectedLocation] = useState('All');
   const [activeMode, setActiveMode] = useState('All');
 
   const load = async () => {
     setLoading(true);
     try {
       const data = await tutorsService.getTutors({
-        subject: activeSubject !== 'All' ? activeSubject : undefined,
         isOnline: activeMode === 'Online' ? true : undefined,
         isInPerson: activeMode === 'In-Person' ? true : undefined,
         search: search || undefined,
@@ -38,12 +46,78 @@ export default function TutorsScreen() {
     }
   };
 
-  useEffect(() => { load(); }, [activeSubject, activeMode]);
+  useEffect(() => { load(); }, [activeMode]);
 
-  const filtered = tutors.filter(t =>
-    !search || t.user?.full_name?.toLowerCase().includes(search.toLowerCase()) ||
-    t.subjects.some(s => s.toLowerCase().includes(search.toLowerCase()))
-  );
+  const locationOptions = React.useMemo(() => {
+    const locs = Array.from(new Set(tutors.map(t => t.location).filter(Boolean))) as string[];
+    return [{ label: 'All Locations', value: 'All' }, ...locs.map(l => ({ label: l, value: l }))];
+  }, [tutors]);
+
+  const filtered = tutors.filter(t => {
+    const matchesSearch = !search || 
+      t.user?.full_name?.toLowerCase().includes(search.toLowerCase()) ||
+      t.subjects.some(s => s.toLowerCase().includes(search.toLowerCase()));
+
+    const matchesSubject = selectedSubjects.length === 0 ||
+      t.subjects.some(sub => selectedSubjects.includes(sub));
+
+    const matchesLocation = selectedLocation === 'All' ||
+      t.location === selectedLocation;
+
+    const matchesMode = activeMode !== 'Top Rated' || t.rating >= 4.8;
+
+    return matchesSearch && matchesSubject && matchesLocation && matchesMode;
+  });
+
+  if (loading) {
+    return (
+      <SafeAreaView style={CommonStyles.screenBg} edges={['top']}>
+        {/* Header */}
+        <View style={styles.header}>
+          <Text style={styles.title}>Find a Tutor</Text>
+          <View style={styles.filterBtn}>
+            <Text style={styles.filterIcon}>⚙️</Text>
+          </View>
+        </View>
+
+        {/* Search */}
+        <View style={styles.searchBar}>
+          <Text style={styles.searchIcon}>🔍</Text>
+          <TextInput style={styles.searchInput} editable={false} placeholder="Loading tutors..." placeholderTextColor={Colors.textSecondary} />
+        </View>
+
+        {/* Skeletons list */}
+        <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingVertical: Spacing.md }}>
+          {[1, 2, 3].map(i => (
+            <View key={i} style={styles.tutorCard}>
+              <View style={styles.tutorTop}>
+                <Skeleton width={52} height={52} borderRadius={15} />
+                <View style={[styles.tutorInfo, { gap: 6 }]}>
+                  <Skeleton width="60%" height={16} />
+                  <Skeleton width="80%" height={12} />
+                  <Skeleton width="40%" height={12} />
+                </View>
+                <View style={{ alignItems: 'flex-end', gap: 6 }}>
+                  <Skeleton width={60} height={16} />
+                  <Skeleton width={40} height={10} />
+                  <Skeleton width={50} height={18} borderRadius={6} />
+                </View>
+              </View>
+              <View style={[styles.tags, { gap: 6 }]}>
+                <Skeleton width={60} height={20} borderRadius={6} />
+                <Skeleton width={70} height={20} borderRadius={6} />
+                <Skeleton width={80} height={20} borderRadius={6} />
+              </View>
+              <View style={[styles.tutorActions, { gap: Spacing.sm }]}>
+                <Skeleton width="80%" height={36} borderRadius={10} style={{ flex: 1 }} />
+                <Skeleton width={40} height={36} borderRadius={10} />
+              </View>
+            </View>
+          ))}
+        </ScrollView>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={CommonStyles.screenBg} edges={['top']}>
@@ -69,22 +143,50 @@ export default function TutorsScreen() {
         />
       </View>
 
-      {/* Subject filters */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={[styles.filterScroll, { flexGrow: 0 }]} contentContainerStyle={{ paddingHorizontal: Spacing.xl, gap: Spacing.sm, alignItems: 'center' }}>
-        {SUBJECTS.map(s => (
-          <TouchableOpacity
-            key={s}
-            style={[styles.chip, activeSubject === s && styles.chipActive]}
-            onPress={() => setActiveSubject(s)}
-            activeOpacity={0.8}
-          >
-            <Text style={[styles.chipText, activeSubject === s && styles.chipTextActive]}>{s}</Text>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
+      {/* Dropdown Filters */}
+      <View style={{ flexDirection: 'row', gap: Spacing.md, paddingHorizontal: Spacing.xl, marginTop: Spacing.sm }}>
+        <View style={{ flex: 1 }}>
+          <Dropdown
+            label="Subjects"
+            options={SUBJECT_OPTIONS}
+            selectedValue=""
+            onValueChange={(val) => {
+              if (val && !selectedSubjects.includes(val)) {
+                setSelectedSubjects([...selectedSubjects, val]);
+              }
+            }}
+            placeholder="Select Subjects"
+          />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Dropdown
+            label="Location"
+            options={locationOptions}
+            selectedValue={selectedLocation}
+            onValueChange={setSelectedLocation}
+            placeholder="Select Location"
+          />
+        </View>
+      </View>
+
+      {/* Selected Subject Chips */}
+      {selectedSubjects.length > 0 && (
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ maxHeight: 36, marginVertical: 4, flexGrow: 0 }} contentContainerStyle={{ paddingHorizontal: Spacing.xl, gap: Spacing.xs, alignItems: 'center' }}>
+          {selectedSubjects.map(sub => (
+            <TouchableOpacity
+              key={sub}
+              style={[styles.chip, styles.chipActive, { flexDirection: 'row', alignItems: 'center', gap: 4, paddingVertical: 4 }]}
+              onPress={() => setSelectedSubjects(selectedSubjects.filter(s => s !== sub))}
+            >
+              <Text style={styles.chipTextActive}>{sub}</Text>
+              <Text style={{ fontSize: 10, color: Colors.blue, fontWeight: 'bold' }}>✕</Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      )}
 
       {/* Mode filters */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={[styles.filterScroll2, { flexGrow: 0 }]} contentContainerStyle={{ paddingHorizontal: Spacing.xl, gap: Spacing.sm, alignItems: 'center' }}>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={[styles.filterScroll2, { flexGrow: 0, marginTop: 4 }]} contentContainerStyle={{ paddingHorizontal: Spacing.xl, gap: Spacing.sm, alignItems: 'center' }}>
         {MODES.map(m => (
           <TouchableOpacity
             key={m}
@@ -97,17 +199,13 @@ export default function TutorsScreen() {
         ))}
       </ScrollView>
 
-      {loading ? (
-        <View style={{ flex: 1, paddingTop: Spacing.lg }}>
-          <ListSkeleton count={4} />
-        </View>
-      ) : filtered.length === 0 ? (
+      {filtered.length === 0 ? (
         <EmptyState 
           icon="👨‍🏫" 
           title="No tutors found" 
           subtitle="Try adjusting your search or filters"
           actionLabel="Clear Filters"
-          onAction={() => { setSearch(''); setActiveSubject('All'); setActiveMode('All'); }}
+          onAction={() => { setSearch(''); setSelectedSubjects([]); setSelectedLocation('All'); setActiveMode('All'); }}
           style={{ padding: Spacing.xl }} 
         />
       ) : (
@@ -169,7 +267,19 @@ function TutorCard({ tutor }: { tutor: Tutor }) {
         >
           <Text style={styles.btnBookText}>Book Session</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.btnMsg} activeOpacity={0.85}>
+        <TouchableOpacity
+          style={styles.btnMsg}
+          onPress={() => {
+            router.push({
+              pathname: '/chat/[id]',
+              params: {
+                id: tutor.user_id,
+                fullName: tutor.user?.full_name,
+              }
+            });
+          }}
+          activeOpacity={0.85}
+        >
           <Text style={{ fontSize: 16 }}>💬</Text>
         </TouchableOpacity>
       </View>
