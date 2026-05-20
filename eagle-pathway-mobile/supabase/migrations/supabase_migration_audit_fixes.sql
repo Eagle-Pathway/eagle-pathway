@@ -64,13 +64,14 @@ CREATE TRIGGER tr_protect_tutor_verification
   EXECUTE FUNCTION public.protect_tutor_verification();
 
 
--- B. Prevent non-admins from setting application status to 'accepted' or 'rejected'
+-- B. Prevent non-admins from changing application status to or from final admin decisions
 CREATE OR REPLACE FUNCTION public.protect_application_status()
 RETURNS TRIGGER AS $$
 BEGIN
   IF (OLD.status IS DISTINCT FROM NEW.status) AND NOT public.is_admin() THEN
-    IF NEW.status IN ('accepted', 'rejected') THEN
-      RAISE EXCEPTION 'Unauthorized: Only administrators can accept or reject scholarship applications.';
+    IF NEW.status IN ('accepted', 'rejected')
+       OR OLD.status IN ('accepted', 'rejected') THEN
+      RAISE EXCEPTION 'Unauthorized: Only administrators can modify final scholarship application decisions.';
     END IF;
   END IF;
   RETURN NEW;
