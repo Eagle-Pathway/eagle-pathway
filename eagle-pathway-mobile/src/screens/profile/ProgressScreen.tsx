@@ -10,6 +10,7 @@ import { useAuthStore } from '@/store/authStore';
 import { useScholarshipStore } from '@/store/scholarshipStore';
 import { useBookingStore } from '@/store/bookingStore';
 import { useDocumentStore } from '@/store/documentStore';
+import { getFlagEmoji } from '@eagle-pathway/shared';
 
 export function ProgressScreen() {
   const { user } = useAuthStore();
@@ -85,7 +86,27 @@ export function ProgressScreen() {
             <View key={app.id} style={progStyles.journeyCard}>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                 <View style={{ flexDirection: 'row', gap: Spacing.sm, alignItems: 'center', flex: 1 }}>
-                  <Text style={{ fontSize: 20 }}>{app.scholarship?.country_flag || '🌍'}</Text>
+                  <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: Colors.bg, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: Colors.border, padding: 4 }}>
+                    {(() => {
+                      const flag = getFlagEmoji(app.scholarship?.country_flag);
+                      const isWord = /[a-zA-Z]/.test(flag);
+                      return (
+                        <Text 
+                          numberOfLines={1} 
+                          adjustsFontSizeToFit 
+                          minimumFontScale={0.5} 
+                          style={{ 
+                            fontSize: isWord ? 9 : 22, 
+                            fontWeight: isWord ? 'bold' : 'normal', 
+                            textAlign: 'center', 
+                            color: Colors.text 
+                          }}
+                        >
+                          {flag}
+                        </Text>
+                      );
+                    })()}
+                  </View>
                   <View style={{ flex: 1 }}><Text style={progStyles.journeyTitle} numberOfLines={1}>{app.scholarship?.name}</Text><Text style={progStyles.journeySub}>{app.status.replace(/_/g, ' ')}</Text></View>
                 </View>
                 <View style={[progStyles.tagPill, { backgroundColor: app.status === 'accepted' ? Colors.greenLight : Colors.goldLight }]}>

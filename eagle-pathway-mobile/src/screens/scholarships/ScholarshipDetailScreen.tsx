@@ -12,6 +12,7 @@ import { DetailSkeleton } from '@/components/LoadingSkeleton';
 import { scholarshipsService } from '@/services/scholarships';
 import { useScholarshipStore } from '@/store/scholarshipStore';
 import type { Scholarship } from '@/types';
+import { getFlagEmoji } from '@eagle-pathway/shared';
 
 // Helper to render text with clickable links
 const renderLinkedText = (text: string) => {
@@ -85,7 +86,27 @@ export function ScholarshipDetailScreen() {
             </TouchableOpacity>
           </View>
         </View>
-        <Text style={sdStyles.flag}>{scholarship.country_flag}</Text>
+        <View style={{ width: 60, height: 60, borderRadius: 30, backgroundColor: 'rgba(255,255,255,0.12)', alignItems: 'center', justifyContent: 'center', marginBottom: Spacing.sm, padding: 6 }}>
+          {(() => {
+            const flag = getFlagEmoji(scholarship.country_flag);
+            const isWord = /[a-zA-Z]/.test(flag);
+            return (
+              <Text 
+                numberOfLines={1} 
+                adjustsFontSizeToFit 
+                minimumFontScale={0.5} 
+                style={{ 
+                  fontSize: isWord ? 11 : 32, 
+                  fontWeight: isWord ? 'bold' : 'normal', 
+                  textAlign: 'center', 
+                  color: Colors.white 
+                }}
+              >
+                {flag}
+              </Text>
+            );
+          })()}
+        </View>
         <Text style={sdStyles.name}>{scholarship.name}</Text>
         <Text style={sdStyles.org}>{scholarship.organization}</Text>
         <View style={sdStyles.pills}>

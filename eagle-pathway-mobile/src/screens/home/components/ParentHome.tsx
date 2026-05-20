@@ -5,6 +5,7 @@ import { router } from 'expo-router';
 import { Colors, Typography, Spacing, CommonStyles } from '@/utils/theme';
 import { Avatar, SectionTitle, EmptyState, Skeleton } from '@/components/common';
 import { User, Application } from '@/types';
+import { getFlagEmoji } from '@eagle-pathway/shared';
 
 interface ParentHomeProps {
   user: User;
@@ -150,7 +151,27 @@ export const ParentHome: React.FC<ParentHomeProps> = ({
             <SectionTitle title="Recent Activity" />
             {(Object.values(linkedStudentApplications).flat() as Application[]).slice(0, 3).map(app => (
               <View key={app.id} style={styles.sessionCard}>
-                <Text style={{ fontSize: 28 }}>{app.scholarship?.country_flag || '🌍'}</Text>
+                <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: Colors.bg, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: Colors.border, padding: 4 }}>
+                  {(() => {
+                    const flag = getFlagEmoji(app.scholarship?.country_flag);
+                    const isWord = /[a-zA-Z]/.test(flag);
+                    return (
+                      <Text 
+                        numberOfLines={1} 
+                        adjustsFontSizeToFit 
+                        minimumFontScale={0.5} 
+                        style={{ 
+                          fontSize: isWord ? 9 : 22, 
+                          fontWeight: isWord ? 'bold' : 'normal', 
+                          textAlign: 'center', 
+                          color: Colors.text 
+                        }}
+                      >
+                        {flag}
+                      </Text>
+                    );
+                  })()}
+                </View>
                 <View style={{ flex: 1, marginLeft: Spacing.md }}>
                   <Text style={styles.sessionName}>{app.scholarship?.name}</Text>
                   <Text style={styles.sessionSub}>{app.status.replace(/_/g, ' ').toUpperCase()}</Text>
