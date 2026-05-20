@@ -180,6 +180,6 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
--- Grant permissions to authenticated users
-GRANT EXECUTE ON FUNCTION public.get_dashboard_summary() TO authenticated;
+-- Restrict execution to trusted server-side callers only
+REVOKE EXECUTE ON FUNCTION public.get_dashboard_summary() FROM authenticated;
 GRANT EXECUTE ON FUNCTION public.get_dashboard_summary() TO service_role;
