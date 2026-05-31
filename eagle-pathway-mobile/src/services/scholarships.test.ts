@@ -40,7 +40,7 @@ vi.mock('../types', () => ({
   User: {},
 }));
 
-import { scholarshipsService } from '../scholarships';
+import { scholarshipsService } from './scholarships';
 
 describe('scholarshipsService', () => {
   describe('getScholarships', () => {
