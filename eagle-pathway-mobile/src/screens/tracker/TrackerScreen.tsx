@@ -52,7 +52,7 @@ const AuthenticationTracker = ({ isPremium }: { isPremium: boolean }) => (
   </View>
 );
 
-export function TrackerScreen() {
+export function TrackerScreen({ hideHeader = false }: { hideHeader?: boolean }) {
   const { user } = useAuthStore();
   const { applicationId } = useLocalSearchParams<{ applicationId: string }>();
   const { applications, loadApplications } = useScholarshipStore();
@@ -180,11 +180,13 @@ export function TrackerScreen() {
   return (
     <SafeAreaView style={CommonStyles.screenBg} edges={[]}>
       <View style={trackerStyles.hero}>
-        <View style={trackerStyles.heroHeader}>
-          <ScaleBounce style={trackerStyles.backBtnCircle} onPress={() => router.back()}>
-            <Text style={{ fontSize: 20, color: Colors.white }}>←</Text>
-          </ScaleBounce>
-        </View>
+        {!hideHeader && (
+          <View style={trackerStyles.heroHeader}>
+            <ScaleBounce style={trackerStyles.backBtnCircle} onPress={() => router.back()}>
+              <Text style={{ fontSize: 20, color: Colors.white }}>←</Text>
+            </ScaleBounce>
+          </View>
+        )}
         <View style={trackerStyles.heroTop}>
           <View>
             <Text style={trackerStyles.heroLabel}>Application Tracker</Text>
