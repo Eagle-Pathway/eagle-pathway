@@ -23,8 +23,13 @@ jobs:
           node-version: 20
           cache: npm
 
+      # Use `npm install`, not `npm ci`: the lockfile is generated on Windows
+      # and only records the host platform's rollup native binary, so `npm ci`
+      # on Linux cannot resolve @rollup/rollup-linux-x64-gnu and vitest crashes
+      # (npm optional-dependency bug, npm/cli#4828). `npm install` resolves the
+      # correct binary for the runner's own platform.
       - name: Install dependencies
-        run: npm ci
+        run: npm install --no-audit --no-fund
 
       # --- Typecheck (strict — these gate the merge) ---
       - name: Typecheck (mobile)
