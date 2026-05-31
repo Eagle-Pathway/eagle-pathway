@@ -23,13 +23,17 @@ jobs:
           node-version: 20
           cache: npm
 
-      # Use `npm install`, not `npm ci`: the lockfile is generated on Windows
-      # and only records the host platform's rollup native binary, so `npm ci`
-      # on Linux cannot resolve @rollup/rollup-linux-x64-gnu and vitest crashes
-      # (npm optional-dependency bug, npm/cli#4828). `npm install` resolves the
-      # correct binary for the runner's own platform.
+      # The committed lockfile is generated on Windows and only records the
+      # host platform's rollup native binary, so installing against it on the
+      # Linux runner leaves @rollup/rollup-linux-x64-gnu missing and vitest
+      # crashes (npm optional-dependency bug, npm/cli#4828). Removing the
+      # lockfile forces npm to resolve fresh for the runner's own platform —
+      # the fix the rollup error itself recommends. The runner has no cached
+      # node_modules, so there is nothing else to clear.
       - name: Install dependencies
-        run: npm install --no-audit --no-fund
+        run: |
+          rm -f package-lock.json
+          npm install --no-audit --no-fund
 
       # --- Typecheck (strict — these gate the merge) ---
       - name: Typecheck (mobile)
