@@ -1,7 +1,13 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { enforceRateLimit, rateLimitHeaders } from '../../../lib/rateLimit';
 
 type SopAction = 'review' | 'draft';
+
+// SOP review/draft produce long completions and are the most expensive calls,
+// so they get a tighter cap than the chat assistant. Override via env.
+const SOP_RATE_LIMIT = Number(process.env.AI_SOP_RATE_LIMIT ?? 10);
+const RATE_WINDOW_SECONDS = Number(process.env.AI_RATE_WINDOW_SECONDS ?? 60);
 
 interface SopRequestBody {
   action: SopAction;
@@ -93,7 +99,16 @@ function parseJson<T>(content: string | undefined): T {
 
 export async function POST(req: Request) {
   try {
-    await requireAuthenticatedUser(req);
+    const user = await requireAuthenticatedUser(req);
+
+    const rate = await enforceRateLimit(`sop:${user.id}`, SOP_RATE_LIMIT, RATE_WINDOW_SECONDS);
+    if (!rate.allowed) {
+      return json(
+        { error: 'Too many AI requests. Please wait a moment and try again.' },
+        { status: 429, headers: rateLimitHeaders(rate) },
+      );
+    }
+
     const body = (await req.json()) as SopRequestBody;
 
     if (body.action === 'review') {
