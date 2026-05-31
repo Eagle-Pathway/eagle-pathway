@@ -19,4 +19,4 @@ Object.defineProperty(window, 'matchMedia', {
   })),
 });
 
-global.setImmediate = global.setImmediate || ((...args: unknown[]) => setTimeout(...args)) as typeof setImmediate;
+global.setImmediate = global.setImmediate || ((...args: Parameters<typeof setTimeout>) => setTimeout(...args)) as unknown as typeof setImmediate;

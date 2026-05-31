@@ -1,0 +1,63 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# Cancel superseded runs on the same ref to save minutes.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: Typecheck & Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # --- Typecheck (strict — these gate the merge) ---
+      - name: Typecheck (mobile)
+        working-directory: eagle-pathway-mobile
+        run: npx tsc --noEmit -p tsconfig.json
+
+      - name: Typecheck (admin)
+        working-directory: eagle-pathway-admin
+        run: npx tsc --noEmit
+
+      # --- Tests (strict) ---
+      - name: Test (shared)
+        working-directory: packages/eagle-shared
+        run: npx vitest run
+
+      - name: Test (mobile)
+        working-directory: eagle-pathway-mobile
+        run: npx vitest run
+
+      - name: Test (admin)
+        working-directory: eagle-pathway-admin
+        run: npx vitest run
+
+      # --- Lint (non-blocking for now) ---
+      # The mobile workspace still uses a legacy .eslintrc.json with the
+      # deprecated --ext flag under ESLint 9. Lint runs for visibility but
+      # does not gate merges until the config is migrated to flat config.
+      - name: Lint (admin)
+        working-directory: eagle-pathway-admin
+        continue-on-error: true
+        run: npx eslint .
+
+      - name: Lint (mobile)
+        working-directory: eagle-pathway-mobile
+        continue-on-error: true
+        run: npx eslint src --ext .ts,.tsx

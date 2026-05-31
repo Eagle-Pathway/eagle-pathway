@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { User, UserRole } from '../types';
 import { authService } from '../services/auth';
 import { notificationsService } from '../services/notifications';
+import { supabase } from '../services/supabase';
 
 const BYPASS_PHONE_VERIFY =
   __DEV__ && process.env.EXPO_PUBLIC_BYPASS_PHONE_VERIFY === 'true';
@@ -101,7 +102,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
             phone: '+10000000000',
             role: 'STUDENT' as UserRole,
             email: 'dev@test.com',
-          } as User,
+          } as unknown as User,
           isAuthenticated: true,
         });
       }
@@ -174,7 +175,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     
     try {
       // 1. Update active_role in users table
-      const { data, error } = await authService.supabase
+      const { data, error } = await supabase
         .from('users')
         .update({ 
           active_role: role,
@@ -188,7 +189,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
       // 2. Add role to user_roles table (source of truth for triggers)
       // This ensures lazy profile creation (e.g. creating tutors row) via DB trigger
-      await authService.supabase
+      await supabase
         .from('user_roles')
         .upsert({
           user_id: user.id,
