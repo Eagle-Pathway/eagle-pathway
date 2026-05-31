@@ -94,7 +94,39 @@ export const parentsService = {
       .from('parent_student_links')
       .delete()
       .eq('id', linkId);
-    
+
     if (error) throw error;
+  },
+
+  async getLinkedStudents(userId: string): Promise<User[]> {
+    const { data, error } = await supabase
+      .from('parent_student_links')
+      .select('student:users!inner(*)')
+      .eq('parent_id', userId)
+      .eq('is_verified', true);
+
+    if (error) throw error;
+    return (data || []).map(d => d.student as unknown as User);
+  },
+
+  async getLinkedStudentApplications(userId: string): Promise<Record<string, Application[]>> {
+    const students = await parentsService.getLinkedStudents(userId);
+    if (students.length === 0) return {};
+
+    const studentIds = students.map(s => s.id);
+    const { data, error } = await supabase
+      .from('applications')
+      .select('*, scholarship:scholarships(*), consultant:users!consultant_id(full_name)')
+      .in('student_id', studentIds)
+      .not('status', 'in', '(accepted,rejected)');
+
+    if (error) throw error;
+
+    const appsByStudent: Record<string, Application[]> = {};
+    (data || []).forEach((app: any) => {
+      if (!appsByStudent[app.student_id]) appsByStudent[app.student_id] = [];
+      appsByStudent[app.student_id].push(app);
+    });
+    return appsByStudent;
   }
 };

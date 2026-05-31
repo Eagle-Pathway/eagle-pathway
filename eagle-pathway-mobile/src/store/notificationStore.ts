@@ -42,7 +42,7 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
   },
 
   markNotificationRead: async (notificationId) => {
-    await notificationsService.markAsRead(notificationId);
+    await notificationsService.markRead(notificationId);
     set(state => ({
       notifications: state.notifications.map(n =>
         n.id === notificationId ? { ...n, is_read: true } : n

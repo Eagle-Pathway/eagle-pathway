@@ -6,6 +6,7 @@ import { notificationsService } from '../services/notifications';
 import { tasksService } from '../services/tasks';
 import { financeService, PayoutRequest } from '../services/finance';
 import { parentsService } from '../services/parents';
+import { useAuthStore } from './authStore';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   Scholarship,
@@ -393,7 +394,7 @@ export const useAppStore = create<AppState>((set, get) => ({
         .eq('parent_id', userId)
         .eq('is_verified', true);
       if (error) throw error;
-      const students = (data || []).map(d => d.student as User);
+      const students = (data || []).map(d => d.student as unknown as User);
       set({ linkedStudents: students });
     } catch (e) {
       console.error('Error loading linked students:', e);

@@ -119,7 +119,7 @@ export const useChatStore = create<ChatState>((set, get) => ({
           table: 'messages',
           filter: `recipient_id=eq.${userId}`,
         },
-        (payload) => {
+        (payload: any) => {
           const newMsg = payload.new as Message;
           get().addMessage(newMsg);
           get().loadConversations(userId);
