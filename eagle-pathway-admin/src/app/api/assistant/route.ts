@@ -1,5 +1,10 @@
 import { NextResponse } from 'next/server';
 import { requireAuthenticatedUser } from '../sop-review/route';
+import { enforceRateLimit, rateLimitHeaders } from '../../../lib/rateLimit';
+
+// Chat is more interactive than SOP generation, so it gets a higher cap.
+const ASSISTANT_RATE_LIMIT = Number(process.env.AI_ASSISTANT_RATE_LIMIT ?? 30);
+const RATE_WINDOW_SECONDS = Number(process.env.AI_RATE_WINDOW_SECONDS ?? 60);
 
 const SYSTEM_PROMPT = `You are the Eagle Pathway AI Assistant, a specialized expert on the Eagle Pathway platform.
 Your ONLY purpose is to help users with:
@@ -15,7 +20,23 @@ STRICT GUARDRAILS:
 
 export async function POST(req: Request) {
   try {
-    await requireAuthenticatedUser(req);
+    const user = await requireAuthenticatedUser(req);
+
+    const rate = await enforceRateLimit(`assistant:${user.id}`, ASSISTANT_RATE_LIMIT, RATE_WINDOW_SECONDS);
+    if (!rate.allowed) {
+      return new Response(
+        JSON.stringify({ error: 'Too many requests. Please slow down and try again shortly.' }),
+        {
+          status: 429,
+          headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*',
+            ...rateLimitHeaders(rate),
+          },
+        },
+      );
+    }
+
     const { messages } = await req.json();
 
     // Debug: Check if key exists (don't log the full key for security)
