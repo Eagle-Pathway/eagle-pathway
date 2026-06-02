@@ -1,5 +1,6 @@
 import React, { Component, ReactNode } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { logger } from '@eagle-pathway/shared';
 import { Colors, Typography, Spacing, Radius } from '../utils/theme';
 
 interface Props {
@@ -24,7 +25,9 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error('ErrorBoundary caught an error:', error, errorInfo);
+    logger.error('Unhandled render error caught by ErrorBoundary', error, {
+      componentStack: errorInfo.componentStack,
+    });
   }
 
   handleRetry = () => {
