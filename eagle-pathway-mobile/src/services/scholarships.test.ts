@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, afterEach, vi } from 'vitest';
 
 // vi.mock is hoisted above top-level declarations, so the mock object
 // must be created inside vi.hoisted() to exist when the factory runs.
@@ -116,6 +116,178 @@ describe('scholarshipsService', () => {
       });
 
       expect(result).toEqual(mockApplication);
+    });
+
+    it('throws when the insert fails (and never attaches orphan documents)', async () => {
+      const documentsUpdate = vi.fn();
+      (mockSupabase.from as ReturnType<typeof vi.fn>).mockImplementation((table: string) => {
+        if (table === 'applications') {
+          return {
+            insert: vi.fn().mockReturnValue({
+              select: vi.fn().mockReturnValue({
+                single: vi.fn().mockResolvedValue({ data: null, error: { message: 'insert failed' } }),
+              }),
+            }),
+          };
+        }
+        return { update: documentsUpdate };
+      });
+
+      await expect(
+        scholarshipsService.createApplication({
+          studentId: 'student-1',
+          scholarshipId: 'schol-1',
+          packageTier: 'basic',
+        }),
+      ).rejects.toMatchObject({ message: 'insert failed' });
+      // The orphan-document attach step must not run if the application failed.
+      expect(documentsUpdate).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('uploadDocument', () => {
+    afterEach(() => vi.unstubAllGlobals());
+
+    function stubFileFetch(size = 2048) {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue({ blob: () => Promise.resolve({ size }) }),
+      );
+    }
+
+    it('uploads the file, signs the URL, and persists a pending record', async () => {
+      stubFileFetch(4096);
+      const upload = vi.fn().mockResolvedValue({ error: null });
+      const createSignedUrl = vi
+        .fn()
+        .mockResolvedValue({ data: { signedUrl: 'https://signed/doc.pdf' }, error: null });
+      (mockSupabase.storage.from as ReturnType<typeof vi.fn>).mockReturnValue({ upload, createSignedUrl });
+
+      const insert = vi.fn().mockReturnValue({
+        select: vi.fn().mockReturnValue({
+          single: vi.fn().mockResolvedValue({ data: { id: 'doc-1' }, error: null }),
+        }),
+      });
+      (mockSupabase.from as ReturnType<typeof vi.fn>).mockReturnValue({ insert });
+
+      const result = await scholarshipsService.uploadDocument({
+        userId: 'user-1',
+        documentType: 'transcript' as never,
+        fileUri: 'file:///tmp/t.pdf',
+        fileName: 'transcript.pdf',
+      });
+
+      expect(result).toEqual({ id: 'doc-1' });
+      // PDF content type, no overwrite, path namespaced under the owner's id.
+      expect(upload).toHaveBeenCalledWith(
+        expect.stringContaining('user-1/transcript/'),
+        expect.anything(),
+        { contentType: 'application/pdf', upsert: false },
+      );
+      expect(createSignedUrl).toHaveBeenCalledWith(expect.stringContaining('user-1/transcript/'), 3600);
+      expect(insert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          user_id: 'user-1',
+          status: 'pending',
+          file_url: 'https://signed/doc.pdf',
+          file_size: 4096,
+        }),
+      );
+    });
+
+    it('throws and does not persist a record when the storage upload fails', async () => {
+      stubFileFetch();
+      const upload = vi.fn().mockResolvedValue({ error: { message: 'storage full' } });
+      const createSignedUrl = vi.fn();
+      (mockSupabase.storage.from as ReturnType<typeof vi.fn>).mockReturnValue({ upload, createSignedUrl });
+      const insert = vi.fn();
+      (mockSupabase.from as ReturnType<typeof vi.fn>).mockReturnValue({ insert });
+
+      await expect(
+        scholarshipsService.uploadDocument({
+          userId: 'user-1',
+          documentType: 'transcript' as never,
+          fileUri: 'file:///tmp/t.pdf',
+          fileName: 'transcript.pdf',
+        }),
+      ).rejects.toMatchObject({ message: 'storage full' });
+      expect(createSignedUrl).not.toHaveBeenCalled();
+      expect(insert).not.toHaveBeenCalled();
+    });
+
+    it('throws when the signed URL cannot be created', async () => {
+      stubFileFetch();
+      const upload = vi.fn().mockResolvedValue({ error: null });
+      const createSignedUrl = vi
+        .fn()
+        .mockResolvedValue({ data: null, error: { message: 'sign failed' } });
+      (mockSupabase.storage.from as ReturnType<typeof vi.fn>).mockReturnValue({ upload, createSignedUrl });
+
+      await expect(
+        scholarshipsService.uploadDocument({
+          userId: 'user-1',
+          documentType: 'cv' as never,
+          fileUri: 'file:///tmp/cv.jpg',
+          fileName: 'cv.jpg',
+        }),
+      ).rejects.toMatchObject({ message: 'sign failed' });
+    });
+  });
+
+  describe('getUserDocuments (signed URLs)', () => {
+    function mockDocsQuery(docs: unknown[]) {
+      (mockSupabase.from as ReturnType<typeof vi.fn>).mockReturnValue({
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            order: vi.fn().mockResolvedValue({ data: docs, error: null }),
+          }),
+        }),
+      });
+    }
+
+    it('replaces a stored file_path with a fresh signed URL', async () => {
+      mockDocsQuery([{ id: 'd1', file_path: 'user-1/transcript/x.pdf', file_url: 'stale' }]);
+      const createSignedUrl = vi
+        .fn()
+        .mockResolvedValue({ data: { signedUrl: 'https://signed/d1' }, error: null });
+      (mockSupabase.storage.from as ReturnType<typeof vi.fn>).mockReturnValue({ createSignedUrl });
+
+      const [doc] = await scholarshipsService.getUserDocuments('user-1');
+      expect(createSignedUrl).toHaveBeenCalledWith('user-1/transcript/x.pdf', 3600);
+      expect(doc.file_url).toBe('https://signed/d1');
+    });
+
+    it('leaves an already-public http URL untouched and does not sign it', async () => {
+      mockDocsQuery([{ id: 'd2', file_url: 'https://cdn.example.com/external.pdf' }]);
+      const createSignedUrl = vi.fn();
+      (mockSupabase.storage.from as ReturnType<typeof vi.fn>).mockReturnValue({ createSignedUrl });
+
+      const [doc] = await scholarshipsService.getUserDocuments('user-1');
+      expect(createSignedUrl).not.toHaveBeenCalled();
+      expect(doc.file_url).toBe('https://cdn.example.com/external.pdf');
+    });
+
+    it('falls back to the original document when signing fails', async () => {
+      mockDocsQuery([{ id: 'd3', file_path: 'user-1/transcript/y.pdf', file_url: 'stale' }]);
+      const createSignedUrl = vi.fn().mockResolvedValue({ data: null, error: { message: 'nope' } });
+      (mockSupabase.storage.from as ReturnType<typeof vi.fn>).mockReturnValue({ createSignedUrl });
+
+      const [doc] = await scholarshipsService.getUserDocuments('user-1');
+      expect(doc.file_url).toBe('stale');
+    });
+  });
+
+  describe('updateApplicationStatus', () => {
+    it('throws when the update errors', async () => {
+      (mockSupabase.from as ReturnType<typeof vi.fn>).mockReturnValue({
+        update: vi.fn().mockReturnValue({
+          eq: vi.fn().mockResolvedValue({ error: { message: 'denied' } }),
+        }),
+      });
+
+      await expect(
+        scholarshipsService.updateApplicationStatus('app-1', 'submitted' as never),
+      ).rejects.toMatchObject({ message: 'denied' });
     });
   });
 });
