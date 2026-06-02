@@ -68,7 +68,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
             profile = await authService.createProfile(
               data.session.user.id,
               metadata.full_name || 'User',
-              metadata.phone || '',
+              // Fall back to the auth user's phone (set for phone-auth signups)
+              // before an empty string — '' collides on users.phone UNIQUE.
+              metadata.phone || data.session.user.phone || '',
               metadata.role || 'student',
               data.session.user.email || ''
             );
@@ -123,7 +125,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           const profile = await authService.createProfile(
             session.user.id,
             metadata.full_name || 'User',
-            metadata.phone || '',
+            // Fall back to the auth user's phone (set for phone-auth signups)
+            // before an empty string — '' collides on users.phone UNIQUE.
+            metadata.phone || session.user.phone || '',
             metadata.role || 'student',
             session.user.email || ''
           );
