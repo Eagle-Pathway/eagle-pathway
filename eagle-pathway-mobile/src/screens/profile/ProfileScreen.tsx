@@ -9,11 +9,17 @@ import { Colors, Typography, Spacing, Radius, CommonStyles } from '@/utils/theme
 import { Avatar } from '@/components/common';
 import { scholarshipsService } from '@/services/scholarships';
 import { useAuthStore } from '@/store/authStore';
-import { useAppStore } from '@/store/appStore';
+import { useScholarshipStore } from '@/store/scholarshipStore';
+import { useDocumentStore } from '@/store/documentStore';
+import { useNotificationStore } from '@/store/notificationStore';
+import { useParentStore } from '@/store/parentStore';
 
 export function ProfileScreen() {
   const { user, signOut, uploadAvatar, switchPersona } = useAuthStore();
-  const { applications, documents, unreadCount, inviteParent, linkStudent, loadPendingLinks, verifyLink, removeLink } = useAppStore();
+  const { applications } = useScholarshipStore();
+  const { documents } = useDocumentStore();
+  const { unreadCount } = useNotificationStore();
+  const { inviteParent, linkStudent, loadPendingLinks, verifyLink, removeLink } = useParentStore();
   const [uploading, setUploading] = useState(false);
   const [pendingLinks, setPendingLinks] = useState<any[]>([]);
   const [linkingPhone, setLinkingPhone] = useState('');
