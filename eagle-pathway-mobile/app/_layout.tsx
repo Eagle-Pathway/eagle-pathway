@@ -10,8 +10,12 @@ import { useRealtimeStore } from '../src/store/realtimeStore';
 import { useScholarshipStore } from '../src/store/scholarshipStore';
 import { notificationsService } from '../src/services/notifications';
 import { ErrorBoundary } from '../src/components/ErrorBoundary';
+import { initErrorLogging } from '../src/services/errorLog';
 
 SplashScreen.preventAutoHideAsync();
+
+// Configure structured logging + the Supabase error sink before anything renders.
+initErrorLogging();
 
 export default function RootLayout() {
   const { setSession, loadProfile, setUser } = useAuthStore();
