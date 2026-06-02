@@ -1,5 +1,6 @@
 export * from './types';
 export * from './utils/theme';
+export * from './utils/logger';
 export * from './constants/metadata';
 
 export const formatDate = (dateString: string): string => {
