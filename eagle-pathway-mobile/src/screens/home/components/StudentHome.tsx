@@ -22,6 +22,8 @@ interface StudentHomeProps {
   tasks: StudentTask[];
   recommendedScholarships: Scholarship[];
   toggleTask: (taskId: string, currentStatus: string) => Promise<void>;
+  openScholarshipsCount?: number;
+  availableTutorsCount?: number;
   loading?: boolean;
 }
 
@@ -38,6 +40,8 @@ export const StudentHome: React.FC<StudentHomeProps> = ({
   tasks,
   recommendedScholarships,
   toggleTask,
+  openScholarshipsCount,
+  availableTutorsCount,
   loading,
 }) => {
   if (loading) {
@@ -187,8 +191,8 @@ export const StudentHome: React.FC<StudentHomeProps> = ({
 
           <View style={styles.quickCards}>
             {[
-              { label: 'Find Tutor', sub: '48 available', emoji: '👨‍🏫', route: '/(tabs)/tutors' },
-              { label: 'Scholarships', sub: '23 open now', emoji: '🎓', route: '/(tabs)/scholarships' },
+              { label: 'Find Tutor', sub: `${availableTutorsCount ?? 0} available`, emoji: '👨‍🏫', route: '/(tabs)/tutors' },
+              { label: 'Scholarships', sub: `${openScholarshipsCount ?? 0} open now`, emoji: '🎓', route: '/(tabs)/scholarships' },
               { label: 'My Tracker', sub: `${activeApplications.length} active`, emoji: '📊', route: '/tracker' },
             ].map(card => (
               <TouchableOpacity
@@ -299,9 +303,9 @@ export const StudentHome: React.FC<StudentHomeProps> = ({
                         );
                       })()}
                     </View>
-                    {(s as any).match_score && (
+                    {(s as any).matchScore != null && (
                       <View style={styles.matchScoreBadge}>
-                        <Text style={styles.matchScoreText}>{(s as any).match_score}%</Text>
+                        <Text style={styles.matchScoreText}>{(s as any).matchScore}%</Text>
                       </View>
                     )}
                   </View>

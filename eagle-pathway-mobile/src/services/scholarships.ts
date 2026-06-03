@@ -72,6 +72,17 @@ export const scholarshipsService = {
     return data as Scholarship[];
   },
 
+  async getOpenScholarshipsCount(): Promise<number> {
+    const today = new Date().toISOString().slice(0, 10);
+    const { count, error } = await supabase
+      .from('scholarships')
+      .select('*', { count: 'exact', head: true })
+      .eq('is_active', true)
+      .gte('deadline', today);
+    if (error) throw error;
+    return count ?? 0;
+  },
+
   async getScholarshipById(id: string): Promise<Scholarship> {
     const { data, error } = await supabase
       .from('scholarships')
