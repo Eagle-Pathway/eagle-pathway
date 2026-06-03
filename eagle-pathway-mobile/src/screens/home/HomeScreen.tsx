@@ -3,6 +3,8 @@ import { View, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors, CommonStyles } from '@/utils/theme';
 import { useAuthStore } from '@/store/authStore';
+import { scholarshipsService } from '@/services/scholarships';
+import { tutorsService } from '@/services/tutors';
 
 // Specialized Domain Stores
 import { useScholarshipStore } from '@/store/scholarshipStore';
@@ -52,6 +54,7 @@ export default function HomeScreen() {
 
   const [refreshing, setRefreshing] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [homeCounts, setHomeCounts] = useState({ openScholarships: 0, availableTutors: 0 });
 
   const activeRole = (user?.active_role || user?.roles?.[0] || 'student').toLowerCase();
   const isTutor = activeRole === 'tutor';
@@ -72,8 +75,22 @@ export default function HomeScreen() {
       dataTasks.push(loadApplications(user.id));
       dataTasks.push(loadTasks(user.id));
       dataTasks.push(loadRecommendations(user.id));
+      // Live counts for the home quick-cards (cheap count-only queries).
+      dataTasks.push(
+        (async () => {
+          try {
+            const [openScholarships, availableTutors] = await Promise.all([
+              scholarshipsService.getOpenScholarshipsCount(),
+              tutorsService.getVerifiedTutorsCount(),
+            ]);
+            setHomeCounts({ openScholarships, availableTutors });
+          } catch {
+            // Non-critical; leave whatever counts we have.
+          }
+        })(),
+      );
     }
-    
+
     await Promise.all(dataTasks);
   };
 
@@ -159,6 +176,8 @@ export default function HomeScreen() {
       tasks={tasks}
       recommendedScholarships={recommendedScholarships}
       toggleTask={toggleTask}
+      openScholarshipsCount={homeCounts.openScholarships}
+      availableTutorsCount={homeCounts.availableTutors}
       loading={loading}
     />
   );

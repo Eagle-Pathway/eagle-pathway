@@ -27,6 +27,15 @@ export const tutorsService = {
     return data as Tutor[];
   },
 
+  async getVerifiedTutorsCount(): Promise<number> {
+    const { count, error } = await supabase
+      .from('tutors')
+      .select('*', { count: 'exact', head: true })
+      .eq('is_verified', true);
+    if (error) throw error;
+    return count ?? 0;
+  },
+
   async getTutorById(tutorId: string): Promise<Tutor> {
     const { data, error } = await supabase
       .from('tutors')
