@@ -7,7 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { format } from 'date-fns';
 import { Colors, Typography, Spacing, Radius, CommonStyles } from '@/utils/theme';
-import { EmptyState } from '@/components/common';
+import { EmptyState, ErrorState } from '@/components/common';
 import { openWhatsApp } from '@/utils/linking';
 import { useAuthStore } from '@/store/authStore';
 import { recommendationsService, type RecommendationRequest, type RecommendationStatus } from '@/services/recommendations';
@@ -25,10 +25,12 @@ export function RecommendationsScreen() {
   const [saving, setSaving] = useState(false);
   const [modal, setModal] = useState(false);
   const [form, setForm] = useState({ refereeName: '', relationship: '', refereeEmail: '', refereePhone: '' });
+  const [error, setError] = useState(false);
 
   const load = () => {
     if (!user) return;
-    recommendationsService.list(user.id).then(setItems).catch(() => {}).finally(() => setLoading(false));
+    setError(false);
+    recommendationsService.list(user.id).then(setItems).catch(() => setError(true)).finally(() => setLoading(false));
   };
   useEffect(load, [user?.id]);
 
@@ -111,6 +113,8 @@ export function RecommendationsScreen() {
 
       {loading ? (
         <ActivityIndicator color={Colors.blue} style={{ marginTop: 40 }} />
+      ) : error && items.length === 0 ? (
+        <ErrorState subtitle="We couldn't load your requests. Check your connection and retry." onRetry={load} />
       ) : items.length === 0 ? (
         <EmptyState
           icon="✉️"

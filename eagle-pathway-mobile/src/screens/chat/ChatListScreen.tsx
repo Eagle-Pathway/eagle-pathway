@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   View, Text, FlatList, TouchableOpacity,
   StyleSheet, ActivityIndicator, RefreshControl, ScrollView,
@@ -6,7 +6,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Colors, Typography, Spacing, Radius, CommonStyles } from '@/utils/theme';
-import { Avatar, EmptyState, Skeleton } from '@/components/common';
+import { Avatar, EmptyState, ErrorState, Skeleton } from '@/components/common';
 import { useAuthStore } from '../../store/authStore';
 import { useChatStore } from '@/store/ChatStore';
 
@@ -19,17 +19,23 @@ export default function ChatListScreen() {
     subscribeToMessages 
   } = useChatStore();
 
+  const [error, setError] = useState(false);
+
+  const load = useCallback(async () => {
+    if (!user) return;
+    setError(false);
+    try { await loadConversations(user.id); } catch { setError(true); }
+  }, [user?.id, loadConversations]);
+
   useEffect(() => {
     if (user) {
-      loadConversations(user.id);
+      load();
       const unsubscribe = subscribeToMessages(user.id);
       return unsubscribe;
     }
   }, [user?.id]);
 
-  const onRefresh = () => {
-    if (user) loadConversations(user.id);
-  };
+  const onRefresh = () => { load(); };
 
   const renderItem = ({ item }: { item: any }) => {
     const initials = item.full_name?.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase() || '?';
@@ -91,10 +97,12 @@ export default function ChatListScreen() {
             </View>
           ))}
         </ScrollView>
+      ) : error && conversations.length === 0 ? (
+        <ErrorState subtitle="We couldn't load your messages. Check your connection and retry." onRetry={load} />
       ) : conversations.length === 0 ? (
-        <EmptyState 
-          icon="💬" 
-          title="No messages yet" 
+        <EmptyState
+          icon="💬"
+          title="No messages yet"
           subtitle="Direct messages from your consultants and tutors will appear here."
           actionLabel="Browse Tutors"
           onAction={() => router.push('/(tabs)/tutors')}
