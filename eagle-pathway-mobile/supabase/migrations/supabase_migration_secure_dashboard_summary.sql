@@ -43,10 +43,7 @@ BEGIN
   -- 1. Core counters
   SELECT COUNT(*) INTO v_total_users FROM public.users;
   SELECT COUNT(*) INTO v_tutors_pending FROM public.tutors WHERE is_verified = FALSE;
-  SELECT COUNT(*) INTO v_active_scholarships FROM public.scholarships WHERE is_active = TRUE;
-  SELECT COUNT(*) INTO v_bookings FROM public.bookings;
-  SELECT COUNT(*) INTO v_applications_pending FROM public.applications WHERE status != 'accepted';
-
+  SELECT COUNT(*) INTO v_applications_pending FROM public.applications WHERE status NOT IN ('accepted', 'rejected');
   -- 2. Demographics (aggregates both active_role and role array memberships)
   SELECT COUNT(*) INTO v_students FROM public.users WHERE active_role = 'student' OR 'student' = ANY(roles);
   SELECT COUNT(*) INTO v_tutors FROM public.users WHERE active_role = 'tutor' OR 'tutor' = ANY(roles);
