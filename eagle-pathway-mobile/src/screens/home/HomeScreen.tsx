@@ -5,6 +5,8 @@ import { Colors, CommonStyles } from '@/utils/theme';
 import { useAuthStore } from '@/store/authStore';
 import { scholarshipsService } from '@/services/scholarships';
 import { tutorsService } from '@/services/tutors';
+import { syncDeadlineReminders } from '@/services/deadlineReminders';
+import { getApplicationDeadlines } from '@/utils/deadlines';
 
 // Specialized Domain Stores
 import { useScholarshipStore } from '@/store/scholarshipStore';
@@ -108,6 +110,12 @@ export default function HomeScreen() {
     await load();
     setRefreshing(false);
   };
+
+  // Keep local deadline reminders in sync with the student's active applications.
+  useEffect(() => {
+    if (isTutor || isParent) return;
+    syncDeadlineReminders(getApplicationDeadlines(applications));
+  }, [applications, isTutor, isParent]);
 
   if (!user) {
     return (
