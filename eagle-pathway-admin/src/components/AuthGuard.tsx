@@ -4,13 +4,17 @@ import { useRouter, usePathname } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/store/useAuthStore';
 
-interface AdminProfile {
-  roles?: string[] | null;
-  active_role?: string | null;
-}
-
-function hasAdminAccess(profile: AdminProfile | null) {
-  return profile?.active_role === 'admin' || profile?.roles?.includes('admin');
+// Admin-ness has a single source of truth: the is_admin() RPC, which checks the
+// user_roles table — the same function RLS policies use. Reading
+// users.role / users.roles / users.active_role directly is what let those three
+// sources drift apart and lock admins out, so AuthGuard no longer does that.
+async function isCurrentUserAdmin(): Promise<boolean> {
+  const { data, error } = await supabase.rpc('is_admin');
+  if (error) {
+    console.error('is_admin check failed:', error);
+    return false;
+  }
+  return data === true;
 }
 
 export default function AuthGuard({ children }: { children: React.ReactNode }) {
@@ -19,33 +23,28 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
   const { user, setUser, setSession, isLoading, setLoading } = useAuthStore();
 
   useEffect(() => {
+    const promoteOrReject = async (session: NonNullable<Awaited<ReturnType<typeof supabase.auth.getSession>>['data']['session']>) => {
+      if (await isCurrentUserAdmin()) {
+        setSession(session);
+        setUser({ id: session.user.id, email: session.user.email, role: 'admin' });
+      } else {
+        await supabase.auth.signOut();
+        if (pathname !== '/login') router.push('/login');
+      }
+    };
+
     const checkAuth = async () => {
-      // If we already have a verified admin user, we can skip the initial DB check
+      // Already verified this session as admin — skip the round-trip.
       if (user?.role === 'admin') {
         setLoading(false);
         return;
       }
 
       const { data: { session } } = await supabase.auth.getSession();
-      
       if (session) {
-        // Verify admin role in database
-        const { data: profile } = await supabase
-          .from('users')
-          .select('roles, active_role')
-          .eq('id', session.user.id)
-          .single();
-
-        if (hasAdminAccess(profile)) {
-          setSession(session);
-          setUser({ id: session.user.id, email: session.user.email, role: 'admin' });
-        } else {
-          // Log out if not an admin
-          await supabase.auth.signOut();
-          if (pathname !== '/login') router.push('/login');
-        }
-      } else {
-        if (pathname !== '/login') router.push('/login');
+        await promoteOrReject(session);
+      } else if (pathname !== '/login') {
+        router.push('/login');
       }
       setLoading(false);
     };
@@ -58,21 +57,9 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
         setSession(null);
         if (pathname !== '/login') router.push('/login');
       } else if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
-        // Only verify role if we don't have it or it's a new session
+        // Only re-verify when the identity actually changes.
         if (user?.id !== session.user.id) {
-          const { data: profile } = await supabase
-            .from('users')
-            .select('roles, active_role')
-            .eq('id', session.user.id)
-            .single();
-          
-          if (hasAdminAccess(profile)) {
-            setSession(session);
-            setUser({ id: session.user.id, email: session.user.email, role: 'admin' });
-          } else {
-            await supabase.auth.signOut();
-            router.push('/login');
-          }
+          await promoteOrReject(session);
         }
       }
     });
