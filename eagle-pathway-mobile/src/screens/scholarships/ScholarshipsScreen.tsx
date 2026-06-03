@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   View, Text, ScrollView, TextInput, TouchableOpacity,
   StyleSheet, FlatList, Image
@@ -6,7 +6,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Colors, Typography, Spacing, Radius, CommonStyles } from '@/utils/theme';
-import { EmptyState, ScaleBounce } from '@/components/common';
+import { EmptyState, ErrorState, ScaleBounce } from '@/components/common';
 import { ListSkeleton } from '@/components/LoadingSkeleton';
 import { useScholarshipStore } from '@/store/scholarshipStore';
 import { Scholarship } from '@/types';
@@ -20,8 +20,14 @@ export default function ScholarshipsScreen({ hideBack = false }: { hideBack?: bo
   const { scholarships, savedScholarshipIds, loadScholarships, toggleSaveScholarship, isLoadingScholarships } = useScholarshipStore();
   const [search, setSearch] = useState('');
   const [activeFilter, setActiveFilter] = useState('All');
+  const [error, setError] = useState(false);
 
-  useEffect(() => { loadScholarships(); }, []);
+  const load = useCallback(async () => {
+    setError(false);
+    try { await loadScholarships(); } catch { setError(true); }
+  }, [loadScholarships]);
+
+  useEffect(() => { load(); }, []);
 
   const filtered = (scholarships || []).filter(s => {
     const matchSearch = !search || (s.name || '').toLowerCase().includes(search.toLowerCase()) || (s.country || '').toLowerCase().includes(search.toLowerCase());
@@ -81,6 +87,8 @@ export default function ScholarshipsScreen({ hideBack = false }: { hideBack?: bo
         <View style={{ flex: 1, paddingTop: Spacing.lg, paddingHorizontal: Spacing.xl }}>
           <ListSkeleton count={4} />
         </View>
+      ) : error && (scholarships || []).length === 0 ? (
+        <ErrorState subtitle="We couldn't load scholarships. Check your connection and retry." onRetry={load} />
       ) : filtered.length === 0 ? (
         <EmptyState 
           icon="🎓" 

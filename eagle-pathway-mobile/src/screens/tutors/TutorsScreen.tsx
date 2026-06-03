@@ -6,7 +6,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Colors, Typography, Spacing, Radius, CommonStyles } from '@/utils/theme';
-import { Pill, EmptyState, Avatar, Dropdown, Skeleton } from '@/components/common';
+import { Pill, EmptyState, ErrorState, Avatar, Dropdown, Skeleton } from '@/components/common';
 import { tutorsService } from '@/services/tutors';
 import { Tutor } from '@/types';
 
@@ -29,9 +29,11 @@ export default function TutorsScreen() {
   const [selectedSubjects, setSelectedSubjects] = useState<string[]>([]);
   const [selectedLocation, setSelectedLocation] = useState('All');
   const [activeMode, setActiveMode] = useState('All');
+  const [error, setError] = useState(false);
 
   const load = async () => {
     setLoading(true);
+    setError(false);
     try {
       const data = await tutorsService.getTutors({
         isOnline: activeMode === 'Online' ? true : undefined,
@@ -41,6 +43,7 @@ export default function TutorsScreen() {
       setTutors(data);
     } catch (e) {
       console.error(e);
+      setError(true);
     } finally {
       setLoading(false);
     }
@@ -199,14 +202,16 @@ export default function TutorsScreen() {
         ))}
       </ScrollView>
 
-      {filtered.length === 0 ? (
-        <EmptyState 
-          icon="👨‍🏫" 
-          title="No tutors found" 
+      {error && tutors.length === 0 ? (
+        <ErrorState subtitle="We couldn't load tutors. Check your connection and retry." onRetry={load} style={{ padding: Spacing.xl }} />
+      ) : filtered.length === 0 ? (
+        <EmptyState
+          icon="👨‍🏫"
+          title="No tutors found"
           subtitle="Try adjusting your search or filters"
           actionLabel="Clear Filters"
           onAction={() => { setSearch(''); setSelectedSubjects([]); setSelectedLocation('All'); setActiveMode('All'); }}
-          style={{ padding: Spacing.xl }} 
+          style={{ padding: Spacing.xl }}
         />
       ) : (
         <FlatList

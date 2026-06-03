@@ -93,6 +93,32 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
   </View>
 );
 
+// ─── Error State ──────────────────────────────────────────────────────────────
+interface ErrorStateProps {
+  title?: string;
+  subtitle?: string;
+  onRetry?: () => void;
+  style?: ViewStyle;
+}
+
+export const ErrorState: React.FC<ErrorStateProps> = ({
+  title = "Couldn't connect",
+  subtitle = 'Check your internet connection and try again.',
+  onRetry,
+  style,
+}) => (
+  <View style={[styles.emptyState, style]}>
+    <Text style={styles.emptyIcon}>📡</Text>
+    <Text style={styles.emptyTitle}>{title}</Text>
+    <Text style={styles.emptySubtitle}>{subtitle}</Text>
+    {onRetry && (
+      <TouchableOpacity style={styles.emptyAction} onPress={onRetry}>
+        <Text style={styles.emptyActionText}>Retry</Text>
+      </TouchableOpacity>
+    )}
+  </View>
+);
+
 // ─── Loading Screen ───────────────────────────────────────────────────────────
 export const LoadingScreen: React.FC = () => (
   <View style={[CommonStyles.flex1, CommonStyles.center, { backgroundColor: Colors.bg }]}>
