@@ -240,4 +240,21 @@ describe.runIf(LIVE)('RLS live: cross-tenant isolation', () => {
     const { data } = await adminUser.client.from('applications').select('id').eq('id', appAId);
     expect(data ?? []).toHaveLength(1);
   });
+
+  // ── get_dashboard_summary must be admin-only ────────────────────────────────
+  // SECURITY DEFINER function that bypasses RLS to aggregate platform-wide counts.
+  // Requires supabase_migration_secure_dashboard_summary.sql to be applied.
+  it('a non-admin cannot call get_dashboard_summary', async () => {
+    const { data, error } = await studentB.client.rpc('get_dashboard_summary');
+    // Either a hard permission error, or (defense in depth) the in-function
+    // is_admin() guard rejects it. Crucially, no metrics must come back.
+    expect(error, 'non-admin received dashboard metrics — function is not locked down').not.toBeNull();
+    expect(data).toBeFalsy();
+  });
+
+  it('an admin can call get_dashboard_summary and gets metrics', async () => {
+    const { data, error } = await adminUser.client.rpc('get_dashboard_summary');
+    expect(error).toBeNull();
+    expect(data).toMatchObject({ total_users: expect.anything() });
+  });
 });
