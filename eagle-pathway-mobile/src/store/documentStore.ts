@@ -15,6 +15,7 @@ interface DocumentState {
     fileUri: string;
     fileName: string;
   }) => Promise<Document>;
+  deleteDocument: (doc: { id: string; file_path?: string | null }) => Promise<void>;
 }
 
 export const useDocumentStore = create<DocumentState>((set, get) => ({
@@ -40,5 +41,10 @@ export const useDocumentStore = create<DocumentState>((set, get) => ({
     } finally {
       set({ isLoadingDocuments: false });
     }
+  },
+
+  deleteDocument: async (doc) => {
+    await scholarshipsService.deleteDocument(doc);
+    set(state => ({ documents: state.documents.filter(d => d.id !== doc.id) }));
   },
 }));
