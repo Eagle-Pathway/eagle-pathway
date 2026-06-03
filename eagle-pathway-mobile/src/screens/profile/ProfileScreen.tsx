@@ -93,6 +93,7 @@ export function ProfileScreen() {
     { icon: '🎓', label: 'My Applications', badge: `${applications.filter(a => !['accepted','rejected'].includes(a.status)).length} Active`, color: Colors.goldLight, route: '/tracker', danger: false },
     { icon: '📁', label: 'Documents', badge: documents.filter(d => d.status !== 'approved').length > 0 ? 'Action needed' : null, color: Colors.greenLight, route: '/documents', danger: false },
     { icon: '✉️', label: 'Recommendation Letters', badge: null, color: Colors.blueLight, route: '/recommendations', danger: false },
+    { icon: '🏆', label: 'Success Stories', badge: null, color: Colors.goldLight, route: '/success-stories', danger: false },
     { icon: '📅', label: 'My Bookings', badge: null, color: Colors.grayLight, route: '/(tabs)/bookings', danger: false },
     { icon: '🔔', label: 'Notifications', badge: unreadCount > 0 ? `${unreadCount} New` : null, color: Colors.blueLight, route: '/notifications', danger: false },
     { icon: '⚙️', label: 'Settings', badge: null, color: Colors.grayLight, route: '/settings', danger: false },

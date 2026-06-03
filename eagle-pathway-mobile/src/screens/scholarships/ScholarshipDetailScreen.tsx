@@ -248,6 +248,16 @@ export function ScholarshipDetailScreen() {
             </ScaleBounce>
           </View>
 
+          <View style={[sdStyles.section, { borderBottomWidth: 0 }]}>
+            <ScaleBounce
+              style={sdStyles.storiesBtn}
+              onPress={() => router.push({ pathname: '/success-stories', params: { scholarshipName: scholarship.name } })}
+            >
+              <Text style={sdStyles.storiesBtnText}>🏆 Read success stories</Text>
+            </ScaleBounce>
+            <Text style={sdStyles.linkSubtext}>See how past Eagle Pathway students won this scholarship.</Text>
+          </View>
+
           {scholarship.eagle_success_rate && (
             <View style={[sdStyles.section, { borderBottomWidth: 0 }]}>
               <Text style={sdStyles.sectionTitle}>Eagle Pathway Success Rate</Text>
@@ -330,4 +340,6 @@ const sdStyles = StyleSheet.create({
   linkButton: { backgroundColor: Colors.blueLight, padding: Spacing.md, borderRadius: Radius.md, alignItems: 'center', borderWidth: 1, borderColor: Colors.blue, marginBottom: Spacing.xs },
   linkButtonText: { color: Colors.blue, fontWeight: 'bold', fontSize: Typography.md },
   linkSubtext: { fontSize: Typography.xs, color: Colors.textSecondary, fontStyle: 'italic' },
+  storiesBtn: { backgroundColor: Colors.goldLight, padding: Spacing.md, borderRadius: Radius.md, alignItems: 'center', borderWidth: 1, borderColor: '#e8d5a0', marginBottom: Spacing.xs },
+  storiesBtnText: { color: '#7a5c1e', fontWeight: 'bold', fontSize: Typography.md },
 });
