@@ -24,7 +24,7 @@ export default function LoginScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: Colors.white }}>
-      <TouchableOpacity style={{ padding: Spacing.xl }} onPress={() => router.back()}>
+      <TouchableOpacity style={{ padding: Spacing.xl }} onPress={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)/home'))}>
         <Text style={{ fontSize: 24, color: Colors.text }}>←</Text>
       </TouchableOpacity>
       <View style={{ padding: Spacing.xl }}>

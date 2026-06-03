@@ -461,7 +461,7 @@ export default function ServiceRequestScreen({
     <SafeAreaView style={CommonStyles.screenBg} edges={[]}>
       {!hideHeader && (
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+          <TouchableOpacity onPress={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)/home'))} style={styles.backBtn}>
             <Text style={{ fontSize: 20 }}>←</Text>
           </TouchableOpacity>
           <Text style={styles.title}>Payment Services</Text>

@@ -78,7 +78,7 @@ export default function TutorProfileScreen() {
       {/* Hero */}
       <View style={styles.hero}>
         <View style={styles.heroNav}>
-          <TouchableOpacity style={styles.backBtn} onPress={() => router.back()} activeOpacity={0.8}>
+          <TouchableOpacity style={styles.backBtn} onPress={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)/home'))} activeOpacity={0.8}>
             <Text style={styles.backIcon}>←</Text>
           </TouchableOpacity>
           <View style={{ flexDirection: 'row', gap: Spacing.sm }}>

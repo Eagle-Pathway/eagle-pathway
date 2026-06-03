@@ -50,7 +50,7 @@ export default function SOPEditorScreen() {
   return (
     <SafeAreaView style={CommonStyles.screenBg} edges={['top']}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+        <TouchableOpacity onPress={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)/home'))} style={styles.backBtn}>
           <Text style={{ fontSize: 20 }}>←</Text>
         </TouchableOpacity>
         <View style={{ flex: 1 }}>

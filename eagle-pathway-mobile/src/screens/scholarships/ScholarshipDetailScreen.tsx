@@ -71,7 +71,7 @@ export function ScholarshipDetailScreen() {
           title="Scholarship not found" 
           subtitle="This scholarship may have been removed."
           actionLabel="Go Back"
-          onAction={() => router.back()}
+          onAction={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)/home'))}
         />
       </SafeAreaView>
     );
@@ -88,7 +88,7 @@ export function ScholarshipDetailScreen() {
     <SafeAreaView style={[CommonStyles.flex1, { backgroundColor: Colors.blueDark }]} edges={['top']}>
       <View style={sdStyles.hero}>
         <View style={sdStyles.heroNav}>
-          <ScaleBounce style={sdStyles.backBtn} onPress={() => router.back()}><Text style={{ color: Colors.white, fontSize: 20 }}>←</Text></ScaleBounce>
+          <ScaleBounce style={sdStyles.backBtn} onPress={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)/home'))}><Text style={{ color: Colors.white, fontSize: 20 }}>←</Text></ScaleBounce>
           <View style={{ flexDirection: 'row', gap: Spacing.sm }}>
             <ScaleBounce style={sdStyles.iconBtn}><Text style={{ fontSize: 16 }}>↗</Text></ScaleBounce>
             <ScaleBounce style={sdStyles.iconBtn} onPress={() => toggleSaveScholarship(scholarship.id)}>
