@@ -36,6 +36,7 @@ export default function BookingScreen() {
   const total = tutor ? tutor.hourly_rate + platformFee : 0;
 
   const handleConfirm = async () => {
+    if (loading) return; // guard against rapid double-taps
     if (!selectedTime) return Alert.alert('Select Time', 'Please choose a time slot');
     if (!user || !tutor) return;
 
@@ -58,7 +59,13 @@ export default function BookingScreen() {
         { text: 'View Bookings', onPress: () => router.push('/(tabs)/bookings') },
       ]);
     } catch (e: any) {
-      Alert.alert('Error', e.message || 'Failed to create booking');
+      // The slot-uniqueness guard (uq_active_booking_slot) surfaces as a 23505 / 409.
+      const slotTaken = e?.code === '23505' || /duplicate|already|uq_active_booking_slot|409|conflict/i.test(e?.message || '');
+      if (slotTaken) {
+        Alert.alert('Time slot unavailable', 'That time is already booked with this tutor. Please choose a different slot.');
+      } else {
+        Alert.alert('Error', e?.message || 'Failed to create booking');
+      }
     } finally {
       setLoading(false);
     }
