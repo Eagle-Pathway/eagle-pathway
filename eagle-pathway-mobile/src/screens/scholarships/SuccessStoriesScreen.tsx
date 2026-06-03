@@ -1,9 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Colors, Typography, Spacing, Radius, CommonStyles } from '@/utils/theme';
-import { Avatar, EmptyState } from '@/components/common';
+import { Avatar, EmptyState, ErrorState } from '@/components/common';
 import { ListSkeleton } from '@/components/LoadingSkeleton';
 import { successStoriesService, type SuccessStory } from '@/services/successStories';
 import { getFlagEmoji } from '@eagle-pathway/shared';
@@ -12,14 +12,19 @@ export function SuccessStoriesScreen() {
   const { scholarshipName, country } = useLocalSearchParams<{ scholarshipName?: string; country?: string }>();
   const [stories, setStories] = useState<SuccessStory[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
 
-  useEffect(() => {
+  const load = useCallback(() => {
+    setLoading(true);
+    setError(false);
     successStoriesService
       .list({ scholarshipName, country })
       .then(setStories)
-      .catch(() => {})
+      .catch(() => setError(true))
       .finally(() => setLoading(false));
   }, [scholarshipName, country]);
+
+  useEffect(() => { load(); }, [scholarshipName, country]);
 
   const subtitle = scholarshipName
     ? `Winners of ${scholarshipName}`
@@ -41,6 +46,8 @@ export function SuccessStoriesScreen() {
 
       {loading ? (
         <View style={{ paddingHorizontal: Spacing.xl, paddingTop: Spacing.lg }}><ListSkeleton count={4} /></View>
+      ) : error && stories.length === 0 ? (
+        <ErrorState subtitle="We couldn't load success stories. Check your connection and retry." onRetry={load} />
       ) : stories.length === 0 ? (
         <EmptyState
           icon="🏆"

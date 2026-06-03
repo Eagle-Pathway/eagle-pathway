@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
 } from 'react-native';
@@ -8,7 +8,7 @@ import { format } from 'date-fns';
 import { Colors, Typography, Spacing, Radius, CommonStyles } from '@/utils/theme';
 import { Button, Pill, StatusTimeline, ScaleBounce } from '@/components/common';
 import { CardSkeleton } from '@/components/LoadingSkeleton';
-import { EmptyState } from '@/components/common';
+import { EmptyState, ErrorState } from '@/components/common';
 import { useAuthStore } from '@/store/authStore';
 import { useScholarshipStore } from '@/store/scholarshipStore';
 import type { Application } from '@/types';
@@ -57,15 +57,17 @@ export function TrackerScreen({ hideHeader = false }: { hideHeader?: boolean }) 
   const { applicationId } = useLocalSearchParams<{ applicationId: string }>();
   const { applications, loadApplications } = useScholarshipStore();
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
   const [selectedApp, setSelectedApp] = useState<Application | null>(null);
 
-  useEffect(() => {
-    if (user) {
-      loadApplications(user.id).finally(() => {
-        setLoading(false);
-      });
-    }
-  }, [user?.id]);
+  const load = useCallback(async () => {
+    if (!user) return;
+    setLoading(true);
+    setError(false);
+    try { await loadApplications(user.id); } catch { setError(true); } finally { setLoading(false); }
+  }, [user?.id, loadApplications]);
+
+  useEffect(() => { load(); }, [user?.id]);
 
   useEffect(() => {
     if (!loading && applicationId && (applications || []).length > 0) {
@@ -215,10 +217,12 @@ export function TrackerScreen({ hideHeader = false }: { hideHeader?: boolean }) 
         <View style={{ flex: 1, paddingTop: Spacing.lg, paddingHorizontal: Spacing.xl }}>
           <CardSkeleton count={3} />
         </View>
+      ) : error && (applications || []).length === 0 ? (
+        <ErrorState subtitle="We couldn't load your applications. Check your connection and retry." onRetry={load} />
       ) : (applications || []).length === 0 ? (
-        <EmptyState 
-          icon="📋" 
-          title="No applications yet" 
+        <EmptyState
+          icon="📋"
+          title="No applications yet"
           subtitle="Find a scholarship and start your application journey"
           actionLabel="Browse Scholarships"
           onAction={() => router.push('/(tabs)/scholarships')}

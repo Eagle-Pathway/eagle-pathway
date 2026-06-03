@@ -1,11 +1,11 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   View, Text, FlatList, TouchableOpacity, StyleSheet,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Colors, Typography, Spacing } from '@/utils/theme';
-import { EmptyState } from '@/components/common';
+import { EmptyState, ErrorState } from '@/components/common';
 import { useAuthStore } from '@/store/authStore';
 import { useNotificationStore } from '@/store/notificationStore';
 
@@ -15,10 +15,15 @@ export function NotificationsScreen() {
     notifications, unreadCount, loadNotifications, markAllNotificationsRead, markNotificationRead 
   } = useNotificationStore();
   const [markingIds, setMarkingIds] = useState<Set<string>>(new Set());
+  const [error, setError] = useState(false);
 
-  useEffect(() => {
-    if (user) loadNotifications(user.id);
-  }, [user?.id]);
+  const load = useCallback(async () => {
+    if (!user) return;
+    setError(false);
+    try { await loadNotifications(user.id); } catch { setError(true); }
+  }, [user?.id, loadNotifications]);
+
+  useEffect(() => { load(); }, [user?.id]);
 
   const handleMarkRead = async (id: string) => {
     if (markingIds.has(id)) return;
@@ -52,7 +57,9 @@ export function NotificationsScreen() {
         )}
       </View>
 
-      {(notifications || []).length === 0 ? (
+      {error && (notifications || []).length === 0 ? (
+        <ErrorState subtitle="We couldn't load your notifications. Check your connection and retry." onRetry={load} />
+      ) : (notifications || []).length === 0 ? (
         <EmptyState icon="🔔" title="No notifications yet" subtitle="You'll see session reminders, scholarship alerts, and updates here" />
       ) : (
         <FlatList

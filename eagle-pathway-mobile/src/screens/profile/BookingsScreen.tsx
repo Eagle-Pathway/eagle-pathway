@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   View, Text, FlatList, TouchableOpacity, StyleSheet,
   Alert, Linking, TextInput,
@@ -7,7 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { format } from 'date-fns';
 import { Colors, Typography, Spacing, Radius, CommonStyles } from '@/utils/theme';
-import { EmptyState, Avatar } from '@/components/common';
+import { EmptyState, ErrorState, Avatar } from '@/components/common';
 import { ListSkeleton } from '@/components/LoadingSkeleton';
 import { useAuthStore } from '@/store/authStore';
 import { useBookingStore } from '@/store/bookingStore';
@@ -22,18 +22,24 @@ export function BookingsScreen({ hideHeader = false }: { hideHeader?: boolean })
   const [rating, setRating] = useState(0);
   const [ratingComment, setRatingComment] = useState('');
   const [ratingLoading, setRatingLoading] = useState(false);
+  const [error, setError] = useState(false);
 
   const isTutor = (user?.active_role || user?.roles?.[0] || 'student').toLowerCase() === 'tutor';
 
-  useEffect(() => {
-    if (user) {
-      if (isTutor) {
-        loadTutorBookings(user.id).finally(() => setLoading(false));
-      } else {
-        loadBookings(user.id).finally(() => setLoading(false));
-      }
+  const load = useCallback(async () => {
+    if (!user) return;
+    setLoading(true);
+    setError(false);
+    try {
+      await (isTutor ? loadTutorBookings(user.id) : loadBookings(user.id));
+    } catch {
+      setError(true);
+    } finally {
+      setLoading(false);
     }
-  }, [user?.id, isTutor]);
+  }, [user?.id, isTutor, loadBookings, loadTutorBookings]);
+
+  useEffect(() => { load(); }, [user?.id, isTutor]);
 
   const handleMarkCompleted = async (bookingId: string) => {
     await updateBookingStatus(bookingId, 'completed');
@@ -87,10 +93,12 @@ export function BookingsScreen({ hideHeader = false }: { hideHeader?: boolean })
         <View style={{ flex: 1, paddingTop: Spacing.lg, paddingHorizontal: Spacing.xl }}>
           <ListSkeleton count={4} />
         </View>
+      ) : error && (bookings || []).length === 0 ? (
+        <ErrorState subtitle={`We couldn't load your ${isTutor ? 'sessions' : 'bookings'}. Check your connection and retry.`} onRetry={load} />
       ) : filtered.length === 0 ? (
-        <EmptyState 
-          icon="📅" 
-          title={`No ${activeTab} ${isTutor ? 'sessions' : 'bookings'}`} 
+        <EmptyState
+          icon="📅"
+          title={`No ${activeTab} ${isTutor ? 'sessions' : 'bookings'}`}
           subtitle={isTutor ? "You don't have any sessions in this category yet." : "Book a session with a tutor to get started"}
           actionLabel={activeTab === 'upcoming' && !isTutor ? "Find Tutors" : undefined}
           onAction={activeTab === 'upcoming' && !isTutor ? () => router.push('/(tabs)/tutors') : undefined}

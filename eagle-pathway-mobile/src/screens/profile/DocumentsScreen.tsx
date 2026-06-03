@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
   ActivityIndicator, Alert, Linking,
@@ -6,7 +6,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Colors, Typography, Spacing, Radius, CommonStyles } from '@/utils/theme';
-import { EmptyState } from '@/components/common';
+import { EmptyState, ErrorState } from '@/components/common';
 import { scholarshipsService } from '@/services/scholarships';
 import { useAuthStore } from '@/store/authStore';
 import { useDocumentStore } from '@/store/documentStore';
@@ -18,10 +18,16 @@ export function DocumentsScreen() {
   const [loading, setLoading] = useState(true);
   const [uploadingType, setUploadingType] = useState<DocumentType | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<'all' | 'academic' | 'identity' | 'other'>('all');
+  const [error, setError] = useState(false);
 
-  useEffect(() => {
-    if (user) loadDocuments(user.id).finally(() => setLoading(false));
-  }, [user?.id]);
+  const load = useCallback(async () => {
+    if (!user) return;
+    setLoading(true);
+    setError(false);
+    try { await loadDocuments(user.id); } catch { setError(true); } finally { setLoading(false); }
+  }, [user?.id, loadDocuments]);
+
+  useEffect(() => { load(); }, [user?.id]);
 
   const CORE_DOCS: { type: DocumentType; label: string }[] = [
     { type: 'degree_certificate', label: 'Degree Certificate' },
@@ -169,6 +175,8 @@ export function DocumentsScreen() {
 
         {loading ? (
           <ActivityIndicator color={Colors.blue} style={{ marginTop: 40 }} />
+        ) : error && (documents || []).length === 0 ? (
+          <ErrorState subtitle="We couldn't load your documents. Check your connection and retry." onRetry={load} />
         ) : filteredDocs.length === 0 ? (
           <View style={docStyles.empty}>
             <Text style={{ fontSize: 40, marginBottom: 10 }}>📂</Text>
