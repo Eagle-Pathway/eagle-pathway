@@ -234,11 +234,17 @@ export function ScholarshipDetailScreen() {
             <Text style={[sdStyles.bodyText, { color: 'rgba(255,255,255,0.8)', fontSize: 13, marginBottom: 16 }]}>
               Stop struggling with your essay. We'll use your academic profile to draft a winning Statement of Purpose for this scholarship in seconds.
             </Text>
-            <ScaleBounce 
+            <ScaleBounce
               style={{ backgroundColor: Colors.gold, padding: 14, borderRadius: 12, alignItems: 'center' }}
               onPress={() => router.push({ pathname: '/scholarship/magic-draft', params: { scholarshipId: scholarship.id } })}
             >
               <Text style={{ color: Colors.blueDark, fontWeight: 'bold', fontSize: 15 }}>Generate Magic Draft ✨</Text>
+            </ScaleBounce>
+            <ScaleBounce
+              style={{ backgroundColor: 'rgba(255,255,255,0.12)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.2)', padding: 14, borderRadius: 12, alignItems: 'center', marginTop: 10 }}
+              onPress={() => router.push({ pathname: '/scholarship/interview', params: { scholarshipId: scholarship.id } })}
+            >
+              <Text style={{ color: Colors.white, fontWeight: 'bold', fontSize: 15 }}>Practice Interview 🎤</Text>
             </ScaleBounce>
           </View>
 
