@@ -99,7 +99,7 @@ export function NotificationsScreen() {
                   case 'scholarship_alert':
                     if (data?.scholarship_id) {
                       router.push({
-                        pathname: '/scholarship/[scholarshipId]',
+                        pathname: '/scholarship-detail',
                         params: { scholarshipId: data.scholarship_id }
                       });
                     } else {
