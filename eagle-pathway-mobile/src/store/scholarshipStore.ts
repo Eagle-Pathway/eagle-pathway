@@ -27,6 +27,8 @@ interface ScholarshipState {
 }
 
 const STORAGE_KEY = '@eagle_saved_scholarships';
+const CACHE_SCHOLARSHIPS = '@cache_scholarships';
+const CACHE_APPLICATIONS = '@cache_applications';
 
 export const useScholarshipStore = create<ScholarshipState>((set, get) => ({
   scholarships: [],
@@ -42,6 +44,21 @@ export const useScholarshipStore = create<ScholarshipState>((set, get) => ({
     try {
       const scholarships = await scholarshipsService.getScholarships(filters);
       set({ scholarships });
+      // Cache the unfiltered list for offline viewing.
+      if (!filters || Object.keys(filters).length === 0) {
+        AsyncStorage.setItem(CACHE_SCHOLARSHIPS, JSON.stringify(scholarships)).catch(() => {});
+      }
+    } catch (e) {
+      // Offline / failed: fall back to the cached list if we have one.
+      const cached = await AsyncStorage.getItem(CACHE_SCHOLARSHIPS).catch(() => null);
+      if (cached) {
+        if (get().scholarships.length === 0) {
+          try { set({ scholarships: JSON.parse(cached) }); } catch { /* ignore */ }
+        }
+        // Showed cached data — don't surface an error.
+      } else {
+        throw e; // nothing to show → let the screen render its error state
+      }
     } finally {
       set({ isLoadingScholarships: false });
     }
@@ -57,8 +74,21 @@ export const useScholarshipStore = create<ScholarshipState>((set, get) => ({
   },
 
   loadApplications: async (userId) => {
-    const applications = await scholarshipsService.getStudentApplications(userId);
-    set({ applications });
+    const cacheKey = `${CACHE_APPLICATIONS}_${userId}`;
+    try {
+      const applications = await scholarshipsService.getStudentApplications(userId);
+      set({ applications });
+      AsyncStorage.setItem(cacheKey, JSON.stringify(applications)).catch(() => {});
+    } catch (e) {
+      const cached = await AsyncStorage.getItem(cacheKey).catch(() => null);
+      if (cached) {
+        if (get().applications.length === 0) {
+          try { set({ applications: JSON.parse(cached) }); } catch { /* ignore */ }
+        }
+      } else {
+        throw e;
+      }
+    }
   },
 
   createApplication: async (userId, scholarshipId, packageTier, sopContent) => {
