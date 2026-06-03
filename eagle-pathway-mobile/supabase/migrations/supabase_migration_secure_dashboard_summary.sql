@@ -55,9 +55,7 @@ BEGIN
   SELECT COUNT(*) INTO v_unassigned_apps FROM public.applications WHERE consultant_id IS NULL AND status NOT IN ('accepted', 'rejected');
   SELECT COUNT(*) INTO v_pending_services FROM public.service_requests WHERE status IN ('pending', 'reviewing');
 
-  -- 4. Return formatted JSON response
-  v_result := json_build_object(
-    'total_users', v_total_users,
+  v_result := jsonb_build_object(
     'tutors_pending', v_tutors_pending,
     'active_scholarships', v_active_scholarships,
     'bookings', v_bookings,
