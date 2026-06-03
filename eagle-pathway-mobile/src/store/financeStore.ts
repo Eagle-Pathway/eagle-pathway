@@ -1,12 +1,20 @@
 import { create } from 'zustand';
 import { financeService, PayoutRequest } from '../services/finance';
 
+interface TutorBalance {
+  earned: number;
+  pledged: number;
+  available: number;
+}
+
 interface FinanceState {
   tutorPayouts: PayoutRequest[];
   isLoadingPayouts: boolean;
+  balance: TutorBalance | null;
 
   // Actions
   loadTutorPayouts: (userId: string) => Promise<void>;
+  loadBalance: () => Promise<void>;
   submitPayoutRequest: (params: {
     tutorId: string;
     amount: number;
@@ -19,6 +27,7 @@ interface FinanceState {
 export const useFinanceStore = create<FinanceState>((set, get) => ({
   tutorPayouts: [],
   isLoadingPayouts: false,
+  balance: null,
 
   loadTutorPayouts: async (userId) => {
     set({ isLoadingPayouts: true });
@@ -30,11 +39,21 @@ export const useFinanceStore = create<FinanceState>((set, get) => ({
     }
   },
 
+  loadBalance: async () => {
+    try {
+      const balance = await financeService.getBalance();
+      set({ balance });
+    } catch {
+      // Non-fatal; leave previous balance (UI falls back to 0).
+    }
+  },
+
   submitPayoutRequest: async (params) => {
     set({ isLoadingPayouts: true });
     try {
       const newPayout = await financeService.requestPayout(params);
       set(state => ({ tutorPayouts: [newPayout, ...state.tutorPayouts] }));
+      await get().loadBalance(); // pledged just increased
     } finally {
       set({ isLoadingPayouts: false });
     }

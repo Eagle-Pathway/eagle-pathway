@@ -20,7 +20,7 @@ import { useFinanceStore } from '@/store/financeStore';
 export default function TutorEarningsScreen() {
   const { user } = useAuthStore();
   const { tutorProfile, loadTutorBookings } = useBookingStore();
-  const { tutorPayouts, isLoadingPayouts, loadTutorPayouts, submitPayoutRequest } = useFinanceStore();
+  const { tutorPayouts, isLoadingPayouts, loadTutorPayouts, submitPayoutRequest, balance, loadBalance } = useFinanceStore();
 
   const [loading, setLoading] = useState(true);
   const [modalVisible, setModalVisible] = useState(false);
@@ -28,17 +28,12 @@ export default function TutorEarningsScreen() {
 
   useEffect(() => {
     if (!user) return;
-    Promise.all([loadTutorBookings(user.id), loadTutorPayouts(user.id)]).finally(() => setLoading(false));
+    Promise.all([loadTutorBookings(user.id), loadTutorPayouts(user.id), loadBalance()]).finally(() => setLoading(false));
   }, [user?.id]);
 
-  // Mirrors the dashboard's calculation so the two views agree (85% net of
-  // rate x sessions, minus payouts already in flight).
-  const earningsGross = (tutorProfile?.hourly_rate || 0) * (tutorProfile?.total_sessions || 0);
-  const earningsNet = earningsGross * 0.85;
-  const pendingPayoutsAmount = (tutorPayouts || [])
-    .filter(p => p.status === 'pending' || p.status === 'processing')
-    .reduce((sum, p) => sum + (p.amount || 0), 0);
-  const availableBalance = Math.max(0, earningsNet - pendingPayoutsAmount);
+  // Authoritative balance from the server (same definition the payout trigger
+  // enforces), so what's shown is what can actually be withdrawn.
+  const availableBalance = balance?.available ?? 0;
 
   const totalWithdrawn = (tutorPayouts || [])
     .filter(p => p.status === 'completed')
@@ -81,7 +76,7 @@ export default function TutorEarningsScreen() {
               <Text style={styles.withdrawBtnText}>Withdraw</Text>
             </TouchableOpacity>
           </View>
-          <Text style={styles.balanceHint}>Net earnings (85%) after platform fee · ETB {totalWithdrawn.toLocaleString()} withdrawn to date</Text>
+          <Text style={styles.balanceHint}>From completed & paid sessions, after platform fee · ETB {totalWithdrawn.toLocaleString()} withdrawn to date</Text>
         </View>
       </View>
 

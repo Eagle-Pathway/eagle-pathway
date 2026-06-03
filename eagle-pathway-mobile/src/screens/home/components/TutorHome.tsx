@@ -19,6 +19,7 @@ interface TutorHomeProps {
   tutorProfile: Tutor | null;
   tutorPayouts: PayoutRequest[];
   isLoadingPayouts: boolean;
+  availableBalance: number;
   updateBookingStatus: (bookingId: string, status: BookingStatus) => Promise<void>;
   submitPayoutRequest: (params: {
     tutorId: string;
@@ -41,6 +42,7 @@ export const TutorHome: React.FC<TutorHomeProps> = ({
   tutorProfile,
   tutorPayouts,
   isLoadingPayouts,
+  availableBalance,
   updateBookingStatus,
   submitPayoutRequest,
   loading,
@@ -135,11 +137,6 @@ export const TutorHome: React.FC<TutorHomeProps> = ({
 
   const todaySessions = (bookings || []).filter(b => b.status === 'confirmed');
   const pendingSessions = (bookings || []).filter(b => b.status === 'pending');
-  
-  const earningsGross = (tutorProfile?.hourly_rate || 0) * (tutorProfile?.total_sessions || 0);
-  const earningsNet = earningsGross * 0.85;
-  const pendingPayoutsAmount = (tutorPayouts || []).filter(p => p.status === 'pending' || p.status === 'processing').reduce((sum, p) => sum + (p.amount || 0), 0);
-  const availableBalance = Math.max(0, earningsNet - pendingPayoutsAmount);
 
   const handlePayoutRequest = async () => {
     const amt = parseInt(payoutForm.amount);
@@ -198,7 +195,7 @@ export const TutorHome: React.FC<TutorHomeProps> = ({
                 </TouchableOpacity>
               </View>
               <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 10, marginTop: 4 }}>
-                Net earnings (85%) after platform fee
+                From completed & paid sessions, after platform fee
               </Text>
             </View>
             <View style={styles.quickCard}>
