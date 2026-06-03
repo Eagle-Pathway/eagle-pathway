@@ -252,9 +252,28 @@ describe.runIf(LIVE)('RLS live: cross-tenant isolation', () => {
     expect(data).toBeFalsy();
   });
 
-  it('an admin can call get_dashboard_summary and gets metrics', async () => {
+  it('an admin can call get_dashboard_summary and gets all metric fields', async () => {
     const { data, error } = await adminUser.client.rpc('get_dashboard_summary');
     expect(error).toBeNull();
-    expect(data).toMatchObject({ total_users: expect.anything() });
+    // Guards the fields that were silently dropped/uncomputed in the deployed
+    // function (total_users omitted; active_scholarships/bookings left null).
+    expect(data).toMatchObject({
+      total_users: expect.anything(),
+      active_scholarships: expect.anything(),
+      bookings: expect.anything(),
+    });
+  });
+
+  // ── is_admin() is the canonical admin check AuthGuard relies on ──────────────
+  it('is_admin() RPC returns false for a non-admin', async () => {
+    const { data, error } = await studentB.client.rpc('is_admin');
+    expect(error).toBeNull();
+    expect(data).toBe(false);
+  });
+
+  it('is_admin() RPC returns true for an admin', async () => {
+    const { data, error } = await adminUser.client.rpc('is_admin');
+    expect(error).toBeNull();
+    expect(data).toBe(true);
   });
 });
