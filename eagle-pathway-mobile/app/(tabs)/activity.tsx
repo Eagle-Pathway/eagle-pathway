@@ -4,7 +4,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors, Typography, Spacing, CommonStyles } from '../../src/utils/theme';
 import { BookingsScreen } from '../../src/screens/index';
 import { TrackerScreen } from '../../src/screens/index';
+import TutorEarningsScreen from '../../src/screens/tutors/TutorEarningsScreen';
 import ServiceRequestScreen from '../service-request';
+import { useAuthStore } from '../../src/store/authStore';
 
 type Segment = 'bookings' | 'tracker' | 'pay';
 
@@ -15,7 +17,15 @@ const SEGMENTS: { key: Segment; label: string; emoji: string }[] = [
 ];
 
 export default function ActivityScreen() {
+  const { user } = useAuthStore();
+  const isTutor = (user?.active_role || user?.roles?.[0] || 'student').toLowerCase() === 'tutor';
   const [active, setActive] = useState<Segment>('bookings');
+
+  // For tutors this tab is labelled "Earnings" — show payouts, not the student
+  // Sessions/Tracker/Pay activity segments.
+  if (isTutor) {
+    return <TutorEarningsScreen />;
+  }
 
   return (
     <View style={CommonStyles.flex1}>
