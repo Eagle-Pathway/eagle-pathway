@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
-  ActivityIndicator, Alert,
+  ActivityIndicator, Alert, Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -10,12 +10,13 @@ import { EmptyState } from '@/components/common';
 import { scholarshipsService } from '@/services/scholarships';
 import { useAuthStore } from '@/store/authStore';
 import { useDocumentStore } from '@/store/documentStore';
-import type { DocumentType } from '@/types';
+import type { DocumentType, Document } from '@/types';
 
 export function DocumentsScreen() {
   const { user } = useAuthStore();
-  const { documents, loadDocuments, uploadDocument } = useDocumentStore();
+  const { documents, loadDocuments, uploadDocument, deleteDocument } = useDocumentStore();
   const [loading, setLoading] = useState(true);
+  const [uploadingType, setUploadingType] = useState<DocumentType | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<'all' | 'academic' | 'identity' | 'other'>('all');
 
   useEffect(() => {
@@ -52,16 +53,46 @@ export function DocumentsScreen() {
     sop: '✍️', other: '📁',
   };
 
-  const handleUpload = async () => {
+  const docOfType = (type: DocumentType) => (documents || []).find(d => d.document_type === type);
+
+  // Upload a file tagged with a specific type, so the checklist + categories
+  // are accurate (previously every upload was saved as "other").
+  const handleUploadType = async (type: DocumentType) => {
+    if (!user || uploadingType) return;
     try {
       const result = await scholarshipsService.pickDocument();
-      if (result.canceled || !result.assets?.[0] || !user) return;
+      if (result.canceled || !result.assets?.[0]) return;
       const asset = result.assets[0];
-      await uploadDocument({ userId: user.id, documentType: 'other', fileUri: asset.uri, fileName: asset.name });
-      Alert.alert('Success', 'Document uploaded!');
+      setUploadingType(type);
+      await uploadDocument({ userId: user.id, documentType: type, fileUri: asset.uri, fileName: asset.name });
+      Alert.alert('Uploaded', 'Your document was added to the vault.');
     } catch (e: any) {
-      Alert.alert('Error', e.message);
+      Alert.alert('Error', e.message || 'Upload failed');
+    } finally {
+      setUploadingType(null);
     }
+  };
+
+  const openDoc = (doc: Document) => {
+    if (!doc.file_url) return Alert.alert('Unavailable', 'This document has no preview link.');
+    Linking.openURL(doc.file_url).catch(() => Alert.alert('Error', 'Could not open this document.'));
+  };
+
+  const confirmDelete = (doc: Document) => {
+    Alert.alert('Delete document?', doc.file_name, [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await deleteDocument(doc);
+          } catch (e: any) {
+            Alert.alert('Error', e.message || 'Failed to delete');
+          }
+        },
+      },
+    ]);
   };
 
   return (
@@ -71,7 +102,7 @@ export function DocumentsScreen() {
           <Text style={{ fontSize: 20, color: Colors.text }}>←</Text>
         </TouchableOpacity>
         <Text style={docStyles.title}>Document Vault</Text>
-        <TouchableOpacity style={docStyles.mainUpload} onPress={handleUpload} activeOpacity={0.8}>
+        <TouchableOpacity style={docStyles.mainUpload} onPress={() => handleUploadType('other')} activeOpacity={0.8}>
           <Text style={docStyles.mainUploadText}>+</Text>
         </TouchableOpacity>
       </View>
@@ -97,13 +128,28 @@ export function DocumentsScreen() {
 
         <View style={docStyles.section}>
           <Text style={docStyles.sectionTitle}>Essential Checklist</Text>
+          <Text style={docStyles.sectionHint}>Tap to {''}upload — or view a document you've already added.</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={docStyles.checklistScroll}>
-            {CORE_DOCS.map(item => (
-              <View key={item.type} style={[docStyles.checkItem, hasDoc(item.type) && docStyles.checkItemActive]}>
-                <Text style={docStyles.checkIcon}>{hasDoc(item.type) ? '✅' : '🔴'}</Text>
-                <Text style={[docStyles.checkLabel, hasDoc(item.type) && docStyles.checkLabelActive]}>{item.label}</Text>
-              </View>
-            ))}
+            {CORE_DOCS.map(item => {
+              const uploaded = hasDoc(item.type);
+              const isUploading = uploadingType === item.type;
+              return (
+                <TouchableOpacity
+                  key={item.type}
+                  style={[docStyles.checkItem, uploaded && docStyles.checkItemActive]}
+                  activeOpacity={0.8}
+                  disabled={isUploading}
+                  onPress={() => {
+                    const existing = docOfType(item.type);
+                    if (existing) openDoc(existing);
+                    else handleUploadType(item.type);
+                  }}
+                >
+                  <Text style={docStyles.checkIcon}>{isUploading ? '⏳' : uploaded ? '✅' : '⬆️'}</Text>
+                  <Text style={[docStyles.checkLabel, uploaded && docStyles.checkLabelActive]}>{item.label}</Text>
+                </TouchableOpacity>
+              );
+            })}
           </ScrollView>
         </View>
 
@@ -132,14 +178,20 @@ export function DocumentsScreen() {
         ) : (
           <View style={docStyles.docList}>
             {filteredDocs.map(doc => (
-              <TouchableOpacity key={doc.id} style={docStyles.docItem} activeOpacity={0.9}>
+              <TouchableOpacity
+                key={doc.id}
+                style={docStyles.docItem}
+                activeOpacity={0.9}
+                onPress={() => openDoc(doc)}
+                onLongPress={() => confirmDelete(doc)}
+              >
                 <View style={[docStyles.docIcon, { backgroundColor: doc.status === 'approved' ? Colors.greenLight : doc.status === 'rejected' ? Colors.redLight : Colors.blueLight }]}>
                   <Text style={{ fontSize: 18 }}>{DOC_EMOJIS[doc.document_type] || '📄'}</Text>
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={docStyles.docName} numberOfLines={1}>{doc.file_name}</Text>
                   <Text style={docStyles.docMeta}>
-                    {doc.document_type.replace('_', ' ')} · {(doc.file_size / 1024 / 1024).toFixed(1)} MB
+                    {doc.document_type.replace(/_/g, ' ')} · {(doc.file_size / 1024 / 1024).toFixed(1)} MB · Tap to view
                   </Text>
                 </View>
                 <View style={[docStyles.statusPill, { backgroundColor: doc.status === 'approved' ? Colors.greenLight : doc.status === 'rejected' ? Colors.redLight : Colors.goldLight }]}>
@@ -169,6 +221,7 @@ const docStyles = StyleSheet.create({
   statLbl: { fontSize: 11, color: Colors.textSecondary, fontWeight: Typography.semibold, textTransform: 'uppercase', letterSpacing: 0.5 },
   section: { marginBottom: Spacing.xl },
   sectionTitle: { fontSize: Typography.lg, fontWeight: Typography.bold, color: Colors.text, marginHorizontal: Spacing.xl, marginBottom: Spacing.sm },
+  sectionHint: { fontSize: Typography.xs, color: Colors.textSecondary, marginHorizontal: Spacing.xl, marginBottom: Spacing.sm },
   checklistScroll: { paddingHorizontal: Spacing.xl, gap: Spacing.sm },
   checkItem: { paddingHorizontal: 16, paddingVertical: 12, backgroundColor: Colors.white, borderRadius: Radius.lg, borderWidth: 1, borderColor: Colors.border, flexDirection: 'row', alignItems: 'center', gap: 10, minWidth: 160 },
   checkItemActive: { borderColor: Colors.greenLight, backgroundColor: Colors.greenLight + '10' },

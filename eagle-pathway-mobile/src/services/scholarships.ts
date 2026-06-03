@@ -197,6 +197,15 @@ export const scholarshipsService = {
     return data as Document;
   },
 
+  async deleteDocument(doc: { id: string; file_path?: string | null }): Promise<void> {
+    // Best-effort storage cleanup; the row deletion is what matters for the vault.
+    if (doc.file_path) {
+      await supabase.storage.from('documents').remove([doc.file_path]).catch(() => {});
+    }
+    const { error } = await supabase.from('documents').delete().eq('id', doc.id);
+    if (error) throw error;
+  },
+
   async getUserDocuments(userId: string): Promise<Document[]> {
     const { data, error } = await supabase
       .from('documents')
