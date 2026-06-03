@@ -43,8 +43,8 @@ export default function HomeScreen() {
   } = useTaskStore();
   
   // Finance Store
-  const { 
-    tutorPayouts, isLoadingPayouts, loadTutorPayouts, submitPayoutRequest 
+  const {
+    tutorPayouts, isLoadingPayouts, loadTutorPayouts, submitPayoutRequest, balance, loadBalance
   } = useFinanceStore();
   
   // Parent Store
@@ -67,6 +67,7 @@ export default function HomeScreen() {
     if (isTutor) {
       dataTasks.push(loadTutorBookings(user.id));
       dataTasks.push(loadTutorPayouts(user.id));
+      dataTasks.push(loadBalance());
     } else if (isParent) {
       dataTasks.push(loadLinkedStudents(user.id));
       dataTasks.push(loadLinkedStudentApplications(user.id));
@@ -155,6 +156,7 @@ export default function HomeScreen() {
         tutorProfile={tutorProfile}
         tutorPayouts={tutorPayouts}
         isLoadingPayouts={isLoadingPayouts}
+        availableBalance={balance?.available ?? 0}
         updateBookingStatus={updateBookingStatus}
         submitPayoutRequest={submitPayoutRequest}
         loading={loading}

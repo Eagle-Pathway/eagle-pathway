@@ -48,5 +48,16 @@ export const financeService = {
 
     if (error) throw error;
     return data as PayoutRequest;
-  }
+  },
+
+  // Authoritative withdrawable balance — matches the payout-ceiling trigger.
+  async getBalance(): Promise<{ earned: number; pledged: number; available: number }> {
+    const { data, error } = await supabase.rpc('get_tutor_balance');
+    if (error) throw error;
+    return {
+      earned: Number(data?.earned) || 0,
+      pledged: Number(data?.pledged) || 0,
+      available: Number(data?.available) || 0,
+    };
+  },
 };
