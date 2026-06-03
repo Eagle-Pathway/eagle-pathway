@@ -18,6 +18,7 @@ import {
   Briefcase,
   MessageSquare,
   Globe,
+  Award,
   ChevronLeft,
   ChevronRight
 } from 'lucide-react';
@@ -65,6 +66,7 @@ export default function Sidebar() {
     { name: 'Documents', href: '/documents', icon: FileText },
     { name: 'Applications', href: '/applications', icon: Briefcase },
     { name: 'Scholarships', href: '/scholarships', icon: GraduationCap },
+    { name: 'Success Stories', href: '/success-stories', icon: Award },
     { name: 'Bookings', href: '/bookings', icon: Calendar },
     { name: 'Service Requests', href: '/services', icon: Globe },
     { name: 'Notifications', href: '/notifications', icon: Bell },
