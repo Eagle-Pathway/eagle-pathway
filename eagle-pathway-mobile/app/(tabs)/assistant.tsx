@@ -125,7 +125,7 @@ export default function AssistantScreen() {
           title: 'Eagle AI Guide',
           headerTitleStyle: { fontWeight: 'bold', color: Colors.blueDark },
           headerLeft: () => (
-            <TouchableOpacity onPress={() => router.back()} style={{ marginLeft: 16 }}>
+            <TouchableOpacity onPress={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)/home'))} style={{ marginLeft: 16 }}>
               <Ionicons name="arrow-back" size={24} color={Colors.text} />
             </TouchableOpacity>
           ),

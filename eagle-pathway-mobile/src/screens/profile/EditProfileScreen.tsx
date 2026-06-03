@@ -50,7 +50,7 @@ export function EditProfileScreen() {
         gpa_max: formData.gpa_max ? parseFloat(formData.gpa_max.toString()) : undefined,
       });
       Alert.alert('Success', 'Profile updated successfully!');
-      router.back();
+      (router.canGoBack() ? router.back() : router.replace('/(tabs)/home'));
     } catch (e: any) {
       Alert.alert('Error', e.message || 'Update failed');
     } finally {
@@ -86,7 +86,7 @@ export function EditProfileScreen() {
   return (
     <SafeAreaView style={CommonStyles.screenBg} edges={['top']}>
       <View style={editProfStyles.header}>
-        <TouchableOpacity style={editProfStyles.backBtn} onPress={() => router.back()} activeOpacity={0.8}>
+        <TouchableOpacity style={editProfStyles.backBtn} onPress={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)/home'))} activeOpacity={0.8}>
           <Text style={{ fontSize: 20, color: Colors.text }}>←</Text>
         </TouchableOpacity>
         <Text style={editProfStyles.title}>Edit Profile</Text>

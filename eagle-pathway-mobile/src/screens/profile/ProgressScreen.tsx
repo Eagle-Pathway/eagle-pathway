@@ -52,7 +52,7 @@ export function ProgressScreen() {
       <View style={progStyles.hero}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.xl }}>
           <View><Text style={progStyles.heroLabel}>Your Journey</Text><Text style={progStyles.heroTitle}>My Progress</Text></View>
-          <TouchableOpacity style={progStyles.backBtn} onPress={() => router.back()} activeOpacity={0.8}><Text style={{ color: Colors.white, fontSize: 20 }}>←</Text></TouchableOpacity>
+          <TouchableOpacity style={progStyles.backBtn} onPress={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)/home'))} activeOpacity={0.8}><Text style={{ color: Colors.white, fontSize: 20 }}>←</Text></TouchableOpacity>
         </View>
         <View style={progStyles.scoreBox}>
           <Text style={progStyles.scoreLabel}>Scholarship Readiness Score</Text>

@@ -184,7 +184,7 @@ export function TrackerScreen({ hideHeader = false }: { hideHeader?: boolean }) 
       <View style={trackerStyles.hero}>
         {!hideHeader && (
           <View style={trackerStyles.heroHeader}>
-            <ScaleBounce style={trackerStyles.backBtnCircle} onPress={() => router.back()}>
+            <ScaleBounce style={trackerStyles.backBtnCircle} onPress={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)/home'))}>
               <Text style={{ fontSize: 20, color: Colors.white }}>←</Text>
             </ScaleBounce>
           </View>

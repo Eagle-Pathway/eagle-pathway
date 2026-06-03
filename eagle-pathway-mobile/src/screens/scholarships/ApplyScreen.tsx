@@ -105,7 +105,7 @@ export function ApplyScreen() {
   return (
     <SafeAreaView style={CommonStyles.screenBg} edges={['top']}>
       <View style={applyStyles.header}>
-        <TouchableOpacity style={applyStyles.backBtn} onPress={() => router.back()} activeOpacity={0.8}><Text style={{ fontSize: 20, color: Colors.text }}>←</Text></TouchableOpacity>
+        <TouchableOpacity style={applyStyles.backBtn} onPress={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)/home'))} activeOpacity={0.8}><Text style={{ fontSize: 20, color: Colors.text }}>←</Text></TouchableOpacity>
         <Text style={applyStyles.title}>Your Application</Text>
       </View>
       <Text style={applyStyles.subtitle}>{packageTier?.charAt(0).toUpperCase()}{packageTier?.slice(1)} Package</Text>
@@ -320,7 +320,7 @@ export function ApplyScreen() {
       </ScrollView>
 
       <View style={applyStyles.bottomBar}>
-        <Button title={step === 1 ? 'Cancel' : '← Back'} variant="secondary" onPress={() => step > 1 ? setStep(s => s - 1) : router.back()} style={{ flex: 0.5 }} fullWidth={false} />
+        <Button title={step === 1 ? 'Cancel' : '← Back'} variant="secondary" onPress={() => step > 1 ? setStep(s => s - 1) : (router.canGoBack() ? router.back() : router.replace('/(tabs)/home'))} style={{ flex: 0.5 }} fullWidth={false} />
         <Button title={step === 5 ? 'Confirm & Submit' : 'Continue →'} variant="primary" onPress={step < 5 ? () => setStep(s => s + 1) : handleSubmit} loading={loading} style={{ flex: 1 }} fullWidth={false} />
       </View>
     </SafeAreaView>

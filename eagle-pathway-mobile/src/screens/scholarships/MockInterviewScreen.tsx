@@ -75,7 +75,7 @@ export function MockInterviewScreen() {
   return (
     <SafeAreaView style={CommonStyles.screenBg} edges={['top']}>
       <View style={s.header}>
-        <TouchableOpacity style={s.backBtn} onPress={() => router.back()} activeOpacity={0.8}>
+        <TouchableOpacity style={s.backBtn} onPress={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)/home'))} activeOpacity={0.8}>
           <Text style={{ fontSize: 20, color: Colors.text }}>←</Text>
         </TouchableOpacity>
         <Text style={s.title} numberOfLines={1}>Mock Interview</Text>
@@ -156,7 +156,7 @@ export function MockInterviewScreen() {
               <TouchableOpacity style={s.primaryBtn} onPress={start} activeOpacity={0.85}>
                 <Text style={s.primaryBtnText}>Practice again</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={s.secondaryBtn} onPress={() => router.back()} activeOpacity={0.85}>
+              <TouchableOpacity style={s.secondaryBtn} onPress={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)/home'))} activeOpacity={0.85}>
                 <Text style={s.secondaryBtnText}>Done</Text>
               </TouchableOpacity>
             </View>

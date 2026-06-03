@@ -93,7 +93,7 @@ export default function ChatDetailScreen() {
     <SafeAreaView style={[CommonStyles.flex1, { backgroundColor: Colors.bg }]} edges={['top']}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
+        <TouchableOpacity style={styles.backBtn} onPress={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)/home'))}>
           <Text style={{ fontSize: 20 }}>←</Text>
         </TouchableOpacity>
         <Avatar initials={chatUserFullName?.charAt(0) || 'T'} size={36} color={Colors.blue} />

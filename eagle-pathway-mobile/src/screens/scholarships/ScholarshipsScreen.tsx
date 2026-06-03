@@ -44,7 +44,7 @@ export default function ScholarshipsScreen({ hideBack = false }: { hideBack?: bo
           <View style={{ marginBottom: Spacing.md }}>
             <TouchableOpacity 
               style={{ width: 36, height: 36, backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 10, alignItems: 'center', justifyContent: 'center' }} 
-              onPress={() => router.back()}
+              onPress={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)/home'))}
             >
               <Text style={{ fontSize: 20, color: Colors.white }}>←</Text>
             </TouchableOpacity>

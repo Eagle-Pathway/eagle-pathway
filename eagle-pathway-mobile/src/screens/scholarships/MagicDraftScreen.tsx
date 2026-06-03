@@ -39,7 +39,7 @@ export function MagicDraftScreen() {
   return (
     <SafeAreaView style={CommonStyles.screenBg} edges={['top']}>
       <View style={magicStyles.header}>
-        <TouchableOpacity style={magicStyles.backBtn} onPress={() => router.back()} activeOpacity={0.8}>
+        <TouchableOpacity style={magicStyles.backBtn} onPress={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)/home'))} activeOpacity={0.8}>
           <Text style={{ fontSize: 20, color: Colors.text }}>←</Text>
         </TouchableOpacity>
         <Text style={magicStyles.title}>Eagle AI Magic Draft</Text>

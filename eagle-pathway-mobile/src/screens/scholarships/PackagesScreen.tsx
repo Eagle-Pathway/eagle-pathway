@@ -38,7 +38,7 @@ export function PackagesScreen() {
   return (
     <SafeAreaView style={CommonStyles.screenBg} edges={['top']}>
       <View style={pkgStyles.header}>
-        <TouchableOpacity style={pkgStyles.backBtn} onPress={() => router.back()} activeOpacity={0.8}>
+        <TouchableOpacity style={pkgStyles.backBtn} onPress={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)/home'))} activeOpacity={0.8}>
           <Text style={{ fontSize: 20, color: Colors.text }}>←</Text>
         </TouchableOpacity>
         <Text style={pkgStyles.title}>Select Package</Text>
