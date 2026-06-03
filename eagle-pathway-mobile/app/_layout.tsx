@@ -100,6 +100,7 @@ export default function RootLayout() {
           <Stack screenOptions={{ headerShown: false }}>
             <Stack.Screen name="(auth)" options={{ headerShown: false }} />
             <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+            <Stack.Screen name="onboarding" options={{ headerShown: false, gestureEnabled: false }} />
             <Stack.Screen name="tutor-profile" options={{ presentation: 'card' }} />
             <Stack.Screen name="booking" options={{ presentation: 'card' }} />
             <Stack.Screen name="scholarship-detail" options={{ presentation: 'card' }} />
