@@ -10,6 +10,7 @@ import { useRealtimeStore } from '../src/store/realtimeStore';
 import { useScholarshipStore } from '../src/store/scholarshipStore';
 import { notificationsService } from '../src/services/notifications';
 import { ErrorBoundary } from '../src/components/ErrorBoundary';
+import { OfflineBanner } from '../src/components/OfflineBanner';
 import { initErrorLogging } from '../src/services/errorLog';
 
 SplashScreen.preventAutoHideAsync();
@@ -114,6 +115,7 @@ export default function RootLayout() {
             <Stack.Screen name="notifications" options={{ presentation: 'card' }} />
             <Stack.Screen name="settings" options={{ presentation: 'card' }} />
           </Stack>
+          <OfflineBanner />
         </ErrorBoundary>
       </SafeAreaProvider>
     </GestureHandlerRootView>
