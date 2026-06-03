@@ -86,33 +86,6 @@ export const notificationsService = {
     return count || 0;
   },
 
-
-  async sendMatchNotification(scholarshipName: string, matchScore: number): Promise<void> {
-    await Notifications.scheduleNotificationAsync({
-      content: {
-        title: '🎯 ' + matchScore + '% Match Found!',
-        body: 'A new scholarship "' + scholarshipName + '" matches your profile. Tap to apply now!',
-        data: { type: 'scholarship_match' },
-        sound: true,
-      },
-      trigger: null, // Immediate
-    });
-  },
-
-  async checkAndNotifyMatches(userId: string, scholarships: any[]): Promise<void> {
-    const highMatches = scholarships.filter((s: any) => (s.matchScore || 0) >= 85);
-    for (const match of highMatches.slice(0, 2)) {
-      await this.sendMatchNotification(match.name, match.matchScore);
-      // Store notification in DB
-      await supabase.from('notifications').insert({
-        user_id: userId,
-        title: '🎯 ' + match.matchScore + '% Match: ' + match.name,
-        body: 'This scholarship from ' + match.organization + ' is a near-perfect fit for your profile!',
-        type: 'scholarship_match',
-        is_read: false,
-      }).select();
-    }
-  },
   addNotificationListener(handler: (notification: Notifications.Notification) => void) {
     return Notifications.addNotificationReceivedListener(handler);
   },
