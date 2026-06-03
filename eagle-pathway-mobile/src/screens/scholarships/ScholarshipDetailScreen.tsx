@@ -11,6 +11,8 @@ import { Button, EmptyState, ScaleBounce } from '@/components/common';
 import { DetailSkeleton } from '@/components/LoadingSkeleton';
 import { scholarshipsService } from '@/services/scholarships';
 import { useScholarshipStore } from '@/store/scholarshipStore';
+import { useAuthStore } from '@/store/authStore';
+import { analyzeEligibility } from '@/utils/eligibility';
 import type { Scholarship } from '@/types';
 import { getFlagEmoji } from '@eagle-pathway/shared';
 
@@ -38,6 +40,7 @@ const renderLinkedText = (text: string) => {
 export function ScholarshipDetailScreen() {
   const { scholarshipId } = useLocalSearchParams<{ scholarshipId: string }>();
   const { savedScholarshipIds, toggleSaveScholarship } = useScholarshipStore();
+  const { user } = useAuthStore();
   const [scholarship, setScholarship] = useState<Scholarship | null>(null);
   const [loading, setLoading] = useState(true);
   const isSaved = scholarshipId ? savedScholarshipIds.includes(scholarshipId) : false;
@@ -73,6 +76,13 @@ export function ScholarshipDetailScreen() {
       </SafeAreaView>
     );
   }
+
+  const eligibility = analyzeEligibility(user, scholarship);
+  const eligibilityChip = eligibility.blockers > 0
+    ? { text: `${eligibility.blockers} to address`, color: Colors.red, bg: Colors.redLight }
+    : eligibility.hasProfileGaps
+    ? { text: 'Finish profile to check', color: Colors.goldDark, bg: Colors.goldLight }
+    : { text: "You're eligible ✓", color: Colors.green, bg: Colors.greenLight };
 
   return (
     <SafeAreaView style={[CommonStyles.flex1, { backgroundColor: Colors.blueDark }]} edges={['top']}>
@@ -120,6 +130,50 @@ export function ScholarshipDetailScreen() {
 
       <ScrollView style={{ backgroundColor: Colors.bg }} contentContainerStyle={{ paddingBottom: 100 }}>
         <View style={[CommonStyles.card, { marginTop: Spacing.lg }]}>
+          {eligibility.total > 0 && (
+            <View style={sdStyles.section}>
+              <View style={sdStyles.eligHeader}>
+                <Text style={sdStyles.sectionTitle}>Your Eligibility</Text>
+                <View style={[sdStyles.eligChip, { backgroundColor: eligibilityChip.bg }]}>
+                  <Text style={[sdStyles.eligChipText, { color: eligibilityChip.color }]}>{eligibilityChip.text}</Text>
+                </View>
+              </View>
+
+              {eligibility.criteria.map(c => {
+                const tone = c.status === 'met'
+                  ? { icon: '✓', color: Colors.green, bg: Colors.greenLight }
+                  : c.status === 'unmet'
+                  ? { icon: '✕', color: Colors.red, bg: Colors.redLight }
+                  : { icon: '?', color: Colors.goldDark, bg: Colors.goldLight };
+                return (
+                  <View key={c.key} style={sdStyles.eligRow}>
+                    <View style={[sdStyles.eligIcon, { backgroundColor: tone.bg }]}>
+                      <Text style={{ color: tone.color, fontSize: 12, fontWeight: 'bold' }}>{tone.icon}</Text>
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={sdStyles.eligLabel}>{c.label}</Text>
+                      <Text style={sdStyles.eligDetail}>{c.detail}</Text>
+                      {c.status === 'unmet' && c.action && (
+                        <ScaleBounce style={sdStyles.eligCta} onPress={() => router.push(c.action!.route as any)}>
+                          <Text style={sdStyles.eligCtaText}>{c.action.label} →</Text>
+                        </ScaleBounce>
+                      )}
+                    </View>
+                  </View>
+                );
+              })}
+
+              {eligibility.hasProfileGaps && (
+                <ScaleBounce
+                  style={sdStyles.profileCta}
+                  onPress={() => router.push('/profile/edit')}
+                >
+                  <Text style={sdStyles.profileCtaText}>Complete your profile to check eligibility →</Text>
+                </ScaleBounce>
+              )}
+            </View>
+          )}
+
           <View style={sdStyles.section}>
             <Text style={sdStyles.sectionTitle}>About This Scholarship</Text>
             <Text style={sdStyles.bodyText}>{renderLinkedText(scholarship.description)}</Text>
@@ -249,6 +303,17 @@ const sdStyles = StyleSheet.create({
   benefitRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: Spacing.sm, borderBottomWidth: 1, borderBottomColor: Colors.grayLight },
   benefitLabel: { fontSize: Typography.base, color: Colors.textSecondary },
   benefitValue: { fontSize: Typography.base, fontWeight: Typography.semibold, color: Colors.text },
+  eligHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.md },
+  eligChip: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: Radius.full },
+  eligChipText: { fontSize: Typography.xs, fontWeight: Typography.bold },
+  eligRow: { flexDirection: 'row', gap: Spacing.md, marginBottom: Spacing.md, alignItems: 'flex-start' },
+  eligIcon: { width: 22, height: 22, borderRadius: 11, alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 1 },
+  eligLabel: { fontSize: Typography.md, fontWeight: Typography.semibold, color: Colors.text },
+  eligDetail: { fontSize: Typography.sm, color: Colors.textSecondary, marginTop: 2, lineHeight: 18 },
+  eligCta: { alignSelf: 'flex-start', backgroundColor: Colors.blue, paddingHorizontal: 12, paddingVertical: 7, borderRadius: Radius.md, marginTop: Spacing.sm },
+  eligCtaText: { color: Colors.white, fontSize: Typography.sm, fontWeight: Typography.bold },
+  profileCta: { backgroundColor: Colors.blueLight, padding: Spacing.md, borderRadius: Radius.md, alignItems: 'center', borderWidth: 1, borderColor: Colors.blue, marginTop: Spacing.xs },
+  profileCtaText: { color: Colors.blue, fontSize: Typography.sm, fontWeight: Typography.bold },
   reqItem: { flexDirection: 'row', gap: Spacing.md, marginBottom: Spacing.sm, alignItems: 'flex-start' },
   checkBox: { width: 18, height: 18, borderRadius: 5, backgroundColor: Colors.greenLight, alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 1 },
   reqText: { fontSize: Typography.md, color: Colors.text, flex: 1 },
