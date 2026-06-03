@@ -11,6 +11,7 @@ import { useScholarshipStore } from '@/store/scholarshipStore';
 import { useBookingStore } from '@/store/bookingStore';
 import { useDocumentStore } from '@/store/documentStore';
 import { getFlagEmoji } from '@eagle-pathway/shared';
+import { computeAchievements, earnedCount } from '@/utils/achievements';
 
 export function ProgressScreen() {
   const { user } = useAuthStore();
@@ -37,6 +38,9 @@ export function ProgressScreen() {
 
   const doneCount = (checklist || []).filter(c => c.done).length;
   const readiness = Math.round((doneCount / (checklist || []).length) * 100);
+
+  const achievements = computeAchievements({ user, applications, documents, bookings });
+  const earned = earnedCount(achievements);
 
   const academicJourneys = [
     { title: 'Grade 12 Preparation', sub: 'Math & Physics', progress: 80, color: Colors.green, tag: 'Active' },
@@ -119,6 +123,20 @@ export function ProgressScreen() {
           ))
         )}
 
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginRight: Spacing.xl }}>
+          <Text style={CommonStyles.sectionTitle}>Milestones</Text>
+          <Text style={progStyles.milestoneCount}>{earned} of {achievements.length} unlocked</Text>
+        </View>
+        <View style={progStyles.badgeGrid}>
+          {achievements.map(a => (
+            <View key={a.key} style={[progStyles.badge, !a.earned && progStyles.badgeLocked]}>
+              <Text style={[progStyles.badgeIcon, !a.earned && { opacity: 0.4 }]}>{a.earned ? a.icon : '🔒'}</Text>
+              <Text style={[progStyles.badgeTitle, !a.earned && { color: Colors.textSecondary }]} numberOfLines={1}>{a.title}</Text>
+              <Text style={progStyles.badgeDesc} numberOfLines={2}>{a.description}</Text>
+            </View>
+          ))}
+        </View>
+
         <Text style={CommonStyles.sectionTitle}>Readiness Checklist</Text>
         <View style={[CommonStyles.card, { padding: Spacing.lg }]}>
           {checklist.map((item, i) => (
@@ -155,6 +173,13 @@ const progStyles = StyleSheet.create({
   tagText: { fontSize: Typography.sm, fontWeight: Typography.semibold },
   startBtn: { backgroundColor: Colors.blueLight, borderRadius: Radius.xl, padding: Spacing.lg, alignItems: 'center', borderWidth: 1.5, borderColor: Colors.blue, borderStyle: 'dashed' },
   startBtnText: { fontSize: Typography.md, fontWeight: Typography.semibold, color: Colors.blue },
+  milestoneCount: { fontSize: Typography.sm, fontWeight: Typography.semibold, color: Colors.gold },
+  badgeGrid: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: Spacing.xl, gap: Spacing.sm, marginBottom: Spacing.md },
+  badge: { width: '31%', backgroundColor: Colors.card, borderRadius: Radius.lg, padding: Spacing.md, borderWidth: 1, borderColor: Colors.gold + '55', alignItems: 'center' },
+  badgeLocked: { borderColor: Colors.border, backgroundColor: Colors.bg },
+  badgeIcon: { fontSize: 26, marginBottom: 6 },
+  badgeTitle: { fontSize: Typography.xs, fontWeight: Typography.bold, color: Colors.text, textAlign: 'center' },
+  badgeDesc: { fontSize: 9, color: Colors.textSecondary, textAlign: 'center', marginTop: 2, lineHeight: 12 },
   checkItem: { flexDirection: 'row', gap: Spacing.md, alignItems: 'center', marginBottom: Spacing.md },
   checkBox: { width: 20, height: 20, borderRadius: 6, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   checkLabel: { fontSize: Typography.base, color: Colors.text, flex: 1 },
