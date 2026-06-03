@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { readFileSync } from 'fs';
+import { readFileSync, readdirSync } from 'fs';
 import { join } from 'path';
 
 /**
@@ -38,7 +38,7 @@ interface Policy {
 
 function parseTables(sql: string): string[] {
   const tables: string[] = [];
-  const re = /CREATE TABLE (?:IF NOT EXISTS )?(\w+)\s*\(/gi;
+  const re = /CREATE TABLE (?:IF NOT EXISTS )?(?:public\.)?(\w+)\s*\(/gi;
   let m: RegExpExecArray | null;
   while ((m = re.exec(sql))) tables.push(m[1]);
   return tables;
@@ -46,7 +46,7 @@ function parseTables(sql: string): string[] {
 
 function parseRlsEnabled(sql: string): Set<string> {
   const enabled = new Set<string>();
-  const re = /ALTER TABLE (\w+) ENABLE ROW LEVEL SECURITY/gi;
+  const re = /ALTER TABLE (?:public\.)?(\w+) ENABLE ROW LEVEL SECURITY/gi;
   let m: RegExpExecArray | null;
   while ((m = re.exec(sql))) enabled.add(m[1]);
   return enabled;
@@ -125,4 +125,28 @@ describe('RLS static audit: canonical schema', () => {
       expect(tables, `PUBLIC_READABLE lists "${table}" but it is not in the schema`).toContain(table);
     }
   });
+});
+
+// The canonical schema only covers the base tables. Feature tables added in
+// later migrations (client_errors, recommendation_requests, success_stories,
+// ai_rate_limit, …) must also ship with RLS — this scans every migration file
+// so a new table can't slip in unprotected.
+const MIGRATIONS_DIR = join(__dirname, '..', '..', 'supabase', 'migrations');
+const allSql = readdirSync(MIGRATIONS_DIR)
+  .filter((f) => f.endsWith('.sql'))
+  .map((f) => readFileSync(join(MIGRATIONS_DIR, f), 'utf8'))
+  .join('\n');
+const allTables = Array.from(new Set(parseTables(allSql)));
+const allRls = parseRlsEnabled(allSql);
+
+describe('RLS static audit: feature tables added via migrations', () => {
+  // These hold user/telemetry data and must have RLS, but live in migration
+  // files rather than the canonical schema, so the schema audit above misses them.
+  it.each(['client_errors', 'recommendation_requests', 'success_stories', 'ai_rate_limit'])(
+    'creates %s with RLS enabled',
+    (table) => {
+      expect(allTables, `expected "${table}" to be created in a migration`).toContain(table);
+      expect(allRls.has(table), `"${table}" must have RLS enabled`).toBe(true);
+    },
+  );
 });
