@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { MessageCircle, X, Send, User, Bot, Loader2 } from 'lucide-react';
+import { supabase } from '@/lib/supabase';
 
 interface Message {
   role: 'user' | 'assistant' | 'system';
@@ -33,9 +34,13 @@ export default function AiAssistantWidget() {
     setIsLoading(true);
 
     try {
+      const { data: { session } } = await supabase.auth.getSession();
       const response = await fetch('/api/assistant', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
+        },
         body: JSON.stringify({ messages: [...messages, userMessage] }),
       });
 

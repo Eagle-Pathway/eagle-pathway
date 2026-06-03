@@ -15,6 +15,7 @@ import {
 import { Stack, useRouter } from 'expo-router';
 import { Colors } from '../../src/utils/theme';
 import { Ionicons } from '@expo/vector-icons';
+import { supabase } from '../../src/services/supabase';
 
 interface Message {
   role: 'user' | 'assistant' | 'system';
@@ -67,12 +68,14 @@ export default function AssistantScreen() {
 
     try {
       const apiUrl = getAssistantApiUrl();
+      const { data: { session } } = await supabase.auth.getSession();
 
       const response = await fetch(apiUrl, {
         method: 'POST',
-        headers: { 
+        headers: {
           'Content-Type': 'application/json',
-          'Accept': 'application/json'
+          'Accept': 'application/json',
+          ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
         },
         body: JSON.stringify({ messages: [...messages, userMessage] }),
       });
