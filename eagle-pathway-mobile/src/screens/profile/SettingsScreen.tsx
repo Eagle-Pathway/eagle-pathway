@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
   Switch,
@@ -6,21 +6,32 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Colors, Typography, Spacing, Radius } from '@/utils/theme';
+import { useAuthStore } from '@/store/authStore';
+import { notificationPrefsService, DEFAULT_PREFERENCES, type NotificationPreferences } from '@/services/notificationPrefs';
 
 export function SettingsScreen() {
-  const [sessionReminders, setSessionReminders] = useState(true);
-  const [scholarshipAlerts, setScholarshipAlerts] = useState(true);
-  const [documentUpdates, setDocumentUpdates] = useState(true);
-  const [messages, setMessages] = useState(false);
+  const { user } = useAuthStore();
+  const [prefs, setPrefs] = useState<NotificationPreferences>(DEFAULT_PREFERENCES);
+
+  useEffect(() => {
+    if (user) notificationPrefsService.get(user.id).then(setPrefs).catch(() => {});
+  }, [user?.id]);
+
+  // Optimistic toggle, then persist (preferences are user-owned in the DB).
+  const setPref = (key: keyof NotificationPreferences, value: boolean) => {
+    const next = { ...prefs, [key]: value };
+    setPrefs(next);
+    if (user) notificationPrefsService.save(user.id, next).catch(() => {});
+  };
 
   const SECTIONS = [
     {
       title: 'Notifications',
       items: [
-        { icon: '🔔', label: 'Session Reminders', type: 'toggle', value: sessionReminders, onChange: setSessionReminders },
-        { icon: '🎓', label: 'Scholarship Alerts', type: 'toggle', value: scholarshipAlerts, onChange: setScholarshipAlerts },
-        { icon: '📄', label: 'Document Updates', type: 'toggle', value: documentUpdates, onChange: setDocumentUpdates },
-        { icon: '💬', label: 'Message Notifications', type: 'toggle', value: messages, onChange: setMessages },
+        { icon: '🔔', label: 'Session Reminders', type: 'toggle', value: prefs.session_reminders, onChange: (v: boolean) => setPref('session_reminders', v) },
+        { icon: '🎓', label: 'Scholarship Alerts', type: 'toggle', value: prefs.scholarship_alerts, onChange: (v: boolean) => setPref('scholarship_alerts', v) },
+        { icon: '📄', label: 'Document Updates', type: 'toggle', value: prefs.document_updates, onChange: (v: boolean) => setPref('document_updates', v) },
+        { icon: '💬', label: 'Message Notifications', type: 'toggle', value: prefs.message_notifications, onChange: (v: boolean) => setPref('message_notifications', v) },
       ],
     },
     {
