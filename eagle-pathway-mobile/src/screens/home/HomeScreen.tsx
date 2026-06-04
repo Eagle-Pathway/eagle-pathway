@@ -5,6 +5,9 @@ import { Colors, CommonStyles } from '@/utils/theme';
 import { useAuthStore } from '@/store/authStore';
 import { scholarshipsService } from '@/services/scholarships';
 import { tutorsService } from '@/services/tutors';
+import { syncDeadlineReminders } from '@/services/deadlineReminders';
+import { getApplicationDeadlines } from '@/utils/deadlines';
+import { notificationPrefsService } from '@/services/notificationPrefs';
 
 // Specialized Domain Stores
 import { useScholarshipStore } from '@/store/scholarshipStore';
@@ -109,6 +112,20 @@ export default function HomeScreen() {
     await load();
     setRefreshing(false);
   };
+
+  // Keep local deadline reminders in sync with the student's active applications,
+  // honoring the Scholarship Alerts preference (off => clear any scheduled ones).
+  useEffect(() => {
+    if (!user || isTutor || isParent) return;
+    let cancelled = false;
+    (async () => {
+      const prefs = await notificationPrefsService.get(user.id).catch(() => null);
+      if (cancelled) return;
+      const enabled = prefs?.scholarship_alerts ?? true;
+      syncDeadlineReminders(enabled ? getApplicationDeadlines(applications) : []);
+    })();
+    return () => { cancelled = true; };
+  }, [applications, isTutor, isParent, user?.id]);
 
   if (!user) {
     return (
