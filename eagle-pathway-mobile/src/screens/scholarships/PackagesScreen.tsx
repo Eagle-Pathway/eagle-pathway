@@ -6,6 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Colors, Typography, Spacing, Radius, CommonStyles } from '@/utils/theme';
 import { Button } from '@/components/common';
+import { PACKAGE_PRICING, formatEtb } from '@/constants/packages';
 import type { PackageTier } from '@/types';
 
 export function PackagesScreen() {
@@ -13,21 +14,21 @@ export function PackagesScreen() {
 
   const packages = [
     {
-      tier: 'basic' as PackageTier, name: 'Basic Assistance', priceETB: '10,000', priceUSD: '85',
+      tier: 'basic' as PackageTier, name: 'Basic Assistance', priceETB: formatEtb(PACKAGE_PRICING.basic.etb), priceUSD: String(PACKAGE_PRICING.basic.usd),
       description: 'Ideal for self-starters who need a roadmap and initial review.',
       features: ['University shortlist (3 options)', 'Application checklist', 'Document review (1 round)', '1 consultation call (45 min)'],
       excluded: ['SOP writing support', 'Visa preparation', 'Post-offer support'],
       featured: false,
     },
     {
-      tier: 'standard' as PackageTier, name: 'Standard Full-Cycle', priceETB: '28,000', priceUSD: '225',
+      tier: 'standard' as PackageTier, name: 'Standard Full-Cycle', priceETB: formatEtb(PACKAGE_PRICING.standard.etb), priceUSD: String(PACKAGE_PRICING.standard.usd),
       description: 'Comprehensive guidance for students wanting maximum success.',
       features: ['Everything in Basic', 'SOP writing + 3 editing rounds', 'Full document review', '3 consultation calls', 'Application management'],
       excluded: ['Visa preparation'],
       featured: true,
     },
     {
-      tier: 'premium' as PackageTier, name: 'Premium Elite', priceETB: '55,000', priceUSD: '450',
+      tier: 'premium' as PackageTier, name: 'Premium Elite', priceETB: formatEtb(PACKAGE_PRICING.premium.etb), priceUSD: String(PACKAGE_PRICING.premium.usd),
       description: 'The white-glove service. We handle every detail for you.',
       features: ['Everything in Standard', 'Visa application guidance', 'Interview preparation (Mock)', 'Scholarship essay support', 'Pre-departure orientation'],
       excluded: [],
