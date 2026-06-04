@@ -6,6 +6,7 @@ import { format } from 'date-fns';
 import { Colors, Typography, Spacing, Radius, CommonStyles } from '@/utils/theme';
 import { ProgressBar, Avatar, SectionTitle, Skeleton, ScaleBounce } from '@/components/common';
 import { openWhatsApp } from '@/utils/linking';
+import { getApplicationDeadlines, deadlineUrgency, deadlineLabel } from '@/utils/deadlines';
 import { User, Application, Scholarship, Booking, StudentTask } from '@/types';
 import { getFlagEmoji } from '@eagle-pathway/shared';
 
@@ -137,7 +138,9 @@ export const StudentHome: React.FC<StudentHomeProps> = ({
   }
 
   const activeApplications = (applications || []).filter(a => !['accepted', 'rejected'].includes(a.status));
-  
+
+  const closingSoon = React.useMemo(() => getApplicationDeadlines(applications), [applications]);
+
   const readinessScore = React.useMemo(() => {
     let score = 0;
     if (activeApplications.length > 0) score += 30;
@@ -261,6 +264,39 @@ export const StudentHome: React.FC<StudentHomeProps> = ({
               <ProgressBar progress={readinessScore} color={Colors.gold} height={5} style={{ marginTop: 8 }} />
             </View>
           </TouchableOpacity>
+        )}
+
+        {closingSoon.length > 0 && (
+          <View style={{ marginTop: Spacing.xl }}>
+            <SectionTitle title="⏰ Closing Soon" />
+            <View style={{ paddingHorizontal: Spacing.xl, gap: Spacing.sm }}>
+              {closingSoon.map(item => {
+                const urgency = deadlineUrgency(item.daysLeft);
+                const tone =
+                  urgency === 'critical'
+                    ? { color: '#dc2626', bg: '#fef2f2' }
+                    : urgency === 'soon'
+                    ? { color: '#b45309', bg: '#fffbeb' }
+                    : { color: Colors.blue, bg: Colors.blueLight };
+                return (
+                  <TouchableOpacity
+                    key={item.key}
+                    style={styles.deadlineCard}
+                    onPress={() => router.push('/tracker')}
+                    activeOpacity={0.85}
+                  >
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.deadlineName} numberOfLines={1}>{item.title}</Text>
+                      <Text style={styles.deadlineSub}>Deadline {format(new Date(item.deadline), 'MMM d, yyyy')}</Text>
+                    </View>
+                    <View style={[styles.deadlineChip, { backgroundColor: tone.bg }]}>
+                      <Text style={[styles.deadlineChipText, { color: tone.color }]}>{deadlineLabel(item.daysLeft)}</Text>
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </View>
         )}
 
         {recommendedScholarships.length > 0 && (
@@ -480,6 +516,11 @@ const styles = StyleSheet.create({
   discoverFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 12 },
   discoverTag: { backgroundColor: '#eff6ff', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 },
   discoverTagText: { fontSize: 10, fontWeight: Typography.bold, color: Colors.blue },
+  deadlineCard: { backgroundColor: Colors.white, padding: Spacing.md, borderRadius: Radius.lg, flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderColor: Colors.border },
+  deadlineName: { fontSize: Typography.sm, fontWeight: Typography.bold, color: Colors.text },
+  deadlineSub: { fontSize: 11, color: Colors.textSecondary, marginTop: 2 },
+  deadlineChip: { paddingHorizontal: 10, paddingVertical: 5, borderRadius: 10, marginLeft: Spacing.md },
+  deadlineChipText: { fontSize: 11, fontWeight: Typography.bold },
   taskContainer: { paddingHorizontal: Spacing.xl },
   taskCard: { backgroundColor: Colors.white, padding: Spacing.md, borderRadius: Radius.lg, flexDirection: 'row', alignItems: 'center', marginBottom: Spacing.sm, borderWidth: 1, borderColor: Colors.border },
   taskCheck: { width: 20, height: 20, borderRadius: 10, borderWidth: 2, borderColor: Colors.gold, alignItems: 'center', justifyContent: 'center' },
