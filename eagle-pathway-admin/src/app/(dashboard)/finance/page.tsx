@@ -98,6 +98,18 @@ export default function FinancePage() {
     
     if (!error) {
       setPayments(prev => prev.map(p => p.id === paymentId ? { ...p, status } : p));
+      // Let the student know their receipt was reviewed (best-effort).
+      const payment = payments.find(p => p.id === paymentId);
+      if (payment?.user_id) {
+        await supabase.from('notifications').insert({
+          user_id: payment.user_id,
+          type: 'application_update',
+          title: status === 'approved' ? 'Payment approved ✅' : 'Payment needs attention',
+          body: status === 'approved'
+            ? 'Your payment was verified — your package is now active.'
+            : "We couldn't verify your payment receipt. Please re-submit a valid one.",
+        });
+      }
       showNotification('success', `Receipt ${status}.`);
       return;
     }
@@ -117,6 +129,18 @@ export default function FinancePage() {
     if (error) {
       showNotification('error', error.message || 'Failed to complete payout request.');
       return;
+    }
+
+    // Notify the tutor their payout was processed (best-effort).
+    const payout = payoutRequests.find(r => r.id === requestId);
+    const tutorUserId = payout?.tutor?.user_id;
+    if (tutorUserId) {
+      await supabase.from('notifications').insert({
+        user_id: tutorUserId,
+        type: 'application_update',
+        title: 'Payout completed 💸',
+        body: 'Your payout request has been processed and marked as completed.',
+      });
     }
 
     showNotification('success', 'Payout request marked as completed.');
