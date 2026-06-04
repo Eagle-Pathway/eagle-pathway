@@ -8,7 +8,7 @@ import { router } from 'expo-router';
 import { Colors, Typography, Spacing, Radius, CommonStyles } from '@/utils/theme';
 import { Button } from '@/components/common';
 import { useAuthStore } from '@/store/authStore';
-import { DEPARTMENTS, FIELDS_OF_STUDY } from '@eagle-pathway/shared';
+import { DEPARTMENTS, FIELDS_OF_STUDY, validatePhone } from '@eagle-pathway/shared';
 
 export function EditProfileScreen() {
   const { user, updateProfile } = useAuthStore();
@@ -32,11 +32,29 @@ export function EditProfileScreen() {
   // Using centralized metadata from @eagle-pathway/shared
 
   const handleSave = async () => {
+    // Validate before hitting the DB (gpa is a NUMERIC column; phone is UNIQUE NOT NULL).
+    const name = formData.full_name?.toString().trim();
+    const phone = formData.phone?.toString().trim();
+    if (!name) return Alert.alert('Name required', 'Please enter your full name.');
+    if (!phone) return Alert.alert('Phone required', 'Please enter your phone number.');
+    if (!validatePhone(phone)) return Alert.alert('Invalid phone', 'Enter a valid Ethiopian phone number (e.g. 0911234567).');
+
+    const gpaMaxNum = parseFloat(formData.gpa_max?.toString() || '4') || 4;
+    if (formData.gpa) {
+      const gpaNum = parseFloat(formData.gpa.toString());
+      if (Number.isNaN(gpaNum) || gpaNum < 0) {
+        return Alert.alert('Invalid GPA', 'Enter a valid GPA (a number, e.g. 3.6).');
+      }
+      if (gpaNum > gpaMaxNum) {
+        return Alert.alert('Invalid GPA', `Your GPA can't be higher than the maximum scale (${gpaMaxNum}).`);
+      }
+    }
+
     setLoading(true);
     try {
       await updateProfile({
-        full_name: formData.full_name,
-        phone: formData.phone,
+        full_name: name,
+        phone,
         city: formData.city,
         interested_subjects: formData.interested_subjects,
         academic_summary: formData.academic_summary,
