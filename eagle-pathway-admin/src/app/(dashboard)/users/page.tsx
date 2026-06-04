@@ -24,6 +24,7 @@ export default function UsersPage() {
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState('all');
   const [cityFilter, setCityFilter] = useState('all');
+  const [savingRole, setSavingRole] = useState<string | null>(null);
 
   async function fetchUsers() {
     setLoading(true);
@@ -37,6 +38,18 @@ export default function UsersPage() {
     }
     setLoading(false);
   }
+
+  // Change a user's role via the admin_set_user_role RPC, which keeps all three
+  // role sources (users.role, users.roles/active_role, user_roles) in sync.
+  const changeRole = async (user: User, role: string) => {
+    if (role === (user.active_role || user.roles?.[0] || 'student')) return;
+    if (!confirm(`Change ${user.full_name || 'this user'}'s role to "${role}"?`)) return;
+    setSavingRole(user.id);
+    const { error } = await supabase.rpc('admin_set_user_role', { p_user_id: user.id, p_role: role });
+    setSavingRole(null);
+    if (error) { alert(error.message || 'Failed to change role.'); return; }
+    fetchUsers();
+  };
 
   useEffect(() => {
     fetchUsers();
@@ -167,13 +180,17 @@ export default function UsersPage() {
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full capitalize ${
-                        primaryRole === 'admin' ? 'bg-purple-100 text-purple-800' :
-                        primaryRole === 'tutor' ? 'bg-blue-100 text-blue-800' :
-                        'bg-gray-100 text-gray-800'
-                      }`}>
-                        {primaryRole}
-                      </span>
+                      <select
+                        value={primaryRole}
+                        disabled={savingRole === user.id}
+                        onChange={(e) => changeRole(user, e.target.value)}
+                        className="text-xs font-semibold rounded-lg border border-gray-200 px-2 py-1 capitalize bg-white disabled:opacity-50 focus:ring-2 focus:ring-brand-blue focus:outline-none"
+                        title="Change role"
+                      >
+                        {['student', 'parent', 'tutor', 'admin'].map((r) => (
+                          <option key={r} value={r}>{r}</option>
+                        ))}
+                      </select>
                       <div className="text-sm text-gray-500 mt-1 flex items-center">
                          <MapPin className="w-3.5 h-3.5 mr-1.5 text-gray-400" /> {user.city || 'Unknown'}
                       </div>
