@@ -23,7 +23,6 @@ interface AuthState {
   loadProfile: () => Promise<void>;
   updateProfile: (updates: Partial<User>) => Promise<void>;
   uploadAvatar: (fileUri: string, fileName: string) => Promise<void>;
-  switchPersona: (role: UserRole) => Promise<void>;
   signOut: () => Promise<void>;
 }
 
@@ -164,48 +163,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       set({ user: { ...user, avatar_url: publicUrl } });
     } finally {
       set({ isLoading: false });
-    }
-  },
-
-  switchPersona: async (role) => {
-    const { user } = get();
-    if (!user) return;
-    
-    const previousUser = { ...user };
-    
-    // Optimistically switch in UI
-    const updatedRoles = Array.from(new Set([...user.roles, role]));
-    set({ user: { ...user, active_role: role, roles: updatedRoles } });
-    
-    try {
-      // 1. Update active_role in users table
-      const { data, error } = await supabase
-        .from('users')
-        .update({ 
-          active_role: role,
-          roles: updatedRoles 
-        })
-        .eq('id', user.id)
-        .select()
-        .single();
-      
-      if (error) throw error;
-
-      // 2. Add role to user_roles table (source of truth for triggers)
-      // This ensures lazy profile creation (e.g. creating tutors row) via DB trigger
-      await supabase
-        .from('user_roles')
-        .upsert({
-          user_id: user.id,
-          role: role,
-        }, { onConflict: 'user_id,role' });
-
-      if (data) set({ user: data as User });
-      
-    } catch (e) {
-      console.error('Failed to persist persona switch:', e);
-      // Revert UI if failed
-      set({ user: previousUser });
     }
   },
 

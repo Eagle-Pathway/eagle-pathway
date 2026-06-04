@@ -15,7 +15,7 @@ import { useNotificationStore } from '@/store/notificationStore';
 import { useParentStore } from '@/store/parentStore';
 
 export function ProfileScreen() {
-  const { user, signOut, uploadAvatar, switchPersona } = useAuthStore();
+  const { user, signOut, uploadAvatar } = useAuthStore();
   const { applications } = useScholarshipStore();
   const { documents } = useDocumentStore();
   const { unreadCount } = useNotificationStore();
@@ -122,7 +122,7 @@ export function ProfileScreen() {
         </TouchableOpacity>
         <Text style={profStyles.name}>{user?.full_name || 'User'}</Text>
         <Text style={profStyles.role}>
-          {(user?.active_role || 'student').charAt(0).toUpperCase()}{(user?.active_role || 'student').slice(1)} Mode
+          {(user?.active_role || 'student').charAt(0).toUpperCase()}{(user?.active_role || 'student').slice(1)}
         </Text>
         <View style={profStyles.badges}>
           {user?.grade_level && <View style={profStyles.badge}><Text style={profStyles.badgeText}>{user.grade_level}</Text></View>}
@@ -138,27 +138,6 @@ export function ProfileScreen() {
           <Text style={{ color: Colors.white, fontWeight: 'bold', fontSize: 13 }}>Edit Academic Profile</Text>
         </TouchableOpacity>
 
-        <View style={profStyles.personaContainer}>
-          {['student', 'tutor', 'parent'].map((role) => (
-            <TouchableOpacity 
-              key={role}
-              style={[
-                profStyles.personaBtn, 
-                user?.active_role === role && profStyles.personaBtnActive
-              ]}
-              onPress={() => switchPersona(role as any)}
-              activeOpacity={0.7}
-            >
-              <Text style={{ fontSize: 18 }}>{role === 'student' ? '🎓' : role === 'tutor' ? '👨‍🏫' : '👨‍👩‍👧'}</Text>
-              <Text style={[
-                profStyles.personaText,
-                user?.active_role === role && profStyles.personaTextActive
-              ]}>
-                {role.charAt(0).toUpperCase() + role.slice(1)}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
       </View>
 
       <ScrollView contentContainerStyle={{ paddingBottom: 100 }}>
