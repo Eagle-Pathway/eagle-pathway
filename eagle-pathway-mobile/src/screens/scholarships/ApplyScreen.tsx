@@ -12,6 +12,7 @@ import { paymentsService } from '@/services/payments';
 import { useAuthStore } from '@/store/authStore';
 import { useScholarshipStore } from '@/store/scholarshipStore';
 import { useDocumentStore } from '@/store/documentStore';
+import { PACKAGE_PRICING, formatEtb } from '@/constants/packages';
 import type { PackageTier, DocumentType } from '@/types';
 
 export function ApplyScreen() {
@@ -63,44 +64,81 @@ export function ApplyScreen() {
   };
 
   const handleSubmit = async () => {
+    if (loading) return; // guard against double-submit -> duplicate applications
     if (!user || !scholarshipId || !packageTier) return;
     if (!selectedPaymentMethod) {
       Alert.alert('Missing Info', 'Please select a payment method before submitting your application.');
       return;
     }
-    if (selectedPaymentMethod !== 'Chapa (Card/Transfer)' && (!transactionId || !receiptAsset)) {
+    if (!transactionId || !receiptAsset) {
       Alert.alert('Missing Info', 'Please provide the transaction ID and upload the receipt screenshot for manual verification.');
       return;
     }
     setLoading(true);
-    try {
-      const app = await createApplication(user.id, scholarshipId, packageTier, sopContent);
-      
-      // Submit Payment Receipt if applicable
-      if (selectedPaymentMethod !== 'Chapa (Card/Transfer)' && receiptAsset) {
-        await paymentsService.submitPaymentReceipt({
-          userId: user.id,
-          referenceId: app.id,
-          paymentType: 'scholarship_package',
-          method: selectedPaymentMethod.includes('Telebirr') ? 'telebirr' : 'cbe',
-          amount: packageTier === 'premium' ? 55000 : packageTier === 'standard' ? 28000 : 10000,
-          transactionId: transactionId,
-          fileUri: receiptAsset.uri,
-          fileName: receiptAsset.name
-        });
-      }
 
-      Alert.alert('Application Started! 🎉', 'Your consultant has been notified and will reach out shortly.', [
-        { text: 'View Tracker', onPress: () => router.push('/tracker') },
-      ]);
+    // 1. Create the application.
+    let app;
+    try {
+      app = await createApplication(user.id, scholarshipId, packageTier, sopContent);
     } catch (e: any) {
-      Alert.alert('Error', e.message || 'Failed to create application');
-    } finally {
       setLoading(false);
+      Alert.alert('Error', e.message || 'Failed to create your application. Please try again.');
+      return;
     }
+
+    // 2. Submit the payment receipt. If THIS fails, the application already
+    // exists — tell the user so they retry payment instead of re-submitting
+    // (which would create a duplicate application).
+    try {
+      await paymentsService.submitPaymentReceipt({
+        userId: user.id,
+        referenceId: app.id,
+        paymentType: 'scholarship_package',
+        method: selectedPaymentMethod.includes('Telebirr') ? 'telebirr' : 'cbe',
+        amount: PACKAGE_PRICING[packageTier].etb,
+        transactionId,
+        fileUri: receiptAsset.uri,
+        fileName: receiptAsset.name,
+      });
+    } catch (e: any) {
+      setLoading(false);
+      Alert.alert(
+        'Application created — payment not recorded',
+        "Your application was created, but we couldn't upload your payment receipt. Open the tracker and retry the payment so a consultant can verify it.",
+        [{ text: 'View Tracker', onPress: () => router.push('/tracker') }],
+      );
+      return;
+    }
+
+    setLoading(false);
+    Alert.alert('Application Started! 🎉', 'Your consultant has been notified and will reach out shortly.', [
+      { text: 'View Tracker', onPress: () => router.push('/tracker') },
+    ]);
   };
 
   const requiredDocs = ['Degree Certificate', 'Official Transcript', 'Passport Copy', 'IELTS Certificate', 'CV / Resume', 'Reference Letter 1', 'Reference Letter 2'];
+
+  const refLetterCount = documents.filter(d => d.document_type === 'reference_letter').length;
+  const allDocsUploaded =
+    (['degree_certificate', 'transcript', 'passport', 'ielts_certificate', 'cv'] as DocumentType[])
+      .every(t => documents.some(d => d.document_type === t)) && refLetterCount >= 2;
+
+  // Continue advances steps, but warns (without hard-blocking) if required docs
+  // are missing on the Docs step — previously you could submit with zero docs.
+  const handleContinue = () => {
+    if (step === 2 && !allDocsUploaded) {
+      Alert.alert(
+        'Documents incomplete',
+        'Some required documents are still missing. You can add them now, or continue and upload them later.',
+        [
+          { text: 'Add documents', style: 'cancel' },
+          { text: 'Continue anyway', onPress: () => setStep(s => s + 1) },
+        ],
+      );
+      return;
+    }
+    setStep(s => s + 1);
+  };
 
   return (
     <SafeAreaView style={CommonStyles.screenBg} edges={['top']}>
@@ -255,20 +293,20 @@ export function ApplyScreen() {
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: Spacing.md }}>
                 <Text style={{ fontWeight: 'bold', fontSize: 16 }}>Amount Due</Text>
                 <Text style={{ fontWeight: 'bold', fontSize: 18, color: Colors.blue }}>
-                  {packageTier === 'premium' ? 'ETB 55,000' : packageTier === 'standard' ? 'ETB 28,000' : 'ETB 10,000'}
+                  {packageTier ? `ETB ${formatEtb(PACKAGE_PRICING[packageTier].etb)}` : ''}
                 </Text>
               </View>
 
               <Text style={applyStyles.paymentLabel}>Select Payment Method</Text>
               {[
-                { name: 'Telebirr', icon: '📱' },
-                { name: 'Chapa (Card/Transfer)', icon: '💳' },
-                { name: 'CBE Birr / Bank Transfer', icon: '🏦' },
+                { name: 'Telebirr', icon: '📱', disabled: false },
+                { name: 'Chapa (Card/Transfer)', icon: '💳', disabled: true },
+                { name: 'CBE Birr / Bank Transfer', icon: '🏦', disabled: false },
               ].map(pm => (
-                <TouchableOpacity key={pm.name} style={applyStyles.methodRow} activeOpacity={0.8} onPress={() => setSelectedPaymentMethod(pm.name)}>
+                <TouchableOpacity key={pm.name} style={[applyStyles.methodRow, pm.disabled && { opacity: 0.45 }]} activeOpacity={0.8} disabled={pm.disabled} onPress={() => setSelectedPaymentMethod(pm.name)}>
                   <Text style={{ fontSize: 18 }}>{pm.icon}</Text>
-                  <Text style={applyStyles.methodName}>{pm.name}</Text>
-                  <View style={[applyStyles.radio, selectedPaymentMethod === pm.name && { borderColor: Colors.blue, borderWidth: 5 }]} />
+                  <Text style={applyStyles.methodName}>{pm.name}{pm.disabled ? '  ·  Coming soon' : ''}</Text>
+                  {!pm.disabled && <View style={[applyStyles.radio, selectedPaymentMethod === pm.name && { borderColor: Colors.blue, borderWidth: 5 }]} />}
                 </TouchableOpacity>
               ))}
 
@@ -321,7 +359,7 @@ export function ApplyScreen() {
 
       <View style={applyStyles.bottomBar}>
         <Button title={step === 1 ? 'Cancel' : '← Back'} variant="secondary" onPress={() => step > 1 ? setStep(s => s - 1) : (router.canGoBack() ? router.back() : router.replace('/(tabs)/home'))} style={{ flex: 0.5 }} fullWidth={false} />
-        <Button title={step === 5 ? 'Confirm & Submit' : 'Continue →'} variant="primary" onPress={step < 5 ? () => setStep(s => s + 1) : handleSubmit} loading={loading} style={{ flex: 1 }} fullWidth={false} />
+        <Button title={step === 5 ? 'Confirm & Submit' : 'Continue →'} variant="primary" onPress={step < 5 ? handleContinue : handleSubmit} loading={loading} style={{ flex: 1 }} fullWidth={false} />
       </View>
     </SafeAreaView>
   );
