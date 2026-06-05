@@ -6,12 +6,13 @@ import ScholarshipsScreen from '../../src/screens/scholarships/ScholarshipsScree
 import TutorsScreen from '../../src/screens/tutors/TutorsScreen';
 import { BookingsScreen } from '../../src/screens/index';
 import { useAuthStore } from '../../src/store/authStore';
+import { getUserRole } from '../../src/utils/role';
 
 type Tab = 'scholarships' | 'tutors';
 
 export default function ExploreScreen() {
   const { user } = useAuthStore();
-  const isTutor = (user?.active_role || user?.roles?.[0] || 'student').toLowerCase() === 'tutor';
+  const isTutor = getUserRole(user).toLowerCase() === 'tutor';
   const [activeTab, setActiveTab] = useState<Tab>('scholarships');
 
   // For tutors this tab is labelled "Schedule" in the tab bar, so it must show

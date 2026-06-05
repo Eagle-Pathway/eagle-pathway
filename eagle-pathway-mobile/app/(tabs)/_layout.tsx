@@ -6,6 +6,7 @@ import { Colors, Typography } from '../../src/utils/theme';
 import AiAssistantFAB from '../../src/components/AiAssistantFAB';
 import { useAuthStore } from '../../src/store/authStore';
 import { isProfileIncomplete } from '../../src/utils/profile';
+import { getUserRole } from '../../src/utils/role';
 import { ONBOARDED_KEY } from '../../src/screens/onboarding/OnboardingScreen';
 
 function TabIcon({ emoji, label, focused }: { emoji: string; label: string; focused: boolean }) {
@@ -29,11 +30,11 @@ export default function TabLayout() {
   const { user } = useAuthStore();
   const isAssistant = pathname === '/assistant' || pathname.includes('/assistant');
   
-  const activeRole = user?.active_role || 'student';
+  const activeRole = getUserRole(user);
 
   // First-run gate: send students with an incomplete profile to onboarding once.
   useEffect(() => {
-    const role = (user?.active_role || user?.roles?.[0] || 'student').toLowerCase();
+    const role = getUserRole(user).toLowerCase();
     if (!user || role !== 'student' || !isProfileIncomplete(user)) return;
     let cancelled = false;
     AsyncStorage.getItem(ONBOARDED_KEY).then(seen => {

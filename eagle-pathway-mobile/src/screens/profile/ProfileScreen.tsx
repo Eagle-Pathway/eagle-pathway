@@ -8,6 +8,7 @@ import { router } from 'expo-router';
 import { Colors, Typography, Spacing, Radius, CommonStyles } from '@/utils/theme';
 import { Avatar } from '@/components/common';
 import { scholarshipsService } from '@/services/scholarships';
+import { getUserRole } from '@/utils/role';
 import { useAuthStore } from '@/store/authStore';
 import { useScholarshipStore } from '@/store/scholarshipStore';
 import { useDocumentStore } from '@/store/documentStore';
@@ -26,12 +27,13 @@ export function ProfileScreen() {
   const [isLinking, setIsLinking] = useState(false);
 
   const initials = user?.full_name?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || 'EP';
+  const role = getUserRole(user);
 
   useEffect(() => {
     if (user) {
-      loadPendingLinks(user.id, user.active_role as any).then(setPendingLinks);
+      loadPendingLinks(user.id, role as any).then(setPendingLinks);
     }
-  }, [user?.id, user?.active_role]);
+  }, [user?.id, role]);
 
   const handlePickAvatar = async () => {
     try {
@@ -57,10 +59,11 @@ export function ProfileScreen() {
   };
 
   const handleLinkAction = async () => {
+    if (!user) return;
     if (!linkingPhone) return Alert.alert('Error', 'Please enter a phone number');
     setIsLinking(true);
     try {
-      if (user?.active_role === 'student') {
+      if (role === 'student') {
         await inviteParent(user.id, linkingPhone);
         Alert.alert('Success', 'Invitation sent to your parent! They need to verify it in their app.');
       } else {
@@ -68,7 +71,7 @@ export function ProfileScreen() {
         Alert.alert('Success', 'Link request sent to the student!');
       }
       setLinkingPhone('');
-      const updated = await loadPendingLinks(user!.id, user!.active_role as any);
+      const updated = await loadPendingLinks(user!.id, role as any);
       setPendingLinks(updated);
     } catch (e: any) {
       Alert.alert('Error', e.message);
@@ -81,7 +84,7 @@ export function ProfileScreen() {
     try {
       await verifyLink(linkId);
       Alert.alert('Success', 'Link verified successfully! ✨');
-      const updated = await loadPendingLinks(user!.id, user!.active_role as any);
+      const updated = await loadPendingLinks(user!.id, role as any);
       setPendingLinks(updated);
     } catch (e: any) {
       Alert.alert('Error', 'Failed to verify link');
@@ -122,7 +125,7 @@ export function ProfileScreen() {
         </TouchableOpacity>
         <Text style={profStyles.name}>{user?.full_name || 'User'}</Text>
         <Text style={profStyles.role}>
-          {(user?.active_role || 'student').charAt(0).toUpperCase()}{(user?.active_role || 'student').slice(1)}
+          {(role || 'student').charAt(0).toUpperCase()}{(role || 'student').slice(1)}
         </Text>
         <View style={profStyles.badges}>
           {user?.grade_level && <View style={profStyles.badge}><Text style={profStyles.badgeText}>{user.grade_level}</Text></View>}
@@ -141,18 +144,18 @@ export function ProfileScreen() {
       </View>
 
       <ScrollView contentContainerStyle={{ paddingBottom: 100 }}>
-        {(user?.active_role === 'student' || user?.active_role === 'parent') && (
+        {(role === 'student' || role === 'parent') && (
           <View style={profStyles.referralCard}>
             <View style={profStyles.referralContent}>
               <View style={profStyles.referralIcon}>
-                <Text style={{ fontSize: 24 }}>{user.active_role === 'student' ? '👨‍👩‍👧' : '🎓'}</Text>
+                <Text style={{ fontSize: 24 }}>{role === 'student' ? '👨‍👩‍👧' : '🎓'}</Text>
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={profStyles.referralTitle}>
-                  {user.active_role === 'student' ? 'Link Your Parent' : 'Link Your Child'}
+                  {role === 'student' ? 'Link Your Parent' : 'Link Your Child'}
                 </Text>
                 <Text style={profStyles.referralSub}>
-                  {user.active_role === 'student' 
+                  {role === 'student' 
                     ? 'Let your parents track your scholarship progress.' 
                     : 'Track your child\'s applications and help them succeed.'}
                 </Text>
@@ -163,7 +166,7 @@ export function ProfileScreen() {
               <View style={{ flexDirection: 'row', gap: Spacing.sm }}>
                 <TextInput
                   style={[profStyles.input, { flex: 1, backgroundColor: Colors.bg }]}
-                  placeholder={user.active_role === 'student' ? "Parent's Phone Number" : "Student's Phone Number"}
+                  placeholder={role === 'student' ? "Parent's Phone Number" : "Student's Phone Number"}
                   value={linkingPhone}
                   onChangeText={setLinkingPhone}
                   keyboardType="phone-pad"
@@ -184,10 +187,10 @@ export function ProfileScreen() {
                   {pendingLinks.map(link => (
                     <View key={link.id} style={profStyles.pendingRow}>
                       <Text style={profStyles.pendingName}>
-                        {user.active_role === 'student' ? link.parent?.full_name : link.student?.full_name}
+                        {role === 'student' ? link.parent?.full_name : link.student?.full_name}
                       </Text>
                       <View style={{ flexDirection: 'row', gap: 8 }}>
-                        {user.active_role === 'parent' && (
+                        {role === 'parent' && (
                           <TouchableOpacity onPress={() => handleVerifyLink(link.id)} style={profStyles.verifyBtn}>
                             <Text style={profStyles.verifyBtnText}>Verify</Text>
                           </TouchableOpacity>

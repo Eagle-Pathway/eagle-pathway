@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
+import { roleOf } from '@/lib/role';
 import { 
   Search, 
   Briefcase, 
@@ -37,6 +38,7 @@ interface Application {
 interface Consultant {
   id: string;
   full_name: string;
+  role?: string | null;
   roles?: string[] | null;
   active_role?: string | null;
 }
@@ -85,7 +87,7 @@ export default function ApplicationsPage() {
     // Fetch potential consultants (users with role tutor or admin)
     const { data: consData, error: consError } = await supabase
       .from('users')
-      .select('id, full_name, roles, active_role');
+      .select('id, full_name, role, roles, active_role');
 
     if (consError) {
       console.error('Error fetching consultants:', consError);
@@ -94,10 +96,7 @@ export default function ApplicationsPage() {
     if (!appError && appData) setApplications(appData as Application[]);
     if (consData) {
       setConsultants((consData as Consultant[]).filter(c =>
-        c.active_role === 'tutor' ||
-        c.active_role === 'admin' ||
-        c.roles?.includes('tutor') ||
-        c.roles?.includes('admin')
+        roleOf(c) === 'tutor' || roleOf(c) === 'admin'
       ));
     }
     

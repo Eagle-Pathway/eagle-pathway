@@ -6,8 +6,12 @@ export interface User {
   full_name: string;
   phone: string;
   email: string;
-  roles: UserRole[];
-  active_role: UserRole;
+  // Canonical single role — one identity per account (Student | Tutor | Parent | Admin).
+  role: UserRole;
+  /** @deprecated Legacy multi-persona fields. Read role via getUserRole(); dropped in phase 2. */
+  roles?: UserRole[];
+  /** @deprecated Use `role`. */
+  active_role?: UserRole;
   avatar_url?: string;
   grade_level?: string;
   city?: string;

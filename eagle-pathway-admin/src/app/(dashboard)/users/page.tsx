@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
+import { roleOf } from '@/lib/role';
 import { Search, Mail, Phone, MapPin, MoreVertical, Download, ChevronLeft, ChevronRight, Filter, MessageSquare } from 'lucide-react';
 import { exportToCSV } from '@/utils/export';
 import { TableSkeleton } from '@/components/ui/TableSkeleton';
@@ -11,6 +12,7 @@ interface User {
   full_name: string;
   email: string;
   phone: string;
+  role?: string | null;
   roles?: string[] | null;
   active_role?: string | null;
   city: string;
@@ -42,7 +44,7 @@ export default function UsersPage() {
   // Change a user's role via the admin_set_user_role RPC, which keeps all three
   // role sources (users.role, users.roles/active_role, user_roles) in sync.
   const changeRole = async (user: User, role: string) => {
-    if (role === (user.active_role || user.roles?.[0] || 'student')) return;
+    if (role === roleOf(user)) return;
     if (!confirm(`Change ${user.full_name || 'this user'}'s role to "${role}"?`)) return;
     setSavingRole(user.id);
     const { error } = await supabase.rpc('admin_set_user_role', { p_user_id: user.id, p_role: role });
@@ -60,7 +62,7 @@ export default function UsersPage() {
       u.full_name?.toLowerCase().includes(search.toLowerCase()) || 
       u.email?.toLowerCase().includes(search.toLowerCase()) ||
       u.phone?.includes(search);
-    const matchesRole = roleFilter === 'all' || (u.active_role || u.roles?.[0] || 'student') === roleFilter;
+    const matchesRole = roleFilter === 'all' || roleOf(u) === roleFilter;
     const matchesCity = cityFilter === 'all' || u.city === cityFilter;
     return matchesSearch && matchesRole && matchesCity;
   });
@@ -155,7 +157,7 @@ export default function UsersPage() {
                 </tr>
               ) : (
                 paginatedUsers.map((user) => {
-                  const primaryRole = user.active_role || user.roles?.[0] || 'student';
+                  const primaryRole = roleOf(user);
                   return (
                   <tr key={user.id} className="hover:bg-gray-50/50 transition-colors">
                     <td className="px-6 py-4 whitespace-nowrap">
