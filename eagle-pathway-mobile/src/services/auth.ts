@@ -137,6 +137,15 @@ export const authService = {
     if (error) throw error;
   },
 
+  // Permanently delete the caller's account. The RPC runs as definer and deletes
+  // the auth.users row, which cascades to public.users and all the user's data.
+  async deleteAccount() {
+    const { error } = await supabase.rpc('delete_own_account');
+    if (error) throw error;
+    // Best-effort local sign-out; the server session is already invalid.
+    await supabase.auth.signOut().catch(() => {});
+  },
+
   async getSession() {
     const {
       data: { session },
