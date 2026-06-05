@@ -24,6 +24,7 @@ interface AuthState {
   updateProfile: (updates: Partial<User>) => Promise<void>;
   uploadAvatar: (fileUri: string, fileName: string) => Promise<void>;
   signOut: () => Promise<void>;
+  deleteAccount: () => Promise<void>;
 }
 
 export const useAuthStore = create<AuthState>((set, get) => ({
@@ -170,6 +171,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     if (!BYPASS_PHONE_VERIFY) {
       await authService.signOut();
     }
+    set({ user: null, session: null, isAuthenticated: false, pendingSignup: null });
+  },
+
+  deleteAccount: async () => {
+    await authService.deleteAccount();
     set({ user: null, session: null, isAuthenticated: false, pendingSignup: null });
   },
 }));

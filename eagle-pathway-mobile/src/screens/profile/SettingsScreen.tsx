@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
-  Switch,
+  Switch, Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -10,12 +10,50 @@ import { useAuthStore } from '@/store/authStore';
 import { notificationPrefsService, DEFAULT_PREFERENCES, type NotificationPreferences } from '@/services/notificationPrefs';
 
 export function SettingsScreen() {
-  const { user } = useAuthStore();
+  const { user, deleteAccount } = useAuthStore();
   const [prefs, setPrefs] = useState<NotificationPreferences>(DEFAULT_PREFERENCES);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     if (user) notificationPrefsService.get(user.id).then(setPrefs).catch(() => {});
   }, [user?.id]);
+
+  // Two-step confirmation — account deletion is permanent and cascades to all data.
+  const handleDeleteAccount = () => {
+    if (deleting) return;
+    Alert.alert(
+      'Delete Account',
+      'This permanently deletes your account and all your data — applications, documents, bookings, and messages. This cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: () => Alert.alert(
+            'Are you absolutely sure?',
+            'There is no way to recover your account after this.',
+            [
+              { text: 'Cancel', style: 'cancel' },
+              {
+                text: 'Delete forever',
+                style: 'destructive',
+                onPress: async () => {
+                  setDeleting(true);
+                  try {
+                    await deleteAccount();
+                    router.replace('/(auth)/splash');
+                  } catch (e: any) {
+                    setDeleting(false);
+                    Alert.alert('Error', e?.message || 'Failed to delete account. Please try again.');
+                  }
+                },
+              },
+            ],
+          ),
+        },
+      ],
+    );
+  };
 
   // Optimistic toggle, then persist (preferences are user-owned in the DB).
   const setPref = (key: keyof NotificationPreferences, value: boolean) => {
@@ -54,7 +92,7 @@ export function SettingsScreen() {
       items: [
         { icon: '❓', label: 'Help Center', type: 'nav', route: null },
         { icon: '⭐', label: 'Rate Eagle Pathway', type: 'nav', route: null },
-        { icon: '🗑️', label: 'Delete Account', type: 'danger', route: null },
+        { icon: '🗑️', label: deleting ? 'Deleting…' : 'Delete Account', type: 'danger', route: null, onPress: handleDeleteAccount },
       ],
     },
   ];
@@ -72,8 +110,15 @@ export function SettingsScreen() {
           <View key={section.title}>
             <Text style={styles.sectionLabel}>{section.title}</Text>
             <View style={styles.sectionCard}>
-              {section.items.map((item, i) => (
-                <View key={item.label} style={[styles.item, i === section.items.length - 1 && { borderBottomWidth: 0 }]}>
+              {section.items.map((item, i) => {
+                const onPress = (item as any).onPress as (() => void) | undefined;
+                const RowContainer: any = onPress ? TouchableOpacity : View;
+                return (
+                <RowContainer
+                  key={item.label}
+                  style={[styles.item, i === section.items.length - 1 && { borderBottomWidth: 0 }]}
+                  {...(onPress ? { onPress, activeOpacity: 0.7 } : {})}
+                >
                   <View style={[styles.icon, { backgroundColor: Colors.grayLight }]}><Text style={{ fontSize: 16 }}>{item.icon}</Text></View>
                   <Text style={[styles.label, item.type === 'danger' && { color: Colors.red }]}>{item.label}</Text>
                   {item.type === 'toggle' && (
@@ -90,8 +135,9 @@ export function SettingsScreen() {
                       <Text style={styles.arrow}>›</Text>
                     </View>
                   )}
-                </View>
-              ))}
+                </RowContainer>
+                );
+              })}
             </View>
           </View>
         ))}
