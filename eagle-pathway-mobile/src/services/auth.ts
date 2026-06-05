@@ -66,8 +66,9 @@ export const authService = {
         id: userId,
         full_name: fullName,
         phone,
-        roles: [role],
-        active_role: role, // UI only - for backward compat
+        role,                  // canonical single role
+        roles: [role],         // legacy mirror — dropped in phase 2
+        active_role: role,     // legacy mirror — dropped in phase 2
         email,
       })
       .select()

@@ -12,6 +12,7 @@ import { ListSkeleton } from '@/components/LoadingSkeleton';
 import { useAuthStore } from '@/store/authStore';
 import { useBookingStore } from '@/store/bookingStore';
 import { supabase } from '@/services/supabase';
+import { getUserRole } from '@/utils/role';
 
 export function BookingsScreen({ hideHeader = false }: { hideHeader?: boolean }) {
   const { user } = useAuthStore();
@@ -24,7 +25,7 @@ export function BookingsScreen({ hideHeader = false }: { hideHeader?: boolean })
   const [ratingLoading, setRatingLoading] = useState(false);
   const [error, setError] = useState(false);
 
-  const isTutor = (user?.active_role || user?.roles?.[0] || 'student').toLowerCase() === 'tutor';
+  const isTutor = getUserRole(user).toLowerCase() === 'tutor';
 
   const load = useCallback(async () => {
     if (!user) return;

@@ -7,6 +7,7 @@ import { TrackerScreen } from '../../src/screens/index';
 import TutorEarningsScreen from '../../src/screens/tutors/TutorEarningsScreen';
 import ServiceRequestScreen from '../service-request';
 import { useAuthStore } from '../../src/store/authStore';
+import { getUserRole } from '../../src/utils/role';
 
 type Segment = 'bookings' | 'tracker' | 'pay';
 
@@ -18,7 +19,7 @@ const SEGMENTS: { key: Segment; label: string; emoji: string }[] = [
 
 export default function ActivityScreen() {
   const { user } = useAuthStore();
-  const isTutor = (user?.active_role || user?.roles?.[0] || 'student').toLowerCase() === 'tutor';
+  const isTutor = getUserRole(user).toLowerCase() === 'tutor';
   const [active, setActive] = useState<Segment>('bookings');
 
   // For tutors this tab is labelled "Earnings" — show payouts, not the student

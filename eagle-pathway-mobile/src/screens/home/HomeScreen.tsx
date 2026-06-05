@@ -8,6 +8,7 @@ import { tutorsService } from '@/services/tutors';
 import { syncDeadlineReminders } from '@/services/deadlineReminders';
 import { getApplicationDeadlines } from '@/utils/deadlines';
 import { notificationPrefsService } from '@/services/notificationPrefs';
+import { getUserRole } from '@/utils/role';
 
 // Specialized Domain Stores
 import { useScholarshipStore } from '@/store/scholarshipStore';
@@ -59,7 +60,7 @@ export default function HomeScreen() {
   const [loading, setLoading] = useState(true);
   const [homeCounts, setHomeCounts] = useState({ openScholarships: 0, availableTutors: 0 });
 
-  const activeRole = (user?.active_role || user?.roles?.[0] || 'student').toLowerCase();
+  const activeRole = getUserRole(user).toLowerCase();
   const isTutor = activeRole === 'tutor';
   const isParent = activeRole === 'parent';
 
