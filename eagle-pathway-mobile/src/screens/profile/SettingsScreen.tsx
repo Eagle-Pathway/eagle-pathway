@@ -1,13 +1,18 @@
 import React, { useEffect, useState } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
-  Switch, Alert,
+  Switch, Alert, Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Colors, Typography, Spacing, Radius } from '@/utils/theme';
 import { useAuthStore } from '@/store/authStore';
+import { supabase } from '@/services/supabase';
 import { notificationPrefsService, DEFAULT_PREFERENCES, type NotificationPreferences } from '@/services/notificationPrefs';
+
+// Public privacy policy — must be published here before Play submission.
+const PRIVACY_POLICY_URL = 'https://eagle-pathway.vercel.app/privacy';
+const ANDROID_PACKAGE = 'com.eaglepathway.app';
 
 export function SettingsScreen() {
   const { user, deleteAccount } = useAuthStore();
@@ -55,6 +60,36 @@ export function SettingsScreen() {
     );
   };
 
+  const handleChangePassword = () => {
+    if (!user?.email) {
+      Alert.alert('No email on file', 'Add an email to your profile first, then you can reset your password.');
+      return;
+    }
+    Alert.alert('Change Password', `We'll email a password reset link to ${user.email}.`, [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Send link',
+        onPress: async () => {
+          const { error } = await supabase.auth.resetPasswordForEmail(user.email);
+          Alert.alert(
+            error ? 'Error' : 'Check your email',
+            error ? (error.message || 'Could not send the reset link.') : 'We sent a password reset link to your email.',
+          );
+        },
+      },
+    ]);
+  };
+
+  const handlePrivacy = () => {
+    Linking.openURL(PRIVACY_POLICY_URL).catch(() => Alert.alert('Error', 'Could not open the privacy policy.'));
+  };
+
+  const handleRate = () => {
+    Linking.openURL(`market://details?id=${ANDROID_PACKAGE}`).catch(() =>
+      Linking.openURL(`https://play.google.com/store/apps/details?id=${ANDROID_PACKAGE}`).catch(() => {}),
+    );
+  };
+
   // Optimistic toggle, then persist (preferences are user-owned in the DB).
   const setPref = (key: keyof NotificationPreferences, value: boolean) => {
     const next = { ...prefs, [key]: value };
@@ -73,25 +108,16 @@ export function SettingsScreen() {
       ],
     },
     {
-      title: 'App',
-      items: [
-        { icon: '🌐', label: 'Language', type: 'nav', value: 'English', route: null },
-        { icon: '🎨', label: 'Theme', type: 'nav', value: 'Light', route: null },
-        { icon: '💳', label: 'Payment Methods', type: 'nav', route: null },
-      ],
-    },
-    {
       title: 'Account',
       items: [
-        { icon: '🔒', label: 'Change Password', type: 'nav', route: null },
-        { icon: '🛡️', label: 'Privacy & Data', type: 'nav', route: null },
+        { icon: '🔒', label: 'Change Password', type: 'nav', onPress: handleChangePassword },
+        { icon: '🛡️', label: 'Privacy & Data', type: 'nav', onPress: handlePrivacy },
       ],
     },
     {
       title: 'Support',
       items: [
-        { icon: '❓', label: 'Help Center', type: 'nav', route: null },
-        { icon: '⭐', label: 'Rate Eagle Pathway', type: 'nav', route: null },
+        { icon: '⭐', label: 'Rate Eagle Pathway', type: 'nav', onPress: handleRate },
         { icon: '🗑️', label: deleting ? 'Deleting…' : 'Delete Account', type: 'danger', route: null, onPress: handleDeleteAccount },
       ],
     },
