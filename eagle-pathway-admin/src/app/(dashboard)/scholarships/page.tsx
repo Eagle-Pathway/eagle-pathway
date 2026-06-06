@@ -4,6 +4,7 @@ import { supabase } from '@/lib/supabase';
 import { Plus, Edit2, Trash2, ExternalLink, Search, Download } from 'lucide-react';
 import ScholarshipForm from '@/components/forms/ScholarshipForm';
 import { exportToCSV } from '@/utils/export';
+import { useConfirm } from '@/components/ui/Feedback';
 import { TableSkeleton } from '@/components/ui/TableSkeleton';
 
 interface Scholarship {
@@ -19,6 +20,7 @@ interface Scholarship {
 }
 
 export default function ScholarshipsPage() {
+  const confirm = useConfirm();
   const [scholarships, setScholarships] = useState<Scholarship[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -43,10 +45,15 @@ export default function ScholarshipsPage() {
   }, []);
 
   const handleDelete = async (id: string) => {
-    if (confirm('Are you sure you want to delete this scholarship?')) {
-      await supabase.from('scholarships').delete().eq('id', id);
-      fetchScholarships();
-    }
+    const ok = await confirm({
+      title: 'Delete scholarship?',
+      message: 'This permanently removes the scholarship. This cannot be undone.',
+      confirmLabel: 'Delete',
+      destructive: true,
+    });
+    if (!ok) return;
+    await supabase.from('scholarships').delete().eq('id', id);
+    fetchScholarships();
   };
 
   const toggleStatus = async (id: string, currentStatus: boolean) => {
