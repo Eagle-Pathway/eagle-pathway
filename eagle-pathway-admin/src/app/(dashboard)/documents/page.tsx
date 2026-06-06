@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
+import { useToast } from '@/components/ui/Feedback';
 import { 
   Search, 
   FileText, 
@@ -33,6 +34,7 @@ interface UserDocument {
 }
 
 export default function DocumentsPage() {
+  const toast = useToast();
   const [documents, setDocuments] = useState<UserDocument[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -94,7 +96,7 @@ export default function DocumentsPage() {
         setReviewerNotes('');
       }
     } else {
-      alert('Failed to update document status.');
+      toast('error', 'Failed to update document status.');
     }
   };
 

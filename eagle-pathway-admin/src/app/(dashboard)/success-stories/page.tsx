@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Plus, Edit2, Trash2, Eye, EyeOff } from 'lucide-react';
+import { useToast, useConfirm } from '@/components/ui/Feedback';
 
 interface SuccessStory {
   id: string;
@@ -21,6 +22,8 @@ const EMPTY: Partial<SuccessStory> = {
 };
 
 export default function SuccessStoriesPage() {
+  const toast = useToast();
+  const confirm = useConfirm();
   const [stories, setStories] = useState<SuccessStory[]>([]);
   const [loading, setLoading] = useState(true);
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -40,7 +43,13 @@ export default function SuccessStoriesPage() {
   useEffect(() => { fetchStories(); }, []);
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Delete this success story?')) return;
+    const ok = await confirm({
+      title: 'Delete this success story?',
+      message: 'It will no longer appear to students. This cannot be undone.',
+      confirmLabel: 'Delete',
+      destructive: true,
+    });
+    if (!ok) return;
     await supabase.from('success_stories').delete().eq('id', id);
     fetchStories();
   };
@@ -56,7 +65,7 @@ export default function SuccessStoriesPage() {
   const save = async () => {
     if (!editing) return;
     if (!editing.student_name?.trim() || !editing.scholarship_name?.trim() || !editing.quote?.trim()) {
-      alert('Student name, scholarship and quote are required.');
+      toast('error', 'Student name, scholarship and quote are required.');
       return;
     }
     setSaving(true);
@@ -74,7 +83,8 @@ export default function SuccessStoriesPage() {
       ? await supabase.from('success_stories').update(payload).eq('id', editing.id)
       : await supabase.from('success_stories').insert(payload);
     setSaving(false);
-    if (res.error) { alert(res.error.message); return; }
+    if (res.error) { toast('error', res.error.message); return; }
+    toast('success', editing.id ? 'Story updated.' : 'Story added.');
     setIsFormOpen(false);
     setEditing(null);
     fetchStories();

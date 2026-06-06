@@ -5,6 +5,7 @@ import { roleOf } from '@/lib/role';
 import { Search, Mail, Phone, MapPin, MoreVertical, Download, ChevronLeft, ChevronRight, Filter, MessageSquare } from 'lucide-react';
 import { exportToCSV } from '@/utils/export';
 import { TableSkeleton } from '@/components/ui/TableSkeleton';
+import { useToast, useConfirm } from '@/components/ui/Feedback';
 import { useRouter } from 'next/navigation';
 
 interface User {
@@ -21,6 +22,8 @@ interface User {
 
 export default function UsersPage() {
   const router = useRouter();
+  const toast = useToast();
+  const confirm = useConfirm();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -45,11 +48,17 @@ export default function UsersPage() {
   // role sources (users.role, users.roles/active_role, user_roles) in sync.
   const changeRole = async (user: User, role: string) => {
     if (role === roleOf(user)) return;
-    if (!confirm(`Change ${user.full_name || 'this user'}'s role to "${role}"?`)) return;
+    const ok = await confirm({
+      title: 'Change role?',
+      message: `Change ${user.full_name || 'this user'}'s role to "${role}". Tutors still require approval before they can teach.`,
+      confirmLabel: 'Change role',
+    });
+    if (!ok) return;
     setSavingRole(user.id);
     const { error } = await supabase.rpc('admin_set_user_role', { p_user_id: user.id, p_role: role });
     setSavingRole(null);
-    if (error) { alert(error.message || 'Failed to change role.'); return; }
+    if (error) { toast('error', error.message || 'Failed to change role.'); return; }
+    toast('success', `Role updated to ${role}.`);
     fetchUsers();
   };
 
