@@ -160,6 +160,8 @@ export default function ScholarshipForm({ scholarship, onClose, onSuccess }: Sch
         min_gpa_max: formData.min_gpa_max ? parseFloat(formData.min_gpa_max) : 4.0,
         description: formData.description,
         requirements: reqArray, website_url: formData.website_url, is_active: true,
+        source_url: formData.website_url || null,
+        source_status: scholarship?.source_status || 'unverified',
         requires_ielts: formData.requires_ielts, accepts_english_medium: formData.accepts_english_medium,
         target_departments: formData.target_departments, recommendation_letters_count: formData.recommendation_letters_count,
         ...(publicImageUrl ? { image_url: publicImageUrl } : {}),

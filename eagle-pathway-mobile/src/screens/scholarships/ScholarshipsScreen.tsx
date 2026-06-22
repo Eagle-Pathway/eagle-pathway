@@ -16,6 +16,21 @@ import { getFlagEmoji } from '@eagle-pathway/shared';
 
 const DEGREE_FILTERS = ['All', 'Undergraduate', 'Masters', 'PhD', 'Fully Funded'];
 
+function freshnessLabel(scholarship: Scholarship) {
+  if (scholarship.source_status === 'verified' && scholarship.verified_at) {
+    return `Verified ${format(new Date(scholarship.verified_at), 'MMM d')}`;
+  }
+  if (scholarship.source_status === 'stale') return 'Needs recheck';
+  if (scholarship.source_status === 'broken') return 'Link issue';
+  return 'Unverified';
+}
+
+function freshnessTone(sourceStatus?: Scholarship['source_status']) {
+  if (sourceStatus === 'verified') return { bg: Colors.greenLight, color: Colors.green };
+  if (sourceStatus === 'broken') return { bg: Colors.redLight, color: Colors.red };
+  return { bg: Colors.goldLight, color: Colors.goldDark };
+}
+
 export default function ScholarshipsScreen({ hideBack = false }: { hideBack?: boolean }) {
   const { scholarships, savedScholarshipIds, loadScholarships, toggleSaveScholarship, isLoadingScholarships } = useScholarshipStore();
   const [search, setSearch] = useState('');
@@ -117,6 +132,8 @@ export default function ScholarshipsScreen({ hideBack = false }: { hideBack?: bo
 }
 
 function ScholarshipCard({ scholarship: s, isSaved, onSave }: { scholarship: Scholarship; isSaved: boolean; onSave: () => void }) {
+  const freshness = freshnessTone(s.source_status);
+
   return (
     <ScaleBounce
       style={styles.card}
@@ -180,6 +197,10 @@ function ScholarshipCard({ scholarship: s, isSaved, onSave }: { scholarship: Sch
                <Ionicons name="location-outline" size={12} color={Colors.blue} style={{ marginRight: 4 }} />
                <Text style={[styles.metaText, { color: Colors.blue }]}>{s.country || 'International'}</Text>
             </View>
+            <View style={[styles.metaPill, { backgroundColor: freshness.bg }]}>
+              <Ionicons name="shield-checkmark-outline" size={12} color={freshness.color} style={{ marginRight: 4 }} />
+              <Text style={[styles.metaText, { color: freshness.color }]}>{freshnessLabel(s)}</Text>
+            </View>
           </View>
           <Ionicons name="chevron-forward" size={18} color={Colors.border} />
         </View>
@@ -227,7 +248,7 @@ const styles = StyleSheet.create({
   schOrg: { fontSize: Typography.xs, color: Colors.textSecondary, fontWeight: '500' },
   saveBtn: { width: 36, height: 36, backgroundColor: Colors.bg, borderRadius: 12, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: Colors.border },
   cardFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingTop: Spacing.md, borderTopWidth: 1, borderTopColor: '#f1f5f9' },
-  metaRow: { flexDirection: 'row', gap: Spacing.sm },
+  metaRow: { flexDirection: 'row', gap: Spacing.sm, flexWrap: 'wrap', flex: 1 },
   metaPill: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 10 },
   metaText: { fontSize: 11, fontWeight: 'bold' },
 });
