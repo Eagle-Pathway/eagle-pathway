@@ -67,13 +67,37 @@ export const scholarshipsService = {
     fundingType?: string;
     search?: string;
   }): Promise<Scholarship[]> {
+    const searchTerm = filters?.search?.trim();
+
+    if (searchTerm && typeof supabase.rpc === 'function') {
+      const { data, error } = await supabase.rpc('search_scholarships', {
+        p_query: searchTerm,
+        p_limit: 50,
+      });
+
+      if (!error && data) return data as Scholarship[];
+      console.warn('Scholarship search RPC unavailable, falling back to basic search:', error?.message);
+    }
+
     let query = supabase
       .from('scholarships')
       .select('*')
       .eq('is_active', true);
 
-    if (filters?.search) {
-      query = query.ilike('name', `%${filters.search}%`);
+    if (searchTerm) {
+      const search = `%${searchTerm}%`;
+      if (typeof query.or === 'function') {
+        query = query.or(
+          [
+            `name.ilike.${search}`,
+            `organization.ilike.${search}`,
+            `country.ilike.${search}`,
+            `description.ilike.${search}`,
+          ].join(','),
+        );
+      } else {
+        query = query.ilike('name', search);
+      }
     }
 
     const { data, error } = await query.order('deadline', { ascending: true });
@@ -474,3 +498,8 @@ Sincerely,
 ${student.full_name}`;
   },
 };
+
+
+
+
+
