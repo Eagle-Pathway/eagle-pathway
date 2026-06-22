@@ -150,3 +150,22 @@ describe('RLS static audit: feature tables added via migrations', () => {
     },
   );
 });
+
+describe('security-definer RPC audit', () => {
+  it('authorizes SOP draft updates inside increment_sop_draft', () => {
+    const definitions = Array.from(
+      allSql.matchAll(
+        /CREATE OR REPLACE FUNCTION public\.increment_sop_draft\([\s\S]*?\$\$ LANGUAGE plpgsql SECURITY DEFINER[^\n;]*(?:;|$)/gi,
+      ),
+    );
+
+    expect(definitions.length, 'increment_sop_draft RPC must be defined in migrations').toBeGreaterThan(0);
+
+    const body = definitions[definitions.length - 1][0].toLowerCase();
+    expect(body).toContain('auth.uid()');
+    expect(body).toContain('student_id');
+    expect(body).toContain('consultant_id');
+    expect(body).toContain('is_admin()');
+    expect(body).toContain('raise exception');
+  });
+});
