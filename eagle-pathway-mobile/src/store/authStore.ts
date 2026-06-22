@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { User, UserRole } from '../types';
-import { authService } from '../services/auth';
+import { SignupAttribution, authService } from '../services/auth';
 import { notificationsService } from '../services/notifications';
 import { supabase } from '../services/supabase';
 
@@ -18,7 +18,7 @@ interface AuthState {
   setUser: (user: User | null) => void;
   setSession: (session: any | null) => void;
   setPendingSignup: (data: AuthState['pendingSignup']) => void;
-  signUp: (email: string, password: string, fullName: string, phone: string, role: UserRole) => Promise<void>;
+  signUp: (email: string, password: string, fullName: string, phone: string, role: UserRole, attribution?: SignupAttribution) => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
   loadProfile: () => Promise<void>;
   updateProfile: (updates: Partial<User>) => Promise<void>;
@@ -38,10 +38,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   setSession: (session) => set({ session }),
   setPendingSignup: (data) => set({ pendingSignup: data }),
 
-  signUp: async (email, password, fullName, phone, role) => {
+  signUp: async (email, password, fullName, phone, role, attribution) => {
     set({ isLoading: true });
     try {
-      const data = await authService.signUp(email, password, fullName, phone, role);
+      const data = await authService.signUp(email, password, fullName, phone, role, attribution);
       if (data.session) {
         set({ session: data.session, user: data.user as any, isAuthenticated: true });
       }
@@ -72,7 +72,16 @@ export const useAuthStore = create<AuthState>((set, get) => ({
               // before an empty string — '' collides on users.phone UNIQUE.
               metadata.phone || data.session.user.phone || '',
               metadata.role || 'student',
-              data.session.user.email || ''
+              data.session.user.email || '',
+              {
+                referral_code: metadata.referral_code,
+                signup_source: metadata.signup_source,
+                utm_source: metadata.utm_source,
+                utm_medium: metadata.utm_medium,
+                utm_campaign: metadata.utm_campaign,
+                utm_content: metadata.utm_content,
+                first_landing_url: metadata.first_landing_url,
+              }
             );
             set({ user: profile, isAuthenticated: true });
           } else {
@@ -129,7 +138,16 @@ export const useAuthStore = create<AuthState>((set, get) => ({
             // before an empty string — '' collides on users.phone UNIQUE.
             metadata.phone || session.user.phone || '',
             metadata.role || 'student',
-            session.user.email || ''
+            session.user.email || '',
+            {
+              referral_code: metadata.referral_code,
+              signup_source: metadata.signup_source,
+              utm_source: metadata.utm_source,
+              utm_medium: metadata.utm_medium,
+              utm_campaign: metadata.utm_campaign,
+              utm_content: metadata.utm_content,
+              first_landing_url: metadata.first_landing_url,
+            }
           );
           set({ user: profile, isAuthenticated: true });
         } catch {

@@ -4,7 +4,7 @@ import {
   StyleSheet, KeyboardAvoidingView, Platform, Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { Colors, Typography, Spacing, Radius } from '@/utils/theme';
 import { Button } from '@/components/common';
 import { useAuthStore } from '@/store/authStore';
@@ -17,6 +17,15 @@ const ROLES: { key: UserRole; label: string; emoji: string }[] = [
 ];
 
 export default function SignupScreen() {
+  const params = useLocalSearchParams<{
+    ref?: string;
+    referral_code?: string;
+    source?: string;
+    utm_source?: string;
+    utm_medium?: string;
+    utm_campaign?: string;
+    utm_content?: string;
+  }>();
   const [fullName, setFullName] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
@@ -34,7 +43,16 @@ export default function SignupScreen() {
     if (password !== confirmPassword) return Alert.alert('Error', 'Passwords do not match');
 
     try {
-      await signUp(email.trim(), password, fullName.trim(), phone.trim(), role);
+      const referralCode = params.referral_code || params.ref;
+      await signUp(email.trim(), password, fullName.trim(), phone.trim(), role, {
+        referral_code: typeof referralCode === 'string' ? referralCode : undefined,
+        signup_source: typeof params.source === 'string' ? params.source : typeof params.utm_source === 'string' ? params.utm_source : undefined,
+        utm_source: typeof params.utm_source === 'string' ? params.utm_source : undefined,
+        utm_medium: typeof params.utm_medium === 'string' ? params.utm_medium : undefined,
+        utm_campaign: typeof params.utm_campaign === 'string' ? params.utm_campaign : undefined,
+        utm_content: typeof params.utm_content === 'string' ? params.utm_content : undefined,
+        first_landing_url: Object.keys(params).length ? JSON.stringify(params) : undefined,
+      });
       setIsSignedUp(true);
     } catch (e: any) {
       Alert.alert('Signup Failed', e.message || 'Please try again.');
