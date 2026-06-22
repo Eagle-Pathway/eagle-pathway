@@ -1,5 +1,6 @@
 import { supabase } from './supabase';
 import { User, UserRole } from '../types';
+import * as Linking from 'expo-linking';
 
 export const authService = {
   async sendOtp(phone: string) {
@@ -18,10 +19,12 @@ export const authService = {
   },
 
   async signUp(email: string, password: string, fullName: string, phone: string, role: string) {
+    const redirectUrl = Linking.createURL('/(auth)/login');
     const { data, error } = await supabase.auth.signUp({
       email: email.trim(),
       password,
       options: {
+        emailRedirectTo: redirectUrl,
         data: {
           full_name: fullName.trim(),
           phone: phone.trim(),

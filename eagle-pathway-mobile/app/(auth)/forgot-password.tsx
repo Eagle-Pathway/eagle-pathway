@@ -5,6 +5,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { Colors, Typography, Spacing, Radius } from '../../src/utils/theme';
 import { Button } from '../../src/components/common';
 import { supabase } from '../../src/services/supabase';
+import * as Linking from 'expo-linking';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -24,7 +25,10 @@ export default function ForgotPasswordScreen() {
     setError('');
     setLoading(true);
     try {
-      const { error: resetError } = await supabase.auth.resetPasswordForEmail(target);
+      const redirectUrl = Linking.createURL('/(auth)/login');
+      const { error: resetError } = await supabase.auth.resetPasswordForEmail(target, {
+        redirectTo: redirectUrl,
+      });
       if (resetError) throw resetError;
       setSent(true);
     } catch (e: any) {
