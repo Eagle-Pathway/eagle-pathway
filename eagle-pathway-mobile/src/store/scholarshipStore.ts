@@ -18,7 +18,18 @@ interface ScholarshipState {
   loadApplications: (userId: string) => Promise<void>;
   createApplication: (userId: string, scholarshipId: string, packageTier: PackageTier, sopContent?: string) => Promise<Application>;
   updateSOP: (applicationId: string, content: string) => Promise<void>;
-  reviewSOP: (content: string, scholarshipId?: string, studentId?: string) => Promise<{ score: number; feedback: string; suggestions: string[] }>;
+  reviewSOP: (content: string, scholarshipId?: string, studentId?: string) => Promise<{
+    score: number;
+    feedback: string;
+    suggestions: string[];
+    inline_comments?: {
+      paragraph_index: number;
+      quote: string;
+      severity: 'strength' | 'suggestion' | 'critical';
+      comment: string;
+      suggested_revision?: string;
+    }[];
+  }>;
   generateMagicSOP: (student: any, scholarship: Scholarship) => Promise<string>;
   
   // Persistence

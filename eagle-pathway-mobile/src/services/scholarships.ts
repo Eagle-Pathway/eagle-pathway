@@ -9,6 +9,15 @@ interface SOPFeedback {
   score: number;
   feedback: string;
   suggestions: string[];
+  inline_comments?: SOPInlineComment[];
+}
+
+interface SOPInlineComment {
+  paragraph_index: number;
+  quote: string;
+  severity: 'strength' | 'suggestion' | 'critical';
+  comment: string;
+  suggested_revision?: string;
 }
 
 async function withSignedDocumentUrl(document: Document): Promise<Document> {
