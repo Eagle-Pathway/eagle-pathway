@@ -9,6 +9,7 @@ import { Colors, Typography, Spacing, Radius } from '@/utils/theme';
 import { useAuthStore } from '@/store/authStore';
 import { supabase } from '@/services/supabase';
 import { notificationPrefsService, DEFAULT_PREFERENCES, type NotificationPreferences } from '@/services/notificationPrefs';
+import * as ExpoLinking from 'expo-linking';
 
 // Public privacy policy — must be published here before Play submission.
 const PRIVACY_POLICY_URL = 'https://eagle-pathway.vercel.app/privacy';
@@ -70,7 +71,10 @@ export function SettingsScreen() {
       {
         text: 'Send link',
         onPress: async () => {
-          const { error } = await supabase.auth.resetPasswordForEmail(user.email);
+          const redirectUrl = ExpoLinking.createURL('/(auth)/login');
+          const { error } = await supabase.auth.resetPasswordForEmail(user.email, {
+            redirectTo: redirectUrl,
+          });
           Alert.alert(
             error ? 'Error' : 'Check your email',
             error ? (error.message || 'Could not send the reset link.') : 'We sent a password reset link to your email.',

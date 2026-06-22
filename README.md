@@ -4,7 +4,6 @@ A single monorepo containing all Eagle Pathway products.
 
 ## What is inside
 
-- `eagle-pathway-web` — public website (landing/marketing)
 - `eagle-pathway-mobile` — student/tutor mobile app (Expo + React Native)
 - `eagle-pathway-admin` — internal admin dashboard (Next.js)
 
