@@ -36,7 +36,7 @@ export const authService = {
     role: string,
     attribution: SignupAttribution = {},
   ) {
-    const redirectUrl = 'eaglepathway://login';
+    const redirectUrl = 'https://eagle-pathway.vercel.app/open-app';
     const { data, error } = await supabase.auth.signUp({
       email: email.trim(),
       password,

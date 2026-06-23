@@ -25,7 +25,7 @@ export default function ForgotPasswordScreen() {
     setError('');
     setLoading(true);
     try {
-      const redirectUrl = 'eaglepathway://login';
+      const redirectUrl = 'https://eagle-pathway.vercel.app/open-app';
       const { error: resetError } = await supabase.auth.resetPasswordForEmail(target, {
         redirectTo: redirectUrl,
       });

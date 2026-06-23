@@ -71,7 +71,7 @@ export function SettingsScreen() {
       {
         text: 'Send link',
         onPress: async () => {
-          const redirectUrl = 'eaglepathway://login';
+          const redirectUrl = 'https://eagle-pathway.vercel.app/open-app';
           const { error } = await supabase.auth.resetPasswordForEmail(user.email, {
             redirectTo: redirectUrl,
           });
