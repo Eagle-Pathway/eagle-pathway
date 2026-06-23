@@ -10,6 +10,21 @@ import { useScholarshipStore } from '@/store/scholarshipStore';
 import { useAuthStore } from '@/store/authStore';
 import { Button } from '@/components/common';
 
+type AiInlineComment = {
+  paragraph_index: number;
+  quote: string;
+  severity: 'strength' | 'suggestion' | 'critical';
+  comment: string;
+  suggested_revision?: string;
+};
+
+type AiSopReport = {
+  score: number;
+  feedback: string;
+  suggestions: string[];
+  inline_comments?: AiInlineComment[];
+};
+
 export default function SOPEditorScreen() {
   const { applicationId, scholarshipName } = useLocalSearchParams<{ applicationId: string, scholarshipName: string }>();
   const { user } = useAuthStore();
@@ -18,7 +33,7 @@ export default function SOPEditorScreen() {
   const application = applications.find(a => a.id === applicationId);
   const [content, setContent] = useState(application?.sop_content || '');
   const [isSaving, setIsSaving] = useState(false);
-  const [aiReport, setAiReport] = useState<any>(null);
+  const [aiReport, setAiReport] = useState<AiSopReport | null>(null);
   const [showAiModal, setShowAiModal] = useState(false);
 
   const wordCount = content.split(/\s+/).filter(w => w.length > 0).length;
@@ -119,14 +134,44 @@ export default function SOPEditorScreen() {
 
             <ScrollView showsVerticalScrollIndicator={false}>
               <View style={styles.scoreCircleWrap}>
-                <View style={[styles.scoreCircle, { borderColor: aiReport?.score > 70 ? Colors.green : Colors.orange }]}>
-                  <Text style={styles.scoreNum}>{aiReport?.score}</Text>
+                <View style={[styles.scoreCircle, { borderColor: (aiReport?.score ?? 0) > 70 ? Colors.green : Colors.orange }]}>
+                  <Text style={styles.scoreNum}>{aiReport?.score ?? 0}</Text>
                   <Text style={styles.scoreLabel}>Impact Score</Text>
                 </View>
               </View>
 
               <Text style={styles.sectionHeading}>Overall Feedback</Text>
               <Text style={styles.feedbackText}>{aiReport?.feedback}</Text>
+
+              {!!aiReport?.inline_comments?.length && (
+                <>
+                  <Text style={styles.sectionHeading}>Paragraph Comments</Text>
+                  {aiReport.inline_comments.map((comment, i) => (
+                    <View key={`${comment.paragraph_index}-${i}`} style={styles.inlineCommentCard}>
+                      <View style={styles.inlineCommentHeader}>
+                        <Text style={styles.inlineCommentLabel}>
+                          Paragraph {comment.paragraph_index + 1}
+                        </Text>
+                        <Text style={[
+                          styles.inlineSeverity,
+                          comment.severity === 'critical' && styles.inlineSeverityCritical,
+                          comment.severity === 'strength' && styles.inlineSeverityStrength,
+                        ]}>
+                          {comment.severity}
+                        </Text>
+                      </View>
+                      {!!comment.quote && <Text style={styles.inlineQuote}>"{comment.quote}"</Text>}
+                      <Text style={styles.inlineCommentText}>{comment.comment}</Text>
+                      {!!comment.suggested_revision && (
+                        <View style={styles.revisionBox}>
+                          <Text style={styles.revisionLabel}>Suggested revision</Text>
+                          <Text style={styles.revisionText}>{comment.suggested_revision}</Text>
+                        </View>
+                      )}
+                    </View>
+                  ))}
+                </>
+              )}
 
               <Text style={styles.sectionHeading}>Actionable Suggestions</Text>
               {aiReport?.suggestions?.map((s: string, i: number) => (
@@ -238,6 +283,24 @@ const styles = StyleSheet.create({
   scoreLabel: { fontSize: 10, color: Colors.textSecondary, textTransform: 'uppercase' },
   sectionHeading: { fontSize: Typography.sm, fontWeight: Typography.bold, color: Colors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 8, marginTop: Spacing.md },
   feedbackText: { fontSize: Typography.md, color: Colors.text, lineHeight: 24 },
+  inlineCommentCard: {
+    borderWidth: 1,
+    borderColor: Colors.border,
+    backgroundColor: Colors.bg,
+    borderRadius: Radius.lg,
+    padding: Spacing.md,
+    marginBottom: Spacing.sm,
+  },
+  inlineCommentHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: Spacing.sm, marginBottom: 6 },
+  inlineCommentLabel: { fontSize: Typography.xs, fontWeight: Typography.bold, color: Colors.textSecondary, textTransform: 'uppercase' },
+  inlineSeverity: { fontSize: 10, fontWeight: Typography.bold, color: Colors.blue, textTransform: 'uppercase' },
+  inlineSeverityCritical: { color: Colors.red },
+  inlineSeverityStrength: { color: Colors.green },
+  inlineQuote: { fontSize: Typography.xs, color: Colors.textSecondary, fontStyle: 'italic', marginBottom: 6 },
+  inlineCommentText: { fontSize: Typography.sm, color: Colors.text, lineHeight: 20 },
+  revisionBox: { marginTop: Spacing.sm, padding: Spacing.sm, borderRadius: Radius.md, backgroundColor: Colors.white, borderWidth: 1, borderColor: Colors.border },
+  revisionLabel: { fontSize: 10, color: Colors.textSecondary, fontWeight: Typography.bold, textTransform: 'uppercase', marginBottom: 4 },
+  revisionText: { fontSize: Typography.sm, color: Colors.text, lineHeight: 20 },
   suggestionRow: { flexDirection: 'row', gap: 10, marginTop: 8 },
   bullet: { fontSize: 20, color: Colors.blue, lineHeight: 24 },
   suggestionText: { flex: 1, fontSize: 14, color: Colors.textSecondary, lineHeight: 22 },

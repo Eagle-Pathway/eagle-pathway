@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { parseJson } from '@eagle-pathway/shared';
+import { normalizeSopReview } from '../app/api/sop-review/route';
 
 describe('SOP Review API', () => {
   describe('parseJson', () => {
@@ -37,5 +38,56 @@ describe('SOP Review API', () => {
       const result = parseJson<{ suggestions: string[] }>(input);
       expect(result.suggestions).toHaveLength(3);
     });
+  });
+});
+
+describe('normalizeSopReview', () => {
+  it('bounds scores and normalizes inline comments', () => {
+    const result = normalizeSopReview({
+      score: 125,
+      feedback: 'Good direction.',
+      suggestions: ['Add detail'],
+      inline_comments: [
+        {
+          paragraph_index: -2,
+          quote: 'x'.repeat(300),
+          severity: 'critical',
+          comment: 'Be more specific.',
+          suggested_revision: 'Use a concrete leadership example.',
+        },
+      ],
+    });
+
+    expect(result.score).toBe(100);
+    expect(result.inline_comments).toHaveLength(1);
+    expect(result.inline_comments[0].paragraph_index).toBe(0);
+    expect(result.inline_comments[0].quote).toHaveLength(240);
+    expect(result.inline_comments[0].severity).toBe('critical');
+  });
+
+  it('drops empty inline comments and defaults unknown severity', () => {
+    const result = normalizeSopReview({
+      score: 70,
+      feedback: '',
+      suggestions: [],
+      inline_comments: [
+        {
+          paragraph_index: 1,
+          quote: 'A quote',
+          severity: 'unknown' as 'suggestion',
+          comment: '',
+        },
+        {
+          paragraph_index: 2,
+          quote: 'Another quote',
+          severity: 'unknown' as 'suggestion',
+          comment: 'This needs evidence.',
+        },
+      ],
+    });
+
+    expect(result.feedback).toBe('Review completed.');
+    expect(result.inline_comments).toHaveLength(1);
+    expect(result.inline_comments[0].severity).toBe('suggestion');
   });
 });

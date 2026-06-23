@@ -2,6 +2,16 @@ import { supabase } from './supabase';
 import { User, UserRole } from '../types';
 import * as Linking from 'expo-linking';
 
+export interface SignupAttribution {
+  referral_code?: string;
+  signup_source?: string;
+  utm_source?: string;
+  utm_medium?: string;
+  utm_campaign?: string;
+  utm_content?: string;
+  first_landing_url?: string;
+}
+
 export const authService = {
   async sendOtp(phone: string) {
     const { error } = await supabase.auth.signInWithOtp({ phone });
@@ -18,6 +28,14 @@ export const authService = {
     return data;
   },
 
+  async signUp(
+    email: string,
+    password: string,
+    fullName: string,
+    phone: string,
+    role: string,
+    attribution: SignupAttribution = {},
+  ) {
   async signUp(email: string, password: string, fullName: string, phone: string, role: string) {
     const redirectUrl = Linking.createURL('/(auth)/login');
     const { data, error } = await supabase.auth.signUp({
@@ -29,6 +47,7 @@ export const authService = {
           full_name: fullName.trim(),
           phone: phone.trim(),
           role,
+          ...attribution,
         }
       }
     });
@@ -38,7 +57,7 @@ export const authService = {
     // If auto-confirm is enabled and we have a session, create profile immediately
     if (data.user && data.session) {
       try {
-        await this.createProfile(data.user.id, fullName, phone, role as any, email);
+        await this.createProfile(data.user.id, fullName, phone, role as any, email, attribution);
       } catch (e) {
         console.log('Profile creation failed or already exists:', e);
       }
@@ -61,7 +80,8 @@ export const authService = {
     fullName: string,
     phone: string,
     role: UserRole,
-    email: string
+    email: string,
+    attribution: SignupAttribution = {},
   ) {
     const { data, error } = await supabase
       .from('users')
@@ -73,6 +93,13 @@ export const authService = {
         roles: [role],         // legacy mirror — dropped in phase 2
         active_role: role,     // legacy mirror — dropped in phase 2
         email,
+        referral_code: attribution.referral_code || null,
+        signup_source: attribution.signup_source || null,
+        utm_source: attribution.utm_source || null,
+        utm_medium: attribution.utm_medium || null,
+        utm_campaign: attribution.utm_campaign || null,
+        utm_content: attribution.utm_content || null,
+        first_landing_url: attribution.first_landing_url || null,
       })
       .select()
       .single();

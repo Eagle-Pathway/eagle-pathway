@@ -17,6 +17,9 @@ interface Scholarship {
   country_flag: string;
   degree_levels: string[];
   is_active: boolean;
+  source_status?: 'verified' | 'unverified' | 'stale' | 'broken';
+  verified_at?: string | null;
+  stale_reason?: string | null;
 }
 
 export default function ScholarshipsPage() {
@@ -62,6 +65,32 @@ export default function ScholarshipsPage() {
       .update({ is_active: !currentStatus })
       .eq('id', id);
     fetchScholarships();
+  };
+
+  const updateSourceStatus = async (
+    id: string,
+    sourceStatus: NonNullable<Scholarship['source_status']>,
+  ) => {
+    const { data: auth } = await supabase.auth.getUser();
+    await supabase
+      .from('scholarships')
+      .update({
+        source_status: sourceStatus,
+        verified_at: sourceStatus === 'verified' ? new Date().toISOString() : null,
+        verified_by: sourceStatus === 'verified' ? auth.user?.id || null : null,
+        stale_reason: sourceStatus === 'verified' ? null : sourceStatus,
+      })
+      .eq('id', id);
+    fetchScholarships();
+  };
+
+  const freshnessStyle = (sourceStatus?: Scholarship['source_status']) => {
+    switch (sourceStatus) {
+      case 'verified': return 'bg-green-100 text-green-800';
+      case 'stale': return 'bg-amber-100 text-amber-800';
+      case 'broken': return 'bg-red-100 text-red-800';
+      default: return 'bg-gray-100 text-gray-700';
+    }
   };
 
   const filtered = scholarships.filter(s => 
@@ -135,15 +164,16 @@ export default function ScholarshipsPage() {
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Provider & Amount</th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Details</th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Freshness</th>
                 <th scope="col" className="relative px-6 py-3"><span className="sr-only">Actions</span></th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {loading ? (
-                <TableSkeleton cols={5} rows={5} avatarCol={false} />
+                <TableSkeleton cols={6} rows={5} avatarCol={false} />
               ) : filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-6 py-10 text-center text-sm text-gray-500">No scholarships found.</td>
+                  <td colSpan={6} className="px-6 py-10 text-center text-sm text-gray-500">No scholarships found.</td>
                 </tr>
               ) : (
                 filtered.map((scholarship) => (
@@ -177,6 +207,28 @@ export default function ScholarshipsPage() {
                       >
                         {scholarship.is_active ? 'Active' : 'Inactive'}
                       </button>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex flex-col gap-2">
+                        <span className={`w-fit px-2.5 py-0.5 rounded-full text-xs font-medium capitalize ${freshnessStyle(scholarship.source_status)}`}>
+                          {scholarship.source_status || 'unverified'}
+                        </span>
+                        {scholarship.verified_at && (
+                          <span className="text-xs text-gray-500">
+                            Verified {new Date(scholarship.verified_at).toLocaleDateString()}
+                          </span>
+                        )}
+                        <select
+                          value={scholarship.source_status || 'unverified'}
+                          onChange={(e) => updateSourceStatus(scholarship.id, e.target.value as NonNullable<Scholarship['source_status']>)}
+                          className="max-w-[140px] rounded-lg border border-gray-200 bg-white px-2 py-1 text-xs text-gray-700"
+                        >
+                          <option value="verified">Verified</option>
+                          <option value="unverified">Unverified</option>
+                          <option value="stale">Stale</option>
+                          <option value="broken">Broken</option>
+                        </select>
+                      </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <div className="flex justify-end space-x-2">

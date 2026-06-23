@@ -57,6 +57,7 @@ export default function OverviewPage() {
   
   const [roleData, setRoleData] = useState<{name: string, value: number}[]>([]);
   const [activityData, setActivityData] = useState<{name: string, signups: number, apps: number}[]>([]);
+  const [sourceData, setSourceData] = useState<{ source: string; signups: number }[]>([]);
   const [opsQueue, setOpsQueue] = useState<OpsQueueItem[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -77,10 +78,12 @@ export default function OverviewPage() {
           summaryRes,
           recentUsersRes,
           recentAppsRes,
+          sourceUsersRes,
         ] = await Promise.all([
           supabase.rpc('get_dashboard_summary'),
           supabase.from('users').select('created_at').gte('created_at', isoStart),
           supabase.from('applications').select('created_at').gte('created_at', isoStart),
+          supabase.from('users').select('signup_source, referral_code, utm_source, utm_campaign'),
         ]);
 
         if (summaryRes.error) throw summaryRes.error;
@@ -122,6 +125,23 @@ export default function OverviewPage() {
           signups: signupsByDate[d.dateStr],
           apps: appsByDate[d.dateStr],
         })));
+
+        const sourceCounts: Record<string, number> = {};
+        (sourceUsersRes.data || []).forEach((u: any) => {
+          const source =
+            u.referral_code ||
+            u.utm_campaign ||
+            u.signup_source ||
+            u.utm_source ||
+            'direct / unknown';
+          sourceCounts[source] = (sourceCounts[source] || 0) + 1;
+        });
+        setSourceData(
+          Object.entries(sourceCounts)
+            .map(([source, signups]) => ({ source, signups }))
+            .sort((a, b) => b.signups - a.signups)
+            .slice(0, 6),
+        );
 
         setOpsQueue([
           {
@@ -204,6 +224,30 @@ export default function OverviewPage() {
              </div>
           );
         })}
+      </div>
+
+      <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h2 className="text-lg font-bold text-gray-900">Signup Sources</h2>
+            <p className="text-sm text-gray-500">First-touch referral and UTM attribution.</p>
+          </div>
+        </div>
+        {loading ? (
+          <div className="py-8 flex justify-center"><Loader2 className="h-6 w-6 animate-spin text-gray-300" /></div>
+        ) : sourceData.length === 0 ? (
+          <p className="text-sm text-gray-500">No attribution data yet.</p>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+            {sourceData.map((item) => (
+              <div key={item.source} className="rounded-xl border border-gray-100 bg-gray-50 p-4">
+                <p className="text-sm font-semibold text-gray-900 truncate">{item.source}</p>
+                <p className="mt-1 text-2xl font-bold text-brand-blue">{item.signups}</p>
+                <p className="text-xs text-gray-500">signups</p>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
       
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-8">

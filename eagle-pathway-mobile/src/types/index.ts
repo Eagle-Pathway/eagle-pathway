@@ -27,6 +27,13 @@ export interface User {
   target_degree_level?: string;
   has_extracurriculars?: boolean;
   target_departments?: string[];
+  referral_code?: string;
+  signup_source?: string;
+  utm_source?: string;
+  utm_medium?: string;
+  utm_campaign?: string;
+  utm_content?: string;
+  first_landing_url?: string;
 }
 
 // ─── TUTOR ───────────────────────────────────────────────────────────────────
@@ -108,6 +115,11 @@ export interface Scholarship {
   website_url?: string;
   image_url?: string;
   is_active: boolean;
+  source_url?: string;
+  source_status?: 'verified' | 'unverified' | 'stale' | 'broken';
+  verified_at?: string;
+  verified_by?: string;
+  stale_reason?: string;
   created_at: string;
   
   // Complexity fields

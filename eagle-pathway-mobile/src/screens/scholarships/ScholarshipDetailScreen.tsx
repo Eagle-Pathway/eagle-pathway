@@ -37,6 +37,21 @@ const renderLinkedText = (text: string) => {
   });
 };
 
+function sourceStatusLabel(scholarship: Scholarship) {
+  if (scholarship.source_status === 'verified' && scholarship.verified_at) {
+    return `Verified ${format(new Date(scholarship.verified_at), 'MMM d, yyyy')}`;
+  }
+  if (scholarship.source_status === 'stale') return 'Listing needs recheck';
+  if (scholarship.source_status === 'broken') return 'Official link may be broken';
+  return 'Not independently verified yet';
+}
+
+function sourceStatusTone(sourceStatus?: Scholarship['source_status']) {
+  if (sourceStatus === 'verified') return { bg: Colors.greenLight, color: Colors.green };
+  if (sourceStatus === 'broken') return { bg: Colors.redLight, color: Colors.red };
+  return { bg: Colors.goldLight, color: Colors.goldDark };
+}
+
 export function ScholarshipDetailScreen() {
   const { scholarshipId } = useLocalSearchParams<{ scholarshipId: string }>();
   const { savedScholarshipIds, toggleSaveScholarship } = useScholarshipStore();
@@ -83,6 +98,7 @@ export function ScholarshipDetailScreen() {
     : eligibility.hasProfileGaps
     ? { text: 'Finish profile to check', color: Colors.goldDark, bg: Colors.goldLight }
     : { text: "You're eligible ✓", color: Colors.green, bg: Colors.greenLight };
+  const sourceTone = sourceStatusTone(scholarship.source_status);
 
   return (
     <SafeAreaView style={[CommonStyles.flex1, { backgroundColor: Colors.blueDark }]} edges={['top']}>
@@ -182,6 +198,11 @@ export function ScholarshipDetailScreen() {
           {scholarship.website_url && (
             <View style={sdStyles.section}>
               <Text style={sdStyles.sectionTitle}>Official Website</Text>
+              <View style={[sdStyles.sourceStatus, { backgroundColor: sourceTone.bg }]}>
+                <Text style={[sdStyles.sourceStatusText, { color: sourceTone.color }]}>
+                  {sourceStatusLabel(scholarship)}
+                </Text>
+              </View>
               <ScaleBounce 
                 style={sdStyles.linkButton} 
                 onPress={() => Linking.openURL(scholarship.website_url!)}
@@ -339,6 +360,8 @@ const sdStyles = StyleSheet.create({
   bottomBar: { padding: Spacing.lg, backgroundColor: Colors.card, borderTopWidth: 1, borderTopColor: Colors.border, flexDirection: 'row', gap: Spacing.sm },
   linkButton: { backgroundColor: Colors.blueLight, padding: Spacing.md, borderRadius: Radius.md, alignItems: 'center', borderWidth: 1, borderColor: Colors.blue, marginBottom: Spacing.xs },
   linkButtonText: { color: Colors.blue, fontWeight: 'bold', fontSize: Typography.md },
+  sourceStatus: { alignSelf: 'flex-start', paddingHorizontal: 10, paddingVertical: 5, borderRadius: Radius.full, marginBottom: Spacing.sm },
+  sourceStatusText: { fontSize: Typography.xs, fontWeight: Typography.bold },
   linkSubtext: { fontSize: Typography.xs, color: Colors.textSecondary, fontStyle: 'italic' },
   storiesBtn: { backgroundColor: Colors.goldLight, padding: Spacing.md, borderRadius: Radius.md, alignItems: 'center', borderWidth: 1, borderColor: '#e8d5a0', marginBottom: Spacing.xs },
   storiesBtnText: { color: '#7a5c1e', fontWeight: 'bold', fontSize: Typography.md },

@@ -20,11 +20,20 @@ interface SopReview {
   score: number;
   feedback: string;
   suggestions: string[];
+  inline_comments?: SopInlineComment[];
+}
+
+interface SopInlineComment {
+  paragraph_index: number;
+  quote: string;
+  severity: 'strength' | 'suggestion' | 'critical';
+  comment: string;
+  suggested_revision?: string;
 }
 
 const SYSTEM_PROMPT = `You are Eagle Pathway's scholarship writing reviewer.
 Evaluate statements of purpose for clarity, scholarship fit, evidence, specificity, and credibility.
-Return only valid JSON. For reviews use: {"score": number, "feedback": string, "suggestions": string[]}.
+Return only valid JSON. For reviews use: {"score": number, "feedback": string, "suggestions": string[], "inline_comments": [{"paragraph_index": number, "quote": string, "severity": "strength" | "suggestion" | "critical", "comment": string, "suggested_revision": string}]}.
 For drafts use: {"draft": string}. Keep advice practical and student-centered.`;
 
 const CORS_HEADERS = {
@@ -97,6 +106,30 @@ function parseJson<T>(content: string | undefined): T {
   return JSON.parse(match[0]) as T;
 }
 
+export function normalizeSopReview(review: SopReview) {
+  const severities = new Set(['strength', 'suggestion', 'critical']);
+  const inlineComments = Array.isArray(review.inline_comments)
+    ? review.inline_comments
+        .filter((comment) => comment && typeof comment === 'object')
+        .map((comment) => ({
+          paragraph_index: Math.max(0, Number(comment.paragraph_index) || 0),
+          quote: String(comment.quote || '').trim().slice(0, 240),
+          severity: severities.has(comment.severity) ? comment.severity : 'suggestion',
+          comment: String(comment.comment || '').trim().slice(0, 600),
+          suggested_revision: String(comment.suggested_revision || '').trim().slice(0, 800),
+        }))
+        .filter((comment) => comment.comment)
+        .slice(0, 8)
+    : [];
+
+  return {
+    score: Math.max(0, Math.min(100, Number(review.score) || 0)),
+    feedback: review.feedback || 'Review completed.',
+    suggestions: Array.isArray(review.suggestions) ? review.suggestions.slice(0, 6) : [],
+    inline_comments: inlineComments,
+  };
+}
+
 export async function POST(req: Request) {
   try {
     const user = await requireAuthenticatedUser(req);
@@ -124,11 +157,7 @@ export async function POST(req: Request) {
       ].join('\n\n');
 
       const review = parseJson<SopReview>(await callModel(prompt));
-      return json({
-        score: Math.max(0, Math.min(100, Number(review.score) || 0)),
-        feedback: review.feedback || 'Review completed.',
-        suggestions: Array.isArray(review.suggestions) ? review.suggestions.slice(0, 6) : [],
-      });
+      return json(normalizeSopReview(review));
     }
 
     if (body.action === 'draft') {
