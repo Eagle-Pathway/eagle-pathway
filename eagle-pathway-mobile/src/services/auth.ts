@@ -36,7 +36,6 @@ export const authService = {
     role: string,
     attribution: SignupAttribution = {},
   ) {
-  async signUp(email: string, password: string, fullName: string, phone: string, role: string) {
     const redirectUrl = Linking.createURL('/(auth)/login');
     const { data, error } = await supabase.auth.signUp({
       email: email.trim(),
