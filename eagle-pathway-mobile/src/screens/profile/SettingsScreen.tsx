@@ -71,7 +71,7 @@ export function SettingsScreen() {
       {
         text: 'Send link',
         onPress: async () => {
-          const redirectUrl = ExpoLinking.createURL('/(auth)/login');
+          const redirectUrl = 'eaglepathway://login';
           const { error } = await supabase.auth.resetPasswordForEmail(user.email, {
             redirectTo: redirectUrl,
           });

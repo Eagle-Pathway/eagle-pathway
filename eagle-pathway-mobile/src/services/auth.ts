@@ -36,7 +36,7 @@ export const authService = {
     role: string,
     attribution: SignupAttribution = {},
   ) {
-    const redirectUrl = Linking.createURL('/(auth)/login');
+    const redirectUrl = 'eaglepathway://login';
     const { data, error } = await supabase.auth.signUp({
       email: email.trim(),
       password,

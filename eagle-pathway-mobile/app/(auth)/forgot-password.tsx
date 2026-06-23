@@ -25,7 +25,7 @@ export default function ForgotPasswordScreen() {
     setError('');
     setLoading(true);
     try {
-      const redirectUrl = Linking.createURL('/(auth)/login');
+      const redirectUrl = 'eaglepathway://login';
       const { error: resetError } = await supabase.auth.resetPasswordForEmail(target, {
         redirectTo: redirectUrl,
       });

@@ -181,8 +181,8 @@ export default function OverviewPage() {
             bg: 'bg-amber-50',
           },
         ]);
-      } catch (err) {
-        console.error('Error fetching dashboard stats:', err);
+      } catch (err: any) {
+        console.error('Error fetching dashboard stats:', err?.message || err, JSON.stringify(err));
       } finally {
         setLoading(false);
       }
