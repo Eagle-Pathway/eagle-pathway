@@ -36,6 +36,9 @@ export default function RootLayout() {
         setUser(null);
         unsubscribeFromUpdates();
       }
+      if (event === 'PASSWORD_RECOVERY') {
+        router.push('/(auth)/update-password');
+      }
       SplashScreen.hideAsync();
     });
 

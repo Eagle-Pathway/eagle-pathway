@@ -1,0 +1,12 @@
+{
+  "expo": {
+    "extra": {
+      "eas": {
+        "projectId": "8368d2cf-4ece-4d16-839b-85d8d4304e2f"
+      }
+    },
+    "android": {
+      "package": "com.tise_genene.eaglepathwaymonorepo"
+    }
+  }
+}
