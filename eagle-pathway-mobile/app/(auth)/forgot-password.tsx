@@ -5,18 +5,18 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { Colors, Typography, Spacing, Radius } from '../../src/utils/theme';
 import { Button } from '../../src/components/common';
 import { supabase } from '../../src/services/supabase';
-import * as Linking from 'expo-linking';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default function ForgotPasswordScreen() {
   const params = useLocalSearchParams<{ email?: string }>();
   const [email, setEmail] = useState(params.email ?? '');
+  const [code, setCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [sent, setSent] = useState(false);
 
-  const sendResetLink = async () => {
+  const sendResetCode = async () => {
     const target = email.trim();
     if (!EMAIL_RE.test(target)) {
       setError('Please enter a valid email address.');
@@ -25,14 +25,37 @@ export default function ForgotPasswordScreen() {
     setError('');
     setLoading(true);
     try {
-      const redirectUrl = 'https://eagle-pathway.vercel.app/open-app';
-      const { error: resetError } = await supabase.auth.resetPasswordForEmail(target, {
-        redirectTo: redirectUrl,
-      });
+      // No redirectTo — the email delivers a 6-digit code ({{ .Token }}) instead of a deep link.
+      const { error: resetError } = await supabase.auth.resetPasswordForEmail(target);
       if (resetError) throw resetError;
       setSent(true);
     } catch (e: any) {
-      setError(e?.message || 'Could not send the reset link. Please try again.');
+      setError(e?.message || 'Could not send the reset code. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const verifyCode = async () => {
+    const target = email.trim();
+    const token = code.trim();
+    if (token.length < 6) {
+      setError('Enter the 6-digit code from your email.');
+      return;
+    }
+    setError('');
+    setLoading(true);
+    try {
+      const { error: verifyError } = await supabase.auth.verifyOtp({
+        email: target,
+        token,
+        type: 'recovery',
+      });
+      if (verifyError) throw verifyError;
+      // Recovery session is now active — go set the new password.
+      router.replace('/(auth)/update-password');
+    } catch (e: any) {
+      setError(e?.message || 'That code is invalid or expired. Request a new one.');
     } finally {
       setLoading(false);
     }
@@ -53,7 +76,7 @@ export default function ForgotPasswordScreen() {
               <View style={styles.iconBadge}><Text style={{ fontSize: 30 }}>🔑</Text></View>
               <Text style={styles.title}>Forgot password?</Text>
               <Text style={styles.subtitle}>
-                Enter the email linked to your account and we’ll send you a link to reset your password.
+                Enter the email linked to your account and we’ll send you a 6-digit code to reset your password.
               </Text>
 
               <View style={{ marginTop: Spacing['2xl'] }}>
@@ -68,13 +91,13 @@ export default function ForgotPasswordScreen() {
                   autoCorrect={false}
                   autoFocus={!email}
                   placeholderTextColor={Colors.textSecondary}
-                  onSubmitEditing={sendResetLink}
+                  onSubmitEditing={sendResetCode}
                   returnKeyType="send"
                 />
                 {!!error && <Text style={styles.errorText}>{error}</Text>}
               </View>
 
-              <Button title="Send reset link" onPress={sendResetLink} loading={loading} style={{ marginTop: Spacing.xl }} />
+              <Button title="Send reset code" onPress={sendResetCode} loading={loading} style={{ marginTop: Spacing.xl }} />
 
               <TouchableOpacity style={styles.linkRow} onPress={backToLogin} activeOpacity={0.7}>
                 <Text style={styles.linkMuted}>Remembered it? <Text style={styles.link}>Back to sign in</Text></Text>
@@ -83,19 +106,37 @@ export default function ForgotPasswordScreen() {
           ) : (
             <>
               <View style={[styles.iconBadge, { backgroundColor: Colors.greenLight }]}><Text style={{ fontSize: 30 }}>✉️</Text></View>
-              <Text style={styles.title}>Check your email</Text>
+              <Text style={styles.title}>Enter your code</Text>
               <Text style={styles.subtitle}>
-                We sent a password reset link to{'\n'}
+                We sent a 6-digit code to{'\n'}
                 <Text style={{ fontWeight: Typography.bold, color: Colors.text }}>{email.trim()}</Text>.
-                {'\n\n'}Open it to set a new password, then come back and sign in. The link expires after a while, so use it soon.
+                {'\n\n'}Enter it below to continue. The code expires after a while, so use it soon.
               </Text>
 
-              <Button title="Back to sign in" onPress={backToLogin} style={{ marginTop: Spacing['2xl'] }} />
+              <View style={{ marginTop: Spacing['2xl'] }}>
+                <Text style={styles.label}>Verification Code</Text>
+                <TextInput
+                  style={[styles.input, styles.codeInput, !!error && styles.inputError]}
+                  placeholder="123456"
+                  value={code}
+                  onChangeText={(t) => { setCode(t.replace(/[^0-9]/g, '')); if (error) setError(''); }}
+                  keyboardType="number-pad"
+                  maxLength={6}
+                  autoFocus
+                  textContentType="oneTimeCode"
+                  placeholderTextColor={Colors.textSecondary}
+                  onSubmitEditing={verifyCode}
+                  returnKeyType="done"
+                />
+                {!!error && <Text style={styles.errorText}>{error}</Text>}
+              </View>
 
-              <TouchableOpacity style={styles.linkRow} onPress={sendResetLink} disabled={loading} activeOpacity={0.7}>
-                <Text style={styles.linkMuted}>Didn’t get it? <Text style={styles.link}>{loading ? 'Resending…' : 'Resend link'}</Text></Text>
+              <Button title="Verify code" onPress={verifyCode} loading={loading} style={{ marginTop: Spacing.xl }} />
+
+              <TouchableOpacity style={styles.linkRow} onPress={sendResetCode} disabled={loading} activeOpacity={0.7}>
+                <Text style={styles.linkMuted}>Didn’t get it? <Text style={styles.link}>{loading ? 'Resending…' : 'Resend code'}</Text></Text>
               </TouchableOpacity>
-              <TouchableOpacity style={{ alignItems: 'center', marginTop: Spacing.sm }} onPress={() => { setSent(false); setError(''); }} activeOpacity={0.7}>
+              <TouchableOpacity style={{ alignItems: 'center', marginTop: Spacing.sm }} onPress={() => { setSent(false); setCode(''); setError(''); }} activeOpacity={0.7}>
                 <Text style={styles.linkMuted}>Use a different email</Text>
               </TouchableOpacity>
             </>
@@ -115,6 +156,7 @@ const styles = StyleSheet.create({
   subtitle: { fontSize: 14, color: Colors.textSecondary, lineHeight: 21 },
   label: { fontSize: 13, fontWeight: Typography.semibold, color: Colors.text, marginBottom: 6 },
   input: { borderWidth: 1.5, borderColor: Colors.border, borderRadius: Radius.lg, padding: Spacing.md, fontSize: 15, color: Colors.text, backgroundColor: '#fafafa' },
+  codeInput: { fontSize: 24, letterSpacing: 8, textAlign: 'center', fontWeight: Typography.bold },
   inputError: { borderColor: Colors.red },
   errorText: { fontSize: 12, color: Colors.red, marginTop: 6 },
   linkRow: { marginTop: Spacing.xl, alignItems: 'center' },

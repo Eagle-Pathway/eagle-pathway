@@ -8,6 +8,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { Colors, Typography, Spacing, Radius } from '@/utils/theme';
 import { Button } from '@/components/common';
 import { useAuthStore } from '@/store/authStore';
+import { authService } from '@/services/auth';
 import { UserRole } from '@/types';
 
 const ROLES: { key: UserRole; label: string; emoji: string }[] = [
@@ -33,7 +34,9 @@ export default function SignupScreen() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [role, setRole] = useState<UserRole>('student');
   const [isSignedUp, setIsSignedUp] = useState(false);
-  const { signUp, isLoading } = useAuthStore();
+  const [code, setCode] = useState('');
+  const [resending, setResending] = useState(false);
+  const { signUp, verifySignup, isLoading } = useAuthStore();
 
   const handleContinue = async () => {
     if (!fullName.trim()) return Alert.alert('Error', 'Please enter your full name');
@@ -59,6 +62,28 @@ export default function SignupScreen() {
     }
   };
 
+  const handleVerify = async () => {
+    if (code.trim().length < 6) return Alert.alert('Error', 'Enter the 6-digit code from your email');
+    try {
+      await verifySignup(email.trim(), code.trim());
+      router.replace('/(tabs)/home');
+    } catch (e: any) {
+      Alert.alert('Verification Failed', e.message || 'That code is invalid or expired.');
+    }
+  };
+
+  const handleResend = async () => {
+    setResending(true);
+    try {
+      await authService.resendSignupOtp(email.trim());
+      Alert.alert('Code sent', `We sent a new code to ${email.trim()}.`);
+    } catch (e: any) {
+      Alert.alert('Error', e.message || 'Could not resend the code.');
+    } finally {
+      setResending(false);
+    }
+  };
+
   if (isSignedUp) {
     return (
       <SafeAreaView style={styles.container}>
@@ -66,17 +91,37 @@ export default function SignupScreen() {
           <View style={styles.successIconWrap}>
             <Text style={styles.successIcon}>✉️</Text>
           </View>
-          <Text style={styles.successTitle}>Check your email</Text>
+          <Text style={styles.successTitle}>Verify your email</Text>
           <Text style={styles.successSubtitle}>
-            We've sent a verification link to <Text style={{ color: Colors.text, fontWeight: Typography.bold }}>{email}</Text>.
-            Please click the link to activate your account.
+            We've sent a 6-digit code to <Text style={{ color: Colors.text, fontWeight: Typography.bold }}>{email}</Text>.
+            Enter it below to activate your account.
           </Text>
-          <Button 
-            title="Back to Login" 
-            onPress={() => router.replace('/(auth)/login')} 
-            style={{ width: '100%', marginTop: Spacing.xl }} 
+
+          <TextInput
+            style={[styles.input, styles.codeInput, { width: '100%', marginTop: Spacing.xl }]}
+            placeholder="123456"
+            value={code}
+            onChangeText={(t) => setCode(t.replace(/[^0-9]/g, ''))}
+            keyboardType="number-pad"
+            maxLength={6}
+            autoFocus
+            textContentType="oneTimeCode"
+            placeholderTextColor={Colors.textSecondary}
+            onSubmitEditing={handleVerify}
+            returnKeyType="done"
           />
-          <TouchableOpacity style={{ marginTop: Spacing.xl }} onPress={() => setIsSignedUp(false)}>
+
+          <Button
+            title="Verify & Continue"
+            onPress={handleVerify}
+            loading={isLoading}
+            style={{ width: '100%', marginTop: Spacing.lg }}
+          />
+
+          <TouchableOpacity style={{ marginTop: Spacing.xl }} onPress={handleResend} disabled={resending}>
+            <Text style={{ color: Colors.blue, fontWeight: Typography.semibold }}>{resending ? 'Resending…' : "Didn't get it? Resend code"}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={{ marginTop: Spacing.lg }} onPress={() => { setIsSignedUp(false); setCode(''); }}>
             <Text style={{ color: Colors.textSecondary, textDecorationLine: 'underline' }}>Wait, I entered the wrong email</Text>
           </TouchableOpacity>
         </View>
@@ -229,6 +274,7 @@ const styles = StyleSheet.create({
     color: Colors.text,
     backgroundColor: '#fafafa',
   },
+  codeInput: { fontSize: 26, letterSpacing: 8, textAlign: 'center', fontWeight: Typography.bold },
   roleRow: { flexDirection: 'row', gap: Spacing.sm },
   roleChip: {
     flex: 1,

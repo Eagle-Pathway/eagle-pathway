@@ -36,12 +36,11 @@ export const authService = {
     role: string,
     attribution: SignupAttribution = {},
   ) {
-    const redirectUrl = 'https://eagle-pathway.vercel.app/open-app';
+    // No emailRedirectTo — verification uses a 6-digit code ({{ .Token }}), not a deep link.
     const { data, error } = await supabase.auth.signUp({
       email: email.trim(),
       password,
       options: {
-        emailRedirectTo: redirectUrl,
         data: {
           full_name: fullName.trim(),
           phone: phone.trim(),
@@ -52,7 +51,7 @@ export const authService = {
     });
 
     if (error) throw error;
-    
+
     // If auto-confirm is enabled and we have a session, create profile immediately
     if (data.user && data.session) {
       try {
@@ -61,8 +60,25 @@ export const authService = {
         console.log('Profile creation failed or already exists:', e);
       }
     }
-    
+
     return data;
+  },
+
+  // Verify the 6-digit code emailed at sign-up. On success the user is confirmed
+  // and a session is returned, so they're logged in immediately.
+  async verifySignupOtp(email: string, token: string) {
+    const { data, error } = await supabase.auth.verifyOtp({
+      email: email.trim(),
+      token: token.trim(),
+      type: 'signup',
+    });
+    if (error) throw error;
+    return data;
+  },
+
+  async resendSignupOtp(email: string) {
+    const { error } = await supabase.auth.resend({ type: 'signup', email: email.trim() });
+    if (error) throw error;
   },
 
   async signIn(email: string, password: string) {

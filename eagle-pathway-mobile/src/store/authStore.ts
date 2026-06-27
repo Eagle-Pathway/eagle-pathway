@@ -19,6 +19,7 @@ interface AuthState {
   setSession: (session: any | null) => void;
   setPendingSignup: (data: AuthState['pendingSignup']) => void;
   signUp: (email: string, password: string, fullName: string, phone: string, role: UserRole, attribution?: SignupAttribution) => Promise<void>;
+  verifySignup: (email: string, token: string) => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
   loadProfile: () => Promise<void>;
   updateProfile: (updates: Partial<User>) => Promise<void>;
@@ -44,6 +45,51 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const data = await authService.signUp(email, password, fullName, phone, role, attribution);
       if (data.session) {
         set({ session: data.session, user: data.user as any, isAuthenticated: true });
+      }
+    } finally {
+      set({ isLoading: false });
+    }
+  },
+
+  verifySignup: async (email, token) => {
+    set({ isLoading: true });
+    try {
+      const data = await authService.verifySignupOtp(email, token);
+      if (data.session) {
+        set({ session: data.session });
+        const u = data.session.user;
+
+        let profile;
+        try {
+          profile = await authService.getProfile(u.id);
+          set({ user: profile, isAuthenticated: true });
+        } catch (e) {
+          // Profile doesn't exist yet — create it from the sign-up metadata.
+          const metadata = u.user_metadata || {};
+          profile = await authService.createProfile(
+            u.id,
+            metadata.full_name || 'User',
+            metadata.phone || u.phone || '',
+            metadata.role || 'student',
+            u.email || '',
+            {
+              referral_code: metadata.referral_code,
+              signup_source: metadata.signup_source,
+              utm_source: metadata.utm_source,
+              utm_medium: metadata.utm_medium,
+              utm_campaign: metadata.utm_campaign,
+              utm_content: metadata.utm_content,
+              first_landing_url: metadata.first_landing_url,
+            },
+          );
+          set({ user: profile, isAuthenticated: true });
+        }
+
+        // Register push token in the background (non-blocking)
+        const userId = u.id;
+        notificationsService.requestPermission().then(granted => {
+          if (granted) notificationsService.registerPushToken(userId);
+        }).catch(e => console.log('Push registration skipped:', e));
       }
     } finally {
       set({ isLoading: false });

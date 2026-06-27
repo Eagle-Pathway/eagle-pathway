@@ -7,7 +7,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Colors, Typography, Spacing, Radius } from '@/utils/theme';
 import { useAuthStore } from '@/store/authStore';
-import { supabase } from '@/services/supabase';
 import { notificationPrefsService, DEFAULT_PREFERENCES, type NotificationPreferences } from '@/services/notificationPrefs';
 import * as ExpoLinking from 'expo-linking';
 
@@ -66,20 +65,11 @@ export function SettingsScreen() {
       Alert.alert('No email on file', 'Add an email to your profile first, then you can reset your password.');
       return;
     }
-    Alert.alert('Change Password', `We'll email a password reset link to ${user.email}.`, [
+    Alert.alert('Change Password', `We'll email a 6-digit code to ${user.email} to verify it's you.`, [
       { text: 'Cancel', style: 'cancel' },
       {
-        text: 'Send link',
-        onPress: async () => {
-          const redirectUrl = 'https://eagle-pathway.vercel.app/open-app';
-          const { error } = await supabase.auth.resetPasswordForEmail(user.email, {
-            redirectTo: redirectUrl,
-          });
-          Alert.alert(
-            error ? 'Error' : 'Check your email',
-            error ? (error.message || 'Could not send the reset link.') : 'We sent a password reset link to your email.',
-          );
-        },
+        text: 'Continue',
+        onPress: () => router.push({ pathname: '/(auth)/forgot-password', params: { email: user.email } }),
       },
     ]);
   };
