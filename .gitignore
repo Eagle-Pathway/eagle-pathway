@@ -15,6 +15,13 @@ dist/
 expo-go/
 .expo-shared/
 
+# Stray EAS/Expo configs accidentally generated at the repo root by running
+# `eas`/`expo` from here. The canonical mobile config lives in
+# eagle-pathway-mobile/. Root copies carry the wrong projectId/package and must
+# never be committed. Always run eas from eagle-pathway-mobile/.
+/app.json
+/eas.json
+
 # Mobile
 android/
 ios/
