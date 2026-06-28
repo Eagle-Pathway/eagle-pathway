@@ -19,7 +19,7 @@ SplashScreen.preventAutoHideAsync();
 initErrorLogging();
 
 export default function RootLayout() {
-  const { setSession, loadProfile, setUser } = useAuthStore();
+  const { setSession, loadProfile, setUser, setLoading } = useAuthStore();
   const { subscribeToUpdates, unsubscribeFromUpdates } = useRealtimeStore();
   const { loadSavedScholarships } = useScholarshipStore();
 
@@ -49,6 +49,8 @@ export default function RootLayout() {
         if (error.message.includes('Refresh Token')) {
           supabase.auth.signOut();
         }
+        // Session check is over — release the router gate so it can route.
+        setLoading(false);
         SplashScreen.hideAsync();
         return;
       }
@@ -69,9 +71,13 @@ export default function RootLayout() {
             }
           })
           .finally(() => {
+            // loadProfile already clears isLoading, but ensure it's cleared even
+            // if it short-circuits (e.g. the dev bypass returns early).
+            setLoading(false);
             SplashScreen.hideAsync();
           });
       } else {
+        setLoading(false);
         SplashScreen.hideAsync();
       }
     });

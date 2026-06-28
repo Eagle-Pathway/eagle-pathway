@@ -17,6 +17,7 @@ interface AuthState {
   // Actions
   setUser: (user: User | null) => void;
   setSession: (session: any | null) => void;
+  setLoading: (loading: boolean) => void;
   setPendingSignup: (data: AuthState['pendingSignup']) => void;
   signUp: (email: string, password: string, fullName: string, phone: string, role: UserRole, attribution?: SignupAttribution) => Promise<void>;
   verifySignup: (email: string, token: string) => Promise<void>;
@@ -31,12 +32,17 @@ interface AuthState {
 export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
   session: null,
-  isLoading: false,
+  // Start in the loading state: on cold start the root layout is still
+  // restoring the persisted session, and the router's index gate must wait on
+  // this. If it defaulted to false, a returning logged-in user would be routed
+  // to the auth splash before the session resolves.
+  isLoading: true,
   isAuthenticated: false,
   pendingSignup: null,
 
   setUser: (user) => set({ user, isAuthenticated: !!user }),
   setSession: (session) => set({ session }),
+  setLoading: (loading) => set({ isLoading: loading }),
   setPendingSignup: (data) => set({ pendingSignup: data }),
 
   signUp: async (email, password, fullName, phone, role, attribution) => {
