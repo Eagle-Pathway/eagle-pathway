@@ -197,6 +197,7 @@ export const StudentHome: React.FC<StudentHomeProps> = ({
               { label: 'Find Tutor', sub: `${availableTutorsCount ?? 0} available`, emoji: '👨‍🏫', route: '/(tabs)/tutors' },
               { label: 'Scholarships', sub: `${openScholarshipsCount ?? 0} open now`, emoji: '🎓', route: '/(tabs)/scholarships' },
               { label: 'My Tracker', sub: `${activeApplications.length} active`, emoji: '📊', route: '/tracker' },
+              { label: 'Resources', sub: 'Guides & tips', emoji: '📚', route: '/resources' },
             ].map(card => (
               <TouchableOpacity
                 key={card.label}
@@ -205,8 +206,8 @@ export const StudentHome: React.FC<StudentHomeProps> = ({
                 activeOpacity={0.8}
               >
                 <View style={styles.quickCardIcon}><Text style={{ fontSize: 16 }}>{card.emoji}</Text></View>
-                <Text style={styles.quickCardLabel}>{card.label}</Text>
-                <Text style={styles.quickCardSub}>{card.sub}</Text>
+                <Text style={styles.quickCardLabel} numberOfLines={1}>{card.label}</Text>
+                <Text style={styles.quickCardSub} numberOfLines={1}>{card.sub}</Text>
               </TouchableOpacity>
             ))}
           </View>
