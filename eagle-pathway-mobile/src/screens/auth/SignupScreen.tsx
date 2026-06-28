@@ -42,7 +42,7 @@ export default function SignupScreen() {
     if (!fullName.trim()) return Alert.alert('Error', 'Please enter your full name');
     if (!email.trim()) return Alert.alert('Error', 'Please enter your email');
     if (!phone.trim()) return Alert.alert('Error', 'Please enter your phone number');
-    if (password.length < 6) return Alert.alert('Error', 'Password must be at least 6 characters');
+    if (password.length < 8) return Alert.alert('Error', 'Password must be at least 8 characters');
     if (password !== confirmPassword) return Alert.alert('Error', 'Passwords do not match');
 
     try {
