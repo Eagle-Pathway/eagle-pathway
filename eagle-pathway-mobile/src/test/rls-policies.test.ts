@@ -142,7 +142,7 @@ const allRls = parseRlsEnabled(allSql);
 describe('RLS static audit: feature tables added via migrations', () => {
   // These hold user/telemetry data and must have RLS, but live in migration
   // files rather than the canonical schema, so the schema audit above misses them.
-  it.each(['client_errors', 'recommendation_requests', 'success_stories', 'ai_rate_limit'])(
+  it.each(['client_errors', 'recommendation_requests', 'success_stories', 'ai_rate_limit', 'resources'])(
     'creates %s with RLS enabled',
     (table) => {
       expect(allTables, `expected "${table}" to be created in a migration`).toContain(table);
