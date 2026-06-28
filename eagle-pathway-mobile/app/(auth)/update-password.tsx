@@ -1,18 +1,40 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, TextInput, StyleSheet, Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Colors, Typography, Spacing, Radius } from '../../src/utils/theme';
-import { Button } from '../../src/components/common';
+import { Button, LoadingScreen } from '../../src/components/common';
 import { supabase } from '../../src/services/supabase';
 
 export default function UpdatePasswordScreen() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [checkingSession, setCheckingSession] = useState(true);
+
+  // This screen relies on the recovery session established by verifying the
+  // reset code. Without an active session updateUser would fail, so guard the
+  // entry point: if there's no session, send the user back to request a code
+  // instead of leaving them on a screen that can't work.
+  useEffect(() => {
+    let cancelled = false;
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (cancelled) return;
+      if (!session) {
+        Alert.alert(
+          'Session expired',
+          'Your password reset link is no longer active. Please request a new code.',
+          [{ text: 'OK', onPress: () => router.replace('/(auth)/forgot-password') }],
+        );
+        return;
+      }
+      setCheckingSession(false);
+    });
+    return () => { cancelled = true; };
+  }, []);
 
   const handleUpdatePassword = async () => {
-    if (!password || password.length < 6) {
-      return Alert.alert('Invalid Password', 'Password must be at least 6 characters long.');
+    if (!password || password.length < 8) {
+      return Alert.alert('Invalid Password', 'Password must be at least 8 characters long.');
     }
     setLoading(true);
     try {
@@ -28,6 +50,8 @@ export default function UpdatePasswordScreen() {
       setLoading(false);
     }
   };
+
+  if (checkingSession) return <LoadingScreen />;
 
   return (
     <SafeAreaView style={styles.screen}>
