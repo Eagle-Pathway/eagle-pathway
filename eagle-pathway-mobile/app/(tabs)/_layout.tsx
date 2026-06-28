@@ -27,10 +27,20 @@ const tabStyles = StyleSheet.create({
 
 export default function TabLayout() {
   const pathname = usePathname();
-  const { user } = useAuthStore();
+  const { user, isAuthenticated, isLoading } = useAuthStore();
   const isAssistant = pathname === '/assistant' || pathname.includes('/assistant');
-  
+
   const activeRole = getUserRole(user);
+
+  // Auth guard: if the session is lost at runtime (e.g. a refresh-token
+  // failure signs the user out from the root layout), kick back to the auth
+  // stack instead of stranding the user on an empty/broken tab view. Wait for
+  // the session check to settle so we don't bounce during cold-start restore.
+  useEffect(() => {
+    if (!isLoading && !isAuthenticated) {
+      router.replace('/(auth)/splash');
+    }
+  }, [isLoading, isAuthenticated]);
 
   // First-run gate: send students with an incomplete profile to onboarding once.
   useEffect(() => {
