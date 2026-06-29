@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { View, Text, SectionList, TouchableOpacity, StyleSheet, Linking, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, SectionList, TouchableOpacity, StyleSheet, Linking, Alert, ActivityIndicator, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Colors, Typography, Spacing, Radius, CommonStyles } from '@/utils/theme';
@@ -31,6 +31,7 @@ export default function ResourcesScreen() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [openingId, setOpeningId] = useState<string | null>(null);
+  const [query, setQuery] = useState('');
 
   const load = useCallback(() => {
     setLoading(true);
@@ -44,7 +45,17 @@ export default function ResourcesScreen() {
 
   useEffect(() => { load(); }, [load]);
 
-  const sections = useMemo(() => groupByCategory(resources), [resources]);
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return resources;
+    return resources.filter(r =>
+      r.title.toLowerCase().includes(q) ||
+      (r.description || '').toLowerCase().includes(q) ||
+      r.category.toLowerCase().includes(q),
+    );
+  }, [resources, query]);
+
+  const sections = useMemo(() => groupByCategory(filtered), [filtered]);
 
   const openResource = useCallback(async (item: Resource) => {
     if (openingId) return;
@@ -52,6 +63,7 @@ export default function ResourcesScreen() {
       if (item.resource_type === 'link') {
         if (!item.external_url) throw new Error('missing url');
         await Linking.openURL(item.external_url);
+        resourcesService.incrementDownload(item.id);
         return;
       }
       // File: sign on demand, then hand off to the OS viewer/browser.
@@ -60,6 +72,7 @@ export default function ResourcesScreen() {
       const url = await resourcesService.getFileUrl(item.file_path);
       if (!url) throw new Error('sign failed');
       await Linking.openURL(url);
+      resourcesService.incrementDownload(item.id);
     } catch {
       Alert.alert('Unavailable', "We couldn't open this resource. Please try again.");
     } finally {
@@ -79,6 +92,21 @@ export default function ResourcesScreen() {
         </View>
       </View>
 
+      {!loading && !error && resources.length > 0 && (
+        <View style={s.searchWrap}>
+          <TextInput
+            style={s.search}
+            placeholder="Search resources"
+            value={query}
+            onChangeText={setQuery}
+            autoCapitalize="none"
+            autoCorrect={false}
+            placeholderTextColor={Colors.textSecondary}
+            returnKeyType="search"
+          />
+        </View>
+      )}
+
       {loading ? (
         <View style={{ paddingHorizontal: Spacing.xl, paddingTop: Spacing.lg }}><ListSkeleton count={5} /></View>
       ) : error && resources.length === 0 ? (
@@ -89,6 +117,8 @@ export default function ResourcesScreen() {
           title="No resources yet"
           subtitle="Helpful guides and templates are on the way — check back soon."
         />
+      ) : filtered.length === 0 ? (
+        <EmptyState icon="🔍" title="No matches" subtitle={`Nothing matches "${query.trim()}".`} />
       ) : (
         <SectionList
           sections={sections}
@@ -130,6 +160,8 @@ const s = StyleSheet.create({
   backBtn: { width: 44, height: 44, backgroundColor: Colors.grayLight, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
   title: { fontSize: Typography.xl, fontWeight: Typography.bold, color: Colors.text },
   subtitle: { fontSize: Typography.sm, color: Colors.textSecondary, marginTop: 2 },
+  searchWrap: { paddingHorizontal: Spacing.xl, paddingTop: Spacing.lg, backgroundColor: Colors.white, borderBottomWidth: 1, borderBottomColor: Colors.border, paddingBottom: Spacing.md },
+  search: { borderWidth: 1.5, borderColor: Colors.border, borderRadius: Radius.lg, paddingHorizontal: Spacing.md, paddingVertical: 10, fontSize: Typography.md, color: Colors.text, backgroundColor: '#fafafa' },
   sectionHeader: { fontSize: Typography.sm, fontWeight: Typography.bold, color: Colors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.5, marginTop: Spacing.lg, marginBottom: Spacing.sm },
   card: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md, backgroundColor: Colors.card, borderRadius: Radius['2xl'], padding: Spacing.lg, borderWidth: 1, borderColor: Colors.border, marginBottom: Spacing.md },
   iconBox: { width: 44, height: 44, borderRadius: 13, alignItems: 'center', justifyContent: 'center' },

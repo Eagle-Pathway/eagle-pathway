@@ -15,6 +15,7 @@ export interface Resource {
   file_size?: number | null;
   mime_type?: string | null;
   external_url?: string | null;
+  download_count?: number;
   created_at: string;
 }
 
@@ -44,5 +45,15 @@ export const resourcesService = {
       .createSignedUrl(filePath, SIGNED_URL_TTL_SECONDS);
     if (error || !data?.signedUrl) return null;
     return data.signedUrl;
+  },
+
+  // Record an open/download. Fire-and-forget — a failed count must never block
+  // opening the resource.
+  async incrementDownload(id: string): Promise<void> {
+    try {
+      await supabase.rpc('increment_resource_download', { p_resource_id: id });
+    } catch {
+      /* non-critical */
+    }
   },
 };

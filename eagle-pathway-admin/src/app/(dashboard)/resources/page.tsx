@@ -21,6 +21,7 @@ interface Resource {
   external_url: string | null;
   is_published: boolean;
   sort_order: number;
+  download_count: number;
 }
 
 const EMPTY: Partial<Resource> = {
@@ -180,9 +181,12 @@ export default function ResourcesPage() {
                     <p className="text-sm text-gray-500">{r.category} · {AUDIENCE_LABEL[r.audience]}</p>
                   </div>
                 </div>
-                <span className={`text-xs font-semibold px-2 py-1 rounded-full ${r.is_published ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
-                  {r.is_published ? 'Published' : 'Hidden'}
-                </span>
+                <div className="flex items-center gap-2 shrink-0">
+                  <span className="text-xs text-gray-400" title="Opens / downloads">↓ {r.download_count ?? 0}</span>
+                  <span className={`text-xs font-semibold px-2 py-1 rounded-full ${r.is_published ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+                    {r.is_published ? 'Published' : 'Hidden'}
+                  </span>
+                </div>
               </div>
               {r.description && <p className="mt-3 text-sm text-gray-600 line-clamp-3">{r.description}</p>}
               <p className="mt-2 text-xs text-gray-400 truncate">{r.resource_type === 'file' ? (r.file_name || r.file_path) : r.external_url}</p>
