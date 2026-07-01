@@ -50,7 +50,18 @@ export const authService = {
       }
     });
 
-    if (error) throw error;
+    if (error) {
+      // A duplicate phone number makes the handle_new_user trigger fail on the
+      // users.phone UNIQUE constraint, which GoTrue surfaces only as a generic
+      // "Database error saving new user" (status 500). Phone is the collision
+      // users actually hit here, so map it to an actionable message.
+      if ((error as any).status === 500 || /database error saving new user/i.test(error.message)) {
+        const err: any = new Error('This phone number is already linked to another account. Please use a different phone number.');
+        err.code = 'phone_exists';
+        throw err;
+      }
+      throw error;
+    }
 
     // Supabase's email-enumeration protection (on by default) does NOT throw when
     // the email is already registered. Instead it returns an obfuscated user with

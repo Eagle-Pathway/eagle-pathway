@@ -5,6 +5,7 @@ import { router } from 'expo-router';
 import { Colors, Typography, Spacing, Radius } from '../../src/utils/theme';
 import { Button } from '../../src/components/common';
 import { useAuthStore } from '../../src/store/authStore';
+import { authService } from '../../src/services/auth';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -21,6 +22,16 @@ export default function LoginScreen() {
       await signIn(email.trim(), password);
       router.replace('/(tabs)/home');
     } catch (e: any) {
+      // Account exists but the email was never verified: resend a code and send
+      // them to the verification screen instead of showing a raw error.
+      if (e?.code === 'email_not_confirmed' || /not confirmed/i.test(e?.message || '')) {
+        authService.resendSignupOtp(email.trim()).catch(() => {});
+        return Alert.alert(
+          'Verify your email',
+          "Your email isn't verified yet. We've sent a fresh 6-digit code — enter it to finish setting up your account.",
+          [{ text: 'OK', onPress: () => router.push({ pathname: '/(auth)/signup', params: { verifyEmail: email.trim() } }) }],
+        );
+      }
       Alert.alert('Login Failed', e.message || 'Please check your credentials.');
     }
   };

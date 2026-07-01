@@ -29,17 +29,22 @@ export default function SignupScreen() {
     utm_medium?: string;
     utm_campaign?: string;
     utm_content?: string;
+    verifyEmail?: string;
   }>();
+  // Entering from login with an unverified account: jump straight to the
+  // verification screen with the email prefilled and the resend cooldown
+  // already running (login just sent a fresh code).
+  const verifyEmail = typeof params.verifyEmail === 'string' ? params.verifyEmail : '';
   const [fullName, setFullName] = useState('');
   const [phone, setPhone] = useState('');
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState(verifyEmail);
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [role, setRole] = useState<UserRole>('student');
-  const [isSignedUp, setIsSignedUp] = useState(false);
+  const [isSignedUp, setIsSignedUp] = useState(!!verifyEmail);
   const [code, setCode] = useState('');
   const [resending, setResending] = useState(false);
-  const [resendCooldown, setResendCooldown] = useState(0);
+  const [resendCooldown, setResendCooldown] = useState(verifyEmail ? RESEND_COOLDOWN_SECONDS : 0);
   const { signUp, verifySignup, isLoading } = useAuthStore();
 
   // Tick down the resend cooldown so users can't hammer the (rate-limited) email sender.
@@ -81,6 +86,10 @@ export default function SignupScreen() {
             { text: 'Sign In', onPress: () => router.replace('/(auth)/login') },
           ],
         );
+      }
+      // Duplicate phone: tell them plainly so they can change it.
+      if (e?.code === 'phone_exists') {
+        return Alert.alert('Phone number in use', e.message);
       }
       Alert.alert('Signup Failed', e.message || 'Please try again.');
     }
