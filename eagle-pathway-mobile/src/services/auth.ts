@@ -52,6 +52,18 @@ export const authService = {
 
     if (error) throw error;
 
+    // Supabase's email-enumeration protection (on by default) does NOT throw when
+    // the email is already registered. Instead it returns an obfuscated user with
+    // an EMPTY identities array and sends no verification code — leaving the user
+    // stuck on the "enter your code" screen forever. Detect that and surface a real
+    // "already exists" error so the UI can redirect them to sign in.
+    const identities = (data.user as any)?.identities;
+    if (data.user && Array.isArray(identities) && identities.length === 0) {
+      const err: any = new Error('An account with this email already exists. Please sign in instead.');
+      err.code = 'email_exists';
+      throw err;
+    }
+
     // If auto-confirm is enabled and we have a session, create profile immediately
     if (data.user && data.session) {
       try {

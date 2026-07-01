@@ -6,6 +6,8 @@ import { Colors, Typography, Spacing, Radius } from '../../src/utils/theme';
 import { Button } from '../../src/components/common';
 import { useAuthStore } from '../../src/store/authStore';
 
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -13,6 +15,7 @@ export default function LoginScreen() {
 
   const handleLogin = async () => {
     if (!email.trim()) return Alert.alert('Error', 'Please enter your email');
+    if (!EMAIL_RE.test(email.trim())) return Alert.alert('Error', 'Please enter a valid email address');
     if (!password) return Alert.alert('Error', 'Please enter your password');
     try {
       await signIn(email.trim(), password);
