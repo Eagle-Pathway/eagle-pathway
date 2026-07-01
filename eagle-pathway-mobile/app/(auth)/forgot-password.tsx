@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -7,6 +7,7 @@ import { Button } from '../../src/components/common';
 import { supabase } from '../../src/services/supabase';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const RESEND_COOLDOWN_SECONDS = 60;
 
 export default function ForgotPasswordScreen() {
   const params = useLocalSearchParams<{ email?: string }>();
@@ -15,6 +16,14 @@ export default function ForgotPasswordScreen() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [sent, setSent] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
+
+  // Tick down the resend cooldown so users can't hammer the (rate-limited) email sender.
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const t = setTimeout(() => setResendCooldown((s) => s - 1), 1000);
+    return () => clearTimeout(t);
+  }, [resendCooldown]);
 
   const sendResetCode = async () => {
     const target = email.trim();
@@ -22,6 +31,7 @@ export default function ForgotPasswordScreen() {
       setError('Please enter a valid email address.');
       return;
     }
+    if (resendCooldown > 0 || loading) return;
     setError('');
     setLoading(true);
     try {
@@ -29,6 +39,7 @@ export default function ForgotPasswordScreen() {
       const { error: resetError } = await supabase.auth.resetPasswordForEmail(target);
       if (resetError) throw resetError;
       setSent(true);
+      setResendCooldown(RESEND_COOLDOWN_SECONDS);
     } catch (e: any) {
       setError(e?.message || 'Could not send the reset code. Please try again.');
     } finally {
@@ -133,8 +144,13 @@ export default function ForgotPasswordScreen() {
 
               <Button title="Verify code" onPress={verifyCode} loading={loading} style={{ marginTop: Spacing.xl }} />
 
-              <TouchableOpacity style={styles.linkRow} onPress={sendResetCode} disabled={loading} activeOpacity={0.7}>
-                <Text style={styles.linkMuted}>Didn’t get it? <Text style={styles.link}>{loading ? 'Resending…' : 'Resend code'}</Text></Text>
+              <TouchableOpacity style={styles.linkRow} onPress={sendResetCode} disabled={loading || resendCooldown > 0} activeOpacity={0.7}>
+                <Text style={styles.linkMuted}>
+                  Didn’t get it?{' '}
+                  <Text style={resendCooldown > 0 ? styles.linkMuted : styles.link}>
+                    {loading ? 'Resending…' : resendCooldown > 0 ? `Resend in ${resendCooldown}s` : 'Resend code'}
+                  </Text>
+                </Text>
               </TouchableOpacity>
               <TouchableOpacity style={{ alignItems: 'center', marginTop: Spacing.sm }} onPress={() => { setSent(false); setCode(''); setError(''); }} activeOpacity={0.7}>
                 <Text style={styles.linkMuted}>Use a different email</Text>

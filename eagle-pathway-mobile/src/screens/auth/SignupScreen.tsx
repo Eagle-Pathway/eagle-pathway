@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, ScrollView,
   StyleSheet, KeyboardAvoidingView, Platform, Alert,
@@ -10,6 +10,9 @@ import { Button } from '@/components/common';
 import { useAuthStore } from '@/store/authStore';
 import { authService } from '@/services/auth';
 import { UserRole } from '@/types';
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const RESEND_COOLDOWN_SECONDS = 60;
 
 const ROLES: { key: UserRole; label: string; emoji: string }[] = [
   { key: 'student', label: 'Student', emoji: '🎓' },
@@ -26,21 +29,35 @@ export default function SignupScreen() {
     utm_medium?: string;
     utm_campaign?: string;
     utm_content?: string;
+    verifyEmail?: string;
   }>();
+  // Entering from login with an unverified account: jump straight to the
+  // verification screen with the email prefilled and the resend cooldown
+  // already running (login just sent a fresh code).
+  const verifyEmail = typeof params.verifyEmail === 'string' ? params.verifyEmail : '';
   const [fullName, setFullName] = useState('');
   const [phone, setPhone] = useState('');
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState(verifyEmail);
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [role, setRole] = useState<UserRole>('student');
-  const [isSignedUp, setIsSignedUp] = useState(false);
+  const [isSignedUp, setIsSignedUp] = useState(!!verifyEmail);
   const [code, setCode] = useState('');
   const [resending, setResending] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(verifyEmail ? RESEND_COOLDOWN_SECONDS : 0);
   const { signUp, verifySignup, isLoading } = useAuthStore();
+
+  // Tick down the resend cooldown so users can't hammer the (rate-limited) email sender.
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const t = setTimeout(() => setResendCooldown((s) => s - 1), 1000);
+    return () => clearTimeout(t);
+  }, [resendCooldown]);
 
   const handleContinue = async () => {
     if (!fullName.trim()) return Alert.alert('Error', 'Please enter your full name');
     if (!email.trim()) return Alert.alert('Error', 'Please enter your email');
+    if (!EMAIL_RE.test(email.trim())) return Alert.alert('Error', 'Please enter a valid email address');
     if (!phone.trim()) return Alert.alert('Error', 'Please enter your phone number');
     if (password.length < 8) return Alert.alert('Error', 'Password must be at least 8 characters');
     if (password !== confirmPassword) return Alert.alert('Error', 'Passwords do not match');
@@ -57,7 +74,23 @@ export default function SignupScreen() {
         first_landing_url: Object.keys(params).length ? JSON.stringify(params) : undefined,
       });
       setIsSignedUp(true);
+      setResendCooldown(RESEND_COOLDOWN_SECONDS);
     } catch (e: any) {
+      // Duplicate email: send them to sign in instead of a dead-end error.
+      if (e?.code === 'email_exists') {
+        return Alert.alert(
+          'Email already registered',
+          'An account with this email already exists. Sign in instead?',
+          [
+            { text: 'Cancel', style: 'cancel' },
+            { text: 'Sign In', onPress: () => router.replace('/(auth)/login') },
+          ],
+        );
+      }
+      // Duplicate phone: tell them plainly so they can change it.
+      if (e?.code === 'phone_exists') {
+        return Alert.alert('Phone number in use', e.message);
+      }
       Alert.alert('Signup Failed', e.message || 'Please try again.');
     }
   };
@@ -73,9 +106,11 @@ export default function SignupScreen() {
   };
 
   const handleResend = async () => {
+    if (resendCooldown > 0 || resending) return;
     setResending(true);
     try {
       await authService.resendSignupOtp(email.trim());
+      setResendCooldown(RESEND_COOLDOWN_SECONDS);
       Alert.alert('Code sent', `We sent a new code to ${email.trim()}.`);
     } catch (e: any) {
       Alert.alert('Error', e.message || 'Could not resend the code.');
@@ -118,8 +153,10 @@ export default function SignupScreen() {
             style={{ width: '100%', marginTop: Spacing.lg }}
           />
 
-          <TouchableOpacity style={{ marginTop: Spacing.xl }} onPress={handleResend} disabled={resending}>
-            <Text style={{ color: Colors.blue, fontWeight: Typography.semibold }}>{resending ? 'Resending…' : "Didn't get it? Resend code"}</Text>
+          <TouchableOpacity style={{ marginTop: Spacing.xl }} onPress={handleResend} disabled={resending || resendCooldown > 0}>
+            <Text style={{ color: resendCooldown > 0 ? Colors.textSecondary : Colors.blue, fontWeight: Typography.semibold }}>
+              {resending ? 'Resending…' : resendCooldown > 0 ? `Resend code in ${resendCooldown}s` : "Didn't get it? Resend code"}
+            </Text>
           </TouchableOpacity>
           <TouchableOpacity style={{ marginTop: Spacing.lg }} onPress={() => { setIsSignedUp(false); setCode(''); }}>
             <Text style={{ color: Colors.textSecondary, textDecorationLine: 'underline' }}>Wait, I entered the wrong email</Text>
