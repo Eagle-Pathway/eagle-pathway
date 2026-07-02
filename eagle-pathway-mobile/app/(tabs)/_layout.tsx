@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { Tabs, usePathname, router } from 'expo-router';
 import { View, Text, StyleSheet } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Colors, Typography } from '../../src/utils/theme';
 import AiAssistantFAB from '../../src/components/AiAssistantFAB';
@@ -27,6 +28,7 @@ const tabStyles = StyleSheet.create({
 
 export default function TabLayout() {
   const pathname = usePathname();
+  const insets = useSafeAreaInsets();
   const { user, isAuthenticated, isLoading } = useAuthStore();
   const isAssistant = pathname === '/assistant' || pathname.includes('/assistant');
 
@@ -62,8 +64,10 @@ export default function TabLayout() {
           backgroundColor: Colors.white,
           borderTopWidth: 1,
           borderTopColor: Colors.border,
-          height: 70,
-          paddingBottom: 6,
+          // Pad for the system navigation bar (insets.bottom is 0 on devices
+          // with no inset, so this is a no-op there and taller on 3-button nav).
+          height: 70 + insets.bottom,
+          paddingBottom: 6 + insets.bottom,
         },
         tabBarShowLabel: false,
       }}

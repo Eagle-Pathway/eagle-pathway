@@ -20,6 +20,7 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#1E4D9B"
       },
+      "softwareKeyboardLayoutMode": "resize",
       "package": "com.eaglepathway.app",
       "permissions": [
         "READ_EXTERNAL_STORAGE",
