@@ -8,6 +8,9 @@ type SopAction = 'review' | 'draft';
 // so they get a tighter cap than the chat assistant. Override via env.
 const SOP_RATE_LIMIT = Number(process.env.AI_SOP_RATE_LIMIT ?? 10);
 const RATE_WINDOW_SECONDS = Number(process.env.AI_RATE_WINDOW_SECONDS ?? 60);
+// A real 500-700 word SOP is ~4k chars; cap well above that so legitimate use
+// is never affected but a pasted mega-document can't run up Groq token cost.
+const MAX_SOP_CONTENT_CHARS = 20_000;
 
 interface SopRequestBody {
   action: SopAction;
@@ -149,11 +152,12 @@ export async function POST(req: Request) {
         return json({ error: 'SOP content is required.' }, { status: 400 });
       }
 
+      const content = body.content.slice(0, MAX_SOP_CONTENT_CHARS);
       const prompt = [
         'Review this SOP for an Eagle Pathway student.',
         `Scholarship context: ${JSON.stringify(body.scholarship || {})}`,
         `Student context: ${JSON.stringify(body.student || {})}`,
-        `SOP: ${body.content}`,
+        `SOP: ${content}`,
       ].join('\n\n');
 
       const review = parseJson<SopReview>(await callModel(prompt));
