@@ -14,15 +14,25 @@ function TabIcon({ emoji, label, focused }: { emoji: string; label: string; focu
   return (
     <View style={tabStyles.item}>
       <Text style={tabStyles.emoji}>{emoji}</Text>
-      <Text style={[tabStyles.label, focused && tabStyles.labelActive]}>{label}</Text>
+      <Text
+        style={[tabStyles.label, focused && tabStyles.labelActive]}
+        numberOfLines={1}
+        allowFontScaling={false}
+      >
+        {label}
+      </Text>
     </View>
   );
 }
 
 const tabStyles = StyleSheet.create({
+  // numberOfLines={1} on the label (plus letting the slot size the item) keeps
+  // every label ("Explore", "Activity", "Dashboard", "Earnings"…) on one line
+  // and evenly spaced across all screen sizes without risking clipping on small
+  // devices.
   item: { alignItems: 'center', gap: 2, paddingTop: 4 },
   emoji: { fontSize: 22 },
-  label: { fontSize: 10, fontWeight: Typography.medium, color: '#9ca3af' },
+  label: { fontSize: 10, fontWeight: Typography.medium, color: '#9ca3af', textAlign: 'center' },
   labelActive: { color: Colors.blue, fontWeight: Typography.semibold },
 });
 
