@@ -125,6 +125,7 @@ export default function RootLayout() {
             <Stack.Screen name="recommendations" options={{ presentation: 'card' }} />
             <Stack.Screen name="success-stories" options={{ presentation: 'card' }} />
             <Stack.Screen name="resources" options={{ presentation: 'card' }} />
+            <Stack.Screen name="resources/[id]" options={{ presentation: 'card' }} />
             <Stack.Screen name="notifications" options={{ presentation: 'card' }} />
             <Stack.Screen name="settings" options={{ presentation: 'card' }} />
           </Stack>
