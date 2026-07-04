@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { Tabs, usePathname, router } from 'expo-router';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Colors, Typography } from '../../src/utils/theme';
@@ -11,11 +11,15 @@ import { getUserRole } from '../../src/utils/role';
 import { ONBOARDED_KEY } from '../../src/screens/onboarding/OnboardingScreen';
 
 function TabIcon({ emoji, label, focused }: { emoji: string; label: string; focused: boolean }) {
+  // Scale the label down on narrow screens (e.g. 360px wide) so longer labels
+  // ("Dashboard", "Earnings", "Activity") stay on one line without truncating.
+  const { width } = useWindowDimensions();
+  const labelFontSize = width < 380 ? 9 : 10;
   return (
     <View style={tabStyles.item}>
       <Text style={tabStyles.emoji}>{emoji}</Text>
       <Text
-        style={[tabStyles.label, focused && tabStyles.labelActive]}
+        style={[tabStyles.label, { fontSize: labelFontSize }, focused && tabStyles.labelActive]}
         numberOfLines={1}
         allowFontScaling={false}
       >

@@ -4,6 +4,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Colors, Typography, Spacing, Radius } from '../../src/utils/theme';
 import { Button } from '../../src/components/common';
+import { PasswordInput } from '../../src/components/PasswordInput';
+import { KeyboardAwareScreen } from '../../src/components/KeyboardAwareScreen';
 import { useAuthStore } from '../../src/store/authStore';
 import { authService } from '../../src/services/auth';
 
@@ -45,7 +47,7 @@ export default function LoginScreen() {
       <TouchableOpacity style={{ padding: Spacing.xl }} onPress={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)/home'))}>
         <Text style={{ fontSize: 24, color: Colors.text }}>←</Text>
       </TouchableOpacity>
-      <View style={{ padding: Spacing.xl }}>
+      <KeyboardAwareScreen contentContainerStyle={{ padding: Spacing.xl }}>
         <Text style={{ fontSize: 28, fontWeight: Typography.bold, color: Colors.text, marginBottom: 8 }}>Welcome back</Text>
         <Text style={{ fontSize: 14, color: Colors.textSecondary, marginBottom: Spacing['2xl'] }}>Sign in to your Eagle Pathway account</Text>
         
@@ -64,13 +66,10 @@ export default function LoginScreen() {
 
         <View style={{ marginBottom: Spacing.sm }}>
           <Text style={{ fontSize: 13, fontWeight: Typography.semibold, color: Colors.text, marginBottom: 6 }}>Password</Text>
-          <TextInput
-            style={{ borderWidth: 1.5, borderColor: Colors.border, borderRadius: Radius.lg, padding: Spacing.md, fontSize: 15, color: Colors.text, backgroundColor: '#fafafa' }}
+          <PasswordInput
             placeholder="••••••••"
             value={password}
             onChangeText={setPassword}
-            secureTextEntry
-            placeholderTextColor={Colors.textSecondary}
           />
         </View>
 
@@ -83,7 +82,7 @@ export default function LoginScreen() {
         <TouchableOpacity style={{ marginTop: Spacing.lg, alignItems: 'center' }} onPress={() => router.push('/(auth)/signup')}>
           <Text style={{ fontSize: 13, color: Colors.textSecondary }}>Don't have an account? <Text style={{ color: Colors.blue, fontWeight: Typography.semibold }}>Sign up</Text></Text>
         </TouchableOpacity>
-      </View>
+      </KeyboardAwareScreen>
     </SafeAreaView>
   );
 }

@@ -15,6 +15,9 @@ import { initErrorLogging } from '../src/services/errorLog';
 
 SplashScreen.preventAutoHideAsync();
 
+// TODO(pre-production): integrate Sentry (@sentry/react-native) for crash/error
+// reporting before the Play Store release. Wrap the app and init here alongside
+// initErrorLogging(). Adding the native SDK will require a new APK build.
 // Configure structured logging + the Supabase error sink before anything renders.
 initErrorLogging();
 
