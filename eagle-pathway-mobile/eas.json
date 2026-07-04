@@ -6,7 +6,8 @@
   "build": {
     "development": {
       "developmentClient": true,
-      "distribution": "internal"
+      "distribution": "internal",
+      "channel": "development"
     },
     "preview": {
       "distribution": "internal",
@@ -19,7 +20,8 @@
         "EXPO_PUBLIC_EAGLE_AI_API_URL": "https://eagle-pathway.vercel.app/api/sop-review",
         "EXPO_PUBLIC_EAGLE_ASSISTANT_API_URL": "https://eagle-pathway.vercel.app/api/assistant",
         "EXPO_PUBLIC_EAGLE_INTERVIEW_API_URL": "https://eagle-pathway.vercel.app/api/interview"
-      }
+      },
+      "channel": "preview"
     },
     "production": {
       "autoIncrement": true,
@@ -29,7 +31,8 @@
         "EXPO_PUBLIC_EAGLE_AI_API_URL": "https://eagle-pathway.vercel.app/api/sop-review",
         "EXPO_PUBLIC_EAGLE_ASSISTANT_API_URL": "https://eagle-pathway.vercel.app/api/assistant",
         "EXPO_PUBLIC_EAGLE_INTERVIEW_API_URL": "https://eagle-pathway.vercel.app/api/interview"
-      }
+      },
+      "channel": "production"
     }
   },
   "submit": {

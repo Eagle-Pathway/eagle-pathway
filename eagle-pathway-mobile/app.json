@@ -53,6 +53,12 @@
         "projectId": "e9e50db8-99a2-4004-9e3a-63661f1a847a"
       }
     },
-    "owner": "tise_genene"
+    "owner": "tise_genene",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/e9e50db8-99a2-4004-9e3a-63661f1a847a"
+    }
   }
 }
