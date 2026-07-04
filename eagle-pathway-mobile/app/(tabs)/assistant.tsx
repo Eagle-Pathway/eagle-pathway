@@ -135,9 +135,13 @@ export default function AssistantScreen() {
         }} 
       />
       
+      {/* Android relies on softwareKeyboardLayoutMode: "resize" (app.json) — the
+          window resizes so the input stays above the keyboard, so the KAV is a
+          no-op here. iOS uses padding. NOTE: the resize setting is native and
+          only takes effect in a NEW build, not via OTA. */}
       <KeyboardAvoidingView
         style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
       >
         <FlatList
