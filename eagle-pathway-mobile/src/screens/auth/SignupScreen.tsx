@@ -7,6 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Colors, Typography, Spacing, Radius } from '@/utils/theme';
 import { Button } from '@/components/common';
+import { PasswordInput } from '@/components/PasswordInput';
 import { useAuthStore } from '@/store/authStore';
 import { authService } from '@/services/auth';
 import { UserRole } from '@/types';
@@ -219,25 +220,19 @@ export default function SignupScreen() {
 
             <View style={styles.fieldGroup}>
               <Text style={styles.label}>Password</Text>
-              <TextInput
-                style={styles.input}
+              <PasswordInput
                 placeholder="••••••••"
                 value={password}
                 onChangeText={setPassword}
-                secureTextEntry
-                placeholderTextColor={Colors.textSecondary}
               />
             </View>
 
             <View style={styles.fieldGroup}>
               <Text style={styles.label}>Confirm Password</Text>
-              <TextInput
-                style={styles.input}
+              <PasswordInput
                 placeholder="••••••••"
                 value={confirmPassword}
                 onChangeText={setConfirmPassword}
-                secureTextEntry
-                placeholderTextColor={Colors.textSecondary}
               />
             </View>
 

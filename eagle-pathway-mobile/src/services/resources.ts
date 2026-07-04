@@ -36,6 +36,20 @@ export const resourcesService = {
     return data as Resource[];
   },
 
+  // Fetch a single published resource by id. RLS restricts rows to
+  // audience='all' or the caller's role, so a resource the user may not see
+  // simply returns null. Used by the detail screen (and supports deep links).
+  async getById(id: string): Promise<Resource | null> {
+    const { data, error } = await supabase
+      .from('resources')
+      .select('*')
+      .eq('id', id)
+      .eq('is_published', true)
+      .maybeSingle();
+    if (error) return null;
+    return (data as Resource) ?? null;
+  },
+
   // Mint a fresh signed URL for a file resource at tap time. Stored paths are
   // private and signed URLs expire, so we sign on demand rather than caching.
   // Returns null when the file can't be signed (e.g. it was removed).

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
-  View, Text, ScrollView, TouchableOpacity,
+  View, Text, TouchableOpacity,
   StyleSheet, Alert, TextInput,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -8,6 +8,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { format, addDays, startOfMonth, getDaysInMonth, getDay } from 'date-fns';
 import { Colors, Typography, Spacing, Radius, CommonStyles } from '@/utils/theme';
 import { Button, Avatar } from '@/components/common';
+import { KeyboardAwareScreen } from '@/components/KeyboardAwareScreen';
 import { tutorsService } from '@/services/tutors';
 import { useAuthStore } from '@/store/authStore';
 import { useBookingStore } from '@/store/bookingStore';
@@ -102,7 +103,7 @@ export default function BookingScreen() {
         </View>
       )}
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 120 }}>
+      <KeyboardAwareScreen contentContainerStyle={{ paddingBottom: 120 }}>
         {/* Calendar */}
         <View style={styles.section}>
           <View style={styles.calHeader}>
@@ -203,7 +204,7 @@ export default function BookingScreen() {
             <View style={[styles.priceRow, styles.totalRow]}><Text style={styles.totalLabel}>Total</Text><Text style={styles.totalVal}>ETB {total}</Text></View>
           </View>
         )}
-      </ScrollView>
+      </KeyboardAwareScreen>
 
       <View style={styles.bottomBar}>
         <Button

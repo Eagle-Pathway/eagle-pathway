@@ -15,6 +15,9 @@ import { initErrorLogging } from '../src/services/errorLog';
 
 SplashScreen.preventAutoHideAsync();
 
+// TODO(pre-production): integrate Sentry (@sentry/react-native) for crash/error
+// reporting before the Play Store release. Wrap the app and init here alongside
+// initErrorLogging(). Adding the native SDK will require a new APK build.
 // Configure structured logging + the Supabase error sink before anything renders.
 initErrorLogging();
 
@@ -122,6 +125,7 @@ export default function RootLayout() {
             <Stack.Screen name="recommendations" options={{ presentation: 'card' }} />
             <Stack.Screen name="success-stories" options={{ presentation: 'card' }} />
             <Stack.Screen name="resources" options={{ presentation: 'card' }} />
+            <Stack.Screen name="resources/[id]" options={{ presentation: 'card' }} />
             <Stack.Screen name="notifications" options={{ presentation: 'card' }} />
             <Stack.Screen name="settings" options={{ presentation: 'card' }} />
           </Stack>

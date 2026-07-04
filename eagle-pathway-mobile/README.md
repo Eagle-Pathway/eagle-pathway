@@ -369,4 +369,16 @@ For questions about this codebase, refer to:
 
 ---
 
+## Deep links (pre-launch note)
+
+- **Primary mechanism:** the custom scheme `eaglepathway://` works today and should be
+  treated as the primary deep-link mechanism.
+- **TODO (before Play Store):** https App Links (`https://…`) will **not** auto-verify
+  because `/.well-known/assetlinks.json` is not hosted on the domain yet. Until it is,
+  https links degrade to the Android app-chooser dialog instead of opening the app
+  directly. Host `assetlinks.json` (with the release signing SHA-256) to enable
+  verified App Links.
+
+---
+
 *Eagle Pathway — From Classroom to International Scholarship* 🦅

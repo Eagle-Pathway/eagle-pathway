@@ -9,6 +9,7 @@ import { Colors, Typography, Spacing, Radius, CommonStyles } from '@/utils/theme
 import { useScholarshipStore } from '@/store/scholarshipStore';
 import { useAuthStore } from '@/store/authStore';
 import { Button } from '@/components/common';
+import { KeyboardAwareScreen } from '@/components/KeyboardAwareScreen';
 
 type AiInlineComment = {
   paragraph_index: number;
@@ -81,7 +82,7 @@ export default function SOPEditorScreen() {
         </TouchableOpacity>
       </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
+      <KeyboardAwareScreen contentContainerStyle={styles.scrollContent}>
         <View style={styles.editorWrap}>
           <View style={styles.toolbar}>
             <View style={styles.wordCountWrap}>
@@ -119,7 +120,7 @@ export default function SOPEditorScreen() {
             Focus on your "Why". Explain how this specific scholarship connects your past achievements to your future goals in Ethiopia.
           </Text>
         </View>
-      </ScrollView>
+      </KeyboardAwareScreen>
 
       {/* AI Report Modal */}
       <Modal visible={showAiModal} transparent animationType="slide">
