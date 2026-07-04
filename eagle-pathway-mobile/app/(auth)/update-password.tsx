@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, TextInput, StyleSheet, Alert, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, StyleSheet, Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Colors, Typography, Spacing, Radius } from '../../src/utils/theme';
 import { Button, LoadingScreen } from '../../src/components/common';
+import { PasswordInput } from '../../src/components/PasswordInput';
 import { supabase } from '../../src/services/supabase';
 
 export default function UpdatePasswordScreen() {
@@ -65,14 +66,10 @@ export default function UpdatePasswordScreen() {
 
           <View style={{ marginTop: Spacing['2xl'] }}>
             <Text style={styles.label}>New Password</Text>
-            <TextInput
-              style={styles.input}
+            <PasswordInput
               placeholder="••••••••"
               value={password}
               onChangeText={setPassword}
-              secureTextEntry
-              autoCapitalize="none"
-              placeholderTextColor={Colors.textSecondary}
               onSubmitEditing={handleUpdatePassword}
             />
           </View>
