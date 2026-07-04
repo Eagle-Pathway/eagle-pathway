@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import {
-  View, Text, ScrollView, TouchableOpacity, StyleSheet,
+  View, Text, TouchableOpacity, StyleSheet,
   Alert, Modal, TextInput, Linking, ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -8,6 +8,7 @@ import { router } from 'expo-router';
 import { format } from 'date-fns';
 import { Colors, Typography, Spacing, Radius, CommonStyles } from '@/utils/theme';
 import { EmptyState, ErrorState } from '@/components/common';
+import { KeyboardAwareScreen } from '@/components/KeyboardAwareScreen';
 import { openWhatsApp } from '@/utils/linking';
 import { useAuthStore } from '@/store/authStore';
 import { recommendationsService, type RecommendationRequest, type RecommendationStatus } from '@/services/recommendations';
@@ -124,7 +125,7 @@ export function RecommendationsScreen() {
           onAction={() => setModal(true)}
         />
       ) : (
-        <ScrollView contentContainerStyle={{ paddingBottom: 100 }} showsVerticalScrollIndicator={false}>
+        <KeyboardAwareScreen contentContainerStyle={{ paddingBottom: 100 }}>
           <Text style={s.summary}>{received} of {items.length} received</Text>
           {items.map(item => {
             const tone = STATUS_TONE[item.status];
@@ -163,7 +164,7 @@ export function RecommendationsScreen() {
             );
           })}
           <Text style={s.hint}>Long-press a request to remove it.</Text>
-        </ScrollView>
+        </KeyboardAwareScreen>
       )}
 
       <Modal visible={modal} animationType="slide" transparent onRequestClose={() => setModal(false)}>

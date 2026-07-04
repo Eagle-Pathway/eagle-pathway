@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import {
-  View, Text, ScrollView, TouchableOpacity, StyleSheet,
+  View, Text, TouchableOpacity, StyleSheet,
   TextInput, Alert, Switch,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Colors, Typography, Spacing, Radius, CommonStyles } from '@/utils/theme';
 import { Button } from '@/components/common';
+import { KeyboardAwareScreen } from '@/components/KeyboardAwareScreen';
 import { useAuthStore } from '@/store/authStore';
 import { DEPARTMENTS, FIELDS_OF_STUDY, validatePhone } from '@eagle-pathway/shared';
 
@@ -109,7 +110,7 @@ export function EditProfileScreen() {
         </TouchableOpacity>
         <Text style={editProfStyles.title}>Edit Profile</Text>
       </View>
-      <ScrollView contentContainerStyle={{ padding: Spacing.lg, paddingBottom: 100 }}>
+      <KeyboardAwareScreen contentContainerStyle={{ padding: Spacing.lg, paddingBottom: 100 }}>
         <Section title="👤 Personal Information">
           <Text style={editProfStyles.fieldLabel}>Full Name</Text>
           <TextInput 
@@ -273,7 +274,7 @@ export function EditProfileScreen() {
         </Section>
 
         <Button title='Save Profile' variant='primary' onPress={handleSave} loading={loading} style={{ marginTop: Spacing.lg }} />
-      </ScrollView>
+      </KeyboardAwareScreen>
     </SafeAreaView>
   );
 }

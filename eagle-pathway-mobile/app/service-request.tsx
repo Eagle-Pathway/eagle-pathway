@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
-  View, Text, ScrollView, TouchableOpacity, StyleSheet,
+  View, Text, TouchableOpacity, StyleSheet,
   TextInput, Alert, FlatList, ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Colors, Typography, Spacing, Radius, CommonStyles } from '@/utils/theme';
 import { Button, Dropdown } from '@/components/common/index';
+import { KeyboardAwareScreen } from '@/components/KeyboardAwareScreen';
 import { supabase } from '@/services/supabase';
 import { useAuthStore } from '@/store/authStore';
 import { ALL_COUNTRIES } from '@/utils/countries';
@@ -268,7 +269,7 @@ function NewRequestForm({
   };
 
   return (
-    <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+    <KeyboardAwareScreen contentContainerStyle={styles.content}>
 
       {/* Service Type */}
       <Text style={styles.sectionTitle}>Service Type *</Text>
@@ -431,7 +432,7 @@ function NewRequestForm({
         style={{ marginTop: Spacing.xl, marginBottom: 60 }}
         fullWidth
       />
-    </ScrollView>
+    </KeyboardAwareScreen>
   );
 }
 

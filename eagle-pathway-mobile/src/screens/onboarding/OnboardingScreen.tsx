@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import {
-  View, Text, ScrollView, TouchableOpacity, StyleSheet, TextInput, ActivityIndicator,
+  View, Text, TouchableOpacity, StyleSheet, TextInput, ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Colors, Typography, Spacing, Radius, CommonStyles } from '@/utils/theme';
 import { ProgressBar } from '@/components/common';
+import { KeyboardAwareScreen } from '@/components/KeyboardAwareScreen';
 import { useAuthStore } from '@/store/authStore';
 import { COUNTRIES, FIELDS_OF_STUDY } from '@eagle-pathway/shared';
 
@@ -79,7 +80,7 @@ export function OnboardingScreen() {
       </View>
       <ProgressBar progress={((step + 1) / TOTAL) * 100} color={Colors.blue} height={6} style={{ marginHorizontal: Spacing.xl }} />
 
-      <ScrollView contentContainerStyle={{ padding: Spacing.xl, paddingBottom: 40 }} showsVerticalScrollIndicator={false}>
+      <KeyboardAwareScreen contentContainerStyle={{ padding: Spacing.xl, paddingBottom: 40 }}>
         {step === 0 && (
           <View>
             <Text style={s.h1}>What do you want to study?</Text>
@@ -153,7 +154,7 @@ export function OnboardingScreen() {
             </TouchableOpacity>
           </View>
         )}
-      </ScrollView>
+      </KeyboardAwareScreen>
 
       <View style={s.footer}>
         {step > 0 && (

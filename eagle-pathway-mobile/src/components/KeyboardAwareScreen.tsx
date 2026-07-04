@@ -32,6 +32,7 @@ interface KeyboardAwareScreenProps extends ScrollViewProps {
 export function KeyboardAwareScreen({
   children,
   contentContainerStyle,
+  style,
   ...scrollProps
 }: KeyboardAwareScreenProps) {
   return (
@@ -40,7 +41,7 @@ export function KeyboardAwareScreen({
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <ScrollView
-        style={styles.flex}
+        style={[styles.flex, style]}
         contentContainerStyle={[styles.content, contentContainerStyle]}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
