@@ -17,20 +17,22 @@ export default function SplashScreen() {
           </View>
           <Text style={styles.appName}>Eagle Pathway</Text>
           <Text style={styles.tagline}>From Classroom to International Scholarship</Text>
+          {/* Honest feature highlights — no fabricated metrics (Play "Misleading
+              Claims" safe). */}
           <View style={styles.statsRow}>
             <View style={styles.statItem}>
-              <Text style={styles.statNum}>2,400+</Text>
-              <Text style={styles.statLbl}>Students</Text>
-            </View>
-            <View style={styles.statDivider} />
-            <View style={styles.statItem}>
-              <Text style={styles.statNum}>340+</Text>
+              <Text style={styles.statNum}>🎓</Text>
               <Text style={styles.statLbl}>Scholarships</Text>
             </View>
             <View style={styles.statDivider} />
             <View style={styles.statItem}>
-              <Text style={styles.statNum}>98%</Text>
-              <Text style={styles.statLbl}>Success Rate</Text>
+              <Text style={styles.statNum}>✍️</Text>
+              <Text style={styles.statLbl}>SOP Review</Text>
+            </View>
+            <View style={styles.statDivider} />
+            <View style={styles.statItem}>
+              <Text style={styles.statNum}>📚</Text>
+              <Text style={styles.statLbl}>Tutors</Text>
             </View>
           </View>
         </View>
