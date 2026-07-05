@@ -45,7 +45,7 @@ export function PackagesScreen() {
         <Text style={pkgStyles.title}>Select Package</Text>
       </View>
       <ScrollView contentContainerStyle={{ padding: Spacing.xl, paddingBottom: 60, gap: Spacing.lg }}>
-        <Text style={pkgStyles.intro}>Our consultants have a 92% success rate. Choose the support level that secures your future.</Text>
+        <Text style={pkgStyles.intro}>Our consultants guide you through every step of your application. Choose the support level that fits your goals.</Text>
         
         <View style={pkgStyles.currencyToggle}>
           <Text style={pkgStyles.currencyLabel}>Prices in ETB and USD (Diaspora)</Text>

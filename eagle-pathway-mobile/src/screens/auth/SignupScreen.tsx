@@ -177,7 +177,7 @@ export default function SignupScreen() {
 
           <View style={styles.header}>
             <Text style={styles.title}>Create Account</Text>
-            <Text style={styles.subtitle}>Join thousands of Ethiopian students on their journey abroad</Text>
+            <Text style={styles.subtitle}>Join Ethiopian students on their journey to studying abroad</Text>
           </View>
 
           <View style={styles.form}>
