@@ -9,9 +9,9 @@ import {
   Platform,
   StyleSheet,
   ActivityIndicator,
-  SafeAreaView,
   ScrollView,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Stack, useRouter } from 'expo-router';
 import { Colors } from '../../src/utils/theme';
 import { Ionicons } from '@expo/vector-icons';
@@ -52,6 +52,7 @@ function getAssistantApiUrl(): string {
 
 export default function AssistantScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -121,7 +122,7 @@ export default function AssistantScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={[styles.container, { paddingTop: insets.top }]}>
       <Stack.Screen 
         options={{
           headerShown: true,
@@ -135,14 +136,11 @@ export default function AssistantScreen() {
         }} 
       />
       
-      {/* Android relies on softwareKeyboardLayoutMode: "resize" (app.json) — the
-          window resizes so the input stays above the keyboard, so the KAV is a
-          no-op here. iOS uses padding. NOTE: the resize setting is native and
-          only takes effect in a NEW build, not via OTA. */}
+      {/* We use padding behavior for both platforms in case 'resize' fails or isn't applied (e.g. Expo Go) */}
       <KeyboardAvoidingView
         style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 20}
       >
         <FlatList
           ref={flatListRef}
@@ -180,7 +178,7 @@ export default function AssistantScreen() {
           </View>
         )}
 
-        <View style={styles.inputContainer}>
+        <View style={[styles.inputContainer, { paddingBottom: Math.max(insets.bottom, 12) }]}>
           <TextInput
             style={styles.input}
             value={input}
@@ -204,7 +202,7 @@ export default function AssistantScreen() {
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
-    </SafeAreaView>
+    </View>
   );
 }
 
@@ -335,7 +333,6 @@ const styles = StyleSheet.create({
   inputContainer: {
     flexDirection: 'row',
     padding: 12,
-    paddingBottom: Platform.OS === 'ios' ? 30 : 12,
     backgroundColor: Colors.white,
     borderTopWidth: 1,
     borderTopColor: '#e2e8f0',
