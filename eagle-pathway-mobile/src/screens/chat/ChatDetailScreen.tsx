@@ -3,7 +3,7 @@ import {
   View, Text, FlatList, TouchableOpacity,
   StyleSheet, ActivityIndicator, TextInput, KeyboardAvoidingView, Platform,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, router } from 'expo-router';
 import { Colors, Typography, Spacing, Radius, CommonStyles } from '@/utils/theme';
 import { Avatar } from '@/components/common';
@@ -14,6 +14,7 @@ import { supabase } from '@/services/supabase';
 export default function ChatDetailScreen() {
   const { id, fullName: paramFullName } = useLocalSearchParams<{ id: string, fullName?: string }>();
   const otherId = id;
+  const insets = useSafeAreaInsets();
   const { user } = useAuthStore();
   const { 
     activeMessages, 
@@ -104,9 +105,9 @@ export default function ChatDetailScreen() {
       </View>
 
       <KeyboardAvoidingView 
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={CommonStyles.flex1}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
       >
         {isLoadingMessages && activeMessages.length === 0 ? (
           <View style={[CommonStyles.flex1, CommonStyles.center]}>
@@ -124,7 +125,7 @@ export default function ChatDetailScreen() {
         )}
 
         {/* Input area */}
-        <View style={styles.inputArea}>
+        <View style={[styles.inputArea, { paddingBottom: Math.max(insets.bottom, Spacing.md) }]}>
           <TextInput
             style={styles.input}
             placeholder="Type a message..."
