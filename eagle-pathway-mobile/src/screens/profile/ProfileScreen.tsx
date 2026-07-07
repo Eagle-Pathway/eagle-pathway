@@ -14,6 +14,7 @@ import { useScholarshipStore } from '@/store/scholarshipStore';
 import { useDocumentStore } from '@/store/documentStore';
 import { useNotificationStore } from '@/store/notificationStore';
 import { useParentStore } from '@/store/parentStore';
+import { supabase } from '@/services/supabase';
 
 export function ProfileScreen() {
   const { user, signOut, uploadAvatar } = useAuthStore();
@@ -25,6 +26,7 @@ export function ProfileScreen() {
   const [pendingLinks, setPendingLinks] = useState<any[]>([]);
   const [linkingPhone, setLinkingPhone] = useState('');
   const [isLinking, setIsLinking] = useState(false);
+  const [openJobsCount, setOpenJobsCount] = useState(0);
 
   const initials = user?.full_name?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || 'EP';
   const role = getUserRole(user);
@@ -32,6 +34,11 @@ export function ProfileScreen() {
   useEffect(() => {
     if (user) {
       loadPendingLinks(user.id, role as any).then(setPendingLinks);
+    }
+    if (role === 'tutor') {
+      supabase.from('tutor_job_posts').select('id', { count: 'exact', head: true }).eq('status', 'open').then(({ count }) => {
+        if (count !== null) setOpenJobsCount(count);
+      });
     }
   }, [user?.id, role]);
 
@@ -92,8 +99,14 @@ export function ProfileScreen() {
   };
 
   const MENU_ITEMS = [
+    ...(role === 'tutor'
+      ? [
+          { icon: '💼', label: 'Tutor Jobs', badge: openJobsCount > 0 ? `${openJobsCount} open` : null, color: Colors.orangeLight, route: '/tutor-jobs', danger: false },
+          { icon: '📋', label: 'My Applications', badge: null, color: Colors.greenLight, route: '/my-applications', danger: false },
+        ]
+      : []),
     { icon: '📊', label: 'My Progress', badge: null, color: Colors.blueLight, route: '/progress', danger: false },
-    { icon: '🎓', label: 'My Applications', badge: `${applications.filter(a => !['accepted','rejected'].includes(a.status)).length} Active`, color: Colors.goldLight, route: '/tracker', danger: false },
+    { icon: '🎓', label: 'Scholarship Apps', badge: `${applications.filter(a => !['accepted','rejected'].includes(a.status)).length} Active`, color: Colors.goldLight, route: '/tracker', danger: false },
     { icon: '📁', label: 'Documents', badge: documents.filter(d => d.status !== 'approved').length > 0 ? 'Action needed' : null, color: Colors.greenLight, route: '/documents', danger: false },
     { icon: '✉️', label: 'Recommendation Letters', badge: null, color: Colors.blueLight, route: '/recommendations', danger: false },
     { icon: '🏆', label: 'Success Stories', badge: null, color: Colors.goldLight, route: '/success-stories', danger: false },
@@ -139,7 +152,7 @@ export function ProfileScreen() {
           onPress={() => router.push('/profile/edit')}
           activeOpacity={0.8}
         >
-          <Text style={{ color: Colors.white, fontWeight: 'bold', fontSize: 13 }}>Edit Academic Profile</Text>
+          <Text style={{ color: Colors.white, fontWeight: 'bold', fontSize: 13 }}>Edit Profile</Text>
         </TouchableOpacity>
 
       </View>
@@ -218,8 +231,12 @@ export function ProfileScreen() {
             <View style={[profStyles.menuIcon, { backgroundColor: item.color }]}><Text style={{ fontSize: 16 }}>{item.icon}</Text></View>
             <Text style={[profStyles.menuLabel, item.danger && { color: Colors.red }]}>{item.label}</Text>
             {item.badge && (
-              <View style={[profStyles.menuBadge, { backgroundColor: item.danger ? Colors.redLight : item.label === 'Documents' ? Colors.redLight : Colors.blueLight }]}>
-                <Text style={[profStyles.menuBadgeText, { color: item.label === 'Documents' ? Colors.red : Colors.blue }]}>{item.badge}</Text>
+              <View style={[profStyles.menuBadge, {
+                backgroundColor: item.danger ? Colors.redLight : item.label === 'Documents' ? Colors.redLight : item.label === 'Tutor Jobs' ? Colors.orangeLight : Colors.blueLight,
+              }]}>
+                <Text style={[profStyles.menuBadgeText, {
+                  color: item.danger ? Colors.red : item.label === 'Documents' ? Colors.red : item.label === 'Tutor Jobs' ? Colors.orange : Colors.blue,
+                }]}>{item.badge}</Text>
               </View>
             )}
             {!item.danger && <Text style={profStyles.menuArrow}>›</Text>}
