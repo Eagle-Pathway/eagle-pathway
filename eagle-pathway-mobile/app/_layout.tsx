@@ -128,6 +128,11 @@ export default function RootLayout() {
             <Stack.Screen name="resources/[id]" options={{ presentation: 'card' }} />
             <Stack.Screen name="notifications" options={{ presentation: 'card' }} />
             <Stack.Screen name="settings" options={{ presentation: 'card' }} />
+            <Stack.Screen name="tutor-jobs" options={{ presentation: 'card' }} />
+            <Stack.Screen name="tutor-job-detail" options={{ presentation: 'card' }} />
+            <Stack.Screen name="apply-job" options={{ presentation: 'card' }} />
+            <Stack.Screen name="my-applications" options={{ presentation: 'card' }} />
+            <Stack.Screen name="application-detail" options={{ presentation: 'card' }} />
           </Stack>
           <OfflineBanner />
         </ErrorBoundary>

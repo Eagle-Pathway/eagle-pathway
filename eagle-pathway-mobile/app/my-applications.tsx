@@ -1,0 +1,1 @@
+export { MyApplicationsScreen as default } from '../src/screens/profile/MyApplicationsScreen';

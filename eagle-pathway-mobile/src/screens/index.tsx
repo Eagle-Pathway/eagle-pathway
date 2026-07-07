@@ -18,5 +18,12 @@ export { NotificationsScreen } from './profile/NotificationsScreen';
 export { SettingsScreen } from './profile/SettingsScreen';
 export { EditProfileScreen } from './profile/EditProfileScreen';
 
+// Tutor Jobs
+export { TutorJobFeedScreen } from './profile/TutorJobFeedScreen';
+export { TutorJobDetailScreen } from './profile/TutorJobDetailScreen';
+export { JobApplicationScreen } from './profile/JobApplicationScreen';
+export { MyApplicationsScreen } from './profile/MyApplicationsScreen';
+export { ApplicationDetailScreen } from './profile/ApplicationDetailScreen';
+
 // Auth (if any remain in the future, they would go here)
 // export { LoginScreen, RegisterScreen } from './auth/...';
