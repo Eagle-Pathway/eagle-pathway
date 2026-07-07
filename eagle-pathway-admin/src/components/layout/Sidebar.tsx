@@ -21,7 +21,8 @@ import {
   Award,
   BookOpen,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  ClipboardList
 } from 'lucide-react';
 
 export default function Sidebar() {
@@ -64,6 +65,7 @@ export default function Sidebar() {
     { name: 'Overview', href: '/overview', icon: LayoutDashboard },
     { name: 'Users', href: '/users', icon: Users },
     { name: 'Tutor Approvals', href: '/tutors', icon: UserCheck },
+    { name: 'Tutor Jobs', href: '/tutor-jobs', icon: ClipboardList },
     { name: 'Documents', href: '/documents', icon: FileText },
     { name: 'Applications', href: '/applications', icon: Briefcase },
     { name: 'Scholarships', href: '/scholarships', icon: GraduationCap },
