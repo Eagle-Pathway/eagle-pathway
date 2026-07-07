@@ -31,12 +31,12 @@ BEGIN
     RAISE EXCEPTION 'Invalid role: %', p_role USING ERRCODE = '22023';
   END IF;
 
-  UPDATE public.users SET role = p_role WHERE id = p_user_id;
+  UPDATE public.users SET role = p_role::user_role WHERE id = p_user_id;
 
   -- user_roles stays the source of truth for is_admin(); keep it in sync.
   INSERT INTO public.user_roles (user_id, role)
-  VALUES (p_user_id, p_role)
-  ON CONFLICT (user_id, role) DO NOTHING;
+  SELECT p_user_id, p_role
+  WHERE NOT EXISTS (SELECT 1 FROM public.user_roles WHERE user_id = p_user_id AND role = p_role);
 END;
 $$;
 

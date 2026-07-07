@@ -27,14 +27,14 @@ BEGIN
   -- Make p_role the primary/active role and ensure it's in the roles array
   -- (additive — existing personas are kept).
   UPDATE public.users
-  SET role = p_role,
+  SET role = p_role::user_role,
       active_role = p_role,
       roles = (SELECT array_agg(DISTINCT x) FROM unnest(COALESCE(roles, ARRAY[]::text[]) || ARRAY[p_role]) AS x)
   WHERE id = p_user_id;
 
   INSERT INTO public.user_roles (user_id, role)
-  VALUES (p_user_id, p_role)
-  ON CONFLICT (user_id, role) DO NOTHING;
+  SELECT p_user_id, p_role
+  WHERE NOT EXISTS (SELECT 1 FROM public.user_roles WHERE user_id = p_user_id AND role = p_role);
 END;
 $$;
 
