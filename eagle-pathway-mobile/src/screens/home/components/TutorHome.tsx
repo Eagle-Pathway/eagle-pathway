@@ -205,6 +205,19 @@ export const TutorHome: React.FC<TutorHomeProps> = ({
           </View>
         </View>
 
+        {/* Tutor Jobs Banner */}
+        <TouchableOpacity
+          style={styles.jobsBanner}
+          onPress={() => router.push('/(tabs)/tutor-jobs')}
+          activeOpacity={0.85}
+        >
+          <View style={{ flex: 1 }}>
+            <Text style={styles.jobsBannerTitle}>📌 Tutor Job Board</Text>
+            <Text style={styles.jobsBannerSub}>Browse open jobs and apply now</Text>
+          </View>
+          <Text style={{ fontSize: 20, color: Colors.white }}>→</Text>
+        </TouchableOpacity>
+
         <SectionTitle title="Today's Sessions" />
         {todaySessions.length === 0 ? (
           <View style={{ padding: 20, alignItems: 'center' }}><Text style={{ color: Colors.textSecondary }}>No sessions scheduled for today.</Text></View>
@@ -358,4 +371,11 @@ const styles = StyleSheet.create({
   modalInput: { backgroundColor: '#f9fafb', borderWidth: 1, borderColor: Colors.border, borderRadius: 12, padding: 12, marginBottom: 16, fontSize: 16 },
   submitBtn: { backgroundColor: Colors.blueDark, borderRadius: 12, padding: 16, alignItems: 'center', marginTop: 8 },
   submitBtnText: { color: Colors.white, fontSize: 16, fontWeight: Typography.bold },
+  jobsBanner: {
+    backgroundColor: Colors.blue, marginHorizontal: Spacing.xl, marginBottom: Spacing.md,
+    borderRadius: Radius.xl, padding: Spacing.lg,
+    flexDirection: 'row', alignItems: 'center', gap: Spacing.md,
+  },
+  jobsBannerTitle: { fontSize: Typography.lg, fontWeight: Typography.bold, color: Colors.white },
+  jobsBannerSub: { fontSize: Typography.sm, color: 'rgba(255,255,255,0.75)', marginTop: 2 },
 });

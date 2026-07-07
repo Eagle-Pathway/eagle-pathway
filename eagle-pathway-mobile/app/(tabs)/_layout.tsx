@@ -137,6 +137,8 @@ export default function TabLayout() {
       {/* Hidden from tab bar — accessible via deep links / programmatic nav */}
       <Tabs.Screen name="scholarships" options={{ href: null }} />
       <Tabs.Screen name="tutors" options={{ href: null }} />
+      <Tabs.Screen name="tutor-jobs" options={{ href: null }} />
+      <Tabs.Screen name="my-applications" options={{ href: null }} />
       <Tabs.Screen name="service" options={{ href: null }} />
       <Tabs.Screen name="bookings" options={{ href: null }} />
       <Tabs.Screen name="assistant" options={{ href: null }} />
