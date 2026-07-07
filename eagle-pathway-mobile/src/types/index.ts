@@ -34,6 +34,12 @@ export interface User {
   utm_campaign?: string;
   utm_content?: string;
   first_landing_url?: string;
+
+  // Tutor-specific profile fields (stored on users table)
+  living_address?: string;
+  university_name?: string;
+  telegram_username?: string;
+  cgpa?: string;
 }
 
 // ─── TUTOR ───────────────────────────────────────────────────────────────────
@@ -203,7 +209,9 @@ export type NotificationType =
   | 'document_rejected'
   | 'sop_reviewed'
   | 'application_update'
-  | 'offer_received';
+  | 'offer_received'
+  | 'tutor_job_alert'
+  | 'tutor_application_update';
 
 export interface Notification {
   id: string;
@@ -252,6 +260,77 @@ export type RootStackParamList = {
   '(tabs)': undefined;
 };
 
+// ─── TUTOR JOB POST ──────────────────────────────────────────────────────────
+export type TutorJobStatus = 'open' | 'closed';
+export type GenderPreference = 'male' | 'female' | 'both';
+
+export interface TutorJobPost {
+  id: string;
+  created_at: string;
+  updated_at: string;
+  posted_by: string;
+  place: string;
+  grade: string;
+  subjects: string[];
+  session_hours: number;
+  days_per_week: number;
+  start_time: string;
+  hourly_rate: number;
+  gender_preference: GenderPreference;
+  status: TutorJobStatus;
+  notification_sent?: boolean;
+  posted_by_user?: User;
+}
+
+// ─── TUTOR JOB APPLICATION ───────────────────────────────────────────────────
+export type TutorJobApplicationStatus = 'pending' | 'contacted' | 'hired' | 'rejected';
+
+export interface TutorJobApplication {
+  id: string;
+  created_at: string;
+  updated_at: string;
+  job_post_id: string;
+  applicant_id: string;
+  status: TutorJobApplicationStatus;
+  education_status?: string;
+  living_address?: string;
+  university_name?: string;
+  phone_number?: string;
+  telegram_username?: string;
+  cgpa?: string;
+  grade10_result_url?: string;
+  grade12_result_url?: string;
+  transcript_url?: string;
+  policy_agreed?: boolean;
+  policy_agreed_at?: string;
+  job_post?: TutorJobPost;
+  applicant?: User;
+}
+
+// ─── TUTOR APPLICATION (Profile Verification) ────────────────────────────────
+export type TutorApplicationStatus = 'pending' | 'approved' | 'rejected';
+
+export interface TutorApplication {
+  id: string;
+  created_at: string;
+  updated_at: string;
+  tutor_id: string;
+  status: TutorApplicationStatus;
+  rejection_reason?: string;
+  rejection_reason_category?: string;
+  reviewed_by?: string;
+  reviewed_at?: string;
+  grade10_result_url?: string;
+  grade12_result_url?: string;
+  transcript_url?: string;
+  university_name?: string;
+  living_address?: string;
+  phone_number?: string;
+  telegram_username?: string;
+  cgpa?: string;
+  tutor?: User;
+}
+
 export type AuthStackParamList = {
   splash: undefined;
   signup: undefined;
@@ -286,4 +365,9 @@ export type ProfileStackParamList = {
   tracker: undefined;
   notifications: undefined;
   settings: undefined;
+  'tutor-jobs': undefined;
+  'tutor-job-detail': { jobId: string };
+  'apply-job': { jobId: string };
+  'my-applications': undefined;
+  'application-detail': { applicationId: string };
 };
