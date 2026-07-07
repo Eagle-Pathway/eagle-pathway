@@ -341,7 +341,7 @@ function InputField({ label, value, onChange, placeholder, multiline, keyboardTy
 }
 
 function DocUploader({ label, file, existingUrl, onPick, uploading }: {
-  label: string; file: { uri: string; name: string } | null; existingUrl?: string | null; onPick: () => void; uploading: string | null;
+  label: string; file: { uri: string; name: string } | null; existingUrl?: string | null; onPick: () => void; uploading: boolean;
 }) {
   const fileName = file?.name || (existingUrl ? 'Previously uploaded' : null);
   return (

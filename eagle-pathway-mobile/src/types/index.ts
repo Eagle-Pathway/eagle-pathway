@@ -323,6 +323,7 @@ export interface TutorApplication {
   grade10_result_url?: string;
   grade12_result_url?: string;
   transcript_url?: string;
+  education_status?: string;
   university_name?: string;
   living_address?: string;
   phone_number?: string;
