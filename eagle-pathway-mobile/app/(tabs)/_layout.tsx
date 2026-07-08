@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Tabs, usePathname, router } from 'expo-router';
 import { View, Text, StyleSheet, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -8,16 +8,20 @@ import AiAssistantFAB from '../../src/components/AiAssistantFAB';
 import { useAuthStore } from '../../src/store/authStore';
 import { isProfileIncomplete } from '../../src/utils/profile';
 import { getUserRole } from '../../src/utils/role';
+import { supabase } from '../../src/services/supabase';
 import { ONBOARDED_KEY } from '../../src/screens/onboarding/OnboardingScreen';
 
-function TabIcon({ emoji, label, focused }: { emoji: string; label: string; focused: boolean }) {
+function TabIcon({ emoji, label, focused, dot }: { emoji: string; label: string; focused: boolean; dot?: boolean }) {
   // Scale the label down on narrow screens (e.g. 360px wide) so longer labels
   // ("Dashboard", "Earnings", "Activity") stay on one line without truncating.
   const { width } = useWindowDimensions();
   const labelFontSize = width < 380 ? 9 : 10;
   return (
     <View style={tabStyles.item}>
-      <Text style={tabStyles.emoji}>{emoji}</Text>
+      <View>
+        <Text style={tabStyles.emoji}>{emoji}</Text>
+        {dot && <View style={tabStyles.notifDot} />}
+      </View>
       <Text
         style={[tabStyles.label, { fontSize: labelFontSize }, focused && tabStyles.labelActive]}
         numberOfLines={1}
@@ -38,6 +42,7 @@ const tabStyles = StyleSheet.create({
   emoji: { fontSize: 22 },
   label: { fontSize: 10, fontWeight: Typography.medium, color: '#9ca3af', textAlign: 'center' },
   labelActive: { color: Colors.blue, fontWeight: Typography.semibold },
+  notifDot: { position: 'absolute', top: -2, right: -6, width: 8, height: 8, borderRadius: 4, backgroundColor: '#f59e0b', borderWidth: 1.5, borderColor: Colors.white },
 });
 
 export default function TabLayout() {
@@ -65,6 +70,16 @@ export default function TabLayout() {
     let cancelled = false;
     AsyncStorage.getItem(ONBOARDED_KEY).then(seen => {
       if (!cancelled && !seen) router.replace('/onboarding');
+    });
+    return () => { cancelled = true; };
+  }, [user?.id]);
+
+  const [openJobsCount, setOpenJobsCount] = useState(0);
+  useEffect(() => {
+    if (getUserRole(user).toLowerCase() !== 'tutor') return;
+    let cancelled = false;
+    supabase.from('tutor_job_posts').select('id', { count: 'exact', head: true }).eq('status', 'open').then(({ count }) => {
+      if (!cancelled) setOpenJobsCount(count ?? 0);
     });
     return () => { cancelled = true; };
   }, [user?.id]);
@@ -103,9 +118,10 @@ export default function TabLayout() {
         options={{
           tabBarIcon: ({ focused }) => (
             <TabIcon 
-              emoji={activeRole === 'tutor' ? '📅' : '🔍'} 
-              label={activeRole === 'tutor' ? 'Schedule' : 'Explore'} 
+              emoji={activeRole === 'tutor' ? '💼' : '🔍'} 
+              label={activeRole === 'tutor' ? 'Jobs' : 'Explore'} 
               focused={focused} 
+              dot={activeRole === 'tutor' && openJobsCount > 0}
             />
           ),
         }}

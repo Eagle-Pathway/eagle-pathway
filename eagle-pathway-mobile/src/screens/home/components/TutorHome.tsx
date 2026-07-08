@@ -85,7 +85,12 @@ export const TutorHome: React.FC<TutorHomeProps> = ({
           </View>
 
           {/* Today's Sessions Skeleton */}
-          <SectionTitle title="Today's Sessions" />
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: Spacing.xl, marginBottom: Spacing.md }}>
+          <Text style={[CommonStyles.sectionTitle, { margin: 0 }]}>Today's Sessions</Text>
+          <TouchableOpacity onPress={() => router.push('/(tabs)/bookings')} style={{ paddingRight: Spacing.xl }}>
+            <Text style={{ fontSize: Typography.sm, color: Colors.blue, fontWeight: Typography.semibold }}>View schedule</Text>
+          </TouchableOpacity>
+        </View>
           <View style={{ paddingHorizontal: Spacing.xl }}>
             <View style={[styles.sessionCard, { marginHorizontal: 0 }]}>
               <Skeleton width={44} height={44} borderRadius={13} />

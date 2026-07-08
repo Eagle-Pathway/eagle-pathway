@@ -4,9 +4,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors, Typography, Spacing, CommonStyles } from '../../src/utils/theme';
 import ScholarshipsScreen from '../../src/screens/scholarships/ScholarshipsScreen';
 import TutorsScreen from '../../src/screens/tutors/TutorsScreen';
-import { BookingsScreen } from '../../src/screens/index';
 import { useAuthStore } from '../../src/store/authStore';
 import { getUserRole } from '../../src/utils/role';
+import TutorJobFeedScreen from '../../src/screens/tutorJobs/TutorJobFeedScreen';
 
 type Tab = 'scholarships' | 'tutors';
 
@@ -15,10 +15,10 @@ export default function ExploreScreen() {
   const isTutor = getUserRole(user).toLowerCase() === 'tutor';
   const [activeTab, setActiveTab] = useState<Tab>('scholarships');
 
-  // For tutors this tab is labelled "Schedule" in the tab bar, so it must show
-  // their session schedule — not the student scholarships/tutors discovery view.
+  // For tutors this tab is labelled "Jobs" in the tab bar, so it must show
+  // the job feed — not the student scholarships/tutors discovery view.
   if (isTutor) {
-    return <BookingsScreen />;
+    return <TutorJobFeedScreen />;
   }
 
   return (
