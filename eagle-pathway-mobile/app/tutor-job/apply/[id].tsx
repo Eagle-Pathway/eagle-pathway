@@ -438,16 +438,11 @@ export default function TutorJobApplyScreen() {
 
             <View style={styles.policyBox}>
               <Text style={styles.policyText}>
-                Thank you for your interest. There are some things you need to fulfill before joining us:{'\n\n'}
-                Your education status (scanned grade 10 and 12 national test results, scanned transcript of grade 9–12, and your current CGPA){'\n\n'}
-                Your living address{'\n\n'}
-                The name of college/university you are attending{'\n\n'}
-                Your phone number{'\n\n'}
-                Your Telegram username
+                Thank you for your interest. There are some things you need to agree before joining us
               </Text>
 
               <Text style={styles.policyHighlight}>
-                🔏 By providing the above information, you will become an Eagle Tutorials family member.
+                🔏 By agreeing to our terms and conditions, you will become an Eagle Tutorials family member.
               </Text>
 
               <TouchableOpacity
