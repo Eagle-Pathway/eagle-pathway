@@ -6,7 +6,7 @@ import ScholarshipsScreen from '../../src/screens/scholarships/ScholarshipsScree
 import TutorsScreen from '../../src/screens/tutors/TutorsScreen';
 import { useAuthStore } from '../../src/store/authStore';
 import { getUserRole } from '../../src/utils/role';
-import TutorJobFeedScreen from '../../src/screens/profile/TutorJobFeedScreen';
+import { TutorJobFeedScreen } from '../../src/screens/profile/TutorJobFeedScreen';
 
 type Tab = 'scholarships' | 'tutors';
 
