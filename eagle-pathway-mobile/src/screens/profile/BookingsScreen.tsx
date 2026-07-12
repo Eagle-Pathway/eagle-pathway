@@ -3,7 +3,7 @@ import {
   View, Text, FlatList, TouchableOpacity, StyleSheet,
   Alert, Linking, TextInput,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { format } from 'date-fns';
 import { Colors, Typography, Spacing, Radius, CommonStyles } from '@/utils/theme';
@@ -15,6 +15,7 @@ import { supabase } from '@/services/supabase';
 import { getUserRole } from '@/utils/role';
 
 export function BookingsScreen({ hideHeader = false }: { hideHeader?: boolean }) {
+  const insets = useSafeAreaInsets();
   const { user } = useAuthStore();
   const { bookings, loadBookings, loadTutorBookings, updateBookingStatus, cancelBooking } = useBookingStore();
   const [activeTab, setActiveTab] = useState<'upcoming' | 'past' | 'cancelled'>('upcoming');
@@ -162,7 +163,7 @@ export function BookingsScreen({ hideHeader = false }: { hideHeader?: boolean })
               </View>
             );
           }}
-          contentContainerStyle={{ paddingBottom: 100 }}
+          contentContainerStyle={{ paddingBottom: 100 + insets.bottom }}
           showsVerticalScrollIndicator={false}
         />
       )}
