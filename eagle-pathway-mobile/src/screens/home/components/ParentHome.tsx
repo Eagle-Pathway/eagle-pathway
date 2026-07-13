@@ -4,7 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Colors, Typography, Spacing, CommonStyles } from '@/utils/theme';
 import { Avatar, SectionTitle, EmptyState, Skeleton, ScaleBounce } from '@/components/common';
-import { User, Application } from '@/types';
+import { User, Application, Booking } from '@/types';
 import { getFlagEmoji } from '@eagle-pathway/shared';
 
 interface ParentHomeProps {
@@ -17,6 +17,7 @@ interface ParentHomeProps {
   onRefresh: () => Promise<void>;
   linkedStudents: User[];
   linkedStudentApplications: Record<string, Application[]>;
+  linkedStudentBookings: Record<string, Booking[]>;
   loading?: boolean;
 }
 
@@ -29,6 +30,7 @@ export const ParentHome: React.FC<ParentHomeProps> = ({
   onRefresh,
   linkedStudents,
   linkedStudentApplications,
+  linkedStudentBookings,
   loading,
 }) => {
   if (loading) {
@@ -120,14 +122,15 @@ export const ParentHome: React.FC<ParentHomeProps> = ({
             <SectionTitle title="My Children" />
             {children.map(child => {
               const childApps = linkedStudentApplications[child.id] || [];
+              const childBookings = linkedStudentBookings[child.id] || [];
               const activeApps = childApps.filter(a => !['accepted', 'rejected'].includes(a.status));
-              const completedApps = childApps.filter(a => ['accepted', 'rejected'].includes(a.status));
+              const upcomingSessions = childBookings.filter(b => ['pending', 'confirmed'].includes(b.status));
               
               return (
                 <ScaleBounce 
                   key={child.id} 
                   style={styles.sessionCard}
-                  onPress={() => router.push('/progress')}
+                  onPress={() => router.push({ pathname: '/children-sessions', params: { studentId: child.id, studentName: child.full_name } })}
                 >
                   <Avatar 
                     initials={child.full_name?.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() || 'S'} 
@@ -137,7 +140,7 @@ export const ParentHome: React.FC<ParentHomeProps> = ({
                   <View style={{ flex: 1, marginLeft: Spacing.md }}>
                     <Text style={styles.sessionName}>{child.full_name}</Text>
                     <Text style={styles.sessionSub}>
-                      {activeApps.length} active · {completedApps.length} completed
+                      {activeApps.length} applications · {upcomingSessions.length} sessions
                     </Text>
                   </View>
                   <View style={styles.sessionTime}>

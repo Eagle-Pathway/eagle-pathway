@@ -14,7 +14,8 @@ import { useAuthStore } from '@/store/authStore';
 import { useBookingStore } from '@/store/bookingStore';
 import { Tutor } from '@/types';
 
-const TIME_SLOTS = ['9:00 AM','10:00 AM','11:00 AM','12:00 PM','2:00 PM','3:00 PM','4:00 PM','5:00 PM','7:00 PM'];
+const TIME_SLOTS = ['8:00 AM','8:30 AM','9:00 AM','9:30 AM','10:00 AM','10:30 AM','11:00 AM','11:30 AM','12:00 PM','12:30 PM','2:00 PM','2:30 PM','3:00 PM','3:30 PM','4:00 PM','4:30 PM','5:00 PM','5:30 PM','6:00 PM','6:30 PM','7:00 PM','7:30 PM'];
+const DURATIONS = [1, 1.5, 2];
 const PLATFORM_FEE_RATE = 0.10;
 
 export default function BookingScreen() {
@@ -24,6 +25,8 @@ export default function BookingScreen() {
   const [tutor, setTutor] = useState<Tutor | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date>(addDays(new Date(), 1));
   const [selectedTime, setSelectedTime] = useState<string>('');
+  const [durationHours, setDurationHours] = useState(1);
+  const [isRecurring, setIsRecurring] = useState(false);
   const [sessionType, setSessionType] = useState<'online' | 'in_person'>('online');
   const [notes, setNotes] = useState('');
   const [loading, setLoading] = useState(false);
@@ -33,8 +36,9 @@ export default function BookingScreen() {
     if (tutorId) tutorsService.getTutorById(tutorId).then(setTutor).catch(console.error);
   }, [tutorId]);
 
-  const platformFee = tutor ? Math.round(tutor.hourly_rate * PLATFORM_FEE_RATE) : 0;
-  const total = tutor ? tutor.hourly_rate + platformFee : 0;
+  const sessionCost = tutor ? Math.round(tutor.hourly_rate * durationHours) : 0;
+  const platformFee = Math.round(sessionCost * PLATFORM_FEE_RATE);
+  const total = sessionCost + platformFee;
 
   const handleConfirm = async () => {
     if (loading) return; // guard against rapid double-taps
@@ -43,20 +47,27 @@ export default function BookingScreen() {
 
     setLoading(true);
     try {
-      await tutorsService.createBooking({
-        studentId: user.id,
-        tutorId: tutor.id,
-        subject: tutor.subjects?.[0] || 'General Tutoring',
-        sessionDate: format(selectedDate, 'yyyy-MM-dd'),
-        sessionTime: selectedTime,
-        durationHours: 1,
-        sessionType,
-        notes: notes.trim() || undefined,
-        totalAmount: total,
-        platformFee,
-      });
+      const bookingsToCreate = isRecurring ? 4 : 1;
+      for (let i = 0; i < bookingsToCreate; i++) {
+        const date = new Date(selectedDate);
+        date.setDate(date.getDate() + (i * 7));
+        await tutorsService.createBooking({
+          studentId: user.id,
+          tutorId: tutor.id,
+          subject: tutor.subjects?.[0] || 'General Tutoring',
+          sessionDate: format(date, 'yyyy-MM-dd'),
+          sessionTime: selectedTime,
+          durationHours,
+          sessionType,
+          notes: notes.trim() || undefined,
+          totalAmount: Math.round((tutor.hourly_rate * durationHours) * (1 + PLATFORM_FEE_RATE)),
+          platformFee: Math.round(tutor.hourly_rate * durationHours * PLATFORM_FEE_RATE),
+          studentName: user.full_name,
+        });
+      }
       await loadBookings(user.id);
-      Alert.alert('Booking Confirmed! 🎉', `Your session with ${tutor.user?.full_name} is confirmed.`, [
+      const msg = isRecurring ? `Weekly sessions for the next ${bookingsToCreate} weeks are booked.` : `Your session with ${tutor.user?.full_name} is confirmed.`;
+      Alert.alert('Booking Confirmed! 🎉', msg, [
         { text: 'View Bookings', onPress: () => router.push('/(tabs)/bookings') },
       ]);
     } catch (e: any) {
@@ -162,6 +173,43 @@ export default function BookingScreen() {
           </View>
         </View>
 
+        {/* Duration */}
+        <View style={styles.section}>
+          <Text style={styles.sectionLabel}>Duration</Text>
+          <View style={{ flexDirection: 'row', gap: Spacing.sm }}>
+            {DURATIONS.map(h => (
+              <TouchableOpacity
+                key={h}
+                style={[styles.typeChip, durationHours === h && styles.timeChipSelected, { flex: 1 }]}
+                onPress={() => setDurationHours(h)}
+                activeOpacity={0.8}
+              >
+                <Text style={[styles.timeChipText, durationHours === h && styles.timeChipTextSelected]}>
+                  {h}h {h === 1.5 ? '(recommended)' : ''}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+
+        {/* Recurring */}
+        <View style={styles.section}>
+          <TouchableOpacity
+            style={[styles.typeChip, isRecurring && styles.timeChipSelected]}
+            onPress={() => setIsRecurring(!isRecurring)}
+            activeOpacity={0.8}
+          >
+            <Text style={[styles.timeChipText, isRecurring && styles.timeChipTextSelected]}>
+              {isRecurring ? '🔄 Weekly (4 sessions)' : '📅 One-time session'}
+            </Text>
+          </TouchableOpacity>
+          {isRecurring && (
+            <Text style={{ fontSize: Typography.sm, color: Colors.textSecondary, marginTop: Spacing.sm }}>
+              This will create 4 weekly sessions starting from your selected date.
+            </Text>
+          )}
+        </View>
+
         {/* Session Type */}
         <View style={styles.section}>
           <Text style={styles.sectionLabel}>Session Type</Text>
@@ -199,9 +247,9 @@ export default function BookingScreen() {
         {/* Price summary */}
         {tutor && (
           <View style={styles.priceSummary}>
-            <View style={styles.priceRow}><Text style={styles.priceLabel}>Session (1 hour)</Text><Text style={styles.priceVal}>ETB {tutor.hourly_rate}</Text></View>
-            <View style={styles.priceRow}><Text style={styles.priceLabel}>Platform fee</Text><Text style={styles.priceVal}>ETB {platformFee}</Text></View>
-            <View style={[styles.priceRow, styles.totalRow]}><Text style={styles.totalLabel}>Total</Text><Text style={styles.totalVal}>ETB {total}</Text></View>
+            <View style={styles.priceRow}><Text style={styles.priceLabel}>Session ({durationHours}h × ETB {tutor.hourly_rate}/hr)</Text><Text style={styles.priceVal}>ETB {sessionCost}</Text></View>
+            <View style={styles.priceRow}><Text style={styles.priceLabel}>Platform fee (10%)</Text><Text style={styles.priceVal}>ETB {platformFee}</Text></View>
+            <View style={[styles.priceRow, styles.totalRow]}><Text style={styles.totalLabel}>Total {isRecurring ? '× 4 weeks' : ''}</Text><Text style={styles.totalVal}>ETB {isRecurring ? total * 4 : total}</Text></View>
           </View>
         )}
       </KeyboardAwareScreen>

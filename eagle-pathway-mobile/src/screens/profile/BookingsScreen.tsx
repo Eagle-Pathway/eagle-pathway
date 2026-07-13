@@ -160,6 +160,15 @@ export function BookingsScreen({ hideHeader = false }: { hideHeader?: boolean })
                     )}
                   </View>
                 )}
+                {activeTab === 'past' && b.status === 'completed' && !isTutor && (
+                  <TouchableOpacity
+                    style={[bkgStyles.btnJoin, { marginTop: Spacing.sm }]}
+                    onPress={() => router.push({ pathname: '/booking', params: { tutorId: b.tutor_id } })}
+                    activeOpacity={0.85}
+                  >
+                    <Text style={bkgStyles.btnJoinText}>🔄 Book Again</Text>
+                  </TouchableOpacity>
+                )}
               </View>
             );
           }}

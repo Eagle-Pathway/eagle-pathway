@@ -1,5 +1,5 @@
 import { supabase } from './supabase';
-import { User, Application } from '../types';
+import { User, Application, Booking } from '../types';
 
 export const parentsService = {
   async linkStudent(parentId: string, studentPhone: string): Promise<void> {
@@ -128,5 +128,26 @@ export const parentsService = {
       appsByStudent[app.student_id].push(app);
     });
     return appsByStudent;
+  },
+
+  async getLinkedStudentBookings(parentId: string): Promise<Record<string, Booking[]>> {
+    const students = await parentsService.getLinkedStudents(parentId);
+    if (students.length === 0) return {};
+
+    const studentIds = students.map(s => s.id);
+    const { data, error } = await supabase
+      .from('bookings')
+      .select('*, tutor:tutors(*, user:users(*))')
+      .in('student_id', studentIds)
+      .order('session_date', { ascending: false });
+
+    if (error) throw error;
+
+    const bookingsByStudent: Record<string, Booking[]> = {};
+    (data || []).forEach((b: any) => {
+      if (!bookingsByStudent[b.student_id]) bookingsByStudent[b.student_id] = [];
+      bookingsByStudent[b.student_id].push(b);
+    });
+    return bookingsByStudent;
   }
 };

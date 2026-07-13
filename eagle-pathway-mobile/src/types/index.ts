@@ -211,7 +211,9 @@ export type NotificationType =
   | 'application_update'
   | 'offer_received'
   | 'tutor_job_alert'
-  | 'tutor_application_update';
+  | 'tutor_application_update'
+  | 'booking_request'
+  | 'booking_update';
 
 export interface Notification {
   id: string;

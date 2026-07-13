@@ -53,7 +53,8 @@ export default function HomeScreen() {
   
   // Parent Store
   const { 
-    linkedStudents, linkedStudentApplications, loadLinkedStudents, loadLinkedStudentApplications 
+    linkedStudents, linkedStudentApplications, linkedStudentBookings,
+    loadLinkedStudents, loadLinkedStudentApplications, loadLinkedStudentBookings
   } = useParentStore();
 
   const [refreshing, setRefreshing] = useState(false);
@@ -75,6 +76,7 @@ export default function HomeScreen() {
     } else if (isParent) {
       dataTasks.push(loadLinkedStudents(user.id));
       dataTasks.push(loadLinkedStudentApplications(user.id));
+      dataTasks.push(loadLinkedStudentBookings(user.id));
     } else {
       dataTasks.push(loadBookings(user.id));
       dataTasks.push(loadApplications(user.id));
@@ -155,6 +157,7 @@ export default function HomeScreen() {
         onRefresh={onRefresh}
         linkedStudents={linkedStudents}
         linkedStudentApplications={linkedStudentApplications}
+        linkedStudentBookings={linkedStudentBookings}
         loading={loading}
       />
     );

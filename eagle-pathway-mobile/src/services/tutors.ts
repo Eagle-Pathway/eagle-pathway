@@ -46,6 +46,23 @@ export const tutorsService = {
     return data as Tutor;
   },
 
+  async getTutorUserId(tutorId: string): Promise<string | null> {
+    const { data } = await supabase.from('tutors').select('user_id').eq('id', tutorId).single();
+    return data?.user_id ?? null;
+  },
+
+  async notifyTutorNewBooking(tutorId: string, studentName: string): Promise<void> {
+    const tutorUserId = await tutorsService.getTutorUserId(tutorId);
+    if (!tutorUserId) return;
+    await supabase.from('notifications').insert({
+      user_id: tutorUserId,
+      type: 'booking_request',
+      title: 'New Booking Request',
+      body: `${studentName} has requested a session with you.`,
+      data: { tutor_id: tutorId, type: 'booking_request' },
+    });
+  },
+
   async getTutorReviews(tutorId: string): Promise<TutorReview[]> {
     const { data, error } = await supabase
       .from('tutor_reviews')
@@ -67,6 +84,7 @@ export const tutorsService = {
     notes?: string;
     totalAmount: number;
     platformFee: number;
+    studentName?: string;
   }): Promise<Booking> {
     const { data, error } = await supabase
       .from('bookings')
@@ -86,6 +104,10 @@ export const tutorsService = {
       .select('*, tutor:tutors(*, user:users(*))')
       .single();
     if (error) throw error;
+
+    // Fire-and-forget: notify tutor about new booking
+    tutorsService.notifyTutorNewBooking(booking.tutorId, booking.studentName || 'A student').catch(() => {});
+
     return data as Booking;
   },
 
