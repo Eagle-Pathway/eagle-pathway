@@ -3,7 +3,7 @@ import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
   Alert, TextInput,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Colors, Typography, Spacing, Radius, CommonStyles } from '@/utils/theme';
 import { Button } from '@/components/common';
@@ -26,6 +26,7 @@ export function ApplyScreen() {
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('');
   const [transactionId, setTransactionId] = useState('');
   const [receiptAsset, setReceiptAsset] = useState<any>(null);
+  const insets = useSafeAreaInsets();
 
   useEffect(() => { if (user) loadDocuments(user.id); }, [user?.id]);
 
@@ -141,7 +142,7 @@ export function ApplyScreen() {
   };
 
   return (
-    <SafeAreaView style={CommonStyles.screenBg} edges={['top']}>
+    <SafeAreaView style={CommonStyles.screenBg} edges={['top', 'bottom']}>
       <View style={applyStyles.header}>
         <TouchableOpacity style={applyStyles.backBtn} onPress={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)/home'))} activeOpacity={0.8}><Text style={{ fontSize: 20, color: Colors.text }}>←</Text></TouchableOpacity>
         <Text style={applyStyles.title}>Your Application</Text>
@@ -357,7 +358,7 @@ export function ApplyScreen() {
         )}
       </ScrollView>
 
-      <View style={applyStyles.bottomBar}>
+      <View style={[applyStyles.bottomBar, { paddingBottom: Math.max(insets.bottom, Spacing.lg) }]}>
         <Button title={step === 1 ? 'Cancel' : '← Back'} variant="secondary" onPress={() => step > 1 ? setStep(s => s - 1) : (router.canGoBack() ? router.back() : router.replace('/(tabs)/home'))} style={{ flex: 0.5 }} fullWidth={false} />
         <Button title={step === 5 ? 'Confirm & Submit' : 'Continue →'} variant="primary" onPress={step < 5 ? handleContinue : handleSubmit} loading={loading} style={{ flex: 1 }} fullWidth={false} />
       </View>

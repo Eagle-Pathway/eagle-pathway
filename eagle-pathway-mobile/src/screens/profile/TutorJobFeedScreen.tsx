@@ -48,7 +48,7 @@ export function TutorJobFeedScreen() {
 
   if (role !== 'tutor') {
     return (
-      <SafeAreaView style={CommonStyles.screenBg} edges={['top']}>
+      <SafeAreaView style={CommonStyles.screenBg} edges={['top', 'bottom']}>
         <View style={s.header}>
           <Text style={s.headerTitle}>Tutor Jobs</Text>
         </View>
@@ -58,7 +58,7 @@ export function TutorJobFeedScreen() {
   }
 
   return (
-    <SafeAreaView style={CommonStyles.screenBg} edges={['top']}>
+    <SafeAreaView style={CommonStyles.screenBg} edges={['top', 'bottom']}>
       <View style={s.header}>
         <Text style={s.headerTitle}>Available Jobs</Text>
         <TouchableOpacity onPress={() => router.push('/my-applications' as any)}>

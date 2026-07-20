@@ -73,7 +73,7 @@ export function OnboardingScreen() {
   const next = () => (step + 1 >= TOTAL ? finish() : setStep(step + 1));
 
   return (
-    <SafeAreaView style={[CommonStyles.flex1, { backgroundColor: Colors.bg }]} edges={['top']}>
+    <SafeAreaView style={[CommonStyles.flex1, { backgroundColor: Colors.bg }]} edges={['top', 'bottom']}>
       <View style={s.header}>
         <Text style={s.stepLabel}>Step {step + 1} of {TOTAL}</Text>
         <TouchableOpacity onPress={() => finish(true)} disabled={saving}><Text style={s.skip}>Skip</Text></TouchableOpacity>

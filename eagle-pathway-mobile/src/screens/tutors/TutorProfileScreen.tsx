@@ -3,7 +3,7 @@ import {
   View, Text, TouchableOpacity,
   StyleSheet, ActivityIndicator, TextInput, Alert,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuthStore } from '@/store/authStore';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Colors, Typography, Spacing, Radius, CommonStyles } from '@/utils/theme';
@@ -73,9 +73,10 @@ export default function TutorProfileScreen() {
   if (!tutor) return null;
 
   const initials = tutor.user?.full_name?.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() || 'T';
+  const insets = useSafeAreaInsets();
 
   return (
-    <SafeAreaView style={[CommonStyles.flex1, { backgroundColor: Colors.blueDark }]} edges={['top']}>
+    <SafeAreaView style={[CommonStyles.flex1, { backgroundColor: Colors.blueDark }]} edges={['top', 'bottom']}>
       {/* Hero */}
       <View style={styles.hero}>
         <View style={styles.heroNav}>
@@ -204,7 +205,7 @@ export default function TutorProfileScreen() {
       </KeyboardAwareScreen>
 
       {/* Bottom CTA */}
-      <View style={styles.bottomBar}>
+      <View style={[styles.bottomBar, { paddingBottom: Math.max(insets.bottom, Spacing.lg) }]}>
         <TouchableOpacity 
           style={styles.chatBtn} 
           onPress={() => router.push({ pathname: '/chat/[id]', params: { id: tutor.user_id, fullName: tutor.user?.full_name } })}

@@ -74,7 +74,7 @@ export default function TutorsScreen() {
 
   if (loading) {
     return (
-      <SafeAreaView style={CommonStyles.screenBg} edges={['top']}>
+      <SafeAreaView style={CommonStyles.screenBg} edges={['top', 'bottom']}>
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.title}>Find a Tutor</Text>
@@ -123,7 +123,7 @@ export default function TutorsScreen() {
   }
 
   return (
-    <SafeAreaView style={CommonStyles.screenBg} edges={['top']}>
+    <SafeAreaView style={CommonStyles.screenBg} edges={['top', 'bottom']}>
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.title}>Find a Tutor</Text>

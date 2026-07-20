@@ -53,7 +53,7 @@ export default function ScholarshipsScreen({ hideBack = false }: { hideBack?: bo
   });
 
   return (
-    <SafeAreaView style={CommonStyles.screenBg} edges={hideBack ? [] : ['top']}>
+    <SafeAreaView style={CommonStyles.screenBg} edges={hideBack ? ['bottom'] : ['top', 'bottom']}>
       <View style={styles.hero}>
         {!hideBack && (
           <View style={{ marginBottom: Spacing.md }}>

@@ -3,7 +3,7 @@ import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
   Alert, Linking,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { format } from 'date-fns';
 import { Colors, Typography, Spacing, Radius, CommonStyles } from '@/utils/theme';
@@ -59,6 +59,7 @@ export function ScholarshipDetailScreen() {
   const [scholarship, setScholarship] = useState<Scholarship | null>(null);
   const [loading, setLoading] = useState(true);
   const isSaved = scholarshipId ? savedScholarshipIds.includes(scholarshipId) : false;
+  const insets = useSafeAreaInsets();
 
   useEffect(() => {
     if (scholarshipId) {
@@ -74,13 +75,13 @@ export function ScholarshipDetailScreen() {
   }, [scholarshipId]);
 
   if (loading) return (
-    <SafeAreaView style={[CommonStyles.flex1, { backgroundColor: Colors.blueDark }]} edges={['top']}>
+    <SafeAreaView style={[CommonStyles.flex1, { backgroundColor: Colors.blueDark }]} edges={['top', 'bottom']}>
       <DetailSkeleton type="scholarship" />
     </SafeAreaView>
   );
   if (!scholarship) {
     return (
-      <SafeAreaView style={CommonStyles.screenBg} edges={['top']}>
+      <SafeAreaView style={CommonStyles.screenBg} edges={['top', 'bottom']}>
         <EmptyState 
           icon="❌" 
           title="Scholarship not found" 
@@ -101,7 +102,7 @@ export function ScholarshipDetailScreen() {
   const sourceTone = sourceStatusTone(scholarship.source_status);
 
   return (
-    <SafeAreaView style={[CommonStyles.flex1, { backgroundColor: Colors.blueDark }]} edges={['top']}>
+    <SafeAreaView style={[CommonStyles.flex1, { backgroundColor: Colors.blueDark }]} edges={['top', 'bottom']}>
       <View style={sdStyles.hero}>
         <View style={sdStyles.heroNav}>
           <ScaleBounce style={sdStyles.backBtn} onPress={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)/home'))}><Text style={{ color: Colors.white, fontSize: 20 }}>←</Text></ScaleBounce>
@@ -291,7 +292,7 @@ export function ScholarshipDetailScreen() {
         </View>
       </ScrollView>
 
-      <View style={sdStyles.bottomBar}>
+      <View style={[sdStyles.bottomBar, { paddingBottom: Math.max(insets.bottom, Spacing.lg) }]}>
         <Button title="View Packages" variant="outline" onPress={() => router.push({ pathname: '/packages', params: { scholarshipId: scholarship.id } })} style={{ flex: 1 }} fullWidth={false} />
         <Button title="Apply with Eagle Pathway" variant="primary" onPress={() => router.push({ pathname: '/packages', params: { scholarshipId: scholarship.id } })} style={{ flex: 1 }} fullWidth={false} />
       </View>

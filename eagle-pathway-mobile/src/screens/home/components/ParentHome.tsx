@@ -35,7 +35,7 @@ export const ParentHome: React.FC<ParentHomeProps> = ({
 }) => {
   if (loading) {
     return (
-      <SafeAreaView style={CommonStyles.screenBg} edges={['top']}>
+      <SafeAreaView style={CommonStyles.screenBg} edges={['top', 'bottom']}>
         <ScrollView>
           <View style={styles.hero}>
             <View style={styles.heroTop}>
@@ -89,7 +89,7 @@ export const ParentHome: React.FC<ParentHomeProps> = ({
   const hasNoChildren = children.length === 0;
 
   return (
-    <SafeAreaView style={CommonStyles.screenBg} edges={['top']}>
+    <SafeAreaView style={CommonStyles.screenBg} edges={['top', 'bottom']}>
       <ScrollView refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.white} />}>
         <View style={styles.hero}>
           <View style={styles.heroTop}>

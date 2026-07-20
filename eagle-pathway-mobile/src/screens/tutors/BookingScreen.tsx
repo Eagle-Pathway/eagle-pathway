@@ -3,7 +3,7 @@ import {
   View, Text, TouchableOpacity,
   StyleSheet, Alert, TextInput,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { format, addDays, startOfMonth, getDaysInMonth, getDay } from 'date-fns';
 import { Colors, Typography, Spacing, Radius, CommonStyles } from '@/utils/theme';
@@ -91,10 +91,11 @@ export default function BookingScreen() {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
+  const insets = useSafeAreaInsets();
   const initials = tutor?.user?.full_name?.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() || 'T';
 
   return (
-    <SafeAreaView style={[CommonStyles.flex1, { backgroundColor: Colors.bg }]} edges={['top']}>
+    <SafeAreaView style={[CommonStyles.flex1, { backgroundColor: Colors.bg }]} edges={['top', 'bottom']}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity style={styles.backBtn} onPress={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)/home'))} activeOpacity={0.8}>
@@ -254,7 +255,7 @@ export default function BookingScreen() {
         )}
       </KeyboardAwareScreen>
 
-      <View style={styles.bottomBar}>
+      <View style={[styles.bottomBar, { paddingBottom: Math.max(insets.bottom, Spacing.lg) }]}>
         <Button
           title={`Confirm Booking · ETB ${total}`}
           onPress={handleConfirm}

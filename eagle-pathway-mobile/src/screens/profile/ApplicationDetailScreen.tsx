@@ -44,7 +44,7 @@ export function ApplicationDetailScreen() {
   if (loading) return <LoadingScreen />;
   if (!app) {
     return (
-      <SafeAreaView style={CommonStyles.screenBg} edges={['top']}>
+      <SafeAreaView style={CommonStyles.screenBg} edges={['top', 'bottom']}>
         <View style={profStyles.header}>
           <TouchableOpacity onPress={() => router.back()} style={profStyles.backBtn}>
             <Text style={profStyles.backText}>←</Text>
@@ -60,7 +60,7 @@ export function ApplicationDetailScreen() {
   const job = app.job_post;
 
   return (
-    <SafeAreaView style={CommonStyles.screenBg} edges={['top']}>
+    <SafeAreaView style={CommonStyles.screenBg} edges={['top', 'bottom']}>
       <View style={profStyles.header}>
         <TouchableOpacity onPress={() => router.back()} style={profStyles.backBtn}>
           <Text style={profStyles.backText}>←</Text>

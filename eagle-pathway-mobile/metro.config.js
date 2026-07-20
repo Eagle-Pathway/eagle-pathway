@@ -15,8 +15,8 @@ config.resolver.nodeModulesPaths = [
   path.resolve(workspaceRoot, 'node_modules'),
 ];
 
-// 3. Force Metro to resolve the shared package correctly
-// config.resolver.disableHierarchicalLookup = true; // Optional, use if still failing
+// 3. Allow Metro to walk up to find node_modules for package deps
+config.resolver.disableHierarchicalLookup = false;
 
 // Force Metro to ignore package.json "exports" (which selects ESM `.mjs` on web)
 config.resolver.unstable_enablePackageExports = false;
