@@ -46,7 +46,8 @@
         {
           "color": "#1E4D9B"
         }
-      ]
+      ],
+      "./plugins/with-cmake-args"
     ],
     "scheme": "eaglepathway",
     "extra": {
