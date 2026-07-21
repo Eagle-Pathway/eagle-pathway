@@ -23,13 +23,15 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
   const { user, setUser, setSession, isLoading, setLoading } = useAuthStore();
 
   useEffect(() => {
-    const promoteOrReject = async (session: NonNullable<Awaited<ReturnType<typeof supabase.auth.getSession>>['data']['session']>) => {
+    const promoteOrReject = async (session: NonNullable<Awaited<ReturnType<typeof supabase.auth.getSession>>['data']['session']>): Promise<boolean> => {
       if (await isCurrentUserAdmin()) {
         setSession(session);
         setUser({ id: session.user.id, email: session.user.email, role: 'admin' });
+        return true;
       } else {
         await supabase.auth.signOut();
         if (pathname !== '/login') router.push('/login');
+        return false;
       }
     };
 
@@ -42,11 +44,14 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
 
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
-        await promoteOrReject(session);
+        if (await promoteOrReject(session)) {
+          setLoading(false);
+        }
       } else if (pathname !== '/login') {
         router.push('/login');
+      } else {
+        setLoading(false);
       }
-      setLoading(false);
     };
 
     checkAuth();
