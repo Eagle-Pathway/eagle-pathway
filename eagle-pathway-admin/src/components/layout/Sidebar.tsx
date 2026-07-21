@@ -1,4 +1,5 @@
 'use client';
+import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuthStore } from '@/store/useAuthStore';
@@ -96,14 +97,23 @@ export default function Sidebar() {
       </button>
 
       <div className={`h-20 flex items-center ${isCollapsed ? 'justify-center px-0' : 'px-6'} border-b border-gray-100 overflow-hidden`}>
-        <div className="h-10 w-10 bg-brand-blue rounded-xl flex items-center justify-center flex-shrink-0 shadow-md shadow-brand-blue/20">
-          <span className="text-white text-xl">🦅</span>
-        </div>
-        {!isCollapsed && (
-          <div className="ml-3 animate-in fade-in duration-300">
-            <h1 className="text-lg font-bold text-gray-900 leading-tight">Admin</h1>
-            <p className="text-xs text-gray-500">Eagle Pathway</p>
-          </div>
+        {isCollapsed ? (
+          <Image
+            src="/icon.png"
+            alt="Eagle Pathway"
+            width={40}
+            height={40}
+            className="h-10 w-10 flex-shrink-0 rounded-xl shadow-md shadow-brand-blue/20"
+          />
+        ) : (
+          <Image
+            src="/logo.png"
+            alt="Eagle Pathway Admin"
+            width={180}
+            height={48}
+            className="h-12 w-auto flex-shrink-0 animate-in fade-in duration-300"
+            priority
+          />
         )}
       </div>
 
