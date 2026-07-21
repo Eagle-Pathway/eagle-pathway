@@ -1,4 +1,5 @@
 'use client';
+import Image from 'next/image';
 import { useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/store/useAuthStore';
@@ -74,9 +75,14 @@ export default function LoginPage() {
 
       <div className="w-full max-w-md p-8 sm:p-10 space-y-8 bg-white/70 backdrop-blur-2xl rounded-3xl shadow-2xl border border-white/50 relative z-10 m-4">
         <div className="text-center">
-          <div className="mx-auto h-20 w-20 bg-gradient-to-br from-brand-blue to-blue-800 rounded-2xl flex items-center justify-center shadow-xl mb-6 shadow-brand-blue/30 transform transition-transform hover:scale-105">
-            <span className="text-white text-4xl font-bold">🦅</span>
-          </div>
+          <Image
+            src="/logo.png"
+            alt="Eagle Pathway"
+            width={280}
+            height={80}
+            className="mx-auto h-20 w-auto mb-6 transform transition-transform hover:scale-105"
+            priority
+          />
           <h2 className="text-3xl font-bold text-gray-900 tracking-tight">Admin Portal</h2>
           <p className="mt-2 text-sm text-gray-500 font-medium">Eagle Pathway Management</p>
         </div>
