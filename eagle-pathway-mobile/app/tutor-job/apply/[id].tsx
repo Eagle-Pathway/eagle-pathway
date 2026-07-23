@@ -8,6 +8,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, router } from 'expo-router';
 import * as DocumentPicker from 'expo-document-picker';
 import * as ImagePicker from 'expo-image-picker';
+import * as FileSystem from 'expo-file-system/legacy';
+import { decode } from 'base64-arraybuffer';
 import { Colors, Typography, Spacing, Radius, CommonStyles } from '../../../src/utils/theme';
 import { supabase } from '../../../src/services/supabase';
 import { useAuthStore } from '../../../src/store/authStore';
@@ -218,15 +220,15 @@ export default function TutorJobApplyScreen() {
 
       setterFn(prev => ({ ...prev, uploading: true, name }));
 
-      // Fetch the file as a blob
-      const response = await fetch(uri);
-      const blob = await response.blob();
+      // Read file as base64 (works with content:// URIs, unlike fetch + blob)
+      const base64 = await FileSystem.readAsStringAsync(uri, { encoding: FileSystem.EncodingType.Base64 });
+      const fileBytes = decode(base64);
 
       const storagePath = `${user.id}/${docType}_${Date.now()}_${name}`;
 
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('tutor-documents')
-        .upload(storagePath, blob, { contentType: mimeType, upsert: true });
+        .upload(storagePath, fileBytes, { contentType: mimeType, upsert: true });
 
       if (uploadError) throw uploadError;
 

@@ -1,6 +1,8 @@
 import { supabase } from './supabase';
 import { User, UserRole } from '../types';
 import * as Linking from 'expo-linking';
+import * as FileSystem from 'expo-file-system/legacy';
+import { decode } from 'base64-arraybuffer';
 
 export interface SignupAttribution {
   referral_code?: string;
@@ -180,13 +182,13 @@ export const authService = {
   },
 
   async uploadAvatar(userId: string, fileUri: string, fileName: string): Promise<string> {
-    const response = await fetch(fileUri);
-    const blob = await response.blob();
     const filePath = `${userId}/avatar_${Date.now()}_${fileName}`;
+    const base64 = await FileSystem.readAsStringAsync(fileUri, { encoding: FileSystem.EncodingType.Base64 });
+    const fileBytes = decode(base64);
 
     const { error: uploadError } = await supabase.storage
       .from('avatars')
-      .upload(filePath, blob, {
+      .upload(filePath, fileBytes, {
         contentType: 'image/jpeg',
         upsert: true,
       });
