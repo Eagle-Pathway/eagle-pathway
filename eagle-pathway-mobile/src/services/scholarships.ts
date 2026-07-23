@@ -1,6 +1,8 @@
 import { supabase } from './supabase';
 import { Scholarship, Application, PackageTier, Document, DocumentType, User } from '../types';
 import * as DocumentPicker from 'expo-document-picker';
+import * as FileSystem from 'expo-file-system/legacy';
+import { decode } from 'base64-arraybuffer';
 
 const SIGNED_URL_TTL_SECONDS = 60 * 60;
 const SOP_AI_API_URL = process.env.EXPO_PUBLIC_EAGLE_AI_API_URL;
@@ -190,17 +192,17 @@ export const scholarshipsService = {
     fileUri: string;
     fileName: string;
   }): Promise<Document> {
-    // Get blob from file URI
-    const response = await fetch(params.fileUri);
-    const blob = await response.blob();
-
     const filePath = `${params.userId}/${params.documentType}/${Date.now()}_${params.fileName}`;
     const contentType = params.fileName.endsWith('.pdf') ? 'application/pdf' : 'image/jpeg';
+
+    // Read file as base64 (works with content:// URIs, unlike fetch + blob)
+    const base64 = await FileSystem.readAsStringAsync(params.fileUri, { encoding: FileSystem.EncodingType.Base64 });
+    const fileBytes = decode(base64);
 
     // Upload to Supabase Storage
     const { error: uploadError } = await supabase.storage
       .from('documents')
-      .upload(filePath, blob, {
+      .upload(filePath, fileBytes, {
         contentType,
         upsert: false,
       });
@@ -221,7 +223,7 @@ export const scholarshipsService = {
         file_name: params.fileName,
         file_path: filePath,
         file_url: signedData.signedUrl,
-        file_size: blob.size || 0,
+        file_size: Math.round(base64.length * 0.75),
         status: 'pending',
       })
       .select()
