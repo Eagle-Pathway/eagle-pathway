@@ -81,7 +81,7 @@ export function TrackerScreen({ hideHeader = false }: { hideHeader?: boolean }) 
 
   if (selectedApp) {
     return (
-      <SafeAreaView style={CommonStyles.screenBg} edges={['top']}>
+      <SafeAreaView style={CommonStyles.screenBg} edges={['top', 'bottom']}>
         <View style={trackerStyles.detailHeader}>
           <ScaleBounce style={trackerStyles.backBtn} onPress={() => setSelectedApp(null)}>
             <Text style={{ fontSize: 20 }}>←</Text>
@@ -180,7 +180,7 @@ export function TrackerScreen({ hideHeader = false }: { hideHeader?: boolean }) 
   }
 
   return (
-    <SafeAreaView style={CommonStyles.screenBg} edges={[]}>
+    <SafeAreaView style={CommonStyles.screenBg} edges={['top', 'bottom']}>
       <View style={trackerStyles.hero}>
         {!hideHeader && (
           <View style={trackerStyles.heroHeader}>

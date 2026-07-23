@@ -450,7 +450,7 @@ export default function ServiceRequestScreen({
 
   if (!user) {
     return (
-      <SafeAreaView style={CommonStyles.screenBg} edges={[]}>
+      <SafeAreaView style={CommonStyles.screenBg} edges={['top', 'bottom']}>
         <View style={[CommonStyles.flex1, CommonStyles.center]}>
           <Text style={{ color: Colors.textSecondary }}>Please log in to use this feature.</Text>
         </View>
@@ -459,7 +459,7 @@ export default function ServiceRequestScreen({
   }
 
   return (
-    <SafeAreaView style={CommonStyles.screenBg} edges={[]}>
+    <SafeAreaView style={CommonStyles.screenBg} edges={['top', 'bottom']}>
       {!hideHeader && (
         <View style={styles.header}>
           <TouchableOpacity onPress={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)/home'))} style={styles.backBtn}>

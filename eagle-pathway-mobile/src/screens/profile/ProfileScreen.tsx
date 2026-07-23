@@ -118,7 +118,7 @@ export function ProfileScreen() {
   ];
 
   return (
-    <SafeAreaView style={CommonStyles.screenBg} edges={['top']}>
+    <SafeAreaView style={CommonStyles.screenBg} edges={['top', 'bottom']}>
       <View style={profStyles.hero}>
         <TouchableOpacity onPress={handlePickAvatar} disabled={uploading} activeOpacity={0.8}>
           <Avatar 

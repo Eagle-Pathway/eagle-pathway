@@ -73,7 +73,7 @@ export function MockInterviewScreen() {
   const avg = scores.length ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : 0;
 
   return (
-    <SafeAreaView style={CommonStyles.screenBg} edges={['top']}>
+    <SafeAreaView style={CommonStyles.screenBg} edges={['top', 'bottom']}>
       <View style={s.header}>
         <TouchableOpacity style={s.backBtn} onPress={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)/home'))} activeOpacity={0.8}>
           <Text style={{ fontSize: 20, color: Colors.text }}>←</Text>

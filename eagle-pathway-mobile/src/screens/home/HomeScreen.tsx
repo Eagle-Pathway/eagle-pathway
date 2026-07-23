@@ -132,7 +132,7 @@ export default function HomeScreen() {
 
   if (!user) {
     return (
-      <SafeAreaView style={CommonStyles.screenBg} edges={['top']}>
+      <SafeAreaView style={CommonStyles.screenBg} edges={['top', 'bottom']}>
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
           <ActivityIndicator size="large" color={Colors.white} />
         </View>

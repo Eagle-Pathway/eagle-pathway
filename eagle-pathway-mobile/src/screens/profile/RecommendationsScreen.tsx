@@ -101,7 +101,7 @@ export function RecommendationsScreen() {
   };
 
   return (
-    <SafeAreaView style={CommonStyles.screenBg} edges={['top']}>
+    <SafeAreaView style={CommonStyles.screenBg} edges={['top', 'bottom']}>
       <View style={s.header}>
         <TouchableOpacity style={s.backBtn} onPress={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)/home'))} activeOpacity={0.8}>
           <Text style={{ fontSize: 20, color: Colors.text }}>←</Text>

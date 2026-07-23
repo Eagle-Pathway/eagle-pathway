@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Colors, Typography, Spacing, Radius, CommonStyles } from '@/utils/theme';
 import { Button, LoadingScreen } from '@/components/common';
@@ -47,7 +47,7 @@ export function TutorJobDetailScreen() {
   if (loading) return <LoadingScreen />;
   if (!selectedJob) {
     return (
-      <SafeAreaView style={CommonStyles.screenBg} edges={['top']}>
+      <SafeAreaView style={CommonStyles.screenBg} edges={['top', 'bottom']}>
         <View style={s.header}>
           <TouchableOpacity onPress={() => router.back()} style={s.backBtn}>
             <Text style={s.backText}>←</Text>
@@ -62,12 +62,13 @@ export function TutorJobDetailScreen() {
     );
   }
 
+  const insets = useSafeAreaInsets();
   const job = selectedJob;
   const isApproved = tutorApplication?.status === 'approved';
   const showApply = !hasApplied && job.status === 'open';
 
   return (
-    <SafeAreaView style={CommonStyles.screenBg} edges={['top']}>
+    <SafeAreaView style={CommonStyles.screenBg} edges={['top', 'bottom']}>
       <View style={s.header}>
         <TouchableOpacity onPress={() => router.back()} style={s.backBtn}>
           <Text style={s.backText}>←</Text>
@@ -106,7 +107,7 @@ export function TutorJobDetailScreen() {
       </ScrollView>
 
       {showApply && (
-        <View style={s.bottomBar}>
+        <View style={[s.bottomBar, { paddingBottom: Math.max(insets.bottom, Spacing.lg) }]}>
           {isApproved ? (
             <Button
               title="Apply for This Job"

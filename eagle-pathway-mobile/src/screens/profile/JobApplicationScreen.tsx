@@ -3,7 +3,7 @@ import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
   TextInput, Alert, ActivityIndicator, Linking,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Colors, Typography, Spacing, Radius, CommonStyles } from '@/utils/theme';
 import { Button, ProgressBar, Card } from '@/components/common';
@@ -39,6 +39,7 @@ export function JobApplicationScreen() {
 
   const [profileIncomplete, setProfileIncomplete] = useState(false);
   const [showProfileGate, setShowProfileGate] = useState(false);
+  const insets = useSafeAreaInsets();
 
   useEffect(() => {
     if (user) {
@@ -189,10 +190,10 @@ export function JobApplicationScreen() {
     </View>
   );
 
-  if (showProfileGate) return <SafeAreaView style={CommonStyles.screenBg} edges={['top']}>{renderProfileGate()}</SafeAreaView>;
+  if (showProfileGate) return <SafeAreaView style={CommonStyles.screenBg} edges={['top', 'bottom']}>{renderProfileGate()}</SafeAreaView>;
 
   return (
-    <SafeAreaView style={CommonStyles.screenBg} edges={['top']}>
+    <SafeAreaView style={CommonStyles.screenBg} edges={['top', 'bottom']}>
       <View style={profStyles.header}>
         <TouchableOpacity onPress={() => router.back()} style={profStyles.backBtn}>
           <Text style={profStyles.backText}>←</Text>
@@ -298,7 +299,7 @@ export function JobApplicationScreen() {
         )}
       </ScrollView>
 
-      <View style={profStyles.bottomBar}>
+      <View style={[profStyles.bottomBar, { paddingBottom: Math.max(insets.bottom, Spacing.lg) }]}>
         {step > 1 && (
           <Button title="Back" onPress={() => setStep(step - 1)} variant="outline" style={{ marginRight: Spacing.sm, flex: 1 }} />
         )}

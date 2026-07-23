@@ -63,7 +63,7 @@ export default function TutorEarningsScreen() {
   };
 
   return (
-    <SafeAreaView style={CommonStyles.screenBg} edges={['top']}>
+    <SafeAreaView style={CommonStyles.screenBg} edges={['top', 'bottom']}>
       <View style={styles.hero}>
         <Text style={styles.heading}>Earnings</Text>
         <View style={styles.balanceCard}>

@@ -36,7 +36,7 @@ export function MyApplicationsScreen() {
   }, [user?.id]);
 
   return (
-    <SafeAreaView style={CommonStyles.screenBg} edges={['top']}>
+    <SafeAreaView style={CommonStyles.screenBg} edges={['top', 'bottom']}>
       <View style={profStyles.header}>
         <TouchableOpacity onPress={() => router.back()} style={profStyles.backBtn}>
           <Text style={profStyles.backText}>←</Text>

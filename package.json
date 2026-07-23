@@ -5,5 +5,8 @@
     "eagle-pathway-admin",
     "eagle-pathway-mobile",
     "packages/*"
-  ]
+  ],
+  "dependencies": {
+    "is-arrayish": "^0.3.4"
+  }
 }

@@ -49,7 +49,7 @@ export const TutorHome: React.FC<TutorHomeProps> = ({
 }) => {
   if (loading) {
     return (
-      <SafeAreaView style={CommonStyles.screenBg} edges={['top']}>
+      <SafeAreaView style={CommonStyles.screenBg} edges={['top', 'bottom']}>
         <ScrollView>
           <View style={styles.hero}>
             <View style={styles.heroTop}>
@@ -168,7 +168,7 @@ export const TutorHome: React.FC<TutorHomeProps> = ({
   };
 
   return (
-    <SafeAreaView style={CommonStyles.screenBg} edges={['top']}>
+    <SafeAreaView style={CommonStyles.screenBg} edges={['top', 'bottom']}>
       <ScrollView refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.white} />}>
         <View style={styles.hero}>
           <View style={styles.heroTop}>
