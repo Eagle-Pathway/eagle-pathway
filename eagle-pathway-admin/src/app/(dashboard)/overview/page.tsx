@@ -17,6 +17,30 @@ import {
 } from 'recharts';
 
 const COLORS = ['#1E4D9B', '#C9A84C', '#9333EA'];
+const SOURCE_COLORS = ['#1E4D9B', '#C9A84C', '#059669', '#DC2626', '#7C3AED', '#D97706', '#0891B2'];
+
+function categorizeSource(u: { signup_source?: string | null; referral_code?: string | null; utm_source?: string | null; utm_campaign?: string | null }): string {
+  if (u.referral_code) return 'Referral';
+
+  const source = (u.utm_source || '').toLowerCase().trim();
+  const campaign = (u.utm_campaign || '').toLowerCase().trim();
+  const signup = (u.signup_source || '').toLowerCase().trim();
+  const hasUtm = !!u.utm_source || !!u.utm_campaign;
+
+  const paidIndicators = ['cpc', 'ppc', 'paid', 'sponsored', 'promo', 'ad', 'ads'];
+  if (campaign && paidIndicators.some(p => campaign.includes(p))) return 'Paid Ads';
+
+  const socialSources = ['facebook', 'instagram', 'twitter', 'linkedin', 'tiktok', 'snapchat', 'pinterest'];
+  if (source && socialSources.includes(source)) return 'Social Media';
+
+  if (source === 'organic' || signup === 'organic') return 'Organic Search';
+  if (source === 'email' || campaign.includes('email') || campaign.includes('newsletter')) return 'Email';
+  if (hasUtm) return 'Other Marketing';
+  if (u.signup_source && signup !== 'direct' && signup !== '') {
+    return u.signup_source.charAt(0).toUpperCase() + u.signup_source.slice(1);
+  }
+  return 'Direct / Unknown';
+}
 
 type OpsQueueItem = {
   title: string;
@@ -57,7 +81,9 @@ export default function OverviewPage() {
   
   const [roleData, setRoleData] = useState<{name: string, value: number}[]>([]);
   const [activityData, setActivityData] = useState<{name: string, signups: number, apps: number}[]>([]);
-  const [sourceData, setSourceData] = useState<{ source: string; signups: number }[]>([]);
+  const [sourceData, setSourceData] = useState<{ source: string; signups: number; percentage: number }[]>([]);
+  const [sourceDateRange, setSourceDateRange] = useState<'7d' | '30d' | 'all'>('30d');
+  const [sourceLoading, setSourceLoading] = useState(false);
   const [opsQueue, setOpsQueue] = useState<OpsQueueItem[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -78,12 +104,10 @@ export default function OverviewPage() {
           summaryRes,
           recentUsersRes,
           recentAppsRes,
-          sourceUsersRes,
         ] = await Promise.all([
           supabase.rpc('get_dashboard_summary'),
           supabase.from('users').select('created_at').gte('created_at', isoStart),
           supabase.from('applications').select('created_at').gte('created_at', isoStart),
-          supabase.from('users').select('signup_source, referral_code, utm_source, utm_campaign'),
         ]);
 
         if (summaryRes.error) throw summaryRes.error;
@@ -125,23 +149,6 @@ export default function OverviewPage() {
           signups: signupsByDate[d.dateStr],
           apps: appsByDate[d.dateStr],
         })));
-
-        const sourceCounts: Record<string, number> = {};
-        (sourceUsersRes.data || []).forEach((u: any) => {
-          const source =
-            u.referral_code ||
-            u.utm_campaign ||
-            u.signup_source ||
-            u.utm_source ||
-            'direct / unknown';
-          sourceCounts[source] = (sourceCounts[source] || 0) + 1;
-        });
-        setSourceData(
-          Object.entries(sourceCounts)
-            .map(([source, signups]) => ({ source, signups }))
-            .sort((a, b) => b.signups - a.signups)
-            .slice(0, 6),
-        );
 
         setOpsQueue([
           {
@@ -190,6 +197,43 @@ export default function OverviewPage() {
     fetchStats();
   }, []);
 
+  useEffect(() => {
+    async function fetchSourceData() {
+      setSourceLoading(true);
+      try {
+        let query = supabase
+          .from('users')
+          .select('signup_source, referral_code, utm_source, utm_campaign');
+        if (sourceDateRange !== 'all') {
+          const d = new Date();
+          d.setDate(d.getDate() - (sourceDateRange === '7d' ? 6 : 29));
+          d.setHours(0, 0, 0, 0);
+          query = query.gte('created_at', d.toISOString());
+        }
+        const { data, error } = await query;
+        if (error) throw error;
+
+        const sourceCounts: Record<string, number> = {};
+        (data || []).forEach((u: any) => {
+          const category = categorizeSource(u);
+          sourceCounts[category] = (sourceCounts[category] || 0) + 1;
+        });
+
+        const total = (data || []).length || 1;
+        setSourceData(
+          Object.entries(sourceCounts)
+            .map(([source, count]) => ({ source, signups: count, percentage: Math.round((count / total) * 100) }))
+            .sort((a, b) => b.signups - a.signups),
+        );
+      } catch (err: any) {
+        console.error('Error fetching source data:', err?.message || err);
+      } finally {
+        setSourceLoading(false);
+      }
+    }
+    fetchSourceData();
+  }, [sourceDateRange]);
+
   const stats = [
     { title: 'Total Users', value: counts.users, icon: Users, color: 'text-brand-blue', bg: 'bg-brand-blue/10' },
     { title: 'Applications', value: counts.applicationsPending, icon: Briefcase, color: 'text-brand-gold', bg: 'bg-brand-gold/10' },
@@ -232,20 +276,73 @@ export default function OverviewPage() {
             <h2 className="text-lg font-bold text-gray-900">Signup Sources</h2>
             <p className="text-sm text-gray-500">First-touch referral and UTM attribution.</p>
           </div>
+          <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-0.5">
+            {(['7d', '30d', 'all'] as const).map((range) => (
+              <button
+                key={range}
+                onClick={() => setSourceDateRange(range)}
+                className={`px-3 py-1 text-xs font-semibold rounded-md transition-colors ${
+                  sourceDateRange === range
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                {range === 'all' ? 'All' : range}
+              </button>
+            ))}
+          </div>
         </div>
-        {loading ? (
+        {sourceLoading ? (
           <div className="py-8 flex justify-center"><Loader2 className="h-6 w-6 animate-spin text-gray-300" /></div>
         ) : sourceData.length === 0 ? (
           <p className="text-sm text-gray-500">No attribution data yet.</p>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-            {sourceData.map((item) => (
-              <div key={item.source} className="rounded-xl border border-gray-100 bg-gray-50 p-4">
-                <p className="text-sm font-semibold text-gray-900 truncate">{item.source}</p>
-                <p className="mt-1 text-2xl font-bold text-brand-blue">{item.signups}</p>
-                <p className="text-xs text-gray-500">signups</p>
-              </div>
-            ))}
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
+            <div className="md:col-span-2 h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={sourceData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={55}
+                    outerRadius={80}
+                    paddingAngle={3}
+                    dataKey="signups"
+                  >
+                    {sourceData.map((entry, index) => (
+                      <Cell key={entry.source} fill={SOURCE_COLORS[index % SOURCE_COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <RechartsTooltip
+                    formatter={(value: number, name: string) => [`${value} signups`, name]}
+                    contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="md:col-span-3 space-y-3 flex flex-col justify-center">
+              {sourceData.map((item, index) => (
+                <div key={item.source} className="flex items-center gap-3">
+                  <div
+                    className="w-3 h-3 rounded-full flex-shrink-0"
+                    style={{ backgroundColor: SOURCE_COLORS[index % SOURCE_COLORS.length] }}
+                  />
+                  <span className="text-sm text-gray-700 flex-1 truncate">{item.source}</span>
+                  <span className="text-sm font-bold text-gray-900">{item.signups}</span>
+                  <span className="text-xs text-gray-500 w-10 text-right">{item.percentage}%</span>
+                  <div className="w-20 h-2 bg-gray-100 rounded-full overflow-hidden flex-shrink-0 hidden sm:block">
+                    <div
+                      className="h-full rounded-full"
+                      style={{
+                        width: `${item.percentage}%`,
+                        backgroundColor: SOURCE_COLORS[index % SOURCE_COLORS.length],
+                      }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         )}
       </div>
