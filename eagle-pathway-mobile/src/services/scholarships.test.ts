@@ -48,7 +48,7 @@ vi.mock('expo-file-system/legacy', () => ({
 }));
 
 vi.mock('base64-arraybuffer', () => ({
-  decode: vi.fn().mockReturnValue(new Uint8Array(10)),
+  decode: vi.fn().mockReturnValue(new ArrayBuffer(10)),
 }));
 
 vi.mock('../types', () => ({
@@ -165,7 +165,7 @@ describe('scholarshipsService', () => {
 
     function stubFileRead(base64Content = 'AAAA') {
       vi.mocked(readAsStringAsync).mockResolvedValue(base64Content);
-      vi.mocked(decode).mockReturnValue(new Uint8Array(Math.round(base64Content.length * 0.75)));
+      vi.mocked(decode).mockReturnValue(new ArrayBuffer(Math.round(base64Content.length * 0.75)));
     }
 
     it('uploads the file, signs the URL, and persists a pending record', async () => {
