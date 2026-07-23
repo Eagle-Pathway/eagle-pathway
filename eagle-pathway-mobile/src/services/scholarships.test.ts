@@ -41,6 +41,16 @@ vi.mock('./supabase', () => ({
 // transformer cannot parse. The service only uses its types here.
 vi.mock('expo-document-picker', () => ({}));
 
+// expo-file-system/legacy also pulls in react-native.
+vi.mock('expo-file-system/legacy', () => ({
+  readAsStringAsync: vi.fn(),
+  EncodingType: { Base64: 'base64' },
+}));
+
+vi.mock('base64-arraybuffer', () => ({
+  decode: vi.fn().mockReturnValue(new Uint8Array(10)),
+}));
+
 vi.mock('../types', () => ({
   Scholarship: {},
   Application: {},
@@ -49,6 +59,8 @@ vi.mock('../types', () => ({
 }));
 
 import { scholarshipsService } from './scholarships';
+import { readAsStringAsync } from 'expo-file-system/legacy';
+import { decode } from 'base64-arraybuffer';
 
 describe('scholarshipsService', () => {
   describe('getScholarships', () => {
@@ -146,17 +158,18 @@ describe('scholarshipsService', () => {
   });
 
   describe('uploadDocument', () => {
-    afterEach(() => vi.unstubAllGlobals());
+    afterEach(() => {
+      vi.mocked(readAsStringAsync).mockReset();
+      vi.mocked(decode).mockReset();
+    });
 
-    function stubFileFetch(size = 2048) {
-      vi.stubGlobal(
-        'fetch',
-        vi.fn().mockResolvedValue({ blob: () => Promise.resolve({ size }) }),
-      );
+    function stubFileRead(base64Content = 'AAAA') {
+      vi.mocked(readAsStringAsync).mockResolvedValue(base64Content);
+      vi.mocked(decode).mockReturnValue(new Uint8Array(Math.round(base64Content.length * 0.75)));
     }
 
     it('uploads the file, signs the URL, and persists a pending record', async () => {
-      stubFileFetch(4096);
+      stubFileRead();
       const upload = vi.fn().mockResolvedValue({ error: null });
       const createSignedUrl = vi
         .fn()
@@ -190,13 +203,13 @@ describe('scholarshipsService', () => {
           user_id: 'user-1',
           status: 'pending',
           file_url: 'https://signed/doc.pdf',
-          file_size: 4096,
+          file_size: 3,
         }),
       );
     });
 
     it('throws and does not persist a record when the storage upload fails', async () => {
-      stubFileFetch();
+      stubFileRead();
       const upload = vi.fn().mockResolvedValue({ error: { message: 'storage full' } });
       const createSignedUrl = vi.fn();
       (mockSupabase.storage.from as ReturnType<typeof vi.fn>).mockReturnValue({ upload, createSignedUrl });
@@ -216,7 +229,7 @@ describe('scholarshipsService', () => {
     });
 
     it('throws when the signed URL cannot be created', async () => {
-      stubFileFetch();
+      stubFileRead();
       const upload = vi.fn().mockResolvedValue({ error: null });
       const createSignedUrl = vi
         .fn()
