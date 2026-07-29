@@ -4,6 +4,7 @@ import { RealtimeChannel } from '@supabase/supabase-js';
 import { useScholarshipStore } from './scholarshipStore';
 import { useTaskStore } from './taskStore';
 import { useNotificationStore } from './notificationStore';
+import { useAuthStore } from './authStore';
 
 interface RealtimeState {
   activeSubscription: RealtimeChannel | null;
@@ -34,6 +35,11 @@ export const useRealtimeStore = create<RealtimeState>((set, get) => ({
         'postgres_changes',
         { event: '*', schema: 'public', table: 'notifications', filter: `user_id=eq.${userId}` },
         () => useNotificationStore.getState().loadNotifications(userId)
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'users', filter: `id=eq.${userId}` },
+        () => useAuthStore.getState().loadProfile()
       )
       .subscribe();
 

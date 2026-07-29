@@ -140,6 +140,18 @@ export function TrackerScreen({ hideHeader = false }: { hideHeader?: boolean }) 
             </View>
           )}
 
+          {selectedApp.consultant_feedback && (
+            <View style={[trackerStyles.notesBox, { backgroundColor: Colors.goldLight, borderColor: Colors.gold }]}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                <View style={{ width: 32, height: 32, backgroundColor: Colors.white, borderRadius: 8, alignItems: 'center', justifyContent: 'center' }}>
+                  <Ionicons name="chatbubble-ellipses-outline" size={16} color={Colors.goldDark} />
+                </View>
+                <Text style={[trackerStyles.notesTitle, { color: Colors.goldDark }]}>Consultant Feedback</Text>
+              </View>
+              <Text style={[trackerStyles.notesText, { color: Colors.text }]}>{selectedApp.consultant_feedback}</Text>
+            </View>
+          )}
+
           {(['documents', 'sop', 'submitted'].includes(selectedApp.status)) && (
             <View style={{ padding: Spacing.xl, paddingBottom: 0 }}>
               <View style={trackerStyles.aiActionBox}>
