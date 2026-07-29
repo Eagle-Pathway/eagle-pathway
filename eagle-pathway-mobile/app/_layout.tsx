@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { Stack, router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { Alert, AppState } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import * as SplashScreen from 'expo-splash-screen';
 import { supabase } from '../src/services/supabase';
@@ -21,12 +22,26 @@ SplashScreen.preventAutoHideAsync();
 // Configure structured logging + the Supabase error sink before anything renders.
 initErrorLogging();
 
+import { Text, TextInput } from 'react-native';
+
+// Disable global font scaling to prevent UI breakage when users have huge system fonts
+if ((Text as any).defaultProps == null) (Text as any).defaultProps = {};
+(Text as any).defaultProps.allowFontScaling = false;
+if ((TextInput as any).defaultProps == null) (TextInput as any).defaultProps = {};
+(TextInput as any).defaultProps.allowFontScaling = false;
+
 export default function RootLayout() {
   const { setSession, loadProfile, setUser, setLoading } = useAuthStore();
   const { subscribeToUpdates, unsubscribeFromUpdates } = useRealtimeStore();
   const { loadSavedScholarships } = useScholarshipStore();
 
   useEffect(() => {
+    // Manage Supabase AppState for background token refreshing
+    const appStateListener = AppState.addEventListener('change', (state) => {
+      if (state === 'active') supabase.auth.startAutoRefresh();
+      else supabase.auth.stopAutoRefresh();
+    });
+
     // Load local offline caches
     loadSavedScholarships();
     // Listen for auth changes
@@ -63,9 +78,21 @@ export default function RootLayout() {
         loadProfile()
           .then(() => {
             subscribeToUpdates(session.user.id);
-            notificationsService.requestPermission().then(granted => {
-              if (granted) notificationsService.registerPushToken(session.user.id);
-            });
+            Alert.alert(
+              'Stay Updated',
+              'Eagle Pathway needs notifications to send you session reminders and important scholarship alerts.',
+              [
+                { text: 'Not Now', style: 'cancel' },
+                {
+                  text: 'Allow',
+                  onPress: () => {
+                    notificationsService.requestPermission().then(granted => {
+                      if (granted) notificationsService.registerPushToken(session.user.id);
+                    });
+                  }
+                }
+              ]
+            );
           })
           .catch(e => {
             console.error('Profile load error:', e);
@@ -98,6 +125,7 @@ export default function RootLayout() {
     });
 
     return () => {
+      appStateListener.remove();
       subscription.unsubscribe();
       unsubscribeFromUpdates();
       notificationListener.remove();

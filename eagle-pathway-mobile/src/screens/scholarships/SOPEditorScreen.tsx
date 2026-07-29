@@ -66,7 +66,7 @@ export default function SOPEditorScreen() {
   return (
     <SafeAreaView style={CommonStyles.screenBg} edges={['top', 'bottom']}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)/home'))} style={styles.backBtn}>
+        <TouchableOpacity onPress={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)/home'))} style={styles.backBtn} accessibilityRole="button" accessibilityLabel="Go back">
           <Text style={{ fontSize: 20 }}>←</Text>
         </TouchableOpacity>
         <View style={{ flex: 1 }}>
@@ -123,7 +123,7 @@ export default function SOPEditorScreen() {
       </KeyboardAwareScreen>
 
       {/* AI Report Modal */}
-      <Modal visible={showAiModal} transparent animationType="slide">
+      <Modal visible={showAiModal} transparent animationType="slide" onRequestClose={() => setShowAiModal(false)}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
