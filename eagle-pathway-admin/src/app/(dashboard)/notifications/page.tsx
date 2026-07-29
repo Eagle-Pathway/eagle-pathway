@@ -27,34 +27,26 @@ export default function NotificationsPage() {
     setSuccess('');
 
     try {
-      // 1. Fetch target audience users
-      let query = supabase.from('users').select('id');
-      if (formData.audience !== 'all') {
-        query = query.eq('role', formData.audience);
+      const session = await supabase.auth.getSession();
+      const token = session.data.session?.access_token;
+      if (!token) throw new Error('Authentication required');
+
+      const response = await fetch('/api/broadcast', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify(formData)
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to send broadcast');
       }
-      
-      const { data: targetUsers, error: userError } = await query;
-      
-      if (userError) throw userError;
-      if (!targetUsers || targetUsers.length === 0) {
-        throw new Error('No users found for this audience.');
-      }
 
-      // 2. Prepare notifications array
-      const notifications = targetUsers.map(u => ({
-        user_id: u.id,
-        title: formData.title,
-        body: formData.body,
-        type: formData.type,
-        is_read: false
-      }));
-
-      // 3. Insert in batches if many users (Supabase allows around 1000 items per insert)
-      const { error: insertError } = await supabase.from('notifications').insert(notifications);
-      
-      if (insertError) throw insertError;
-
-      setSuccess(`Successfully broadcasted to ${targetUsers.length} users! 🎉`);
+      setSuccess(`Successfully broadcasted to ${result.notified_count} users (${result.push_count} push notifications sent)! 🎉`);
       setFormData({ title: '', body: '', audience: 'all', type: 'application_update' });
       
     } catch (err: any) {

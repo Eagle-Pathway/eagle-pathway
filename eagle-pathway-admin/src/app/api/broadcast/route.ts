@@ -1,0 +1,114 @@
+import { NextResponse } from 'next/server';
+import { createClient } from '@supabase/supabase-js';
+import { requireAuthenticatedUser } from '../sop-review/route';
+
+const EXPO_PUSH_API = 'https://exp.host/--/api/v2/push/send';
+
+export async function POST(req: Request) {
+  try {
+    // 1. Authenticate Admin
+    await requireAuthenticatedUser(req);
+    
+    const { title, body, audience, type } = await req.json();
+    if (!title || !body || !audience || !type) {
+      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+    }
+
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    if (!supabaseUrl || !supabaseAnonKey) {
+      return NextResponse.json({ error: 'Supabase configuration missing' }, { status: 500 });
+    }
+
+    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
+
+    // 2. Get target users and their push tokens
+    let query = supabase.from('users').select('id, push_tokens(token)');
+    if (audience !== 'all') {
+      query = query.eq('role', audience);
+    }
+
+    const { data: users, error: userError } = await query;
+    if (userError) {
+      return NextResponse.json({ error: 'Failed to fetch users' }, { status: 500 });
+    }
+    if (!users || users.length === 0) {
+      return NextResponse.json({ error: 'No users found for this audience' }, { status: 404 });
+    }
+
+    // 3. Prepare in-app notifications
+    const inAppNotifs = users.map(u => ({
+      user_id: u.id,
+      title,
+      body,
+      type,
+      is_read: false,
+    }));
+
+    // 4. Insert in-app notifications (in batches if large, but Supabase SDK handles arrays up to ~1000 well. We'll chunk to be safe)
+    const chunkSize = 500;
+    for (let i = 0; i < inAppNotifs.length; i += chunkSize) {
+      const chunk = inAppNotifs.slice(i, i + chunkSize);
+      const { error: insertError } = await supabase.from('notifications').insert(chunk);
+      if (insertError) console.error('Failed to insert in-app notifications:', insertError);
+    }
+
+    // 5. Gather push tokens
+    const tokens: string[] = [];
+    users.forEach(u => {
+      // @ts-ignore (PostgREST returns an array for one-to-many relationships)
+      if (u.push_tokens && Array.isArray(u.push_tokens)) {
+        // @ts-ignore
+        u.push_tokens.forEach(pt => {
+          if (pt.token && (pt.token.startsWith('ExponentPushToken') || pt.token.startsWith('ExpoPushToken'))) {
+            tokens.push(pt.token);
+          }
+        });
+      }
+    });
+
+    // 6. Send Expo push notifications
+    if (tokens.length > 0) {
+      const expoMessages = tokens.map(token => ({
+        to: token,
+        sound: 'default',
+        title,
+        body,
+        data: { url: '/notifications' },
+      }));
+
+      // Expo Push API recommends chunking by 100
+      const expoChunkSize = 100;
+      for (let i = 0; i < expoMessages.length; i += expoChunkSize) {
+        const chunk = expoMessages.slice(i, i + expoChunkSize);
+        try {
+          const pushResponse = await fetch(EXPO_PUSH_API, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(chunk),
+          });
+          const pushResult = await pushResponse.json();
+          if (!pushResponse.ok) {
+            console.error('Expo push API error:', pushResult);
+          }
+        } catch (pushError) {
+          console.error('Failed to send Expo push:', pushError);
+        }
+      }
+    }
+
+    return NextResponse.json({
+      success: true,
+      notified_count: users.length,
+      push_count: tokens.length,
+    });
+  } catch (e: any) {
+    console.error('Broadcast error:', e);
+    return NextResponse.json(
+      { error: e.message || 'Internal server error' },
+      { status: e.message?.includes('Authentication') ? 401 : 500 },
+    );
+  }
+}
