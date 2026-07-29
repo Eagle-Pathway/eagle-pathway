@@ -27,7 +27,7 @@ const renderLinkedText = (text: string) => {
         <Text
           key={index}
           style={{ color: Colors.blue, textDecorationLine: 'underline' }}
-          onPress={() => Linking.openURL(part)}
+          onPress={() => Linking.openURL(part).catch(() => Alert.alert('Error', 'Could not open this link. Please check if you have a supported app installed.'))}
         >
           {part}
         </Text>
@@ -62,16 +62,24 @@ export function ScholarshipDetailScreen() {
   const insets = useSafeAreaInsets();
 
   useEffect(() => {
+    let isMounted = true;
     if (scholarshipId) {
       setLoading(true);
       scholarshipsService.getScholarshipById(scholarshipId)
-        .then(setScholarship)
-        .catch(err => {
-          console.error('Failed to load scholarship:', err);
-          Alert.alert('Error', 'Failed to load scholarship details. Please check your connection.');
+        .then(data => {
+          if (isMounted) setScholarship(data);
         })
-        .finally(() => setLoading(false));
+        .catch(err => {
+          if (isMounted) {
+            console.error('Failed to load scholarship:', err);
+            Alert.alert('Error', 'Failed to load scholarship details. Please check your connection.');
+          }
+        })
+        .finally(() => {
+          if (isMounted) setLoading(false);
+        });
     }
+    return () => { isMounted = false; };
   }, [scholarshipId]);
 
   if (loading) return (
@@ -206,7 +214,7 @@ export function ScholarshipDetailScreen() {
               </View>
               <ScaleBounce 
                 style={sdStyles.linkButton} 
-                onPress={() => Linking.openURL(scholarship.website_url!)}
+                onPress={() => Linking.openURL(scholarship.website_url!).catch(() => Alert.alert('Error', 'Could not open this link. Please check if you have a supported app installed.'))}
               >
                 <Text style={sdStyles.linkButtonText}>🌐 Open Official Link</Text>
               </ScaleBounce>

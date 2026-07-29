@@ -75,14 +75,14 @@ export default function ChatListScreen() {
   return (
     <SafeAreaView style={CommonStyles.screenBg} edges={['top', 'bottom']}>
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backBtn} onPress={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)/home'))} activeOpacity={0.8}>
+        <TouchableOpacity style={styles.backBtn} onPress={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)/home'))} activeOpacity={0.8} accessibilityRole="button" accessibilityLabel="Go back">
           <Text style={{ fontSize: 20, color: Colors.text }}>←</Text>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Messages</Text>
       </View>
 
       {isLoadingConversations && conversations.length === 0 ? (
-        <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingVertical: Spacing.md }}>
+        <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingVertical: Spacing.md, paddingBottom: 100 }}>
           {[1, 2, 3, 4, 5].map(i => (
             <View key={i} style={styles.convCard}>
               <Skeleton width={50} height={50} borderRadius={25} />
@@ -116,6 +116,7 @@ export default function ChatListScreen() {
           refreshControl={
             <RefreshControl refreshing={isLoadingConversations} onRefresh={onRefresh} tintColor={Colors.blue} />
           }
+          initialNumToRender={8} maxToRenderPerBatch={8} windowSize={5} removeClippedSubviews={true}
         />
       )}
     </SafeAreaView>

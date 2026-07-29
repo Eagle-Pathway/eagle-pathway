@@ -5,7 +5,7 @@ import {
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Colors, Typography, Spacing, Radius, CommonStyles } from '@/utils/theme';
-import { Button, LoadingScreen } from '@/components/common';
+import { Button, Skeleton } from '@/components/common';
 import { useTutorJobStore } from '@/store/tutorJobStore';
 import { tutorJobsService } from '@/services/tutorJobs';
 import { useAuthStore } from '@/store/authStore';
@@ -28,28 +28,63 @@ export function TutorJobDetailScreen() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let isMounted = true;
     if (jobId) {
-      loadJobDetail(jobId).finally(() => setLoading(false));
+      loadJobDetail(jobId).finally(() => {
+        if (isMounted) setLoading(false);
+      });
     }
-    return () => clearSelectedJob();
+    return () => {
+      isMounted = false;
+      clearSelectedJob();
+    };
   }, [jobId]);
 
   useEffect(() => {
+    let isMounted = true;
     if (jobId && user) {
-      tutorJobsService.hasApplied(jobId, user.id).then(setHasApplied).catch(console.error);
+      tutorJobsService.hasApplied(jobId, user.id).then(hasApplied => {
+        if (isMounted) setHasApplied(hasApplied);
+      }).catch(console.error);
     }
+    return () => { isMounted = false; };
   }, [jobId, user?.id]);
 
   useEffect(() => {
     if (user) loadTutorApplication(user.id);
   }, [user?.id]);
 
-  if (loading) return <LoadingScreen />;
+  if (loading) return (
+    <SafeAreaView style={CommonStyles.screenBg} edges={['top', 'bottom']}>
+      <View style={s.header}>
+        <View style={s.backBtn}>
+          <Skeleton width={24} height={24} borderRadius={12} />
+        </View>
+        <Skeleton width={120} height={28} borderRadius={6} />
+        <View style={{ width: 40 }} />
+      </View>
+      <View style={{ padding: Spacing.lg }}>
+        <Skeleton width="80%" height={36} borderRadius={8} style={{ marginBottom: 8 }} />
+        <Skeleton width="40%" height={20} borderRadius={4} style={{ marginBottom: Spacing.lg }} />
+        <View style={s.detailCard}>
+          {[1, 2, 3, 4, 5, 6].map((i, index) => (
+            <View key={i} style={[s.detailRow, index === 5 && { borderBottomWidth: 0 }]}>
+              <Skeleton width={24} height={24} borderRadius={12} style={{ marginRight: 8 }} />
+              <Skeleton width={80} height={20} borderRadius={4} />
+              <View style={{ flex: 1, alignItems: 'flex-end' }}>
+                <Skeleton width={100} height={20} borderRadius={4} />
+              </View>
+            </View>
+          ))}
+        </View>
+      </View>
+    </SafeAreaView>
+  );
   if (!selectedJob) {
     return (
       <SafeAreaView style={CommonStyles.screenBg} edges={['top', 'bottom']}>
         <View style={s.header}>
-          <TouchableOpacity onPress={() => router.back()} style={s.backBtn}>
+          <TouchableOpacity onPress={() => router.back()} style={s.backBtn} accessibilityRole="button" accessibilityLabel="Go back">
             <Text style={s.backText}>←</Text>
           </TouchableOpacity>
           <Text style={s.headerTitle}>Job Not Found</Text>
@@ -70,7 +105,7 @@ export function TutorJobDetailScreen() {
   return (
     <SafeAreaView style={CommonStyles.screenBg} edges={['top', 'bottom']}>
       <View style={s.header}>
-        <TouchableOpacity onPress={() => router.back()} style={s.backBtn}>
+        <TouchableOpacity onPress={() => router.back()} style={s.backBtn} accessibilityRole="button" accessibilityLabel="Go back">
           <Text style={s.backText}>←</Text>
         </TouchableOpacity>
         <Text style={s.headerTitle}>Job Details</Text>

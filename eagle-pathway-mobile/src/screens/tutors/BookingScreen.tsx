@@ -33,7 +33,13 @@ export default function BookingScreen() {
   const [currentMonth, setCurrentMonth] = useState(new Date());
 
   useEffect(() => {
-    if (tutorId) tutorsService.getTutorById(tutorId).then(setTutor).catch(console.error);
+    let isMounted = true;
+    if (tutorId) {
+      tutorsService.getTutorById(tutorId).then(data => {
+        if (isMounted) setTutor(data);
+      }).catch(console.error);
+    }
+    return () => { isMounted = false; };
   }, [tutorId]);
 
   const sessionCost = tutor ? Math.round(tutor.hourly_rate * durationHours) : 0;
@@ -98,7 +104,7 @@ export default function BookingScreen() {
     <SafeAreaView style={[CommonStyles.flex1, { backgroundColor: Colors.bg }]} edges={['top', 'bottom']}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backBtn} onPress={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)/home'))} activeOpacity={0.8}>
+        <TouchableOpacity style={styles.backBtn} onPress={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)/home'))} activeOpacity={0.8} accessibilityRole="button" accessibilityLabel="Go back">
           <Text style={styles.backIcon}>←</Text>
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Book a Session</Text>

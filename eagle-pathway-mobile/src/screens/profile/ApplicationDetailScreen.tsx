@@ -6,7 +6,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Colors, Typography, Spacing, Radius, CommonStyles } from '@/utils/theme';
-import { LoadingScreen } from '@/components/common';
+import { Skeleton } from '@/components/common';
 import { tutorJobsService } from '@/services/tutorJobs';
 import type { TutorJobApplication } from '@/types';
 
@@ -41,12 +41,33 @@ export function ApplicationDetailScreen() {
     }
   }, [applicationId]);
 
-  if (loading) return <LoadingScreen />;
+  if (loading) {
+    return (
+      <SafeAreaView style={CommonStyles.screenBg} edges={['top', 'bottom']}>
+        <View style={profStyles.header}>
+          <Skeleton width={40} height={40} style={{ borderRadius: 20 }} />
+          <Skeleton width={200} height={30} style={{ borderRadius: 8 }} />
+          <View style={{ width: 40 }} />
+        </View>
+        <ScrollView contentContainerStyle={{ padding: Spacing.lg, paddingBottom: 100 }}>
+          <Skeleton width="100%" height={80} style={{ borderRadius: Radius.xl, marginBottom: Spacing.lg }} />
+          <View style={profStyles.section}>
+            <Skeleton width={120} height={24} style={{ borderRadius: 4, marginBottom: Spacing.sm }} />
+            <Skeleton width="100%" height={250} style={{ borderRadius: Radius.xl }} />
+          </View>
+          <View style={profStyles.section}>
+            <Skeleton width={140} height={24} style={{ borderRadius: 4, marginBottom: Spacing.sm }} />
+            <Skeleton width="100%" height={200} style={{ borderRadius: Radius.xl }} />
+          </View>
+        </ScrollView>
+      </SafeAreaView>
+    );
+  }
   if (!app) {
     return (
       <SafeAreaView style={CommonStyles.screenBg} edges={['top', 'bottom']}>
         <View style={profStyles.header}>
-          <TouchableOpacity onPress={() => router.back()} style={profStyles.backBtn}>
+          <TouchableOpacity onPress={() => router.back()} style={profStyles.backBtn} accessibilityRole="button" accessibilityLabel="Go back">
             <Text style={profStyles.backText}>←</Text>
           </TouchableOpacity>
           <Text style={profStyles.headerTitle}>Not Found</Text>
@@ -62,7 +83,7 @@ export function ApplicationDetailScreen() {
   return (
     <SafeAreaView style={CommonStyles.screenBg} edges={['top', 'bottom']}>
       <View style={profStyles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={profStyles.backBtn}>
+        <TouchableOpacity onPress={() => router.back()} style={profStyles.backBtn} accessibilityRole="button" accessibilityLabel="Go back">
           <Text style={profStyles.backText}>←</Text>
         </TouchableOpacity>
         <Text style={profStyles.headerTitle}>Application Details</Text>

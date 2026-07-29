@@ -1,13 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import {
   View, Text, ScrollView, TextInput, TouchableOpacity,
-  StyleSheet, FlatList,
+  StyleSheet, FlatList, RefreshControl
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Typography, Spacing, Radius, CommonStyles } from '@/utils/theme';
-import { Pill, EmptyState, ErrorState, Avatar, Dropdown, Skeleton } from '@/components/common';
+import { Pill, EmptyState, ErrorState, Avatar, Dropdown, Skeleton, ScaleBounce } from '@/components/common';
 import { tutorsService } from '@/services/tutors';
 import { Tutor } from '@/types';
 
@@ -91,7 +91,7 @@ export default function TutorsScreen() {
         </View>
 
         {/* Skeletons list */}
-        <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingVertical: Spacing.md }}>
+        <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingVertical: Spacing.md, paddingBottom: 100 }}>
           {[1, 2, 3].map(i => (
             <View key={i} style={styles.tutorCard}>
               <View style={styles.tutorTop}>
@@ -221,6 +221,8 @@ export default function TutorsScreen() {
           renderItem={({ item }) => <TutorCard tutor={item} />}
           contentContainerStyle={{ paddingBottom: 100 }}
           showsVerticalScrollIndicator={false}
+          refreshControl={<RefreshControl refreshing={loading} onRefresh={load} tintColor={Colors.blue} />}
+          initialNumToRender={8} maxToRenderPerBatch={8} windowSize={5} removeClippedSubviews={true}
         />
       )}
     </SafeAreaView>
@@ -233,10 +235,9 @@ function TutorCard({ tutor }: { tutor: Tutor }) {
   const colorIndex = tutor.id.charCodeAt(0) % colors.length;
 
   return (
-    <TouchableOpacity
+    <ScaleBounce
       style={styles.tutorCard}
       onPress={() => router.push({ pathname: '/tutor-profile', params: { tutorId: tutor.id } })}
-      activeOpacity={0.9}
     >
       <View style={styles.tutorTop}>
         <Avatar initials={initials} size={52} borderRadius={15} color={colors[colorIndex]} />
@@ -289,7 +290,7 @@ function TutorCard({ tutor }: { tutor: Tutor }) {
           <Ionicons name="chatbubble-outline" size={16} color={Colors.blue} />
         </TouchableOpacity>
       </View>
-    </TouchableOpacity>
+    </ScaleBounce>
   );
 }
 

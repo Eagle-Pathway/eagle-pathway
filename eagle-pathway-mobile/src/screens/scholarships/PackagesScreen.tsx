@@ -39,12 +39,12 @@ export function PackagesScreen() {
   return (
     <SafeAreaView style={CommonStyles.screenBg} edges={['top', 'bottom']}>
       <View style={pkgStyles.header}>
-        <TouchableOpacity style={pkgStyles.backBtn} onPress={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)/home'))} activeOpacity={0.8}>
+        <TouchableOpacity style={pkgStyles.backBtn} onPress={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)/home'))} activeOpacity={0.8} accessibilityRole="button" accessibilityLabel="Go back">
           <Text style={{ fontSize: 20, color: Colors.text }}>←</Text>
         </TouchableOpacity>
         <Text style={pkgStyles.title}>Select Package</Text>
       </View>
-      <ScrollView contentContainerStyle={{ padding: Spacing.xl, paddingBottom: 60, gap: Spacing.lg }}>
+      <ScrollView contentContainerStyle={{ padding: Spacing.xl, paddingBottom: 120, gap: Spacing.lg }}>
         <Text style={pkgStyles.intro}>Our consultants guide you through every step of your application. Choose the support level that fits your goals.</Text>
         
         <View style={pkgStyles.currencyToggle}>

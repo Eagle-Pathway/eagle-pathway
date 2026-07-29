@@ -195,7 +195,7 @@ export function JobApplicationScreen() {
   return (
     <SafeAreaView style={CommonStyles.screenBg} edges={['top', 'bottom']}>
       <View style={profStyles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={profStyles.backBtn}>
+        <TouchableOpacity onPress={() => router.back()} style={profStyles.backBtn} accessibilityRole="button" accessibilityLabel="Go back">
           <Text style={profStyles.backText}>←</Text>
         </TouchableOpacity>
         <Text style={profStyles.headerTitle}>{jobId ? 'Apply for Job' : 'Tutor Application'}</Text>
@@ -280,7 +280,7 @@ export function JobApplicationScreen() {
               </Text>
             </View>
 
-            <TouchableOpacity onPress={() => Linking.openURL(POLICY_URL)} style={profStyles.policyLink}>
+            <TouchableOpacity onPress={() => Linking.openURL(POLICY_URL).catch(() => Alert.alert('Error', 'Could not open this link. Please check if you have a supported app installed.'))} style={profStyles.policyLink}>
               <Text style={profStyles.policyLinkText}>📄 Read our full policy document →</Text>
             </TouchableOpacity>
 

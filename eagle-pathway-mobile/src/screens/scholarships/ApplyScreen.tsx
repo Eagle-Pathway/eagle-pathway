@@ -144,7 +144,7 @@ export function ApplyScreen() {
   return (
     <SafeAreaView style={CommonStyles.screenBg} edges={['top', 'bottom']}>
       <View style={applyStyles.header}>
-        <TouchableOpacity style={applyStyles.backBtn} onPress={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)/home'))} activeOpacity={0.8}><Text style={{ fontSize: 20, color: Colors.text }}>←</Text></TouchableOpacity>
+        <TouchableOpacity style={applyStyles.backBtn} onPress={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)/home'))} activeOpacity={0.8} accessibilityRole="button" accessibilityLabel="Go back"><Text style={{ fontSize: 20, color: Colors.text }}>←</Text></TouchableOpacity>
         <Text style={applyStyles.title}>Your Application</Text>
       </View>
       <Text style={applyStyles.subtitle}>{packageTier?.charAt(0).toUpperCase()}{packageTier?.slice(1)} Package</Text>

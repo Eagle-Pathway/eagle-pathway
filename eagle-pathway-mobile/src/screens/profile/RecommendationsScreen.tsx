@@ -7,7 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { format } from 'date-fns';
 import { Colors, Typography, Spacing, Radius, CommonStyles } from '@/utils/theme';
-import { EmptyState, ErrorState } from '@/components/common';
+import { EmptyState, ErrorState, Skeleton } from '@/components/common';
 import { KeyboardAwareScreen } from '@/components/KeyboardAwareScreen';
 import { openWhatsApp } from '@/utils/linking';
 import { useAuthStore } from '@/store/authStore';
@@ -103,7 +103,7 @@ export function RecommendationsScreen() {
   return (
     <SafeAreaView style={CommonStyles.screenBg} edges={['top', 'bottom']}>
       <View style={s.header}>
-        <TouchableOpacity style={s.backBtn} onPress={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)/home'))} activeOpacity={0.8}>
+        <TouchableOpacity style={s.backBtn} onPress={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)/home'))} activeOpacity={0.8} accessibilityRole="button" accessibilityLabel="Go back">
           <Text style={{ fontSize: 20, color: Colors.text }}>←</Text>
         </TouchableOpacity>
         <Text style={s.title}>Recommendation Letters</Text>
@@ -113,7 +113,23 @@ export function RecommendationsScreen() {
       </View>
 
       {loading ? (
-        <ActivityIndicator color={Colors.blue} style={{ marginTop: 40 }} />
+        <View style={{ paddingTop: Spacing.lg }}>
+          {[1, 2, 3, 4].map(i => (
+            <View key={i} style={[s.card, { padding: Spacing.lg }]}>
+              <View style={s.cardTop}>
+                <View style={{ flex: 1, gap: 6 }}>
+                  <Skeleton width="50%" height={18} style={{ borderRadius: 4 }} />
+                  <Skeleton width="30%" height={14} style={{ borderRadius: 4 }} />
+                </View>
+                <Skeleton width={60} height={24} style={{ borderRadius: 12 }} />
+              </View>
+              <View style={[s.actions, { gap: 8 }]}>
+                <Skeleton width={80} height={32} style={{ borderRadius: 10 }} />
+                <Skeleton width={100} height={32} style={{ borderRadius: 10 }} />
+              </View>
+            </View>
+          ))}
+        </View>
       ) : error && items.length === 0 ? (
         <ErrorState subtitle="We couldn't load your requests. Check your connection and retry." onRetry={load} />
       ) : items.length === 0 ? (

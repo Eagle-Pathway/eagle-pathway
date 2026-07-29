@@ -3,7 +3,7 @@ import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Linking, Alert, A
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Colors, Typography, Spacing, Radius, CommonStyles } from '@/utils/theme';
-import { ErrorState } from '@/components/common';
+import { ErrorState, Skeleton } from '@/components/common';
 import { resourcesService, type Resource } from '@/services/resources';
 
 function formatBytes(bytes?: number | null): string | null {
@@ -75,7 +75,15 @@ export default function ResourceDetailScreen() {
       </View>
 
       {loading ? (
-        <View style={s.center}><ActivityIndicator size="large" color={Colors.blue} /></View>
+        <View style={{ padding: Spacing.xl, paddingTop: 40 }}>
+          <Skeleton style={[s.iconBox, { width: 64, height: 64, borderRadius: 18 }]} />
+          <Skeleton style={{ width: 100, height: 16, borderRadius: 4, marginTop: Spacing.xs, marginBottom: Spacing.xs }} />
+          <Skeleton style={{ width: '80%', height: 32, borderRadius: 8, marginBottom: Spacing.lg }} />
+          <Skeleton style={{ width: '100%', height: 20, borderRadius: 4, marginBottom: Spacing.xs }} />
+          <Skeleton style={{ width: '90%', height: 20, borderRadius: 4, marginBottom: Spacing.xs }} />
+          <Skeleton style={{ width: '95%', height: 20, borderRadius: 4, marginBottom: Spacing.xl }} />
+          <Skeleton style={[s.metaRow, { height: 50, borderWidth: 0 }]} />
+        </View>
       ) : error || !resource ? (
         <ErrorState subtitle="We couldn't load this resource. Check your connection and retry." onRetry={load} />
       ) : (

@@ -158,7 +158,7 @@ export function OnboardingScreen() {
 
       <View style={s.footer}>
         {step > 0 && (
-          <TouchableOpacity style={s.backBtn} onPress={() => setStep(step - 1)} disabled={saving} activeOpacity={0.8}>
+          <TouchableOpacity style={s.backBtn} onPress={() => setStep(step - 1)} disabled={saving} activeOpacity={0.8} accessibilityRole="button" accessibilityLabel="Go back">
             <Text style={s.backBtnText}>Back</Text>
           </TouchableOpacity>
         )}

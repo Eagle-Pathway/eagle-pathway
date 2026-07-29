@@ -7,7 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { formatDistanceToNow } from 'date-fns';
 import { Colors, Typography, Spacing, Radius, CommonStyles } from '@/utils/theme';
-import { EmptyState } from '@/components/common';
+import { EmptyState, Skeleton } from '@/components/common';
 import { useAuthStore } from '@/store/authStore';
 import { useTutorJobStore } from '@/store/tutorJobStore';
 import { tutorJobsService } from '@/services/tutorJobs';
@@ -53,7 +53,7 @@ export function TutorJobFeedScreen() {
         <View style={s.header}>
           <Text style={s.headerTitle}>Tutor Jobs</Text>
         </View>
-        <EmptyState icon="🔒" title="Tutor Only" subtitle="Only tutor accounts can view job postings." />
+        <EmptyState icon="lock-closed-outline" title="Tutor Only" subtitle="Only tutor accounts can view job postings." />
       </SafeAreaView>
     );
   }
@@ -72,9 +72,27 @@ export function TutorJobFeedScreen() {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.blue} />}
       >
         {loadingJobs && jobs.length === 0 ? (
-          <ActivityIndicator size="large" color={Colors.blue} style={{ marginTop: 40 }} />
+          <View style={{ gap: Spacing.md }}>
+            {[1, 2, 3].map(i => (
+              <View key={i} style={s.card}>
+                <View style={s.cardTop}>
+                  <View style={{ flex: 1 }}>
+                    <Skeleton width={150} height={24} borderRadius={6} style={{ marginBottom: 6 }} />
+                    <Skeleton width={100} height={16} borderRadius={4} />
+                  </View>
+                  <Skeleton width={80} height={24} borderRadius={6} />
+                </View>
+                <Skeleton width="60%" height={20} borderRadius={4} style={{ marginTop: 12, marginBottom: 12 }} />
+                <View style={s.metaRow}>
+                  <Skeleton width={60} height={16} borderRadius={4} />
+                  <Skeleton width={60} height={16} borderRadius={4} />
+                </View>
+                <Skeleton width={80} height={14} borderRadius={4} style={{ marginTop: 12 }} />
+              </View>
+            ))}
+          </View>
         ) : jobs.length === 0 ? (
-          <EmptyState icon="📭" title="No Jobs Yet" subtitle="Check back later for new tutor job postings." />
+          <EmptyState icon="mail-open-outline" title="No Jobs Yet" subtitle="Check back later for new tutor job postings." />
         ) : (
           jobs.map(job => (
             <TouchableOpacity

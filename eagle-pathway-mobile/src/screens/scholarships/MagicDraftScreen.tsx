@@ -39,13 +39,13 @@ export function MagicDraftScreen() {
   return (
     <SafeAreaView style={CommonStyles.screenBg} edges={['top', 'bottom']}>
       <View style={magicStyles.header}>
-        <TouchableOpacity style={magicStyles.backBtn} onPress={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)/home'))} activeOpacity={0.8}>
+        <TouchableOpacity style={magicStyles.backBtn} onPress={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)/home'))} activeOpacity={0.8} accessibilityRole="button" accessibilityLabel="Go back">
           <Text style={{ fontSize: 20, color: Colors.text }}>←</Text>
         </TouchableOpacity>
         <Text style={magicStyles.title}>Eagle AI Magic Draft</Text>
       </View>
 
-      <ScrollView contentContainerStyle={{ padding: Spacing.xl }}>
+      <ScrollView contentContainerStyle={{ padding: Spacing.xl, paddingBottom: 120 }}>
         {!draft ? (
           <View style={magicStyles.emptyState}>
             <View style={magicStyles.aiCircle}>

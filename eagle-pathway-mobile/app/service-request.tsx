@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet,
-  TextInput, Alert, FlatList, ActivityIndicator,
+  TextInput, Alert, FlatList, ActivityIndicator, RefreshControl
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Colors, Typography, Spacing, Radius, CommonStyles } from '@/utils/theme';
-import { Button, Dropdown } from '@/components/common/index';
+import { Button, Dropdown, Skeleton } from '@/components/common/index';
 import { KeyboardAwareScreen } from '@/components/KeyboardAwareScreen';
 import { supabase } from '@/services/supabase';
 import { useAuthStore } from '@/store/authStore';
@@ -101,8 +101,19 @@ function RequestHistory({ userId }: { userId: string }) {
 
   if (loading) {
     return (
-      <View style={[CommonStyles.flex1, CommonStyles.center]}>
-        <ActivityIndicator color={Colors.blue} size="large" />
+      <View style={{ padding: Spacing.xl, gap: Spacing.md }}>
+        {[1, 2, 3].map((i) => (
+          <View key={i} style={histStyles.card}>
+            <View style={histStyles.cardTop}>
+              <Skeleton style={[histStyles.iconWrap, { width: 44, height: 44, borderRadius: 12 }]} />
+              <View style={{ flex: 1, marginLeft: Spacing.md, gap: 8 }}>
+                <Skeleton style={{ width: 120, height: 18, borderRadius: 4 }} />
+                <Skeleton style={{ width: 180, height: 14, borderRadius: 4 }} />
+                <Skeleton style={{ width: 100, height: 14, borderRadius: 4 }} />
+              </View>
+            </View>
+          </View>
+        ))}
       </View>
     );
   }
@@ -127,6 +138,8 @@ function RequestHistory({ userId }: { userId: string }) {
       keyExtractor={r => r.id}
       contentContainerStyle={{ padding: Spacing.xl, paddingBottom: 100 }}
       showsVerticalScrollIndicator={false}
+      refreshControl={<RefreshControl refreshing={loading} onRefresh={load} tintColor={Colors.blue} />}
+      initialNumToRender={8} maxToRenderPerBatch={8} windowSize={5} removeClippedSubviews={true}
       renderItem={({ item: r }) => {
         const svc = SERVICE_TYPES.find(s => s.value === r.service_type);
         return (
@@ -464,7 +477,7 @@ export default function ServiceRequestScreen({
     <SafeAreaView style={CommonStyles.screenBg} edges={['top', 'bottom']}>
       {!hideHeader && (
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)/home'))} style={styles.backBtn}>
+          <TouchableOpacity onPress={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)/home'))} style={styles.backBtn} accessibilityRole="button" accessibilityLabel="Go back">
             <Text style={{ fontSize: 20 }}>←</Text>
           </TouchableOpacity>
           <Text style={styles.title}>Payment Services</Text>

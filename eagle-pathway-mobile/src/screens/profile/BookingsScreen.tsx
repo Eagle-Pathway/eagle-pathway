@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   View, Text, FlatList, TouchableOpacity, StyleSheet,
-  Alert, Linking, TextInput,
+  Alert, Linking, TextInput, RefreshControl
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -135,7 +135,7 @@ export function BookingsScreen({ hideHeader = false }: { hideHeader?: boolean })
                   <View style={bkgStyles.actions}>
                     {!isTutor ? (
                       <>
-                        <TouchableOpacity style={bkgStyles.btnJoin} onPress={() => b.zoom_link && Linking.openURL(b.zoom_link)} activeOpacity={0.85}>
+                        <TouchableOpacity style={bkgStyles.btnJoin} onPress={() => b.zoom_link && Linking.openURL(b.zoom_link).catch(() => Alert.alert('Error', 'Could not open this link. Please check if you have a supported app installed.'))} activeOpacity={0.85}>
                           <Text style={bkgStyles.btnJoinText}>Join Session</Text>
                         </TouchableOpacity>
                         <TouchableOpacity style={bkgStyles.btnCancel} onPress={() => Alert.alert('Cancel Booking?', 'Are you sure?', [{ text: 'Cancel', style: 'cancel' }, { text: 'Yes, cancel', style: 'destructive', onPress: () => cancelBooking(b.id) }])} activeOpacity={0.85}>
@@ -174,6 +174,8 @@ export function BookingsScreen({ hideHeader = false }: { hideHeader?: boolean })
           }}
           contentContainerStyle={{ paddingBottom: 100 + insets.bottom }}
           showsVerticalScrollIndicator={false}
+          refreshControl={<RefreshControl refreshing={loading} onRefresh={load} tintColor={Colors.blue} />}
+          initialNumToRender={8} maxToRenderPerBatch={8} windowSize={5} removeClippedSubviews={true}
         />
       )}
       {/* Rating Modal */}

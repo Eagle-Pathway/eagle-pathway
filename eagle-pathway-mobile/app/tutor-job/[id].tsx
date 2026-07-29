@@ -6,6 +6,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, router } from 'expo-router';
 import { Colors, Typography, Spacing, Radius, CommonStyles } from '../../src/utils/theme';
+import { Skeleton } from '../../src/components/common';
 import { supabase } from '../../src/services/supabase';
 import { useAuthStore } from '../../src/store/authStore';
 import { useTutorJobsStore, TutorJobPost } from '../../src/store/tutorJobsStore';
@@ -83,8 +84,30 @@ export default function TutorJobDetailScreen() {
   if (loading) {
     return (
       <SafeAreaView style={CommonStyles.screenBg} edges={['top']}>
-        <View style={[CommonStyles.flex1, CommonStyles.center]}>
-          <ActivityIndicator size="large" color={Colors.blue} />
+        <View style={styles.header}>
+          <Skeleton width={36} height={36} borderRadius={10} />
+          <View style={{ flex: 1, marginHorizontal: Spacing.md }}>
+            <Skeleton width={120} height={28} borderRadius={6} />
+          </View>
+          <Skeleton width={60} height={28} borderRadius={14} />
+        </View>
+        <View style={styles.content}>
+          <View style={styles.card}>
+            <Skeleton width={100} height={36} borderRadius={8} style={{ marginBottom: 12 }} />
+            <Skeleton width="60%" height={20} borderRadius={4} />
+          </View>
+          <View style={styles.card}>
+            <Skeleton width={150} height={20} borderRadius={4} style={{ marginBottom: Spacing.md }} />
+            {[1, 2, 3, 4].map((i, index) => (
+              <View key={i} style={[styles.detailRow, index === 3 && { borderBottomWidth: 0 }]}>
+                <Skeleton width={24} height={24} borderRadius={12} />
+                <View style={styles.detailContent}>
+                  <Skeleton width={100} height={14} borderRadius={4} style={{ marginBottom: 4 }} />
+                  <Skeleton width={140} height={20} borderRadius={4} />
+                </View>
+              </View>
+            ))}
+          </View>
         </View>
       </SafeAreaView>
     );

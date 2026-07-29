@@ -49,7 +49,7 @@ export const StudentHome: React.FC<StudentHomeProps> = ({
   if (loading) {
     return (
       <SafeAreaView style={CommonStyles.screenBg} edges={['top', 'bottom']}>
-        <ScrollView showsVerticalScrollIndicator={false}>
+        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
           <View style={styles.hero}>
             <View style={styles.heroBg}>
               <View style={styles.heroOverlay1} />
@@ -170,6 +170,7 @@ export const StudentHome: React.FC<StudentHomeProps> = ({
     <SafeAreaView style={CommonStyles.screenBg} edges={['top', 'bottom']}>
       <ScrollView
         showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 100 }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.white} />}
       >
         <View style={styles.hero}>

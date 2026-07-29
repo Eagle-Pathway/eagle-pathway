@@ -298,7 +298,7 @@ export function EditProfileScreen() {
         <Text style={editProfStyles.fieldLabel}>Current CGPA</Text>
         <TextInput
           style={editProfStyles.input}
-          keyboardType="decimal-pad"
+          keyboardType="numeric"
           value={formData.cgpa}
           onChangeText={t => setFormData(f => ({ ...f, cgpa: t }))}
           placeholder="e.g. 3.5"
@@ -337,7 +337,7 @@ export function EditProfileScreen() {
   return (
     <SafeAreaView style={CommonStyles.screenBg} edges={['top', 'bottom']}>
       <View style={editProfStyles.header}>
-        <TouchableOpacity style={editProfStyles.backBtn} onPress={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)/home'))} activeOpacity={0.8}>
+        <TouchableOpacity style={editProfStyles.backBtn} onPress={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)/home'))} activeOpacity={0.8} accessibilityRole="button" accessibilityLabel="Go back">
           <Text style={{ fontSize: 20, color: Colors.text }}>←</Text>
         </TouchableOpacity>
         <Text style={editProfStyles.title}>Edit Profile</Text>

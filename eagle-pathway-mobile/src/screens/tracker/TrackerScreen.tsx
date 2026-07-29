@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import {
-  View, Text, ScrollView, TouchableOpacity, StyleSheet,
+  View, Text, ScrollView, TouchableOpacity, StyleSheet, RefreshControl
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -90,7 +90,7 @@ export function TrackerScreen({ hideHeader = false }: { hideHeader?: boolean }) 
           </ScaleBounce>
           <Text style={trackerStyles.detailTitle}>Application Status</Text>
         </View>
-        <ScrollView contentContainerStyle={{ paddingBottom: 60 }}>
+        <ScrollView contentContainerStyle={{ paddingBottom: 100 }}>
           <View style={trackerStyles.summaryCard}>
             <View style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: Colors.bg, alignItems: 'center', justifyContent: 'center', marginBottom: Spacing.sm, padding: 6, borderWidth: 1, borderColor: Colors.border }}>
               {(() => {
@@ -233,7 +233,7 @@ export function TrackerScreen({ hideHeader = false }: { hideHeader?: boolean }) 
           onAction={() => router.push('/(tabs)/scholarships')}
         />
       ) : (
-        <ScrollView contentContainerStyle={{ padding: Spacing.xl, paddingBottom: 100 }}>
+        <ScrollView contentContainerStyle={{ padding: Spacing.xl, paddingBottom: 100 }} refreshControl={<RefreshControl refreshing={loading} onRefresh={load} tintColor={Colors.blue} />}>
           {[...active, ...completed].map(app => (
             <ScaleBounce key={app.id} style={{ marginBottom: Spacing.xl }} onPress={() => setSelectedApp(app)}>
               <View style={trackerStyles.appHeader}>

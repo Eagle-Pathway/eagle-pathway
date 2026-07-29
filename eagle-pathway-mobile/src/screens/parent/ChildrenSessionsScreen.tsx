@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { format } from 'date-fns';
 import { Colors, Typography, Spacing, Radius, CommonStyles } from '@/utils/theme';
-import { EmptyState, ErrorState, Avatar } from '@/components/common';
+import { EmptyState, ErrorState, Avatar, Skeleton } from '@/components/common';
 import { useParentStore } from '@/store/parentStore';
 import { Booking } from '@/types';
 
@@ -26,7 +26,7 @@ export default function ChildrenSessionsScreen() {
   return (
     <SafeAreaView style={CommonStyles.screenBg} edges={['top', 'bottom']}>
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backBtn} onPress={() => router.back()} activeOpacity={0.8}>
+        <TouchableOpacity style={styles.backBtn} onPress={() => router.back()} activeOpacity={0.8} accessibilityRole="button" accessibilityLabel="Go back">
           <Text style={styles.backIcon}>←</Text>
         </TouchableOpacity>
         <View style={{ flex: 1 }}>
@@ -44,11 +44,24 @@ export default function ChildrenSessionsScreen() {
       </View>
 
       {isLoadingLinkedBookings ? (
-        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-          <ActivityIndicator size="large" color={Colors.blue} />
+        <View style={{ paddingBottom: 40 }}>
+          {[1, 2, 3].map(i => (
+            <View key={i} style={styles.card}>
+              <View style={styles.cardTop}>
+                <Skeleton width={40} height={40} borderRadius={12} />
+                <View style={{ flex: 1, marginLeft: Spacing.md }}>
+                  <Skeleton width={120} height={20} borderRadius={4} style={{ marginBottom: 6 }} />
+                  <Skeleton width={150} height={16} borderRadius={4} />
+                </View>
+                <Skeleton width={60} height={24} borderRadius={6} />
+              </View>
+              <Skeleton width={200} height={16} borderRadius={4} style={{ marginTop: 8 }} />
+              <Skeleton width={150} height={16} borderRadius={4} style={{ marginTop: 8 }} />
+            </View>
+          ))}
         </View>
       ) : filtered.length === 0 ? (
-        <EmptyState icon="📅" title={`No ${activeTab} sessions`} subtitle="No tutoring sessions found in this category." />
+        <EmptyState icon="calendar-outline" title={`No ${activeTab} sessions`} subtitle="No tutoring sessions found in this category." />
       ) : (
         <FlatList
           data={filtered}
@@ -77,6 +90,8 @@ export default function ChildrenSessionsScreen() {
           }}
           contentContainerStyle={{ paddingBottom: 40 }}
           showsVerticalScrollIndicator={false}
+          refreshControl={<RefreshControl refreshing={isLoadingLinkedBookings} onRefresh={() => loadLinkedStudentBookings(studentId)} tintColor={Colors.blue} />}
+          initialNumToRender={8} maxToRenderPerBatch={8} windowSize={5} removeClippedSubviews={true}
         />
       )}
     </SafeAreaView>

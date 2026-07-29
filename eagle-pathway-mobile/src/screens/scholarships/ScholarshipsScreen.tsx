@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   View, Text, ScrollView, TextInput, TouchableOpacity,
-  StyleSheet, FlatList, Image
+  StyleSheet, FlatList, Image, RefreshControl
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -125,6 +125,8 @@ export default function ScholarshipsScreen({ hideBack = false }: { hideBack?: bo
           )}
           contentContainerStyle={{ paddingTop: Spacing.lg, paddingBottom: 100 }}
           showsVerticalScrollIndicator={false}
+          refreshControl={<RefreshControl refreshing={isLoadingScholarships} onRefresh={load} tintColor={Colors.blue} />}
+          initialNumToRender={8} maxToRenderPerBatch={8} windowSize={5} removeClippedSubviews={true}
         />
       )}
     </SafeAreaView>

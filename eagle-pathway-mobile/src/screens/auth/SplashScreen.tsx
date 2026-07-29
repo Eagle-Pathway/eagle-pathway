@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Dimensions, Image, Linking } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Dimensions, Image, Linking, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -46,7 +46,7 @@ export default function SplashScreen() {
           <TouchableOpacity style={styles.btnSecondary} onPress={() => router.push('/(auth)/login')} activeOpacity={0.9}>
             <Text style={styles.btnSecondaryText}>I Already Have an Account</Text>
           </TouchableOpacity>
-          <TouchableOpacity onPress={() => Linking.openURL('https://www.eaglespathway.com/privacy')} activeOpacity={0.7}>
+          <TouchableOpacity onPress={() => Linking.openURL('https://www.eaglespathway.com/privacy').catch(() => Alert.alert('Error', 'Could not open this link. Please check if you have a supported app installed.'))} activeOpacity={0.7}>
             <Text style={styles.footer}>By continuing you agree to our Terms &amp; Privacy Policy</Text>
           </TouchableOpacity>
         </View>

@@ -8,7 +8,7 @@ import { useAuthStore } from '@/store/authStore';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Typography, Spacing, Radius, CommonStyles } from '@/utils/theme';
-import { Pill, Avatar, Button } from '@/components/common';
+import { Pill, Avatar, Button, Skeleton } from '@/components/common';
 import { KeyboardAwareScreen } from '@/components/KeyboardAwareScreen';
 import { tutorsService } from '@/services/tutors';
 import { Tutor, TutorReview } from '@/types';
@@ -25,19 +25,23 @@ export default function TutorProfileScreen() {
   const { user } = useAuthStore();
 
   useEffect(() => {
+    let isMounted = true;
     const load = async () => {
       try {
         const [t, r] = await Promise.all([
           tutorsService.getTutorById(tutorId),
           tutorsService.getTutorReviews(tutorId),
         ]);
-        setTutor(t);
-        setReviews(r);
+        if (isMounted) {
+          setTutor(t);
+          setReviews(r);
+        }
       } finally {
-        setLoading(false);
+        if (isMounted) setLoading(false);
       }
     };
     if (tutorId) load();
+    return () => { isMounted = false; };
   }, [tutorId]);
 
   const handleSave = async () => {
@@ -66,9 +70,29 @@ export default function TutorProfileScreen() {
   };
 
   if (loading) return (
-    <View style={[CommonStyles.flex1, CommonStyles.center, { backgroundColor: Colors.bg }]}>
-      <ActivityIndicator color={Colors.blue} size="large" />
-    </View>
+    <SafeAreaView style={[CommonStyles.flex1, { backgroundColor: Colors.blueDark }]} edges={['top', 'bottom']}>
+      <View style={styles.hero}>
+        <View style={styles.heroNav}>
+          <Skeleton width={36} height={36} borderRadius={10} color="rgba(255,255,255,0.15)" />
+          <Skeleton width={36} height={36} borderRadius={10} color="rgba(255,255,255,0.15)" />
+        </View>
+        <Skeleton width={80} height={80} borderRadius={24} style={styles.heroAvatar} color="rgba(255,255,255,0.2)" />
+        <Skeleton width={180} height={32} borderRadius={8} style={{ marginBottom: 4, alignSelf: 'center' }} color="rgba(255,255,255,0.2)" />
+        <Skeleton width={220} height={20} borderRadius={6} style={{ alignSelf: 'center' }} color="rgba(255,255,255,0.2)" />
+        <View style={styles.heroStats}>
+          {[1, 2, 3, 4].map(i => (
+            <View key={i} style={styles.heroStat}>
+              <Skeleton width={40} height={28} borderRadius={6} style={{ marginBottom: 2 }} color="rgba(255,255,255,0.2)" />
+              <Skeleton width={60} height={16} borderRadius={4} color="rgba(255,255,255,0.2)" />
+            </View>
+          ))}
+        </View>
+      </View>
+      <View style={{ flex: 1, backgroundColor: Colors.bg, padding: Spacing.lg }}>
+        <Skeleton width="100%" height={120} borderRadius={Radius.xl} style={{ marginBottom: Spacing.md }} />
+        <Skeleton width="100%" height={150} borderRadius={Radius.xl} />
+      </View>
+    </SafeAreaView>
   );
 
   if (!tutor) return null;
@@ -81,7 +105,7 @@ export default function TutorProfileScreen() {
       {/* Hero */}
       <View style={styles.hero}>
         <View style={styles.heroNav}>
-          <TouchableOpacity style={styles.backBtn} onPress={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)/home'))} activeOpacity={0.8}>
+          <TouchableOpacity style={styles.backBtn} onPress={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)/home'))} activeOpacity={0.8} accessibilityRole="button" accessibilityLabel="Go back">
             <Text style={styles.backIcon}>←</Text>
           </TouchableOpacity>
           <View style={{ flexDirection: 'row', gap: Spacing.sm }}>

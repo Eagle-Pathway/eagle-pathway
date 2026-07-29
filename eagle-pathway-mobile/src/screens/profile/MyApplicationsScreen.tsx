@@ -1,12 +1,11 @@
 import React, { useEffect } from 'react';
 import {
-  View, Text, ScrollView, TouchableOpacity, StyleSheet,
-  ActivityIndicator,
+  View, Text, ScrollView, TouchableOpacity, StyleSheet, RefreshControl
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Colors, Typography, Spacing, Radius, CommonStyles } from '@/utils/theme';
-import { EmptyState } from '@/components/common';
+import { EmptyState, Skeleton, ScaleBounce } from '@/components/common';
 import { useAuthStore } from '@/store/authStore';
 import { useTutorJobStore } from '@/store/tutorJobStore';
 
@@ -38,7 +37,7 @@ export function MyApplicationsScreen() {
   return (
     <SafeAreaView style={CommonStyles.screenBg} edges={['top', 'bottom']}>
       <View style={profStyles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={profStyles.backBtn}>
+        <TouchableOpacity onPress={() => router.back()} style={profStyles.backBtn} accessibilityRole="button" accessibilityLabel="Go back">
           <Text style={profStyles.backText}>←</Text>
         </TouchableOpacity>
         <Text style={profStyles.headerTitle}>My Applications</Text>
@@ -46,26 +45,29 @@ export function MyApplicationsScreen() {
       </View>
 
       {loadingApplications && applications.length === 0 ? (
-        <ActivityIndicator size="large" color={Colors.blue} style={{ marginTop: 60 }} />
+        <ScrollView contentContainerStyle={{ padding: Spacing.lg, paddingBottom: 100 }}>
+          {[1, 2, 3, 4].map((i) => (
+            <Skeleton key={i} width="100%" height={120} style={{ borderRadius: Radius.xl, marginBottom: Spacing.md }} />
+          ))}
+        </ScrollView>
       ) : applications.length === 0 ? (
         <EmptyState
-          icon="📋"
+          icon="clipboard-outline"
           title="No Applications Yet"
           subtitle="Apply for a tutor job to see your applications here."
           actionLabel="Browse Jobs"
           onAction={() => router.back()}
         />
       ) : (
-        <ScrollView contentContainerStyle={{ padding: Spacing.lg, paddingBottom: 100 }}>
+        <ScrollView contentContainerStyle={{ padding: Spacing.lg, paddingBottom: 100 }} refreshControl={<RefreshControl refreshing={loadingApplications} onRefresh={() => user && loadApplications(user.id)} tintColor={Colors.blue} />}>
           {applications.map((app) => {
             const status = STATUS_CONFIG[app.status] || STATUS_CONFIG.pending;
             const job = app.job_post;
             return (
-              <TouchableOpacity
+              <ScaleBounce
                 key={app.id}
                 style={profStyles.appCard}
                 onPress={() => router.push({ pathname: '/application-detail', params: { applicationId: app.id } } as any)}
-                activeOpacity={0.7}
               >
                 <View style={profStyles.appHeader}>
                   <View style={{ flex: 1 }}>
@@ -96,7 +98,7 @@ export function MyApplicationsScreen() {
                   <Text style={profStyles.appFooterText}>Applied {new Date(app.created_at).toLocaleDateString()}</Text>
                   <Text style={profStyles.appArrow}>›</Text>
                 </View>
-              </TouchableOpacity>
+              </ScaleBounce>
             );
           })}
         </ScrollView>

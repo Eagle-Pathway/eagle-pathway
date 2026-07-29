@@ -32,7 +32,16 @@
         "EXPO_PUBLIC_EAGLE_ASSISTANT_API_URL": "https://eagle-pathway.vercel.app/api/assistant",
         "EXPO_PUBLIC_EAGLE_INTERVIEW_API_URL": "https://eagle-pathway.vercel.app/api/interview"
       },
+      "android": {
+        "buildType": "app-bundle"
+      },
       "channel": "production"
+    },
+    "local-apk": {
+      "extends": "production",
+      "android": {
+        "buildType": "apk"
+      }
     }
   },
   "submit": {

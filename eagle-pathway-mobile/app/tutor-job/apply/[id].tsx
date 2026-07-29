@@ -461,7 +461,7 @@ export default function TutorJobApplyScreen() {
               </Text>
 
               <TouchableOpacity
-                onPress={() => Linking.openURL(POLICY_DOC_URL)}
+                onPress={() => Linking.openURL(POLICY_DOC_URL).catch(() => Alert.alert('Error', 'Could not open this link. Please check if you have a supported app installed.'))}
                 style={[styles.policyLink, { flexDirection: 'row', alignItems: 'center', gap: 6 }]}
               >
                 <Ionicons name="document-text-outline" size={16} color={Colors.blue} />

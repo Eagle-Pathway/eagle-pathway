@@ -1,12 +1,12 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
-  ActivityIndicator, Alert, Linking,
+  Alert, Linking, RefreshControl
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Colors, Typography, Spacing, Radius, CommonStyles } from '@/utils/theme';
-import { EmptyState, ErrorState } from '@/components/common';
+import { EmptyState, ErrorState, Skeleton } from '@/components/common';
 import { scholarshipsService } from '@/services/scholarships';
 import { useAuthStore } from '@/store/authStore';
 import { useDocumentStore } from '@/store/documentStore';
@@ -104,7 +104,7 @@ export function DocumentsScreen() {
   return (
     <SafeAreaView style={CommonStyles.screenBg} edges={['top', 'bottom']}>
       <View style={docStyles.header}>
-        <TouchableOpacity style={docStyles.backBtn} onPress={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)/home'))} activeOpacity={0.8}>
+        <TouchableOpacity style={docStyles.backBtn} onPress={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)/home'))} activeOpacity={0.8} accessibilityRole="button" accessibilityLabel="Go back">
           <Text style={{ fontSize: 20, color: Colors.text }}>←</Text>
         </TouchableOpacity>
         <Text style={docStyles.title}>Document Vault</Text>
@@ -113,7 +113,7 @@ export function DocumentsScreen() {
         </TouchableOpacity>
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }} refreshControl={<RefreshControl refreshing={loading} onRefresh={load} tintColor={Colors.blue} />}>
         <View style={docStyles.statsRow}>
           <View style={docStyles.statBox}>
             <View style={[docStyles.dot, { backgroundColor: Colors.green }]} />
@@ -174,7 +174,18 @@ export function DocumentsScreen() {
         </View>
 
         {loading ? (
-          <ActivityIndicator color={Colors.blue} style={{ marginTop: 40 }} />
+          <View style={docStyles.docList}>
+            {[1, 2, 3, 4].map(i => (
+              <View key={i} style={docStyles.docItem}>
+                <Skeleton width={48} height={48} style={{ borderRadius: 14 }} />
+                <View style={{ flex: 1, gap: 8 }}>
+                  <Skeleton width="60%" height={16} style={{ borderRadius: 4 }} />
+                  <Skeleton width="40%" height={12} style={{ borderRadius: 4 }} />
+                </View>
+                <Skeleton width={50} height={24} style={{ borderRadius: 8 }} />
+              </View>
+            ))}
+          </View>
         ) : error && (documents || []).length === 0 ? (
           <ErrorState subtitle="We couldn't load your documents. Check your connection and retry." onRetry={load} />
         ) : filteredDocs.length === 0 ? (

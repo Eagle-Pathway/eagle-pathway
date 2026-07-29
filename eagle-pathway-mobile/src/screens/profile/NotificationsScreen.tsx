@@ -46,7 +46,7 @@ export function NotificationsScreen() {
   return (
     <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backBtn} onPress={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)/home'))} activeOpacity={0.8}>
+        <TouchableOpacity style={styles.backBtn} onPress={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)/home'))} activeOpacity={0.8} accessibilityRole="button" accessibilityLabel="Go back">
           <Text style={{ fontSize: 20, color: Colors.text }}>←</Text>
         </TouchableOpacity>
         <Text style={styles.title}>Notifications</Text>
@@ -60,7 +60,7 @@ export function NotificationsScreen() {
       {error && (notifications || []).length === 0 ? (
         <ErrorState subtitle="We couldn't load your notifications. Check your connection and retry." onRetry={load} />
       ) : (notifications || []).length === 0 ? (
-        <EmptyState icon="🔔" title="No notifications yet" subtitle="You'll see session reminders, scholarship alerts, and updates here" />
+        <EmptyState icon="notifications-outline" title="No notifications yet" subtitle="You'll see session reminders, scholarship alerts, and updates here" />
       ) : (
         <FlatList
           data={notifications || []}
