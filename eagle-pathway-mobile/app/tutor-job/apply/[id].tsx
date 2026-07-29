@@ -15,6 +15,7 @@ import { supabase } from '../../../src/services/supabase';
 import { useAuthStore } from '../../../src/store/authStore';
 import { useTutorJobsStore } from '../../../src/store/tutorJobsStore';
 import { KeyboardAwareScreen } from '../../../src/components/KeyboardAwareScreen';
+import { Ionicons } from '@expo/vector-icons';
 
 const POLICY_DOC_URL =
   'https://docs.google.com/document/d/1manAx_EUc8eIu4ScyddKyo1jdFAIwiQn2tZFunAqRdQ/edit?usp=sharing';
@@ -91,7 +92,7 @@ function UploadButton({
       {state.uploading ? (
         <ActivityIndicator size="small" color={Colors.blue} />
       ) : (
-        <Text style={uploadStyles.icon}>{state.path ? '✅' : '📎'}</Text>
+        <Ionicons name={state.path ? 'checkmark-circle' : 'attach-outline'} size={24} color={state.path ? Colors.green : Colors.blue} />
       )}
       <View style={{ flex: 1 }}>
         <Text style={[uploadStyles.label, state.path && uploadStyles.labelDone]}>{label}</Text>
@@ -333,7 +334,10 @@ export default function TutorJobApplyScreen() {
         {/* ── STEP 1: Info Review ────────────────────────────────────────────── */}
         {step === 1 && (
           <>
-            <Text style={styles.sectionTitle}>📋 Your Information</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: Spacing.xs }}>
+              <Ionicons name="clipboard-outline" size={22} color={Colors.text} />
+              <Text style={[styles.sectionTitle, { marginBottom: 0 }]}>Your Information</Text>
+            </View>
             <Text style={styles.sectionSub}>Pre-filled from your profile — review and update as needed.</Text>
 
             <Text style={styles.fieldLabel}>Education Status</Text>
@@ -403,7 +407,10 @@ export default function TutorJobApplyScreen() {
         {/* ── STEP 2: Document Uploads ───────────────────────────────────────── */}
         {step === 2 && (
           <>
-            <Text style={styles.sectionTitle}>📎 Upload Documents</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: Spacing.xs }}>
+              <Ionicons name="attach-outline" size={24} color={Colors.text} />
+              <Text style={[styles.sectionTitle, { marginBottom: 0 }]}>Upload Documents</Text>
+            </View>
             <Text style={styles.sectionSub}>Upload clear images or PDFs of your official documents.</Text>
 
             <UploadButton
@@ -425,7 +432,10 @@ export default function TutorJobApplyScreen() {
             />
 
             <View style={styles.tipBox}>
-              <Text style={styles.tipTitle}>💡 Upload Tips</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: Spacing.sm }}>
+                <Ionicons name="bulb-outline" size={18} color={Colors.blue} />
+                <Text style={[styles.tipTitle, { marginBottom: 0 }]}>Upload Tips</Text>
+              </View>
               <Text style={styles.tipText}>• Make sure documents are clear and fully visible</Text>
               <Text style={styles.tipText}>• Photos should be taken in good lighting</Text>
               <Text style={styles.tipText}>• PDFs are preferred for digital documents</Text>
@@ -436,7 +446,10 @@ export default function TutorJobApplyScreen() {
         {/* ── STEP 3: Policy Agreement ───────────────────────────────────────── */}
         {step === 3 && (
           <>
-            <Text style={styles.sectionTitle}>🔏 Policy Agreement</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: Spacing.xs }}>
+              <Ionicons name="shield-checkmark-outline" size={22} color={Colors.text} />
+              <Text style={[styles.sectionTitle, { marginBottom: 0 }]}>Policy Agreement</Text>
+            </View>
 
             <View style={styles.policyBox}>
               <Text style={styles.policyText}>
@@ -449,9 +462,10 @@ export default function TutorJobApplyScreen() {
 
               <TouchableOpacity
                 onPress={() => Linking.openURL(POLICY_DOC_URL)}
-                style={styles.policyLink}
+                style={[styles.policyLink, { flexDirection: 'row', alignItems: 'center', gap: 6 }]}
               >
-                <Text style={styles.policyLinkText}>📄 Read our full policy document →</Text>
+                <Ionicons name="document-text-outline" size={16} color={Colors.blue} />
+                <Text style={styles.policyLinkText}>Read our full policy document →</Text>
               </TouchableOpacity>
             </View>
 

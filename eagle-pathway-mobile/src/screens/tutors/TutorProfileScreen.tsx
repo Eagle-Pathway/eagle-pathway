@@ -6,6 +6,7 @@ import {
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuthStore } from '@/store/authStore';
 import { router, useLocalSearchParams } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { Colors, Typography, Spacing, Radius, CommonStyles } from '@/utils/theme';
 import { Pill, Avatar, Button } from '@/components/common';
 import { KeyboardAwareScreen } from '@/components/KeyboardAwareScreen';
@@ -95,7 +96,7 @@ export default function TutorProfileScreen() {
             )}
             {!isEditing && (
               <TouchableOpacity style={styles.heartBtn} activeOpacity={0.8}>
-                <Text style={{ fontSize: 18 }}>🤍</Text>
+                <Ionicons name="heart-outline" size={18} color={Colors.white} />
               </TouchableOpacity>
             )}
             {isEditing && (
@@ -146,9 +147,9 @@ export default function TutorProfileScreen() {
         {/* Info rows */}
         <View style={CommonStyles.card}>
           {[
-            { icon: '📍', label: 'Location', value: tutor.location || 'Addis Ababa' },
-            { icon: '🎓', label: 'Education', value: tutor.education },
-            { icon: '💰', label: 'Rate', value: isEditing ? (
+            { icon: 'location-outline', label: 'Location', value: tutor.location || 'Addis Ababa' },
+            { icon: 'school-outline', label: 'Education', value: tutor.education },
+            { icon: 'cash-outline', label: 'Rate', value: isEditing ? (
               <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                 <Text style={{ color: Colors.text, marginRight: 4 }}>ETB</Text>
                 <TextInput
@@ -162,7 +163,9 @@ export default function TutorProfileScreen() {
             ) : `ETB ${tutor.hourly_rate}/hour` },
           ].map((row, i, arr) => (
             <View key={row.label} style={[styles.infoRow, i === arr.length - 1 && { borderBottomWidth: 0 }]}>
-              <View style={styles.infoIcon}><Text style={{ fontSize: 16 }}>{row.icon}</Text></View>
+              <View style={styles.infoIcon}>
+                <Ionicons name={row.icon as any} size={16} color={Colors.textSecondary} />
+              </View>
               <View>
                 <Text style={styles.infoLabel}>{row.label}</Text>
                 <Text style={styles.infoValue}>{row.value}</Text>
@@ -194,9 +197,11 @@ export default function TutorProfileScreen() {
                   <Text style={styles.reviewName}>{r.student?.full_name || 'Student'}</Text>
                   <Text style={styles.reviewDate}>{new Date(r.created_at).toLocaleDateString()}</Text>
                 </View>
-                <Text style={{ color: '#f59e0b', fontSize: Typography.sm, marginBottom: 6 }}>
-                  {'★'.repeat(r.rating)}{'☆'.repeat(5 - r.rating)}
-                </Text>
+                <View style={{ flexDirection: 'row', gap: 2, marginBottom: 6 }}>
+                  {[...Array(5)].map((_, idx) => (
+                    <Ionicons key={idx} name={idx < r.rating ? 'star' : 'star-outline'} size={12} color="#f59e0b" />
+                  ))}
+                </View>
                 <Text style={styles.reviewText}>{r.comment}</Text>
               </View>
             ))}
@@ -211,7 +216,7 @@ export default function TutorProfileScreen() {
           onPress={() => router.push({ pathname: '/chat/[id]', params: { id: tutor.user_id, fullName: tutor.user?.full_name } })}
           activeOpacity={0.8}
         >
-          <Text style={{ fontSize: 20 }}>💬</Text>
+          <Ionicons name="chatbubble-outline" size={20} color={Colors.white} />
         </TouchableOpacity>
         <Button
           title="Check Availability"

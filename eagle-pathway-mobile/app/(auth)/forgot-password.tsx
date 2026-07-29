@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { Colors, Typography, Spacing, Radius } from '../../src/utils/theme';
 import { Button } from '../../src/components/common';
 import { supabase } from '../../src/services/supabase';
@@ -84,7 +85,7 @@ export default function ForgotPasswordScreen() {
         <View style={styles.body}>
           {!sent ? (
             <>
-              <View style={styles.iconBadge}><Text style={{ fontSize: 30 }}>🔑</Text></View>
+              <View style={styles.iconBadge}><Ionicons name="key-outline" size={30} color={Colors.blue} /></View>
               <Text style={styles.title}>Forgot password?</Text>
               <Text style={styles.subtitle}>
                 Enter the email linked to your account and we’ll send you a 6-digit code to reset your password.
@@ -116,7 +117,7 @@ export default function ForgotPasswordScreen() {
             </>
           ) : (
             <>
-              <View style={[styles.iconBadge, { backgroundColor: Colors.greenLight }]}><Text style={{ fontSize: 30 }}>✉️</Text></View>
+              <View style={[styles.iconBadge, { backgroundColor: Colors.greenLight }]}><Ionicons name="mail-outline" size={30} color={Colors.green} /></View>
               <Text style={styles.title}>Enter your code</Text>
               <Text style={styles.subtitle}>
                 We sent a 6-digit code to{'\n'}

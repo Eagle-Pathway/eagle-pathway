@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { Colors, Typography, Spacing, Radius } from '../../src/utils/theme';
 import { Button, LoadingScreen } from '../../src/components/common';
 import { PasswordInput } from '../../src/components/PasswordInput';
@@ -58,7 +59,7 @@ export default function UpdatePasswordScreen() {
     <SafeAreaView style={styles.screen}>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
         <View style={styles.body}>
-          <View style={styles.iconBadge}><Text style={{ fontSize: 30 }}>🔒</Text></View>
+          <View style={styles.iconBadge}><Ionicons name="lock-closed-outline" size={30} color={Colors.blue} /></View>
           <Text style={styles.title}>Set New Password</Text>
           <Text style={styles.subtitle}>
             Please enter your new password below. You will be logged in automatically after updating.

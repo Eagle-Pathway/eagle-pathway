@@ -13,11 +13,12 @@ import { useAuthStore } from '@/store/authStore';
 import { useScholarshipStore } from '@/store/scholarshipStore';
 import type { Application } from '@/types';
 import { getFlagEmoji } from '@eagle-pathway/shared';
+import { Ionicons } from '@expo/vector-icons';
 
 const AuthenticationTracker = ({ isPremium }: { isPremium: boolean }) => (
   <View style={[CommonStyles.card, { marginTop: Spacing.xl, marginHorizontal: Spacing.xl }]}>
     <Text style={{ fontSize: Typography.base, fontWeight: 'bold', marginBottom: Spacing.sm, color: Colors.text }}>
-      📜 Legal Authentication Tracker
+      Legal Authentication Tracker
     </Text>
     <Text style={{ fontSize: 12, color: Colors.textSecondary, marginBottom: Spacing.md, lineHeight: 18 }}>
       Track your document authentication via the Ministry of Education (MoE) and Ministry of Foreign Affairs (MoFA).
@@ -43,9 +44,10 @@ const AuthenticationTracker = ({ isPremium }: { isPremium: boolean }) => (
     </View>
 
     {isPremium && (
-      <View style={{ marginTop: Spacing.lg, padding: Spacing.md, backgroundColor: '#f0f9ff', borderRadius: Radius.md, borderLeftWidth: 4, borderLeftColor: Colors.blue }}>
-        <Text style={{ fontSize: 12, fontStyle: 'italic', color: '#0369a1' }}>
-          💡 Premium Feature: Our courier team is managing this queue for you automatically at the ministry.
+      <View style={{ marginTop: Spacing.lg, padding: Spacing.md, backgroundColor: '#f0f9ff', borderRadius: Radius.md, borderLeftWidth: 4, borderLeftColor: Colors.blue, flexDirection: 'row', alignItems: 'flex-start', gap: 6 }}>
+        <Ionicons name="bulb-outline" size={14} color={Colors.gold} style={{ marginTop: 2 }} />
+        <Text style={{ flex: 1, fontSize: 12, fontStyle: 'italic', color: '#0369a1' }}>
+          Premium Feature: Our courier team is managing this queue for you automatically at the ministry.
         </Text>
       </View>
     )}
@@ -127,7 +129,7 @@ export function TrackerScreen({ hideHeader = false }: { hideHeader?: boolean }) 
             <View style={trackerStyles.notesBox}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 }}>
                 <View style={{ width: 32, height: 32, backgroundColor: Colors.blueLight, borderRadius: 8, alignItems: 'center', justifyContent: 'center' }}>
-                  <Text style={{ fontSize: 16 }}>✍️</Text>
+                  <Ionicons name="create-outline" size={16} color={Colors.blue} />
                 </View>
                 <Text style={trackerStyles.notesTitle}>AI Feedback</Text>
               </View>
@@ -142,7 +144,10 @@ export function TrackerScreen({ hideHeader = false }: { hideHeader?: boolean }) 
             <View style={{ padding: Spacing.xl, paddingBottom: 0 }}>
               <View style={trackerStyles.aiActionBox}>
                 <View style={{ flex: 1 }}>
-                  <Text style={trackerStyles.aiActionTitle}>✨ AI SOP Assistant</Text>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                    <Ionicons name="sparkles" size={14} color={Colors.text} />
+                    <Text style={trackerStyles.aiActionTitle}>AI SOP Assistant</Text>
+                  </View>
                   <Text style={trackerStyles.aiActionSub}>Get real-time feedback on your Statement of Purpose from Eagle AI.</Text>
                 </View>
                 <ScaleBounce 
@@ -221,7 +226,7 @@ export function TrackerScreen({ hideHeader = false }: { hideHeader?: boolean }) 
         <ErrorState subtitle="We couldn't load your applications. Check your connection and retry." onRetry={load} />
       ) : (applications || []).length === 0 ? (
         <EmptyState
-          icon="📋"
+          icon="clipboard-outline"
           title="No applications yet"
           subtitle="Find a scholarship and start your application journey"
           actionLabel="Browse Scholarships"
@@ -256,7 +261,7 @@ export function TrackerScreen({ hideHeader = false }: { hideHeader?: boolean }) 
                 <Text style={trackerStyles.appName}>{app.scholarship?.name || 'Scholarship'}</Text>
                 {app.consultant && (
                   <View style={trackerStyles.consultantBtn}>
-                    <Text style={{ fontSize: 13 }}>💬</Text>
+                    <Ionicons name="chatbubble-outline" size={13} color={Colors.blue} />
                   </View>
                 )}
                 {app.status === 'accepted' && <Pill label="ACCEPTED! 🎉" variant="green" />}

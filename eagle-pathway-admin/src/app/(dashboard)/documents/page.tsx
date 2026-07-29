@@ -82,7 +82,7 @@ export default function DocumentsPage() {
       setDocuments(prev => prev.map(doc => doc.id === id ? { ...doc, status, reviewer_notes: status === 'rejected' ? reviewerNotes : undefined } : doc));
       
       // Also send a push notification to the student about the status
-      await supabase.from('notifications').insert({
+      const { error: notifError } = await supabase.from('notifications').insert({
         user_id: selectedDoc?.user_id,
         type: status === 'approved' ? 'document_approved' : 'document_rejected',
         title: status === 'approved' ? 'Document Approved 🟢' : 'Document Rejected 🔴',
@@ -90,6 +90,7 @@ export default function DocumentsPage() {
           ? `Your ${selectedDoc?.document_type?.replace('_',' ')} has been verified.` 
           : `Your ${selectedDoc?.document_type?.replace('_',' ')} was rejected. Reason: ${reviewerNotes || 'Please upload a clearer copy.'}`,
       });
+      if (notifError) console.error('Failed to send notification:', notifError);
 
       if (selectedDoc?.id === id) {
         setSelectedDoc(null);

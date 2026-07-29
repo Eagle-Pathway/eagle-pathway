@@ -1,7 +1,8 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Dimensions, Image, Linking } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { Colors, Typography, Spacing, Radius } from '@/utils/theme';
 
 const { height } = Dimensions.get('window');
@@ -13,7 +14,7 @@ export default function SplashScreen() {
         {/* Logo area */}
         <View style={styles.logoSection}>
           <View style={styles.iconWrap}>
-            <Text style={styles.iconText}>🦅</Text>
+            <Image source={require('../../../assets/icon.png')} style={{ width: 64, height: 64, resizeMode: 'contain' }} />
           </View>
           <Text style={styles.appName}>Eagle Pathway</Text>
           <Text style={styles.tagline}>From Classroom to International Scholarship</Text>
@@ -21,18 +22,18 @@ export default function SplashScreen() {
               Claims" safe). */}
           <View style={styles.statsRow}>
             <View style={styles.statItem}>
-              <Text style={styles.statNum}>🎓</Text>
-              <Text style={styles.statLbl}>Scholarships</Text>
+              <Ionicons name="school-outline" size={26} color={Colors.white} style={{ marginBottom: 4 }} />
+              <Text style={styles.statLbl}>Scholarship</Text>
             </View>
             <View style={styles.statDivider} />
             <View style={styles.statItem}>
-              <Text style={styles.statNum}>✍️</Text>
-              <Text style={styles.statLbl}>SOP Review</Text>
+              <Ionicons name="create-outline" size={26} color={Colors.white} style={{ marginBottom: 4 }} />
+              <Text style={styles.statLbl}>SOP</Text>
             </View>
             <View style={styles.statDivider} />
             <View style={styles.statItem}>
-              <Text style={styles.statNum}>📚</Text>
-              <Text style={styles.statLbl}>Tutors</Text>
+              <Ionicons name="library-outline" size={26} color={Colors.white} style={{ marginBottom: 4 }} />
+              <Text style={styles.statLbl}>Tutor</Text>
             </View>
           </View>
         </View>
@@ -45,7 +46,9 @@ export default function SplashScreen() {
           <TouchableOpacity style={styles.btnSecondary} onPress={() => router.push('/(auth)/login')} activeOpacity={0.9}>
             <Text style={styles.btnSecondaryText}>I Already Have an Account</Text>
           </TouchableOpacity>
-          <Text style={styles.footer}>By continuing you agree to our Terms &amp; Privacy Policy</Text>
+          <TouchableOpacity onPress={() => Linking.openURL('https://www.eaglespathway.com/privacy')} activeOpacity={0.7}>
+            <Text style={styles.footer}>By continuing you agree to our Terms &amp; Privacy Policy</Text>
+          </TouchableOpacity>
         </View>
       </SafeAreaView>
     </View>

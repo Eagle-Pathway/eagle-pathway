@@ -183,12 +183,13 @@ export default function ApplicationsPage() {
         
         const appData = applications.find(a => a.id === appId);
         if (appData?.student_id) {
-          await supabase.from('notifications').insert({
+          const { error: notifError } = await supabase.from('notifications').insert({
             user_id: appData.student_id,
             type: 'sop_reviewed',
             title: 'SOP Feedback Available',
             body: `Consultant left some feedback on your ${appData.scholarship?.name} application.`,
           });
+          if (notifError) console.error('Failed to send notification:', notifError);
         }
         setNotification({ type: 'success', message: 'Feedback sent to student!' });
         setTimeout(() => setNotification(null), 3000);

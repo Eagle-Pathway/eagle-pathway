@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { Colors, Typography, Spacing, Radius } from '@/utils/theme';
 import { Button } from '@/components/common';
 import { PasswordInput } from '@/components/PasswordInput';
@@ -15,10 +16,10 @@ import { UserRole } from '@/types';
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const RESEND_COOLDOWN_SECONDS = 60;
 
-const ROLES: { key: UserRole; label: string; emoji: string }[] = [
-  { key: 'student', label: 'Student', emoji: '🎓' },
-  { key: 'parent', label: 'Parent', emoji: '👨‍👩‍👧' },
-  { key: 'tutor', label: 'Tutor', emoji: '📚' },
+const ROLES: { key: UserRole; label: string; icon: React.ComponentProps<typeof Ionicons>['name'] }[] = [
+  { key: 'student', label: 'Student', icon: 'school-outline' },
+  { key: 'parent', label: 'Parent', icon: 'people-outline' },
+  { key: 'tutor', label: 'Tutor', icon: 'library-outline' },
 ];
 
 export default function SignupScreen() {
@@ -124,8 +125,8 @@ export default function SignupScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.successContent}>
-          <View style={styles.successIconWrap}>
-            <Text style={styles.successIcon}>✉️</Text>
+          <View style={styles.iconBadge}>
+            <Ionicons name="mail-outline" size={40} color={Colors.blue} />
           </View>
           <Text style={styles.successTitle}>Verify your email</Text>
           <Text style={styles.successSubtitle}>
@@ -246,7 +247,11 @@ export default function SignupScreen() {
                     onPress={() => setRole(r.key)}
                     activeOpacity={0.8}
                   >
-                    <Text style={styles.roleEmoji}>{r.emoji}</Text>
+                    <Ionicons
+                      name={r.icon}
+                      size={20}
+                      color={role === r.key ? Colors.blue : Colors.textSecondary}
+                    />
                     <Text style={[styles.roleLabel, role === r.key && styles.roleLabelActive]}>
                       {r.label}
                     </Text>
@@ -277,16 +282,12 @@ export default function SignupScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.white },
-  successContent: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: Spacing['3xl'] },
-  successIconWrap: { 
-    width: 100, height: 100, borderRadius: 50, 
-    backgroundColor: Colors.blueLight, 
-    alignItems: 'center', justifyContent: 'center', 
-    marginBottom: Spacing.xl 
+  iconBadge: {
+    width: 80, height: 80, borderRadius: 40,
+    backgroundColor: Colors.blueLight,
+    alignItems: 'center', justifyContent: 'center',
+    marginBottom: Spacing.xl,
   },
-  successIcon: { fontSize: 40 },
-  successTitle: { fontSize: Typography['4xl'], fontWeight: Typography.bold, color: Colors.text, marginBottom: Spacing.md },
-  successSubtitle: { fontSize: Typography.md, color: Colors.textSecondary, textAlign: 'center', lineHeight: 24 },
   backBtn: { padding: Spacing.xl, paddingBottom: 0 },
   backArrow: { fontSize: 24, color: Colors.text },
   header: { padding: Spacing.xl, paddingTop: Spacing.lg },
@@ -319,7 +320,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#fafafa',
   },
   roleChipActive: { borderColor: Colors.blue, backgroundColor: Colors.blueLight },
-  roleEmoji: { fontSize: 20 },
   roleLabel: { fontSize: Typography.sm, fontWeight: Typography.semibold, color: Colors.textSecondary },
   roleLabelActive: { color: Colors.blue },
   dividerRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },

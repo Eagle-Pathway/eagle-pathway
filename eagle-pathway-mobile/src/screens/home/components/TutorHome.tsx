@@ -3,6 +3,7 @@ import { View, Text, ScrollView, RefreshControl, TouchableOpacity, Alert, Modal,
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { format } from 'date-fns';
+import { Ionicons } from '@expo/vector-icons';
 import { Colors, Typography, Spacing, Radius, CommonStyles } from '@/utils/theme';
 import { Avatar, SectionTitle, Skeleton } from '@/components/common';
 import { User, Booking, Tutor, PayoutRequest, BookingStatus } from '@/types';
@@ -59,7 +60,7 @@ export const TutorHome: React.FC<TutorHomeProps> = ({
               </View>
               <View style={styles.heroActions}>
                 <TouchableOpacity style={styles.notifBtn} activeOpacity={0.8}>
-                  <Text style={styles.notifIcon}>🔔</Text>
+                  <Ionicons name="notifications-outline" size={18} color={Colors.white} />
                 </TouchableOpacity>
                 <Avatar initials={initials} size={38} borderRadius={11} />
               </View>
@@ -178,7 +179,7 @@ export const TutorHome: React.FC<TutorHomeProps> = ({
             </View>
             <View style={styles.heroActions}>
               <TouchableOpacity style={styles.notifBtn} onPress={() => router.push('/notifications')} activeOpacity={0.8}>
-                 <Text style={styles.notifIcon}>🔔</Text>
+                 <Ionicons name="notifications-outline" size={18} color={Colors.white} />
                  {unreadCount > 0 && <View style={styles.notifDot}><Text style={styles.notifCount}>{unreadCount}</Text></View>}
               </TouchableOpacity>
               <Avatar initials={initials} size={38} borderRadius={11} />
@@ -205,7 +206,10 @@ export const TutorHome: React.FC<TutorHomeProps> = ({
             </View>
             <View style={styles.quickCard}>
               <Text style={styles.quickCardLabel}>Rating</Text>
-              <Text style={[styles.userName, { fontSize: 24 }]}>{tutorProfile?.rating || '5.0'} ⭐</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                <Text style={[styles.userName, { fontSize: 24 }]}>{tutorProfile?.rating || '5.0'}</Text>
+                <Ionicons name="star" size={18} color="#f59e0b" />
+              </View>
             </View>
           </View>
         </View>
@@ -217,7 +221,7 @@ export const TutorHome: React.FC<TutorHomeProps> = ({
           activeOpacity={0.85}
         >
           <View style={{ flex: 1 }}>
-            <Text style={styles.jobsBannerTitle}>📌 Tutor Job Board</Text>
+            <Text style={styles.jobsBannerTitle}>Tutor Job Board</Text>
             <Text style={styles.jobsBannerSub}>Browse open jobs and apply now</Text>
           </View>
           <Text style={{ fontSize: 20, color: Colors.white }}>→</Text>
@@ -316,7 +320,7 @@ export const TutorHome: React.FC<TutorHomeProps> = ({
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Request Payout</Text>
-              <TouchableOpacity onPress={() => setIsPayoutModalVisible(false)}><Text style={{ fontSize: 20 }}>✕</Text></TouchableOpacity>
+              <TouchableOpacity onPress={() => setIsPayoutModalVisible(false)}><Ionicons name="close" size={20} color={Colors.text} /></TouchableOpacity>
             </View>
             <Text style={styles.modalLabel}>Amount to Withdraw (ETB)</Text>
             <TextInput style={styles.modalInput} keyboardType="numeric" placeholder="e.g. 5000" value={payoutForm.amount} onChangeText={t => setPayoutForm(f => ({ ...f, amount: t }))} />

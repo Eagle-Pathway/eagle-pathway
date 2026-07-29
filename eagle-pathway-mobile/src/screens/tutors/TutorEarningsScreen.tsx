@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { format } from 'date-fns';
+import { Ionicons } from '@expo/vector-icons';
 import { Colors, Typography, Spacing, Radius, CommonStyles } from '@/utils/theme';
 import { EmptyState } from '@/components/common';
 import { ListSkeleton } from '@/components/LoadingSkeleton';
@@ -84,7 +85,7 @@ export default function TutorEarningsScreen() {
       {loading ? (
         <View style={{ paddingHorizontal: Spacing.xl }}><ListSkeleton count={4} /></View>
       ) : (tutorPayouts || []).length === 0 ? (
-        <EmptyState icon="💸" title="No payouts yet" subtitle="When you request a withdrawal it will appear here." />
+        <EmptyState icon="wallet-outline" title="No payouts yet" subtitle="When you request a withdrawal it will appear here." />
       ) : (
         <ScrollView contentContainerStyle={{ paddingBottom: 100 }} showsVerticalScrollIndicator={false}>
           {tutorPayouts.map(p => (
@@ -112,7 +113,7 @@ export default function TutorEarningsScreen() {
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Request Payout</Text>
-              <TouchableOpacity onPress={() => setModalVisible(false)}><Text style={{ fontSize: 20 }}>✕</Text></TouchableOpacity>
+              <TouchableOpacity onPress={() => setModalVisible(false)}><Ionicons name="close" size={20} color={Colors.text} /></TouchableOpacity>
             </View>
             <Text style={styles.modalLabel}>Amount to Withdraw (ETB)</Text>
             <TextInput style={styles.modalInput} keyboardType="numeric" placeholder="e.g. 5000" value={form.amount} onChangeText={t => setForm(f => ({ ...f, amount: t }))} />

@@ -23,11 +23,11 @@ interface Message {
 }
 
 const QUICK_ACTIONS = [
-  { id: '1', label: 'Review my SOP', icon: '✍️', prompt: 'Can you help me review my Statement of Purpose?' },
-  { id: '2', label: 'Find Scholarships', icon: '🎓', prompt: 'What are the best scholarships for Ethiopian students right now?' },
-  { id: '3', label: 'Document Help', icon: '📄', prompt: 'Which documents do I need for a PhD application?' },
-  { id: '4', label: 'Visa Guide', icon: '🌍', prompt: 'How do I start the visa process for Hungary?' },
-  { id: '5', label: 'Package info', icon: '💰', prompt: 'Tell me about the Standard and Premium packages.' },
+  { id: '1', label: 'Review my SOP', icon: 'create-outline', prompt: 'Can you help me review my Statement of Purpose?' },
+  { id: '2', label: 'Find Scholarships', icon: 'school-outline', prompt: 'What are the best scholarships for Ethiopian students right now?' },
+  { id: '3', label: 'Document Help', icon: 'document-text-outline', prompt: 'Which documents do I need for a PhD application?' },
+  { id: '4', label: 'Visa Guide', icon: 'globe-outline', prompt: 'How do I start the visa process for Hungary?' },
+  { id: '5', label: 'Package info', icon: 'cash-outline', prompt: 'Tell me about the Standard and Premium packages.' },
 ];
 
 const ASSISTANT_API_URL = process.env.EXPO_PUBLIC_EAGLE_ASSISTANT_API_URL;
@@ -109,7 +109,7 @@ export default function AssistantScreen() {
       <View style={[styles.messageWrapper, isUser ? styles.messageWrapperUser : styles.messageWrapperAssistant]}>
         {!isUser && (
           <View style={styles.botIcon}>
-            <Text style={{ fontSize: 16 }}>🤖</Text>
+            <Ionicons name="hardware-chip-outline" size={16} color={Colors.white} />
           </View>
         )}
         <View style={[styles.messageBubble, isUser ? styles.messageBubbleUser : styles.messageBubbleAssistant]}>
@@ -152,7 +152,7 @@ export default function AssistantScreen() {
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
               <View style={styles.emptyIconBg}>
-                <Text style={styles.emptyIcon}>🤖</Text>
+                <Ionicons name="hardware-chip-outline" size={40} color={Colors.textSecondary} />
               </View>
               <Text style={styles.emptyTitle}>Your AI Academic Guide</Text>
               <Text style={styles.emptyText}>I can help you with scholarship searches, SOP reviews, visa info, and more.</Text>
@@ -170,7 +170,7 @@ export default function AssistantScreen() {
                   onPress={() => sendMessage(action.prompt)}
                   disabled={isLoading}
                 >
-                  <Text style={{ marginRight: 6 }}>{action.icon}</Text>
+                  <Ionicons name={action.icon as any} size={16} color={Colors.blue} style={{ marginRight: 6 }} />
                   <Text style={styles.quickChipText}>{action.label}</Text>
                 </TouchableOpacity>
               ))}

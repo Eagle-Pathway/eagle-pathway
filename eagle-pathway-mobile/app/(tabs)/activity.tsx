@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import { Colors, Typography, Spacing, CommonStyles } from '../../src/utils/theme';
 import { BookingsScreen } from '../../src/screens/index';
 import { TrackerScreen } from '../../src/screens/index';
@@ -11,10 +12,10 @@ import { getUserRole } from '../../src/utils/role';
 
 type Segment = 'bookings' | 'tracker' | 'pay';
 
-const SEGMENTS: { key: Segment; label: string; emoji: string }[] = [
-  { key: 'bookings', label: 'Sessions', emoji: '📅' },
-  { key: 'tracker', label: 'Tracker', emoji: '📊' },
-  { key: 'pay', label: 'Pay', emoji: '💳' },
+const SEGMENTS: { key: Segment; label: string; icon: React.ComponentProps<typeof Ionicons>['name'] }[] = [
+  { key: 'bookings', label: 'Sessions', icon: 'calendar-outline' },
+  { key: 'tracker', label: 'Tracker', icon: 'bar-chart-outline' },
+  { key: 'pay', label: 'Pay', icon: 'card-outline' },
 ];
 
 export default function ActivityScreen() {
@@ -41,7 +42,11 @@ export default function ActivityScreen() {
               activeOpacity={0.8}
             >
               <Text style={[styles.segText, active === s.key && styles.segTextActive]}>
-                {s.emoji} {s.label}
+                <Ionicons
+                  name={s.icon}
+                  size={12}
+                  color={active === s.key ? Colors.blueDark : 'rgba(255,255,255,0.7)'}
+                />{' '}{s.label}
               </Text>
             </TouchableOpacity>
           ))}

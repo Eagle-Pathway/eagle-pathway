@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, ScrollView, RefreshControl, TouchableOpacity, Alert, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { Colors, Typography, Spacing, CommonStyles } from '@/utils/theme';
 import { Avatar, SectionTitle, EmptyState, Skeleton, ScaleBounce } from '@/components/common';
 import { User, Application, Booking } from '@/types';
@@ -45,7 +46,7 @@ export const ParentHome: React.FC<ParentHomeProps> = ({
               </View>
               <View style={styles.heroActions}>
                 <TouchableOpacity style={styles.notifBtn} activeOpacity={0.8}>
-                  <Text style={styles.notifIcon}>🔔</Text>
+                  <Ionicons name="notifications-outline" size={18} color={Colors.white} />
                 </TouchableOpacity>
                 <Avatar initials={initials} size={38} borderRadius={11} />
               </View>
@@ -99,7 +100,7 @@ export const ParentHome: React.FC<ParentHomeProps> = ({
             </View>
             <View style={styles.heroActions}>
               <TouchableOpacity style={styles.notifBtn} onPress={() => router.push('/notifications')} activeOpacity={0.8}>
-                 <Text style={styles.notifIcon}>🔔</Text>
+                 <Ionicons name="notifications-outline" size={18} color={Colors.white} />
                  {unreadCount > 0 && <View style={styles.notifDot}><Text style={styles.notifCount}>{unreadCount}</Text></View>}
               </TouchableOpacity>
               <Avatar initials={initials} size={38} borderRadius={11} />
@@ -109,9 +110,9 @@ export const ParentHome: React.FC<ParentHomeProps> = ({
 
         {hasNoChildren ? (
           <View style={[CommonStyles.flex1, { padding: Spacing['4xl'] }]}>
-            <EmptyState 
-              icon="👨‍👩‍👧" 
-              title="No linked students" 
+            <EmptyState
+              icon="people-outline"
+              title="No linked students"
               subtitle="Link your child's account to track their scholarship applications and progress."
               actionLabel="How It Works"
               onAction={() => Alert.alert('Link Student', 'Ask your child to go to Profile → Link Parent and enter your phone number.')}

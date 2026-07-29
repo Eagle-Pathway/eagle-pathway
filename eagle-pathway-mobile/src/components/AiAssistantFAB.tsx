@@ -1,5 +1,6 @@
 import React from 'react';
-import { TouchableOpacity, StyleSheet, View, Text } from 'react-native';
+import { TouchableOpacity, StyleSheet, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors } from '../utils/theme';
@@ -21,7 +22,7 @@ export default function AiAssistantFAB() {
       activeOpacity={0.8}
     >
       <View style={styles.iconContainer}>
-        <Text style={styles.icon}>🤖</Text>
+        <Ionicons name="sparkles" size={20} color="#fff" />
       </View>
     </TouchableOpacity>
   );
@@ -50,8 +51,5 @@ const styles = StyleSheet.create({
   iconContainer: {
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  icon: {
-    fontSize: 20,
   },
 });

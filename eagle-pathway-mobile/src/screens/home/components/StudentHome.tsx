@@ -3,6 +3,7 @@ import { View, Text, ScrollView, RefreshControl, TouchableOpacity, StyleSheet } 
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { format } from 'date-fns';
+import { Ionicons } from '@expo/vector-icons';
 import { Colors, Typography, Spacing, Radius, CommonStyles } from '@/utils/theme';
 import { ProgressBar, Avatar, SectionTitle, Skeleton, ScaleBounce } from '@/components/common';
 import { openWhatsApp } from '@/utils/linking';
@@ -61,7 +62,7 @@ export const StudentHome: React.FC<StudentHomeProps> = ({
               </View>
               <View style={styles.heroActions}>
                 <TouchableOpacity style={styles.notifBtn} activeOpacity={0.8}>
-                  <Text style={styles.notifIcon}>🔔</Text>
+                  <Ionicons name="notifications-outline" size={18} color={Colors.white} />
                 </TouchableOpacity>
                 <Avatar initials={initials} size={38} borderRadius={11} />
               </View>
@@ -161,8 +162,8 @@ export const StudentHome: React.FC<StudentHomeProps> = ({
   const premiumApp = applications.find(a => a.package_tier === 'premium' || a.package_tier === 'standard');
   const assignedConsultant = premiumApp?.consultant;
 
-  const TASK_ICONS: Record<string, string> = {
-    document: '📄', sop: '✍️', payment: '💰', session: '📅', other: '🎯'
+  const TASK_ICONS: Record<string, React.ComponentProps<typeof Ionicons>['name']> = {
+    document: 'document-text-outline', sop: 'create-outline', payment: 'cash-outline', session: 'calendar-outline', other: 'flag-outline'
   };
 
   return (
@@ -183,7 +184,7 @@ export const StudentHome: React.FC<StudentHomeProps> = ({
             </View>
             <View style={styles.heroActions}>
               <TouchableOpacity style={styles.notifBtn} onPress={() => router.push('/notifications')} activeOpacity={0.8}>
-                <Text style={styles.notifIcon}>🔔</Text>
+                <Ionicons name="notifications-outline" size={18} color={Colors.white} />
                 {unreadCount > 0 && <View style={styles.notifDot}><Text style={styles.notifCount}>{unreadCount}</Text></View>}
               </TouchableOpacity>
               <TouchableOpacity onPress={() => router.push('/(tabs)/profile')} activeOpacity={0.9}>
@@ -194,10 +195,10 @@ export const StudentHome: React.FC<StudentHomeProps> = ({
 
           <View style={styles.quickCards}>
             {[
-              { label: 'Find Tutor', sub: `${availableTutorsCount ?? 0} available`, emoji: '👨‍🏫', route: '/(tabs)/tutors' },
-              { label: 'Scholarships', sub: `${openScholarshipsCount ?? 0} open now`, emoji: '🎓', route: '/(tabs)/scholarships' },
-              { label: 'My Tracker', sub: `${activeApplications.length} active`, emoji: '📊', route: '/tracker' },
-              { label: 'Resources', sub: 'Guides & tips', emoji: '📚', route: '/resources' },
+              { label: 'Find Tutor', sub: `${availableTutorsCount ?? 0} available`, icon: 'school-outline' as const, route: '/(tabs)/tutors' },
+              { label: 'Scholarships', sub: `${openScholarshipsCount ?? 0} open now`, icon: 'ribbon-outline' as const, route: '/(tabs)/scholarships' },
+              { label: 'My Tracker', sub: `${activeApplications.length} active`, icon: 'bar-chart-outline' as const, route: '/tracker' },
+              { label: 'Resources', sub: 'Guides & tips', icon: 'library-outline' as const, route: '/resources' },
             ].map(card => (
               <TouchableOpacity
                 key={card.label}
@@ -205,7 +206,7 @@ export const StudentHome: React.FC<StudentHomeProps> = ({
                 onPress={() => router.push(card.route as any)}
                 activeOpacity={0.8}
               >
-                <View style={styles.quickCardIcon}><Text style={{ fontSize: 16 }}>{card.emoji}</Text></View>
+                <View style={styles.quickCardIcon}><Ionicons name={card.icon} size={16} color={Colors.white} /></View>
                 <Text style={styles.quickCardLabel} numberOfLines={1}>{card.label}</Text>
                 <Text style={styles.quickCardSub} numberOfLines={1}>{card.sub}</Text>
               </TouchableOpacity>
@@ -230,7 +231,7 @@ export const StudentHome: React.FC<StudentHomeProps> = ({
                   <Text style={styles.consultantName}>{assignedConsultant.full_name}</Text>
                   <Text style={styles.consultantSub}>Senior Scholarship Consultant</Text>
                 </View>
-                <View style={styles.waIcon}><Text style={{ fontSize: 20 }}>💬</Text></View>
+                <View style={styles.waIcon}><Ionicons name="chatbubble-outline" size={20} color={Colors.green} /></View>
               </View>
             </View>
           </TouchableOpacity>
@@ -243,7 +244,7 @@ export const StudentHome: React.FC<StudentHomeProps> = ({
             activeOpacity={0.9}
           >
             <View style={[styles.readinessIconWrap, { backgroundColor: 'rgba(255,255,255,0.1)' }]}>
-              <Text style={{ fontSize: 20 }}>🧠</Text>
+              <Ionicons name="bulb-outline" size={20} color={Colors.white} />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={[styles.readinessTitle, { color: Colors.white }]}>Personalize Your Feed</Text>
@@ -258,7 +259,7 @@ export const StudentHome: React.FC<StudentHomeProps> = ({
 
         {!assignedConsultant && user.gpa && (
           <TouchableOpacity style={styles.readinessBanner} onPress={() => router.push('/progress')} activeOpacity={0.9}>
-            <View style={styles.readinessIconWrap}><Text style={{ fontSize: 20 }}>⭐</Text></View>
+            <View style={styles.readinessIconWrap}><Ionicons name="star-outline" size={20} color={Colors.gold} /></View>
             <View style={{ flex: 1 }}>
               <Text style={styles.readinessTitle}>Scholarship Readiness: {readinessScore}%</Text>
               <Text style={styles.readinessSub}>Tap to view your progress and complete tasks</Text>
@@ -269,7 +270,7 @@ export const StudentHome: React.FC<StudentHomeProps> = ({
 
         {closingSoon.length > 0 && (
           <View style={{ marginTop: Spacing.xl }}>
-            <SectionTitle title="⏰ Closing Soon" />
+            <SectionTitle title="Closing Soon" />
             <View style={{ paddingHorizontal: Spacing.xl, gap: Spacing.sm }}>
               {closingSoon.map(item => {
                 const urgency = deadlineUrgency(item.daysLeft);
@@ -383,7 +384,7 @@ export const StudentHome: React.FC<StudentHomeProps> = ({
                   <View style={{ flex: 1, marginLeft: Spacing.md }}>
                     <Text style={[styles.taskTitle, task.status === 'completed' && styles.taskTextDone]}>{task.title}</Text>
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 }}>
-                      <Text style={{ fontSize: 12 }}>{TASK_ICONS[task.type] || '🎯'}</Text>
+                      <Ionicons name={TASK_ICONS[task.type] ?? 'flag-outline'} size={12} color={Colors.textSecondary} />
                       <Text style={styles.taskSub}>
                         {task.due_date ? `Due ${format(new Date(task.due_date), 'MMM d')}` : task.type.toUpperCase()}
                       </Text>

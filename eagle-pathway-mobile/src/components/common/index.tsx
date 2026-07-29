@@ -3,6 +3,7 @@ import {
   View, Text, TouchableOpacity, ActivityIndicator,
   StyleSheet, ViewStyle, TextStyle,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { Colors, Typography, Radius, Spacing, CommonStyles } from '../../utils/theme';
 import { ScaleBounce } from './ScaleBounce';
 
@@ -70,7 +71,7 @@ export const SectionTitle: React.FC<{ title: string; style?: TextStyle }> = ({ t
 
 // ─── Empty State ──────────────────────────────────────────────────────────────
 interface EmptyStateProps {
-  icon: string;
+  icon: React.ComponentProps<typeof Ionicons>['name'];
   title: string;
   subtitle: string;
   actionLabel?: string;
@@ -82,7 +83,7 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
   icon, title, subtitle, actionLabel, onAction, style,
 }) => (
   <View style={[styles.emptyState, style]}>
-    <Text style={styles.emptyIcon}>{icon}</Text>
+    <Ionicons name={icon} size={48} color={Colors.textSecondary} />
     <Text style={styles.emptyTitle}>{title}</Text>
     <Text style={styles.emptySubtitle}>{subtitle}</Text>
     {actionLabel && onAction && (
@@ -108,7 +109,7 @@ export const ErrorState: React.FC<ErrorStateProps> = ({
   style,
 }) => (
   <View style={[styles.emptyState, style]}>
-    <Text style={styles.emptyIcon}>📡</Text>
+    <Ionicons name="wifi-outline" size={48} color={Colors.textSecondary} />
     <Text style={styles.emptyTitle}>{title}</Text>
     <Text style={styles.emptySubtitle}>{subtitle}</Text>
     {onRetry && (
@@ -217,7 +218,6 @@ const styles = StyleSheet.create({
   btnText_md: { fontSize: Typography.md },
   btnText_lg: { fontSize: Typography.lg },
   emptyState: { alignItems: 'center', padding: Spacing['4xl'], gap: Spacing.md },
-  emptyIcon: { fontSize: 40 },
   emptyTitle: { fontSize: Typography.xl, fontWeight: Typography.bold, color: Colors.text, textAlign: 'center' },
   emptySubtitle: { fontSize: Typography.md, color: Colors.textSecondary, textAlign: 'center', lineHeight: 22 },
   emptyAction: { backgroundColor: Colors.blue, paddingVertical: 12, paddingHorizontal: 24, borderRadius: Radius.lg, marginTop: Spacing.md },

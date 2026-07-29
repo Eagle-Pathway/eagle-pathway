@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { Colors, Typography, Spacing, Radius, CommonStyles } from '@/utils/theme';
 import { Pill, EmptyState, ErrorState, Avatar, Dropdown, Skeleton } from '@/components/common';
 import { tutorsService } from '@/services/tutors';
@@ -79,13 +80,13 @@ export default function TutorsScreen() {
         <View style={styles.header}>
           <Text style={styles.title}>Find a Tutor</Text>
           <View style={styles.filterBtn}>
-            <Text style={styles.filterIcon}>⚙️</Text>
+            <Ionicons name="options-outline" size={20} color={Colors.text} />
           </View>
         </View>
 
         {/* Search */}
         <View style={styles.searchBar}>
-          <Text style={styles.searchIcon}>🔍</Text>
+          <Ionicons name="search-outline" size={16} color={Colors.textSecondary} />
           <TextInput style={styles.searchInput} editable={false} placeholder="Loading tutors..." placeholderTextColor={Colors.textSecondary} />
         </View>
 
@@ -128,13 +129,13 @@ export default function TutorsScreen() {
       <View style={styles.header}>
         <Text style={styles.title}>Find a Tutor</Text>
         <TouchableOpacity style={styles.filterBtn} activeOpacity={0.8}>
-          <Text style={styles.filterIcon}>⚙️</Text>
+          <Ionicons name="options-outline" size={20} color={Colors.text} />
         </TouchableOpacity>
       </View>
 
       {/* Search */}
       <View style={styles.searchBar}>
-        <Text style={styles.searchIcon}>🔍</Text>
+        <Ionicons name="search-outline" size={16} color={Colors.textSecondary} />
         <TextInput
           style={styles.searchInput}
           placeholder="Search by subject or name..."
@@ -206,7 +207,7 @@ export default function TutorsScreen() {
         <ErrorState subtitle="We couldn't load tutors. Check your connection and retry." onRetry={load} style={{ padding: Spacing.xl }} />
       ) : filtered.length === 0 ? (
         <EmptyState
-          icon="👨‍🏫"
+          icon="school-outline"
           title="No tutors found"
           subtitle="Try adjusting your search or filters"
           actionLabel="Clear Filters"
@@ -243,7 +244,7 @@ function TutorCard({ tutor }: { tutor: Tutor }) {
           <Text style={styles.tutorName}>{tutor.user?.full_name || 'Tutor'}</Text>
           <Text style={styles.tutorSubject}>{tutor.subjects.slice(0, 2).join(', ')} · {tutor.grade_levels[0]}</Text>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, marginTop: 4 }}>
-            <Text style={styles.rating}>⭐ {tutor.rating.toFixed(1)}</Text>
+            <Text style={styles.rating}><Ionicons name="star" size={12} color="#f59e0b" /> {tutor.rating.toFixed(1)}</Text>
             <Text style={styles.reviewCount}>({tutor.total_reviews} reviews)</Text>
           </View>
         </View>
@@ -285,7 +286,7 @@ function TutorCard({ tutor }: { tutor: Tutor }) {
           }}
           activeOpacity={0.85}
         >
-          <Text style={{ fontSize: 16 }}>💬</Text>
+          <Ionicons name="chatbubble-outline" size={16} color={Colors.blue} />
         </TouchableOpacity>
       </View>
     </TouchableOpacity>

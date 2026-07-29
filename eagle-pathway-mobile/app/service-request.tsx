@@ -12,26 +12,27 @@ import { supabase } from '@/services/supabase';
 import { useAuthStore } from '@/store/authStore';
 import { ALL_COUNTRIES } from '@/utils/countries';
 import { format } from 'date-fns';
+import { Ionicons } from '@expo/vector-icons';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const SERVICE_TYPES = [
-  { value: 'international_payment', label: 'Application Fee', icon: '📄' },
-  { value: 'tuition_payment',       label: 'Tuition Fee',     icon: '🎓' },
-  { value: 'bank_transfer',         label: 'Embassy Fee',     icon: '🏛️' },
-  { value: 'other',                 label: "Other Int'l Fees", icon: '💳' },
+  { value: 'international_payment', label: 'Application Fee', icon: 'document-text-outline' },
+  { value: 'tuition_payment',       label: 'Tuition Fee',     icon: 'school-outline' },
+  { value: 'bank_transfer',         label: 'Embassy Fee',     icon: 'business-outline' },
+  { value: 'other',                 label: "Other Int'l Fees", icon: 'card-outline' },
 ];
 
 const CURRENCIES = ['ETB', 'USD', 'EUR', 'GBP', 'CAD'];
 const CURRENCY_OPTIONS = CURRENCIES.map(c => ({ label: c, value: c }));
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string; icon: string }> = {
-  pending:   { label: 'Pending',   color: '#92400e', bg: '#fef3c7', icon: '⏳' },
-  reviewing: { label: 'Reviewing', color: '#1e40af', bg: '#dbeafe', icon: '🔍' },
-  approved:  { label: 'Approved',  color: '#065f46', bg: '#d1fae5', icon: '✅' },
-  rejected:  { label: 'Rejected',  color: '#991b1b', bg: '#fee2e2', icon: '❌' },
-  completed: { label: 'Completed', color: '#4c1d95', bg: '#ede9fe', icon: '🎉' },
-  cancelled: { label: 'Cancelled', color: '#374151', bg: '#f3f4f6', icon: '🚫' },
+  pending:   { label: 'Pending',   color: '#92400e', bg: '#fef3c7', icon: 'hourglass-outline' },
+  reviewing: { label: 'Reviewing', color: '#1e40af', bg: '#dbeafe', icon: 'search-outline' },
+  approved:  { label: 'Approved',  color: '#065f46', bg: '#d1fae5', icon: 'checkmark-circle' },
+  rejected:  { label: 'Rejected',  color: '#991b1b', bg: '#fee2e2', icon: 'close-circle' },
+  completed: { label: 'Completed', color: '#4c1d95', bg: '#ede9fe', icon: 'checkmark-circle' },
+  cancelled: { label: 'Cancelled', color: '#374151', bg: '#f3f4f6', icon: 'remove-circle' },
 };
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -62,7 +63,7 @@ function FieldError({ message }: { message?: string }) {
   if (!message) return null;
   return (
     <View style={errStyles.wrap}>
-      <Text style={errStyles.icon}>⚠️</Text>
+      <Ionicons name="warning-outline" size={16} color={Colors.red} />
       <Text style={errStyles.text}>{message}</Text>
     </View>
   );
@@ -71,8 +72,9 @@ function FieldError({ message }: { message?: string }) {
 function StatusBadge({ status }: { status: string }) {
   const cfg = STATUS_CONFIG[status] ?? STATUS_CONFIG.pending;
   return (
-    <View style={[badgeStyles.wrap, { backgroundColor: cfg.bg }]}>
-      <Text style={[badgeStyles.text, { color: cfg.color }]}>{cfg.icon} {cfg.label}</Text>
+    <View style={[badgeStyles.wrap, { backgroundColor: cfg.bg, flexDirection: 'row', alignItems: 'center', gap: 4 }]}>
+      <Ionicons name={cfg.icon as any} size={12} color={cfg.color} />
+      <Text style={[badgeStyles.text, { color: cfg.color }]}>{cfg.label}</Text>
     </View>
   );
 }
@@ -108,7 +110,7 @@ function RequestHistory({ userId }: { userId: string }) {
   if (requests.length === 0) {
     return (
       <View style={[CommonStyles.flex1, CommonStyles.center, { padding: Spacing.xl }]}>
-        <Text style={{ fontSize: 40, marginBottom: Spacing.md }}>📭</Text>
+        <Ionicons name="mail-open-outline" size={40} color={Colors.textSecondary} style={{ marginBottom: Spacing.md }} />
         <Text style={{ fontSize: Typography.lg, fontWeight: Typography.bold, color: Colors.text, textAlign: 'center' }}>
           No requests yet
         </Text>
@@ -131,7 +133,7 @@ function RequestHistory({ userId }: { userId: string }) {
           <View style={histStyles.card}>
             <View style={histStyles.cardTop}>
               <View style={histStyles.iconWrap}>
-                <Text style={{ fontSize: 22 }}>{svc?.icon ?? '💳'}</Text>
+                <Ionicons name={(svc?.icon ?? 'card-outline') as any} size={22} color={Colors.blue} />
               </View>
               <View style={{ flex: 1, marginLeft: Spacing.md }}>
                 <Text style={histStyles.svcLabel}>{svc?.label ?? r.service_type}</Text>
@@ -285,7 +287,7 @@ function NewRequestForm({
             onPress={() => setServiceType(st.value)}
             activeOpacity={0.8}
           >
-            <Text style={{ fontSize: 24 }}>{st.icon}</Text>
+            <Ionicons name={st.icon as any} size={24} color={serviceType === st.value ? Colors.blue : Colors.text} />
             <Text style={[styles.serviceLabel, serviceType === st.value && { color: Colors.blue }]}>
               {st.label}
             </Text>
@@ -472,18 +474,20 @@ export default function ServiceRequestScreen({
       {/* Tab switcher */}
       <View style={styles.tabBar}>
         <TouchableOpacity
-          style={[styles.tabBtn, view === 'new' && styles.tabBtnActive]}
+          style={[styles.tabBtn, view === 'new' && styles.tabBtnActive, { flexDirection: 'row', justifyContent: 'center', gap: 6 }]}
           onPress={() => setView('new')}
           activeOpacity={0.8}
         >
-          <Text style={[styles.tabText, view === 'new' && styles.tabTextActive]}>➕ New Request</Text>
+          <Ionicons name="add-outline" size={14} color={view === 'new' ? Colors.white : Colors.textSecondary} />
+          <Text style={[styles.tabText, view === 'new' && styles.tabTextActive]}>New Request</Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.tabBtn, view === 'history' && styles.tabBtnActive]}
+          style={[styles.tabBtn, view === 'history' && styles.tabBtnActive, { flexDirection: 'row', justifyContent: 'center', gap: 6 }]}
           onPress={() => setView('history')}
           activeOpacity={0.8}
         >
-          <Text style={[styles.tabText, view === 'history' && styles.tabTextActive]}>📋 My Requests</Text>
+          <Ionicons name="clipboard-outline" size={14} color={view === 'history' ? Colors.white : Colors.textSecondary} />
+          <Text style={[styles.tabText, view === 'history' && styles.tabTextActive]}>My Requests</Text>
         </TouchableOpacity>
       </View>
 

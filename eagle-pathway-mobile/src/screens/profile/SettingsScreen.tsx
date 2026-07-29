@@ -9,9 +9,10 @@ import { Colors, Typography, Spacing, Radius } from '@/utils/theme';
 import { useAuthStore } from '@/store/authStore';
 import { notificationPrefsService, DEFAULT_PREFERENCES, type NotificationPreferences } from '@/services/notificationPrefs';
 import * as ExpoLinking from 'expo-linking';
+import { Ionicons } from '@expo/vector-icons';
 
 // Public privacy policy — must be published here before Play submission.
-const PRIVACY_POLICY_URL = 'https://eagle-pathway.vercel.app/privacy';
+const PRIVACY_POLICY_URL = 'https://www.eaglespathway.com/privacy';
 const ANDROID_PACKAGE = 'com.eaglepathway.app';
 
 export function SettingsScreen() {
@@ -95,24 +96,24 @@ export function SettingsScreen() {
     {
       title: 'Notifications',
       items: [
-        { icon: '🔔', label: 'Session Reminders', type: 'toggle', value: prefs.session_reminders, onChange: (v: boolean) => setPref('session_reminders', v) },
-        { icon: '🎓', label: 'Scholarship Alerts', type: 'toggle', value: prefs.scholarship_alerts, onChange: (v: boolean) => setPref('scholarship_alerts', v) },
-        { icon: '📄', label: 'Document Updates', type: 'toggle', value: prefs.document_updates, onChange: (v: boolean) => setPref('document_updates', v) },
-        { icon: '💬', label: 'Message Notifications', type: 'toggle', value: prefs.message_notifications, onChange: (v: boolean) => setPref('message_notifications', v) },
+        { icon: 'notifications-outline', label: 'Session Reminders', type: 'toggle', value: prefs.session_reminders, onChange: (v: boolean) => setPref('session_reminders', v) },
+        { icon: 'school-outline', label: 'Scholarship Alerts', type: 'toggle', value: prefs.scholarship_alerts, onChange: (v: boolean) => setPref('scholarship_alerts', v) },
+        { icon: 'document-text-outline', label: 'Document Updates', type: 'toggle', value: prefs.document_updates, onChange: (v: boolean) => setPref('document_updates', v) },
+        { icon: 'chatbubble-outline', label: 'Message Notifications', type: 'toggle', value: prefs.message_notifications, onChange: (v: boolean) => setPref('message_notifications', v) },
       ],
     },
     {
       title: 'Account',
       items: [
-        { icon: '🔒', label: 'Change Password', type: 'nav', onPress: handleChangePassword },
-        { icon: '🛡️', label: 'Privacy & Data', type: 'nav', onPress: handlePrivacy },
+        { icon: 'lock-closed-outline', label: 'Change Password', type: 'nav', onPress: handleChangePassword },
+        { icon: 'shield-checkmark-outline', label: 'Privacy & Data', type: 'nav', onPress: handlePrivacy },
       ],
     },
     {
       title: 'Support',
       items: [
-        { icon: '⭐', label: 'Rate Eagle Pathway', type: 'nav', onPress: handleRate },
-        { icon: '🗑️', label: deleting ? 'Deleting…' : 'Delete Account', type: 'danger', route: null, onPress: handleDeleteAccount },
+        { icon: 'star-outline', label: 'Rate Eagle Pathway', type: 'nav', onPress: handleRate },
+        { icon: 'trash-outline', label: deleting ? 'Deleting…' : 'Delete Account', type: 'danger', route: null, onPress: handleDeleteAccount },
       ],
     },
   ];
@@ -121,7 +122,7 @@ export function SettingsScreen() {
     <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
       <View style={styles.header}>
         <TouchableOpacity style={styles.backBtn} onPress={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)/home'))} activeOpacity={0.8}>
-          <Text style={{ fontSize: 20, color: Colors.text }}>←</Text>
+          <Ionicons name="arrow-back" size={20} color={Colors.text} />
         </TouchableOpacity>
         <Text style={styles.title}>Settings</Text>
       </View>
@@ -139,7 +140,9 @@ export function SettingsScreen() {
                   style={[styles.item, i === section.items.length - 1 && { borderBottomWidth: 0 }]}
                   {...(onPress ? { onPress, activeOpacity: 0.7 } : {})}
                 >
-                  <View style={[styles.icon, { backgroundColor: Colors.grayLight }]}><Text style={{ fontSize: 16 }}>{item.icon}</Text></View>
+                  <View style={[styles.icon, { backgroundColor: Colors.grayLight }]}>
+                    <Ionicons name={item.icon as any} size={18} color={item.type === 'danger' ? Colors.red : Colors.textSecondary} />
+                  </View>
                   <Text style={[styles.label, item.type === 'danger' && { color: Colors.red }]}>{item.label}</Text>
                   {item.type === 'toggle' && (
                     <Switch

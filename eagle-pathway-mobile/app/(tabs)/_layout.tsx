@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Ionicons } from '@expo/vector-icons';
 import { Tabs, usePathname, router } from 'expo-router';
 import { View, Text, StyleSheet, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -11,7 +12,7 @@ import { getUserRole } from '../../src/utils/role';
 import { supabase } from '../../src/services/supabase';
 import { ONBOARDED_KEY } from '../../src/screens/onboarding/OnboardingScreen';
 
-function TabIcon({ emoji, label, focused, dot }: { emoji: string; label: string; focused: boolean; dot?: boolean }) {
+function TabIcon({ icon, label, focused, dot }: { icon: React.ComponentProps<typeof Ionicons>['name']; label: string; focused: boolean; dot?: boolean }) {
   // Scale the label down on narrow screens (e.g. 360px wide) so longer labels
   // ("Dashboard", "Earnings", "Activity") stay on one line without truncating.
   const { width } = useWindowDimensions();
@@ -19,7 +20,11 @@ function TabIcon({ emoji, label, focused, dot }: { emoji: string; label: string;
   return (
     <View style={tabStyles.item}>
       <View>
-        <Text style={tabStyles.emoji}>{emoji}</Text>
+        <Ionicons
+          name={focused ? icon.replace(/-outline$/, '') as React.ComponentProps<typeof Ionicons>['name'] : icon}
+          size={24}
+          color={focused ? Colors.blue : '#9ca3af'}
+        />
         {dot && <View style={tabStyles.notifDot} />}
       </View>
       <Text
@@ -39,7 +44,6 @@ const tabStyles = StyleSheet.create({
   // and evenly spaced across all screen sizes without risking clipping on small
   // devices.
   item: { alignItems: 'center', gap: 2, paddingTop: 4 },
-  emoji: { fontSize: 22 },
   label: { fontSize: 10, fontWeight: Typography.medium, color: '#9ca3af', textAlign: 'center' },
   labelActive: { color: Colors.blue, fontWeight: Typography.semibold },
   notifDot: { position: 'absolute', top: -2, right: -6, width: 8, height: 8, borderRadius: 4, backgroundColor: '#f59e0b', borderWidth: 1.5, borderColor: Colors.white },
@@ -105,10 +109,10 @@ export default function TabLayout() {
         name="home"
         options={{
           tabBarIcon: ({ focused }) => (
-            <TabIcon 
-              emoji={activeRole === 'tutor' ? '📊' : activeRole === 'parent' ? '👨‍👩‍👧' : '🏠'} 
-              label={activeRole === 'tutor' ? 'Dashboard' : activeRole === 'parent' ? 'Family' : 'Home'} 
-              focused={focused} 
+            <TabIcon
+              icon={activeRole === 'tutor' ? 'grid-outline' : activeRole === 'parent' ? 'people-outline' : 'home-outline'}
+              label={activeRole === 'tutor' ? 'Dashboard' : activeRole === 'parent' ? 'Family' : 'Home'}
+              focused={focused}
             />
           ),
         }}
@@ -117,10 +121,10 @@ export default function TabLayout() {
         name="explore"
         options={{
           tabBarIcon: ({ focused }) => (
-            <TabIcon 
-              emoji={activeRole === 'tutor' ? '💼' : '🔍'} 
-              label={activeRole === 'tutor' ? 'Jobs' : 'Explore'} 
-              focused={focused} 
+            <TabIcon
+              icon={activeRole === 'tutor' ? 'briefcase-outline' : 'search-outline'}
+              label={activeRole === 'tutor' ? 'Jobs' : 'Explore'}
+              focused={focused}
               dot={activeRole === 'tutor' && openJobsCount > 0}
             />
           ),
@@ -130,10 +134,10 @@ export default function TabLayout() {
         name="activity"
         options={{
           tabBarIcon: ({ focused }) => (
-            <TabIcon 
-              emoji={activeRole === 'tutor' ? '💰' : '⚡'} 
-              label={activeRole === 'tutor' ? 'Earnings' : 'Activity'} 
-              focused={focused} 
+            <TabIcon
+              icon={activeRole === 'tutor' ? 'wallet-outline' : 'flash-outline'}
+              label={activeRole === 'tutor' ? 'Earnings' : 'Activity'}
+              focused={focused}
             />
           ),
         }}
@@ -141,13 +145,13 @@ export default function TabLayout() {
       <Tabs.Screen
         name="chat"
         options={{
-          tabBarIcon: ({ focused }) => <TabIcon emoji="💬" label="Chat" focused={focused} />,
+          tabBarIcon: ({ focused }) => <TabIcon icon="chatbubbles-outline" label="Chat" focused={focused} />,
         }}
       />
       <Tabs.Screen
         name="profile"
         options={{
-          tabBarIcon: ({ focused }) => <TabIcon emoji="👤" label="Profile" focused={focused} />,
+          tabBarIcon: ({ focused }) => <TabIcon icon="person-outline" label="Profile" focused={focused} />,
         }}
       />
       {/* Hidden from tab bar — accessible via deep links / programmatic nav */}

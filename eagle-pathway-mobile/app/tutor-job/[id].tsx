@@ -10,6 +10,7 @@ import { supabase } from '../../src/services/supabase';
 import { useAuthStore } from '../../src/store/authStore';
 import { useTutorJobsStore, TutorJobPost } from '../../src/store/tutorJobsStore';
 import { getUserRole } from '../../src/utils/role';
+import { Ionicons } from '@expo/vector-icons';
 
 const formatTimeEAT = (timeString: string) => {
   if (!timeString) return '';
@@ -121,8 +122,14 @@ export default function TutorJobDetailScreen() {
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         {/* Top Info Card */}
         <View style={styles.card}>
-          <Text style={styles.gradeText}>📌 {job.grade}</Text>
-          <Text style={styles.subjectsText}>📚 {job.subjects.join(', ')}</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: Spacing.xs }}>
+            <Ionicons name="bookmark-outline" size={16} color={Colors.blue} />
+            <Text style={[styles.gradeText, { marginBottom: 0 }]}>{job.grade}</Text>
+          </View>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+            <Ionicons name="library-outline" size={16} color={Colors.blue} />
+            <Text style={styles.subjectsText}>{job.subjects.join(', ')}</Text>
+          </View>
         </View>
 
         {/* Details Card */}
@@ -130,7 +137,7 @@ export default function TutorJobDetailScreen() {
           <Text style={styles.sectionTitle}>Job Information</Text>
 
           <View style={styles.detailRow}>
-            <Text style={styles.detailIcon}>📍</Text>
+            <Ionicons name="location-outline" size={20} color={Colors.textSecondary} style={styles.detailIcon} />
             <View style={styles.detailContent}>
               <Text style={styles.detailLabel}>Location</Text>
               <Text style={styles.detailValue}>{job.place}</Text>
@@ -138,7 +145,7 @@ export default function TutorJobDetailScreen() {
           </View>
 
           <View style={styles.detailRow}>
-            <Text style={styles.detailIcon}>⏱</Text>
+            <Ionicons name="time-outline" size={20} color={Colors.textSecondary} style={styles.detailIcon} />
             <View style={styles.detailContent}>
               <Text style={styles.detailLabel}>Session Duration</Text>
               <Text style={styles.detailValue}>{job.session_hours} hours/day</Text>
@@ -146,7 +153,7 @@ export default function TutorJobDetailScreen() {
           </View>
 
           <View style={styles.detailRow}>
-            <Text style={styles.detailIcon}>📅</Text>
+            <Ionicons name="calendar-outline" size={20} color={Colors.textSecondary} style={styles.detailIcon} />
             <View style={styles.detailContent}>
               <Text style={styles.detailLabel}>Days Per Week</Text>
               <Text style={styles.detailValue}>{job.days_per_week} days/week</Text>
@@ -154,7 +161,7 @@ export default function TutorJobDetailScreen() {
           </View>
 
           <View style={styles.detailRow}>
-            <Text style={styles.detailIcon}>🕐</Text>
+            <Ionicons name="time-outline" size={20} color={Colors.textSecondary} style={styles.detailIcon} />
             <View style={styles.detailContent}>
               <Text style={styles.detailLabel}>Start Time (Ethiopian Time)</Text>
               <Text style={styles.detailValue}>{formatTimeEAT(job.start_time)} EAT</Text>
@@ -162,7 +169,7 @@ export default function TutorJobDetailScreen() {
           </View>
 
           <View style={[styles.detailRow, { borderBottomWidth: 0 }]}>
-            <Text style={styles.detailIcon}>👤</Text>
+            <Ionicons name="person-outline" size={20} color={Colors.textSecondary} style={styles.detailIcon} />
             <View style={styles.detailContent}>
               <Text style={styles.detailLabel}>Gender Preference</Text>
               <Text style={styles.detailValue}>
@@ -197,7 +204,10 @@ export default function TutorJobDetailScreen() {
         <View style={styles.applyContainer}>
           {hasApplied ? (
             <View style={styles.appliedBox}>
-              <Text style={styles.appliedText}>✅ You have already applied to this job</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <Ionicons name="checkmark-circle" size={16} color={Colors.green} />
+                <Text style={styles.appliedText}>You have already applied to this job</Text>
+              </View>
               <TouchableOpacity onPress={() => router.push('/(tabs)/my-applications')}>
                 <Text style={styles.appliedLink}>View My Applications →</Text>
               </TouchableOpacity>

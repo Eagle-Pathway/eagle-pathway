@@ -135,12 +135,13 @@ export default function FinancePage() {
     const payout = payoutRequests.find(r => r.id === requestId);
     const tutorUserId = payout?.tutor?.user_id;
     if (tutorUserId) {
-      await supabase.from('notifications').insert({
+      const { error: notifError } = await supabase.from('notifications').insert({
         user_id: tutorUserId,
         type: 'application_update',
         title: 'Payout completed 💸',
         body: 'Your payout request has been processed and marked as completed.',
       });
+      if (notifError) console.error('Failed to send notification:', notifError);
     }
 
     showNotification('success', 'Payout request marked as completed.');
