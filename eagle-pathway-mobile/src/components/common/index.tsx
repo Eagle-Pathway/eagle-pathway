@@ -41,7 +41,14 @@ export const Button: React.FC<ButtonProps> = ({
   ];
 
   return (
-    <ScaleBounce style={btnStyle} onPress={onPress} disabled={disabled || loading}>
+    <ScaleBounce
+      style={btnStyle}
+      onPress={onPress}
+      disabled={disabled || loading}
+      accessibilityRole="button"
+      accessibilityLabel={title}
+      accessibilityState={{ disabled: disabled || loading, busy: loading }}
+    >
       {loading
         ? <ActivityIndicator color={variant === 'primary' ? Colors.white : Colors.blue} size="small" />
         : <Text style={txtStyle}>{title}</Text>}
@@ -87,7 +94,12 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
     <Text style={styles.emptyTitle}>{title}</Text>
     <Text style={styles.emptySubtitle}>{subtitle}</Text>
     {actionLabel && onAction && (
-      <TouchableOpacity style={styles.emptyAction} onPress={onAction}>
+      <TouchableOpacity
+        style={styles.emptyAction}
+        onPress={onAction}
+        accessibilityRole="button"
+        accessibilityLabel={actionLabel}
+      >
         <Text style={styles.emptyActionText}>{actionLabel}</Text>
       </TouchableOpacity>
     )}
@@ -113,7 +125,12 @@ export const ErrorState: React.FC<ErrorStateProps> = ({
     <Text style={styles.emptyTitle}>{title}</Text>
     <Text style={styles.emptySubtitle}>{subtitle}</Text>
     {onRetry && (
-      <TouchableOpacity style={styles.emptyAction} onPress={onRetry}>
+      <TouchableOpacity
+        style={styles.emptyAction}
+        onPress={onRetry}
+        accessibilityRole="button"
+        accessibilityLabel="Retry"
+      >
         <Text style={styles.emptyActionText}>Retry</Text>
       </TouchableOpacity>
     )}

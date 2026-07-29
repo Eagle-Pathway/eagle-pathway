@@ -1,7 +1,7 @@
 import React, { useRef } from 'react';
-import { Animated, TouchableWithoutFeedback, ViewStyle, StyleProp } from 'react-native';
+import { Animated, TouchableWithoutFeedback, ViewStyle, StyleProp, AccessibilityProps } from 'react-native';
 
-interface ScaleBounceProps {
+interface ScaleBounceProps extends AccessibilityProps {
   children: React.ReactNode;
   onPress?: () => void;
   style?: StyleProp<ViewStyle>;
@@ -15,6 +15,7 @@ export const ScaleBounce: React.FC<ScaleBounceProps> = ({
   style,
   activeScale = 0.96,
   disabled,
+  ...accessibilityProps
 }) => {
   const scale = useRef(new Animated.Value(1)).current;
 
@@ -44,6 +45,8 @@ export const ScaleBounce: React.FC<ScaleBounceProps> = ({
       onPressIn={handlePressIn}
       onPressOut={handlePressOut}
       disabled={disabled}
+      accessible={accessibilityProps.accessible !== false}
+      {...accessibilityProps}
     >
       <Animated.View style={[{ transform: [{ scale }] } as any, style]}>
         {children}
