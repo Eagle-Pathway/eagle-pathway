@@ -21,7 +21,7 @@ export function MagicDraftScreen() {
 
   useEffect(() => {
     if (scholarshipId) {
-      scholarshipsService.getScholarshipById(scholarshipId).then(setScholarship);
+      scholarshipsService.getScholarshipById(scholarshipId).then(setScholarship).catch(console.error);
     }
   }, [scholarshipId]);
 

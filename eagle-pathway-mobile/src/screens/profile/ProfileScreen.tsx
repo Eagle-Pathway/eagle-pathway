@@ -33,12 +33,14 @@ export function ProfileScreen() {
 
   useEffect(() => {
     if (user) {
-      loadPendingLinks(user.id, role as any).then(setPendingLinks);
+      loadPendingLinks(user.id, role as any)
+        .then(setPendingLinks)
+        .catch(console.error);
     }
     if (role === 'tutor') {
       supabase.from('tutor_job_posts').select('id', { count: 'exact', head: true }).eq('status', 'open').then(({ count }) => {
         if (count !== null) setOpenJobsCount(count);
-      });
+      }).catch(console.error);
     }
   }, [user?.id, role]);
 

@@ -34,7 +34,8 @@ export function TutorJobFeedScreen() {
           const ids = new Set<string>();
           jobs.forEach((j, i) => { if (results[i]) ids.add(j.id); });
           setAppliedIds(ids);
-        });
+        })
+        .catch(console.error);
     }
   }, [jobs, user?.id]);
 

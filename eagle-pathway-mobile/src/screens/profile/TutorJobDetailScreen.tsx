@@ -36,7 +36,7 @@ export function TutorJobDetailScreen() {
 
   useEffect(() => {
     if (jobId && user) {
-      tutorJobsService.hasApplied(jobId, user.id).then(setHasApplied);
+      tutorJobsService.hasApplied(jobId, user.id).then(setHasApplied).catch(console.error);
     }
   }, [jobId, user?.id]);
 
