@@ -91,7 +91,7 @@ export function ScholarshipDetailScreen() {
     return (
       <SafeAreaView style={CommonStyles.screenBg} edges={['top', 'bottom']}>
         <EmptyState 
-          icon="❌" 
+          icon="close-circle-outline" 
           title="Scholarship not found" 
           subtitle="This scholarship may have been removed."
           actionLabel="Go Back"

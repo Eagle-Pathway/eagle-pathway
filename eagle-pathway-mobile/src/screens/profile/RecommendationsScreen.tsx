@@ -134,7 +134,7 @@ export function RecommendationsScreen() {
         <ErrorState subtitle="We couldn't load your requests. Check your connection and retry." onRetry={load} />
       ) : items.length === 0 ? (
         <EmptyState
-          icon="✉️"
+          icon="mail-outline"
           title="No recommendation requests yet"
           subtitle="Track who you've asked for a letter and whether it's arrived. Tap + to add a referee."
           actionLabel="Add a referee"

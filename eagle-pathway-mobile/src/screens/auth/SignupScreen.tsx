@@ -42,7 +42,7 @@ export default function SignupScreen() {
   const [email, setEmail] = useState(verifyEmail);
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [role, setRole] = useState<'student' | 'tutor' | 'parent'>('student');
+  const [role, setRole] = useState<UserRole>('student');
   
   const emailRef = useRef<TextInput>(null);
   const phoneRef = useRef<TextInput>(null);
@@ -359,4 +359,7 @@ const styles = StyleSheet.create({
   loginLink: { alignItems: 'center' },
   loginText: { fontSize: Typography.base, color: Colors.textSecondary },
   loginHighlight: { color: Colors.blue, fontWeight: Typography.semibold },
+  successContent: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: Spacing.xl },
+  successTitle: { fontSize: Typography.xl, fontWeight: Typography.bold, color: Colors.text, marginTop: Spacing.xl },
+  successSubtitle: { fontSize: Typography.base, color: Colors.textSecondary, textAlign: 'center', marginTop: Spacing.sm },
 });

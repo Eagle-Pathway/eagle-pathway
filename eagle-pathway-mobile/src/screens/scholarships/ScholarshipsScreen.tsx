@@ -106,7 +106,7 @@ export default function ScholarshipsScreen({ hideBack = false }: { hideBack?: bo
         <ErrorState subtitle="We couldn't load scholarships. Check your connection and retry." onRetry={load} />
       ) : filtered.length === 0 ? (
         <EmptyState 
-          icon="🎓" 
+          icon="school-outline" 
           title="No scholarships found" 
           subtitle="Try adjusting your search or filters"
           actionLabel="Clear Filters"

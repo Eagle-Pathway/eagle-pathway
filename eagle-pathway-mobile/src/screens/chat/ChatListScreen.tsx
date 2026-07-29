@@ -101,7 +101,7 @@ export default function ChatListScreen() {
         <ErrorState subtitle="We couldn't load your messages. Check your connection and retry." onRetry={load} />
       ) : conversations.length === 0 ? (
         <EmptyState
-          icon="💬"
+          icon="chatbubbles-outline"
           title="No messages yet"
           subtitle="Direct messages from your consultants and tutors will appear here."
           actionLabel="Browse Tutors"

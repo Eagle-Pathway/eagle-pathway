@@ -16,7 +16,6 @@
       "bundleIdentifier": "com.eaglepathway.app"
     },
     "android": {
-      "versionCode": 1,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#1E4D9B"

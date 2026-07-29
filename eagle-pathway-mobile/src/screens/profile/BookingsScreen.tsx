@@ -99,7 +99,7 @@ export function BookingsScreen({ hideHeader = false }: { hideHeader?: boolean })
         <ErrorState subtitle={`We couldn't load your ${isTutor ? 'sessions' : 'bookings'}. Check your connection and retry.`} onRetry={load} />
       ) : filtered.length === 0 ? (
         <EmptyState
-          icon="📅"
+          icon="calendar-outline"
           title={`No ${activeTab} ${isTutor ? 'sessions' : 'bookings'}`}
           subtitle={isTutor ? "You don't have any sessions in this category yet." : "Book a session with a tutor to get started"}
           actionLabel={activeTab === 'upcoming' && !isTutor ? "Find Tutors" : undefined}

@@ -1,12 +1,13 @@
 import React, { useEffect, useRef } from 'react';
-import { View, Animated, StyleSheet, ViewStyle } from 'react-native';
+import { View, Animated, StyleSheet, ViewStyle, StyleProp } from 'react-native';
 import { Colors, Radius } from '../../utils/theme';
 
 interface SkeletonProps {
   width?: number | string;
   height?: number | string;
   borderRadius?: number;
-  style?: ViewStyle;
+  style?: StyleProp<ViewStyle>;
+  color?: string;
 }
 
 export const Skeleton: React.FC<SkeletonProps> = ({
@@ -14,6 +15,7 @@ export const Skeleton: React.FC<SkeletonProps> = ({
   height = 20,
   borderRadius = Radius.md,
   style,
+  color,
 }) => {
   const pulseAnim = useRef(new Animated.Value(0.3)).current;
 
@@ -43,6 +45,7 @@ export const Skeleton: React.FC<SkeletonProps> = ({
     <Animated.View
       style={[
         styles.skeleton,
+        color ? { backgroundColor: color } : undefined,
         {
           width,
           height,

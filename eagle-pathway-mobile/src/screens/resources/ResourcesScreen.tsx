@@ -90,12 +90,12 @@ export default function ResourcesScreen() {
         <ErrorState subtitle="We couldn't load resources. Check your connection and retry." onRetry={load} />
       ) : resources.length === 0 ? (
         <EmptyState
-          icon="📚"
+          icon="library-outline"
           title="No resources yet"
           subtitle="Helpful guides and templates are on the way — check back soon."
         />
       ) : filtered.length === 0 ? (
-        <EmptyState icon="🔍" title="No matches" subtitle={`Nothing matches "${query.trim()}".`} />
+        <EmptyState icon="search-outline" title="No matches" subtitle={`Nothing matches "${query.trim()}".`} />
       ) : (
         <SectionList
           sections={sections}

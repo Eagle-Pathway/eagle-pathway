@@ -38,9 +38,10 @@ export function ProfileScreen() {
         .catch(console.error);
     }
     if (role === 'tutor') {
-      supabase.from('tutor_job_posts').select('id', { count: 'exact', head: true }).eq('status', 'open').then(({ count }) => {
-        if (count !== null) setOpenJobsCount(count);
-      }).catch(console.error);
+      supabase.from('tutor_job_posts').select('id', { count: 'exact', head: true }).eq('status', 'open').then(({ count, error }) => {
+        if (error) console.error(error);
+        else if (count !== null) setOpenJobsCount(count);
+      });
     }
   }, [user?.id, role]);
 

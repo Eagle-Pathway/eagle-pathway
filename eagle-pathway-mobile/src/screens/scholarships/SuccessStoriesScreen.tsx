@@ -50,7 +50,7 @@ export function SuccessStoriesScreen() {
         <ErrorState subtitle="We couldn't load success stories. Check your connection and retry." onRetry={load} />
       ) : stories.length === 0 ? (
         <EmptyState
-          icon="🏆"
+          icon="trophy-outline"
           title="No stories yet"
           subtitle={scholarshipName ? 'No stories for this scholarship yet — check back soon.' : 'Inspiring winner stories are on the way.'}
         />
