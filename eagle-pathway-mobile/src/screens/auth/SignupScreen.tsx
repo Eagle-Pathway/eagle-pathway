@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, ScrollView,
   StyleSheet, KeyboardAvoidingView, Platform, Alert,
@@ -42,7 +42,12 @@ export default function SignupScreen() {
   const [email, setEmail] = useState(verifyEmail);
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [role, setRole] = useState<UserRole>('student');
+  const [role, setRole] = useState<'student' | 'tutor' | 'parent'>('student');
+  
+  const emailRef = useRef<TextInput>(null);
+  const phoneRef = useRef<TextInput>(null);
+  const passwordRef = useRef<TextInput>(null);
+  const confirmPasswordRef = useRef<TextInput>(null);
   const [isSignedUp, setIsSignedUp] = useState(!!verifyEmail);
   const [code, setCode] = useState('');
   const [resending, setResending] = useState(false);
@@ -170,9 +175,9 @@ export default function SignupScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
-        <ScrollView showsVerticalScrollIndicator={false}>
-          <TouchableOpacity style={styles.backBtn} onPress={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)/home'))}>
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
+        <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+          <TouchableOpacity style={styles.backBtn} onPress={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)/home'))} accessibilityRole="button" accessibilityLabel="Go back">
             <Text style={styles.backArrow}>←</Text>
           </TouchableOpacity>
 
@@ -191,6 +196,11 @@ export default function SignupScreen() {
                 onChangeText={setFullName}
                 placeholderTextColor={Colors.textSecondary}
                 autoCapitalize="words"
+                textContentType="name"
+                autoComplete="name"
+                returnKeyType="next"
+                onSubmitEditing={() => emailRef.current?.focus()}
+                blurOnSubmit={false}
               />
             </View>
 
@@ -204,6 +214,12 @@ export default function SignupScreen() {
                 keyboardType="email-address"
                 autoCapitalize="none"
                 placeholderTextColor={Colors.textSecondary}
+                ref={emailRef}
+                textContentType="emailAddress"
+                autoComplete="email"
+                returnKeyType="next"
+                onSubmitEditing={() => phoneRef.current?.focus()}
+                blurOnSubmit={false}
               />
             </View>
 
@@ -216,6 +232,12 @@ export default function SignupScreen() {
                 onChangeText={setPhone}
                 keyboardType="phone-pad"
                 placeholderTextColor={Colors.textSecondary}
+                ref={phoneRef}
+                textContentType="telephoneNumber"
+                autoComplete="tel"
+                returnKeyType="next"
+                onSubmitEditing={() => passwordRef.current?.focus()}
+                blurOnSubmit={false}
               />
             </View>
 
@@ -225,6 +247,11 @@ export default function SignupScreen() {
                 placeholder="••••••••"
                 value={password}
                 onChangeText={setPassword}
+                ref={passwordRef}
+                textContentType="newPassword"
+                autoComplete="password-new"
+                returnKeyType="next"
+                onSubmitEditing={() => confirmPasswordRef.current?.focus()}
               />
             </View>
 
@@ -234,6 +261,10 @@ export default function SignupScreen() {
                 placeholder="••••••••"
                 value={confirmPassword}
                 onChangeText={setConfirmPassword}
+                ref={confirmPasswordRef}
+                textContentType="newPassword"
+                autoComplete="password-new"
+                returnKeyType="done"
               />
             </View>
 

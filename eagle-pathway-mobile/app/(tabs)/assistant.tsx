@@ -139,10 +139,11 @@ export default function AssistantScreen() {
       {/* We use padding behavior for both platforms in case 'resize' fails or isn't applied (e.g. Expo Go) */}
       <KeyboardAvoidingView
         style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 20}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
       >
         <FlatList
+          keyboardShouldPersistTaps="handled"
           ref={flatListRef}
           data={messages}
           keyExtractor={(_, index) => index.toString()}

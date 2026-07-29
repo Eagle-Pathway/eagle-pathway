@@ -1,12 +1,13 @@
 import React, { useEffect, useState, useRef } from 'react';
 import {
   View, Text, FlatList, TouchableOpacity,
-  StyleSheet, ActivityIndicator, TextInput, KeyboardAvoidingView, Platform,
+  StyleSheet, ActivityIndicator, TextInput, KeyboardAvoidingView, Platform, Alert
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, router } from 'expo-router';
 import { Colors, Typography, Spacing, Radius, CommonStyles } from '@/utils/theme';
-import { Avatar } from '@/components/common';
+import { Avatar, Skeleton } from '@/components/common';
 import { useAuthStore } from '@/store/authStore';
 import { useChatStore } from '@/store/ChatStore';
 import { supabase } from '@/services/supabase';
@@ -35,6 +36,7 @@ export default function ChatDetailScreen() {
   }, [paramFullName]);
 
   useEffect(() => {
+    let isMounted = true;
     const fetchTargetUser = async () => {
       if (!otherId || chatUserFullName) return;
       try {
@@ -43,7 +45,7 @@ export default function ChatDetailScreen() {
           .select('full_name')
           .eq('id', otherId)
           .single();
-        if (!error && data) {
+        if (!error && data && isMounted) {
           setChatUserFullName(data.full_name);
         }
       } catch (e) {
@@ -51,6 +53,7 @@ export default function ChatDetailScreen() {
       }
     };
     fetchTargetUser();
+    return () => { isMounted = false; };
   }, [otherId, chatUserFullName]);
 
   useEffect(() => {
@@ -94,7 +97,7 @@ export default function ChatDetailScreen() {
     <SafeAreaView style={[CommonStyles.flex1, { backgroundColor: Colors.bg }]} edges={['top', 'bottom']}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backBtn} onPress={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)/home'))}>
+        <TouchableOpacity style={styles.backBtn} onPress={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)/home'))} accessibilityRole="button" accessibilityLabel="Go back">
           <Text style={{ fontSize: 20 }}>←</Text>
         </TouchableOpacity>
         <Avatar initials={chatUserFullName?.charAt(0) || 'T'} size={36} color={Colors.blue} />
@@ -102,25 +105,56 @@ export default function ChatDetailScreen() {
           <Text style={styles.headerName}>{chatUserFullName}</Text>
           <Text style={styles.statusText}>Online</Text>
         </View>
+        <TouchableOpacity 
+          accessibilityRole="button" 
+          accessibilityLabel="Report or Block User"
+          onPress={() => {
+            Alert.alert(
+              "Report User",
+              "Are you sure you want to report or block this user for inappropriate behavior? This action will be reviewed by our team.",
+              [
+                { text: "Cancel", style: "cancel" },
+                { text: "Report", onPress: () => router.back(), style: "destructive" }
+              ]
+            );
+          }}
+        >
+          <Ionicons name="ellipsis-vertical" size={24} color={Colors.text} />
+        </TouchableOpacity>
       </View>
 
       <KeyboardAvoidingView 
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={CommonStyles.flex1}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
       >
         {isLoadingMessages && activeMessages.length === 0 ? (
-          <View style={[CommonStyles.flex1, CommonStyles.center]}>
-            <ActivityIndicator color={Colors.blue} size="large" />
+          <View style={[CommonStyles.flex1, { padding: Spacing.lg }]}>
+            <View style={[styles.messageRow, styles.theirRow]}>
+              <Skeleton style={[styles.miniAvatar, { width: 28, height: 28, borderRadius: 14 }]} />
+              <Skeleton style={[styles.bubble, { width: 200, height: 60 }]} />
+            </View>
+            <View style={[styles.messageRow, styles.myRow]}>
+              <Skeleton style={[styles.bubble, { width: 150, height: 50, borderBottomRightRadius: 4 }]} />
+            </View>
+            <View style={[styles.messageRow, styles.theirRow]}>
+              <Skeleton style={[styles.miniAvatar, { width: 28, height: 28, borderRadius: 14 }]} />
+              <Skeleton style={[styles.bubble, { width: 240, height: 80 }]} />
+            </View>
+            <View style={[styles.messageRow, styles.myRow]}>
+              <Skeleton style={[styles.bubble, { width: 180, height: 60, borderBottomRightRadius: 4 }]} />
+            </View>
           </View>
         ) : (
           <FlatList
+            keyboardShouldPersistTaps="handled"
             ref={flatListRef}
             data={activeMessages}
             keyExtractor={(item) => item.id}
             renderItem={renderMessage}
             contentContainerStyle={styles.listContainer}
             onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
+            initialNumToRender={8} maxToRenderPerBatch={8} windowSize={5} removeClippedSubviews={true}
           />
         )}
 
