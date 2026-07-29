@@ -21,31 +21,34 @@ interface PasswordInputProps extends Omit<TextInputProps, 'secureTextEntry'> {
  * inputs (rounded, bordered, #fafafa fill). Drop-in replacement for a
  * `<TextInput secureTextEntry />` — forwards all standard TextInput props.
  */
-export function PasswordInput({ containerStyle, style, ...props }: PasswordInputProps) {
-  const [hidden, setHidden] = useState(true);
+export const PasswordInput = React.forwardRef<TextInput, PasswordInputProps>(
+  ({ containerStyle, style, ...props }, ref) => {
+    const [hidden, setHidden] = useState(true);
 
-  return (
-    <View style={[styles.container, containerStyle]}>
-      <TextInput
-        {...props}
-        style={[styles.input, style]}
-        secureTextEntry={hidden}
-        autoCapitalize="none"
-        autoCorrect={false}
-        placeholderTextColor={props.placeholderTextColor ?? Colors.textSecondary}
-      />
-      <TouchableOpacity
-        style={styles.toggle}
-        onPress={() => setHidden((h) => !h)}
-        hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-        accessibilityRole="button"
-        accessibilityLabel={hidden ? 'Show password' : 'Hide password'}
-      >
-        <Ionicons name={hidden ? 'eye-off' : 'eye'} size={20} color={Colors.textSecondary} />
-      </TouchableOpacity>
-    </View>
-  );
-}
+    return (
+      <View style={[styles.container, containerStyle]}>
+        <TextInput
+          {...props}
+          ref={ref}
+          style={[styles.input, style]}
+          secureTextEntry={hidden}
+          autoCapitalize="none"
+          autoCorrect={false}
+          placeholderTextColor={props.placeholderTextColor ?? Colors.textSecondary}
+        />
+        <TouchableOpacity
+          style={styles.toggle}
+          onPress={() => setHidden((h) => !h)}
+          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+          accessibilityRole="button"
+          accessibilityLabel={hidden ? 'Show password' : 'Hide password'}
+        >
+          <Ionicons name={hidden ? 'eye-off' : 'eye'} size={20} color={Colors.textSecondary} />
+        </TouchableOpacity>
+      </View>
+    );
+  }
+);
 
 const styles = StyleSheet.create({
   container: {

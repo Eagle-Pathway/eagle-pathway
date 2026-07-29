@@ -72,6 +72,8 @@ export default function UpdatePasswordScreen() {
               value={password}
               onChangeText={setPassword}
               onSubmitEditing={handleUpdatePassword}
+              textContentType="newPassword"
+              autoComplete="password-new"
             />
           </View>
 

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -14,6 +14,7 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const passwordRef = useRef<TextInput>(null);
   const { signIn, isLoading } = useAuthStore();
 
   const handleLogin = async () => {
@@ -61,15 +62,25 @@ export default function LoginScreen() {
             keyboardType="email-address"
             autoCapitalize="none"
             placeholderTextColor={Colors.textSecondary}
+            textContentType="emailAddress"
+            autoComplete="email"
+            returnKeyType="next"
+            onSubmitEditing={() => passwordRef.current?.focus()}
+            blurOnSubmit={false}
           />
         </View>
 
         <View style={{ marginBottom: Spacing.sm }}>
           <Text style={{ fontSize: 13, fontWeight: Typography.semibold, color: Colors.text, marginBottom: 6 }}>Password</Text>
           <PasswordInput
+            ref={passwordRef}
             placeholder="••••••••"
             value={password}
             onChangeText={setPassword}
+            textContentType="password"
+            autoComplete="password"
+            returnKeyType="done"
+            onSubmitEditing={handleLogin}
           />
         </View>
 

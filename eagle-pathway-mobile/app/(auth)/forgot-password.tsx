@@ -105,6 +105,8 @@ export default function ForgotPasswordScreen() {
                   placeholderTextColor={Colors.textSecondary}
                   onSubmitEditing={sendResetCode}
                   returnKeyType="send"
+                  textContentType="emailAddress"
+                  autoComplete="email"
                 />
                 {!!error && <Text style={styles.errorText}>{error}</Text>}
               </View>
