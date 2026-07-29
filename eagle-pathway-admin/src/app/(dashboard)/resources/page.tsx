@@ -67,13 +67,29 @@ export default function ResourcesPage() {
     });
     if (!ok) return;
     // Best-effort: remove the stored file too, then the row.
-    if (r.file_path) await supabase.storage.from('resources').remove([r.file_path]);
-    await supabase.from('resources').delete().eq('id', r.id);
+    if (r.file_path) {
+      const { error: storageError } = await supabase.storage.from('resources').remove([r.file_path]);
+      if (storageError) {
+        toast('error', `Failed to remove file: ${storageError.message}`);
+        return;
+      }
+    }
+    const { error } = await supabase.from('resources').delete().eq('id', r.id);
+    if (error) {
+      toast('error', error.message || 'Failed to delete resource.');
+      return;
+    }
+    toast('success', 'Resource deleted.');
     fetchResources();
   };
 
   const togglePublished = async (r: Resource) => {
-    await supabase.from('resources').update({ is_published: !r.is_published }).eq('id', r.id);
+    const { error } = await supabase.from('resources').update({ is_published: !r.is_published }).eq('id', r.id);
+    if (error) {
+      toast('error', error.message || 'Failed to update visibility.');
+      return;
+    }
+    toast('success', `Resource is now ${!r.is_published ? 'published' : 'hidden'}.`);
     fetchResources();
   };
 

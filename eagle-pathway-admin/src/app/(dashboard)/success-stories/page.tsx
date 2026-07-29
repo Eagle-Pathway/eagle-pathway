@@ -50,12 +50,22 @@ export default function SuccessStoriesPage() {
       destructive: true,
     });
     if (!ok) return;
-    await supabase.from('success_stories').delete().eq('id', id);
+    const { error } = await supabase.from('success_stories').delete().eq('id', id);
+    if (error) {
+      toast('error', error.message || 'Failed to delete success story.');
+      return;
+    }
+    toast('success', 'Success story deleted.');
     fetchStories();
   };
 
   const togglePublished = async (s: SuccessStory) => {
-    await supabase.from('success_stories').update({ is_published: !s.is_published }).eq('id', s.id);
+    const { error } = await supabase.from('success_stories').update({ is_published: !s.is_published }).eq('id', s.id);
+    if (error) {
+      toast('error', error.message || 'Failed to update visibility.');
+      return;
+    }
+    toast('success', `Story is now ${!s.is_published ? 'published' : 'hidden'}.`);
     fetchStories();
   };
 

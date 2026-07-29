@@ -4,7 +4,7 @@ import { supabase } from '@/lib/supabase';
 import { Plus, Edit2, Trash2, ExternalLink, Search, Download } from 'lucide-react';
 import ScholarshipForm from '@/components/forms/ScholarshipForm';
 import { exportToCSV } from '@/utils/export';
-import { useConfirm } from '@/components/ui/Feedback';
+import { useConfirm, useToast } from '@/components/ui/Feedback';
 import { TableSkeleton } from '@/components/ui/TableSkeleton';
 
 interface Scholarship {
@@ -29,6 +29,7 @@ export default function ScholarshipsPage() {
   const [search, setSearch] = useState('');
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingScholarship, setEditingScholarship] = useState<Scholarship | null>(null);
+  const toast = useToast();
 
   async function fetchScholarships() {
     setLoading(true);
@@ -55,15 +56,25 @@ export default function ScholarshipsPage() {
       destructive: true,
     });
     if (!ok) return;
-    await supabase.from('scholarships').delete().eq('id', id);
+    const { error } = await supabase.from('scholarships').delete().eq('id', id);
+    if (error) {
+      toast('error', error.message || 'Failed to delete scholarship.');
+      return;
+    }
+    toast('success', 'Scholarship deleted.');
     fetchScholarships();
   };
 
   const toggleStatus = async (id: string, currentStatus: boolean) => {
-    await supabase
+    const { error } = await supabase
       .from('scholarships')
       .update({ is_active: !currentStatus })
       .eq('id', id);
+    if (error) {
+      toast('error', error.message || 'Failed to update scholarship status.');
+      return;
+    }
+    toast('success', `Scholarship marked as ${!currentStatus ? 'active' : 'inactive'}.`);
     fetchScholarships();
   };
 
@@ -72,7 +83,7 @@ export default function ScholarshipsPage() {
     sourceStatus: NonNullable<Scholarship['source_status']>,
   ) => {
     const { data: auth } = await supabase.auth.getUser();
-    await supabase
+    const { error } = await supabase
       .from('scholarships')
       .update({
         source_status: sourceStatus,
@@ -81,6 +92,11 @@ export default function ScholarshipsPage() {
         stale_reason: sourceStatus === 'verified' ? null : sourceStatus,
       })
       .eq('id', id);
+    if (error) {
+      toast('error', error.message || 'Failed to update verification status.');
+      return;
+    }
+    toast('success', 'Verification status updated.');
     fetchScholarships();
   };
 
