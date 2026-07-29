@@ -16,6 +16,7 @@
       "bundleIdentifier": "com.eaglepathway.app"
     },
     "android": {
+      "versionCode": 1,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#1E4D9B"
@@ -55,15 +56,11 @@
       "supabaseAnonKey": "YOUR_SUPABASE_ANON_KEY",
       "router": {},
       "eas": {
-        "projectId": "e9e50db8-99a2-4004-9e3a-63661f1a847a"
+        "projectId": "e78c6e36-63e3-4e25-b7df-6323b8b28809"
       }
     },
-    "owner": "tise_genene",
     "runtimeVersion": {
       "policy": "appVersion"
-    },
-    "updates": {
-      "url": "https://u.expo.dev/e9e50db8-99a2-4004-9e3a-63661f1a847a"
     }
   }
 }
