@@ -157,6 +157,7 @@ export interface Application {
     suggestions: string[];
     last_reviewed_at: string;
   };
+  consultant_feedback?: string;
   notes?: string;
   submitted_at?: string;
   result_at?: string;
