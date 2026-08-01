@@ -49,7 +49,7 @@ export default function UpdatePasswordScreen() {
 
     setLoading(true);
     try {
-      const { error } = await withTimeout(supabase.auth.updateUser({ password }));
+      const { error } = await supabase.auth.updateUser({ password });
       if (error) throw error;
       setLoading(false);
       Alert.alert('Success', 'Your password has been updated.', [

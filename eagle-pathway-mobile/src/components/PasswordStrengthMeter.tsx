@@ -9,13 +9,11 @@ interface PasswordStrengthMeterProps {
 }
 
 export const PasswordStrengthMeter: React.FC<PasswordStrengthMeterProps> = ({ password }) => {
-  if (!password) return null;
-
-  const strength: PasswordStrengthResult = validatePasswordStrength(password);
+  const strength: PasswordStrengthResult = validatePasswordStrength(password || '');
 
   const checklistItems = [
     { label: '8+ characters', pass: strength.isMinLength },
-    { label: 'Upper & lowercase letters', pass: strength.hasUpper && strength.hasLower },
+    { label: 'Upper & lowercase (A-z)', pass: strength.hasUpper && strength.hasLower },
     { label: 'At least 1 number (0-9)', pass: strength.hasNumber },
     { label: 'At least 1 special char (!@#$)', pass: strength.hasSpecial },
   ];
@@ -23,8 +21,10 @@ export const PasswordStrengthMeter: React.FC<PasswordStrengthMeterProps> = ({ pa
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Password Strength:</Text>
-        <Text style={[styles.strengthLabel, { color: strength.color }]}>{strength.label}</Text>
+        <Text style={styles.headerTitle}>Password Security Requirements:</Text>
+        <Text style={[styles.strengthLabel, { color: password ? strength.color : Colors.textSecondary }]}>
+          {password ? strength.label : 'Required'}
+        </Text>
       </View>
 
       {/* 4-segment progress bar */}
@@ -34,7 +34,7 @@ export const PasswordStrengthMeter: React.FC<PasswordStrengthMeterProps> = ({ pa
             key={step}
             style={[
               styles.barSegment,
-              { backgroundColor: step <= strength.score ? strength.color : Colors.border },
+              { backgroundColor: password && step <= strength.score ? strength.color : Colors.border },
             ]}
           />
         ))}
@@ -45,7 +45,7 @@ export const PasswordStrengthMeter: React.FC<PasswordStrengthMeterProps> = ({ pa
         {checklistItems.map((item, index) => (
           <View key={index} style={styles.checklistItem}>
             <Ionicons
-              name={item.pass ? 'checkmark-circle' : 'close-circle-outline'}
+              name={item.pass ? 'checkmark-circle' : 'ellipse-outline'}
               size={15}
               color={item.pass ? '#16a34a' : '#9ca3af'}
             />
@@ -114,6 +114,6 @@ const styles = StyleSheet.create({
   },
   checklistTextPass: {
     color: '#15803d',
-    fontWeight: Typography.medium,
+    fontWeight: Typography.semibold,
   },
 });
