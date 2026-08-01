@@ -9,9 +9,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { Colors, Typography, Spacing, Radius } from '@/utils/theme';
 import { Button } from '@/components/common';
 import { PasswordInput } from '@/components/PasswordInput';
+import { PasswordStrengthMeter } from '@/components/PasswordStrengthMeter';
+import { KeyboardAwareScreen } from '@/components/KeyboardAwareScreen';
 import { useAuthStore } from '@/store/authStore';
 import { authService } from '@/services/auth';
 import { UserRole } from '@/types';
+import { showError, getErrorMessage } from '@/utils/errorHandler';
+import { validatePasswordStrength } from '@eagle-pathway/shared';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const RESEND_COOLDOWN_SECONDS = 60;
@@ -52,7 +56,7 @@ export default function SignupScreen() {
   const [code, setCode] = useState('');
   const [resending, setResending] = useState(false);
   const [resendCooldown, setResendCooldown] = useState(verifyEmail ? RESEND_COOLDOWN_SECONDS : 0);
-  const { signUp, verifySignup, isLoading } = useAuthStore();
+  const { signUp, verifySignup, isLoading, setLoading } = useAuthStore();
 
   // Tick down the resend cooldown so users can't hammer the (rate-limited) email sender.
   useEffect(() => {
@@ -66,7 +70,15 @@ export default function SignupScreen() {
     if (!email.trim()) return Alert.alert('Error', 'Please enter your email');
     if (!EMAIL_RE.test(email.trim())) return Alert.alert('Error', 'Please enter a valid email address');
     if (!phone.trim()) return Alert.alert('Error', 'Please enter your phone number');
-    if (password.length < 8) return Alert.alert('Error', 'Password must be at least 8 characters');
+    
+    const strength = validatePasswordStrength(password);
+    if (!strength.isValid) {
+      return Alert.alert(
+        'Weak Password',
+        'Your password does not meet security requirements:\n• ' + strength.errors.join('\n• ')
+      );
+    }
+    
     if (password !== confirmPassword) return Alert.alert('Error', 'Passwords do not match');
 
     try {
@@ -83,7 +95,6 @@ export default function SignupScreen() {
       setIsSignedUp(true);
       setResendCooldown(RESEND_COOLDOWN_SECONDS);
     } catch (e: any) {
-      // Duplicate email: send them to sign in instead of a dead-end error.
       if (e?.code === 'email_exists') {
         return Alert.alert(
           'Email already registered',
@@ -94,11 +105,12 @@ export default function SignupScreen() {
           ],
         );
       }
-      // Duplicate phone: tell them plainly so they can change it.
       if (e?.code === 'phone_exists') {
-        return Alert.alert('Phone number in use', e.message);
+        return Alert.alert('Phone number in use', getErrorMessage(e));
       }
-      Alert.alert('Signup Failed', e.message || 'Please try again.');
+      showError(e, 'Signup Failed');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -106,9 +118,12 @@ export default function SignupScreen() {
     if (code.trim().length < 6) return Alert.alert('Error', 'Enter the 6-digit code from your email');
     try {
       await verifySignup(email.trim(), code.trim());
+      setLoading(false);
       router.replace('/(tabs)/home');
     } catch (e: any) {
-      Alert.alert('Verification Failed', e.message || 'That code is invalid or expired.');
+      showError(e, 'Verification Failed');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -120,7 +135,7 @@ export default function SignupScreen() {
       setResendCooldown(RESEND_COOLDOWN_SECONDS);
       Alert.alert('Code sent', `We sent a new code to ${email.trim()}.`);
     } catch (e: any) {
-      Alert.alert('Error', e.message || 'Could not resend the code.');
+      showError(e, 'Could not resend code');
     } finally {
       setResending(false);
     }
@@ -129,7 +144,7 @@ export default function SignupScreen() {
   if (isSignedUp) {
     return (
       <SafeAreaView style={styles.container}>
-        <View style={styles.successContent}>
+        <KeyboardAwareScreen contentContainerStyle={styles.successContent}>
           <View style={styles.iconBadge}>
             <Ionicons name="mail-outline" size={40} color={Colors.blue} />
           </View>
@@ -168,18 +183,17 @@ export default function SignupScreen() {
           <TouchableOpacity style={{ marginTop: Spacing.lg }} onPress={() => { setIsSignedUp(false); setCode(''); }}>
             <Text style={{ color: Colors.textSecondary, textDecorationLine: 'underline' }}>Wait, I entered the wrong email</Text>
           </TouchableOpacity>
-        </View>
+        </KeyboardAwareScreen>
       </SafeAreaView>
     );
   }
 
   return (
     <SafeAreaView style={styles.container}>
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
-        <ScrollView keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
-          <TouchableOpacity style={styles.backBtn} onPress={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)/home'))} accessibilityRole="button" accessibilityLabel="Go back">
-            <Text style={styles.backArrow}>←</Text>
-          </TouchableOpacity>
+      <KeyboardAwareScreen>
+        <TouchableOpacity style={styles.backBtn} onPress={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)/home'))} accessibilityRole="button" accessibilityLabel="Go back">
+          <Text style={styles.backArrow}>←</Text>
+        </TouchableOpacity>
 
           <View style={styles.header}>
             <Text style={styles.title}>Create Account</Text>
@@ -253,6 +267,7 @@ export default function SignupScreen() {
                 returnKeyType="next"
                 onSubmitEditing={() => confirmPasswordRef.current?.focus()}
               />
+              <PasswordStrengthMeter password={password} />
             </View>
 
             <View style={styles.fieldGroup}>
@@ -305,8 +320,7 @@ export default function SignupScreen() {
               </Text>
             </TouchableOpacity>
           </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
+      </KeyboardAwareScreen>
     </SafeAreaView>
   );
 }

@@ -6,7 +6,11 @@ import { Ionicons } from '@expo/vector-icons';
 import { Colors, Typography, Spacing, Radius } from '../../src/utils/theme';
 import { Button, LoadingScreen } from '../../src/components/common';
 import { PasswordInput } from '../../src/components/PasswordInput';
+import { PasswordStrengthMeter } from '../../src/components/PasswordStrengthMeter';
 import { supabase } from '../../src/services/supabase';
+import { showError } from '../../src/utils/errorHandler';
+import { withTimeout } from '../../src/utils/asyncUtils';
+import { validatePasswordStrength } from '@eagle-pathway/shared';
 
 export default function UpdatePasswordScreen() {
   const [password, setPassword] = useState('');
@@ -35,19 +39,24 @@ export default function UpdatePasswordScreen() {
   }, []);
 
   const handleUpdatePassword = async () => {
-    if (!password || password.length < 8) {
-      return Alert.alert('Invalid Password', 'Password must be at least 8 characters long.');
+    const strength = validatePasswordStrength(password);
+    if (!strength.isValid) {
+      return Alert.alert(
+        'Weak Password',
+        'Password does not meet security requirements:\n• ' + strength.errors.join('\n• ')
+      );
     }
+
     setLoading(true);
     try {
-      const { error } = await supabase.auth.updateUser({ password });
+      const { error } = await withTimeout(supabase.auth.updateUser({ password }));
       if (error) throw error;
-      
+      setLoading(false);
       Alert.alert('Success', 'Your password has been updated.', [
         { text: 'OK', onPress: () => router.replace('/(tabs)/home') }
       ]);
     } catch (e: any) {
-      Alert.alert('Update Failed', e.message || 'Could not update password.');
+      showError(e, 'Update Failed');
     } finally {
       setLoading(false);
     }
@@ -75,6 +84,7 @@ export default function UpdatePasswordScreen() {
               textContentType="newPassword"
               autoComplete="password-new"
             />
+            <PasswordStrengthMeter password={password} />
           </View>
 
           <Button title="Update Password" onPress={handleUpdatePassword} loading={loading} style={{ marginTop: Spacing.xl }} />
