@@ -9,16 +9,19 @@ import { Colors, Typography, Spacing, Radius, CommonStyles } from '@/utils/theme
 import { ProgressBar } from '@/components/common';
 import { KeyboardAwareScreen } from '@/components/KeyboardAwareScreen';
 import { useAuthStore } from '@/store/authStore';
-import { COUNTRIES, FIELDS_OF_STUDY } from '@eagle-pathway/shared';
+import { COUNTRIES, FIELDS_OF_STUDY, validateAcademicScore } from '@eagle-pathway/shared';
 
 export const ONBOARDED_KEY = '@eagle_onboarded';
 
 const LEVELS = [
+  { key: 'highschool', label: 'High School / Grade 12' },
   { key: 'undergraduate', label: 'Undergraduate' },
   { key: 'masters', label: "Master's" },
   { key: 'phd', label: 'PhD' },
 ];
-const GPA_SCALES = [4, 5, 100];
+
+const HIGH_SCHOOL_SCALES = [700, 600, 500];
+const UNIVERSITY_SCALES = [4, 5, 100];
 
 export function OnboardingScreen() {
   const { user, updateProfile } = useAuthStore();
@@ -27,19 +30,33 @@ export function OnboardingScreen() {
 
   const [level, setLevel] = useState<string>(user?.target_degree_level || '');
   const [gpa, setGpa] = useState<string>(user?.gpa != null ? String(user.gpa) : '');
-  const [gpaMax, setGpaMax] = useState<number>(user?.gpa_max || 4);
+  const [gpaMax, setGpaMax] = useState<number>(user?.gpa_max || (level === 'highschool' ? 700 : 4));
   const [interests, setInterests] = useState<string[]>(user?.interested_subjects || []);
   const [countries, setCountries] = useState<string[]>(user?.target_countries || []);
   const [hasIelts, setHasIelts] = useState<boolean>(!!user?.has_ielts);
   const [englishMedium, setEnglishMedium] = useState<boolean>(!!user?.is_english_medium);
 
+  const scoreValidation = validateAcademicScore(gpa, gpaMax);
+
   const TOTAL = 4;
+
+  const handleLevelSelect = (key: string) => {
+    setLevel(key);
+    // Auto-switch default scale based on study level
+    if (key === 'highschool') {
+      if (!HIGH_SCHOOL_SCALES.includes(gpaMax)) setGpaMax(700);
+    } else {
+      if (!UNIVERSITY_SCALES.includes(gpaMax)) setGpaMax(4);
+    }
+  };
 
   const toggle = (list: string[], value: string, setter: (v: string[]) => void) => {
     setter(list.includes(value) ? list.filter(v => v !== value) : [...list, value]);
   };
 
   const finish = async (skip = false) => {
+    if (!skip && gpa.trim() && !scoreValidation.isValid) return;
+
     setSaving(true);
     try {
       if (!skip) {
@@ -49,7 +66,7 @@ export function OnboardingScreen() {
           if (!user?.grade_level) updates.grade_level = level; // seed for matching
         }
         const gpaNum = parseFloat(gpa);
-        if (!Number.isNaN(gpaNum)) {
+        if (!Number.isNaN(gpaNum) && scoreValidation.isValid) {
           updates.gpa = gpaNum;
           updates.gpa_max = gpaMax;
         }
@@ -70,7 +87,14 @@ export function OnboardingScreen() {
     }
   };
 
-  const next = () => (step + 1 >= TOTAL ? finish() : setStep(step + 1));
+  const isCurrentStepValid = step === 1 ? scoreValidation.isValid : true;
+
+  const next = () => {
+    if (!isCurrentStepValid) return;
+    return (step + 1 >= TOTAL ? finish() : setStep(step + 1));
+  };
+
+  const availableScales = level === 'highschool' ? HIGH_SCHOOL_SCALES : UNIVERSITY_SCALES;
 
   return (
     <SafeAreaView style={[CommonStyles.flex1, { backgroundColor: Colors.bg }]} edges={['top', 'bottom']}>
@@ -84,10 +108,10 @@ export function OnboardingScreen() {
         {step === 0 && (
           <View>
             <Text style={s.h1}>What do you want to study?</Text>
-            <Text style={s.sub}>We use this to match you with the right scholarships.</Text>
+            <Text style={s.sub}>Select your target degree level or current status.</Text>
             <View style={s.chips}>
               {LEVELS.map(l => (
-                <TouchableOpacity key={l.key} style={[s.chip, level === l.key && s.chipActive]} onPress={() => setLevel(l.key)} activeOpacity={0.8}>
+                <TouchableOpacity key={l.key} style={[s.chip, level === l.key && s.chipActive]} onPress={() => handleLevelSelect(l.key)} activeOpacity={0.8}>
                   <Text style={[s.chipText, level === l.key && s.chipTextActive]}>{l.label}</Text>
                 </TouchableOpacity>
               ))}
@@ -97,14 +121,44 @@ export function OnboardingScreen() {
 
         {step === 1 && (
           <View>
-            <Text style={s.h1}>What's your GPA?</Text>
-            <Text style={s.sub}>Optional, but it sharpens your scholarship matches.</Text>
-            <TextInput style={s.input} keyboardType="numeric" placeholder="e.g. 3.6" value={gpa} onChangeText={setGpa} placeholderTextColor={Colors.textSecondary} />
-            <Text style={s.label}>Scale</Text>
+            <Text style={s.h1}>
+              {level === 'highschool' ? "Grade 12 / National Exam Score" : "What's your GPA?"}
+            </Text>
+            <Text style={s.sub}>
+              {level === 'highschool'
+                ? "Enter your Ethiopian Grade 12 Entrance Exam (EUEE) total score."
+                : "Optional, but it sharpens your scholarship matches."}
+            </Text>
+
+            <TextInput
+              style={[
+                s.input,
+                !scoreValidation.isValid && gpa.length > 0 && s.inputError
+              ]}
+              keyboardType="numeric"
+              placeholder={level === 'highschool' ? "e.g. 560" : "e.g. 3.6"}
+              value={gpa}
+              onChangeText={setGpa}
+              placeholderTextColor={Colors.textSecondary}
+            />
+
+            {!scoreValidation.isValid && gpa.length > 0 && (
+              <Text style={s.errorText}>⚠️ {scoreValidation.error}</Text>
+            )}
+
+            {scoreValidation.isValid && gpa.length > 0 && scoreValidation.normalizedGpa != null && (
+              <Text style={s.validHintText}>
+                ✓ Equivalent to ~{scoreValidation.normalizedGpa.toFixed(2)} GPA on 4.0 scale
+              </Text>
+            )}
+
+            <Text style={[s.label, { marginTop: Spacing.md }]}>Score Scale</Text>
             <View style={s.chips}>
-              {GPA_SCALES.map(scale => (
+              {availableScales.map(scale => (
                 <TouchableOpacity key={scale} style={[s.chip, gpaMax === scale && s.chipActive]} onPress={() => setGpaMax(scale)} activeOpacity={0.8}>
-                  <Text style={[s.chipText, gpaMax === scale && s.chipTextActive]}>out of {scale}</Text>
+                  <Text style={[s.chipText, gpaMax === scale && s.chipTextActive]}>
+                    {scale > 5 ? `out of ${scale}` : scale === 100 ? 'out of 100%' : `out of ${scale}.0`}
+                  </Text>
                 </TouchableOpacity>
               ))}
             </View>
@@ -162,7 +216,15 @@ export function OnboardingScreen() {
             <Text style={s.backBtnText}>Back</Text>
           </TouchableOpacity>
         )}
-        <TouchableOpacity style={[s.nextBtn, saving && { opacity: 0.6 }]} onPress={next} disabled={saving} activeOpacity={0.85}>
+        <TouchableOpacity
+          style={[
+            s.nextBtn,
+            (!isCurrentStepValid || saving) && { opacity: 0.5 }
+          ]}
+          onPress={next}
+          disabled={saving || !isCurrentStepValid}
+          activeOpacity={0.85}
+        >
           {saving ? <ActivityIndicator color={Colors.white} /> : <Text style={s.nextBtnText}>{step + 1 >= TOTAL ? 'Finish' : 'Continue'}</Text>}
         </TouchableOpacity>
       </View>
@@ -177,7 +239,10 @@ const s = StyleSheet.create({
   h1: { fontSize: Typography['3xl'], fontWeight: Typography.bold, color: Colors.text, marginTop: Spacing.lg, marginBottom: Spacing.xs },
   sub: { fontSize: Typography.md, color: Colors.textSecondary, marginBottom: Spacing.xl, lineHeight: 22 },
   label: { fontSize: Typography.sm, fontWeight: Typography.semibold, color: Colors.text, marginBottom: Spacing.sm },
-  input: { backgroundColor: Colors.white, borderWidth: 1, borderColor: Colors.border, borderRadius: Radius.lg, padding: Spacing.md, fontSize: Typography.xl, marginBottom: Spacing.lg, color: Colors.text },
+  input: { backgroundColor: Colors.white, borderWidth: 1, borderColor: Colors.border, borderRadius: Radius.lg, padding: Spacing.md, fontSize: Typography.xl, marginBottom: Spacing.xs, color: Colors.text },
+  inputError: { borderColor: '#ef4444', borderWidth: 1.5, backgroundColor: '#fef2f2' },
+  errorText: { color: '#ef4444', fontSize: Typography.sm, fontWeight: Typography.semibold, marginBottom: Spacing.md },
+  validHintText: { color: '#16a34a', fontSize: Typography.sm, fontWeight: Typography.semibold, marginBottom: Spacing.md },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm },
   chip: { paddingHorizontal: 16, paddingVertical: 10, borderRadius: Radius.full, backgroundColor: Colors.white, borderWidth: 1, borderColor: Colors.border },
   chipActive: { backgroundColor: Colors.blue, borderColor: Colors.blue },
@@ -194,3 +259,4 @@ const s = StyleSheet.create({
   nextBtn: { flex: 1, paddingVertical: 16, borderRadius: Radius.lg, backgroundColor: Colors.blue, alignItems: 'center' },
   nextBtnText: { color: Colors.white, fontWeight: Typography.bold, fontSize: Typography.md },
 });
+

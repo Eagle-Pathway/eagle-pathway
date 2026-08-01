@@ -2,6 +2,7 @@ export * from './types';
 export * from './utils/theme';
 export * from './utils/logger';
 export * from './utils/passwordStrength';
+export * from './utils/scoreValidation';
 export * from './constants/metadata';
 
 export const formatDate = (dateString: string): string => {
@@ -38,6 +39,7 @@ export const getInitials = (name: string): string => {
 export const calculateMatchScore = (user: {
   grade_level?: string;
   gpa?: number;
+  gpa_max?: number;
   interested_subjects?: string[];
 }, scholarship: {
   degree_levels: string[];
@@ -52,7 +54,9 @@ export const calculateMatchScore = (user: {
   }
   
   if (user.gpa && scholarship.min_gpa) {
-    if (user.gpa >= scholarship.min_gpa) {
+    const scale = user.gpa_max || (user.gpa > 5 ? 700 : 4.0);
+    const normalizedGpa = scale > 5 ? (user.gpa / scale) * 4.0 : user.gpa;
+    if (normalizedGpa >= scholarship.min_gpa) {
       score += 20;
     } else {
       score -= 15;
