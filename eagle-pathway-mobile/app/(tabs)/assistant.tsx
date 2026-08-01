@@ -136,12 +136,7 @@ export default function AssistantScreen() {
         }} 
       />
       
-      {/* We use padding behavior for both platforms in case 'resize' fails or isn't applied (e.g. Expo Go) */}
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
-      >
+      {/* FlatList fills the remaining space above the input */}
         <FlatList
           keyboardShouldPersistTaps="handled"
           ref={flatListRef}
@@ -179,30 +174,34 @@ export default function AssistantScreen() {
           </View>
         )}
 
-        <View style={[styles.inputContainer, { paddingBottom: Math.max(insets.bottom, 12) }]}>
-          <TextInput
-            style={styles.input}
-            value={input}
-            onChangeText={setInput}
-            placeholder="Ask Eagle AI..."
-            placeholderTextColor="#9ca3af"
-            multiline
-            maxLength={500}
-            editable={!isLoading}
-          />
-          <TouchableOpacity 
-            style={[styles.sendButton, (!input.trim() || isLoading) && styles.sendButtonDisabled]}
-            onPress={() => sendMessage()}
-            disabled={!input.trim() || isLoading}
-          >
-            {isLoading ? (
-              <ActivityIndicator color={Colors.white} size="small" />
-            ) : (
-              <Ionicons name="send" size={18} color={Colors.white} />
-            )}
-          </TouchableOpacity>
-        </View>
-      </KeyboardAvoidingView>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
+        >
+          <View style={[styles.inputContainer, { paddingBottom: Math.max(insets.bottom, 12) }]}>
+            <TextInput
+              style={styles.input}
+              value={input}
+              onChangeText={setInput}
+              placeholder="Ask Eagle AI..."
+              placeholderTextColor="#9ca3af"
+              multiline
+              maxLength={500}
+              editable={!isLoading}
+            />
+            <TouchableOpacity 
+              style={[styles.sendButton, (!input.trim() || isLoading) && styles.sendButtonDisabled]}
+              onPress={() => sendMessage()}
+              disabled={!input.trim() || isLoading}
+            >
+              {isLoading ? (
+                <ActivityIndicator color={Colors.white} size="small" />
+              ) : (
+                <Ionicons name="send" size={18} color={Colors.white} />
+              )}
+            </TouchableOpacity>
+          </View>
+        </KeyboardAvoidingView>
     </View>
   );
 }

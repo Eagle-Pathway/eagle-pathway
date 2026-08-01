@@ -123,11 +123,7 @@ export default function ChatDetailScreen() {
         </TouchableOpacity>
       </View>
 
-      <KeyboardAvoidingView 
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        style={CommonStyles.flex1}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
-      >
+      {/* FlatList takes up remaining space */}
         {isLoadingMessages && activeMessages.length === 0 ? (
           <View style={[CommonStyles.flex1, { padding: Spacing.lg }]}>
             <View style={[styles.messageRow, styles.theirRow]}>
@@ -159,23 +155,27 @@ export default function ChatDetailScreen() {
         )}
 
         {/* Input area */}
-        <View style={[styles.inputArea, { paddingBottom: Math.max(insets.bottom, Spacing.md) }]}>
-          <TextInput
-            style={styles.input}
-            placeholder="Type a message..."
-            value={inputText}
-            onChangeText={setInputText}
-            multiline
-          />
-          <TouchableOpacity 
-            style={[styles.sendBtn, !inputText.trim() && { opacity: 0.5 }]} 
-            onPress={handleSend}
-            disabled={!inputText.trim()}
-          >
-            <Text style={styles.sendIcon}>🏹</Text>
-          </TouchableOpacity>
-        </View>
-      </KeyboardAvoidingView>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
+        >
+          <View style={[styles.inputArea, { paddingBottom: Math.max(insets.bottom, Spacing.md) }]}>
+            <TextInput
+              style={styles.input}
+              placeholder="Type a message..."
+              value={inputText}
+              onChangeText={setInputText}
+              multiline
+            />
+            <TouchableOpacity 
+              style={[styles.sendBtn, !inputText.trim() && { opacity: 0.5 }]} 
+              onPress={handleSend}
+              disabled={!inputText.trim()}
+            >
+              <Text style={styles.sendIcon}>🏹</Text>
+            </TouchableOpacity>
+          </View>
+        </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
