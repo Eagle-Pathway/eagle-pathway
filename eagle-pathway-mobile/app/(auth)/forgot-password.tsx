@@ -5,7 +5,10 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Typography, Spacing, Radius } from '../../src/utils/theme';
 import { Button } from '../../src/components/common';
+import { KeyboardAwareScreen } from '../../src/components/KeyboardAwareScreen';
 import { supabase } from '../../src/services/supabase';
+import { getErrorMessage } from '../../src/utils/errorHandler';
+import { withTimeout } from '../../src/utils/asyncUtils';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const RESEND_COOLDOWN_SECONDS = 60;
@@ -36,13 +39,12 @@ export default function ForgotPasswordScreen() {
     setError('');
     setLoading(true);
     try {
-      // No redirectTo — the email delivers a 6-digit code ({{ .Token }}) instead of a deep link.
-      const { error: resetError } = await supabase.auth.resetPasswordForEmail(target);
+      const { error: resetError } = await withTimeout(supabase.auth.resetPasswordForEmail(target));
       if (resetError) throw resetError;
       setSent(true);
       setResendCooldown(RESEND_COOLDOWN_SECONDS);
     } catch (e: any) {
-      setError(e?.message || 'Could not send the reset code. Please try again.');
+      setError(getErrorMessage(e));
     } finally {
       setLoading(false);
     }
@@ -58,16 +60,16 @@ export default function ForgotPasswordScreen() {
     setError('');
     setLoading(true);
     try {
-      const { error: verifyError } = await supabase.auth.verifyOtp({
+      const { error: verifyError } = await withTimeout(supabase.auth.verifyOtp({
         email: target,
         token,
         type: 'recovery',
-      });
+      }));
       if (verifyError) throw verifyError;
-      // Recovery session is now active — go set the new password.
+      setLoading(false);
       router.replace('/(auth)/update-password');
     } catch (e: any) {
-      setError(e?.message || 'That code is invalid or expired. Request a new one.');
+      setError(getErrorMessage(e));
     } finally {
       setLoading(false);
     }
@@ -81,8 +83,7 @@ export default function ForgotPasswordScreen() {
         <Text style={{ fontSize: 24, color: Colors.text }}>←</Text>
       </TouchableOpacity>
 
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
-        <View style={styles.body}>
+      <KeyboardAwareScreen contentContainerStyle={styles.body}>
           {!sent ? (
             <>
               <View style={styles.iconBadge}><Ionicons name="key-outline" size={30} color={Colors.blue} /></View>
@@ -160,8 +161,7 @@ export default function ForgotPasswordScreen() {
               </TouchableOpacity>
             </>
           )}
-        </View>
-      </KeyboardAvoidingView>
+      </KeyboardAwareScreen>
     </SafeAreaView>
   );
 }

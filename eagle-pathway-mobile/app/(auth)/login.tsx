@@ -9,13 +9,15 @@ import { KeyboardAwareScreen } from '../../src/components/KeyboardAwareScreen';
 import { useAuthStore } from '../../src/store/authStore';
 import { authService } from '../../src/services/auth';
 
+import { showError } from '../../src/utils/errorHandler';
+
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const passwordRef = useRef<TextInput>(null);
-  const { signIn, isLoading } = useAuthStore();
+  const { signIn, isLoading, setLoading } = useAuthStore();
 
   const handleLogin = async () => {
     if (!email.trim()) return Alert.alert('Error', 'Please enter your email');
@@ -23,10 +25,9 @@ export default function LoginScreen() {
     if (!password) return Alert.alert('Error', 'Please enter your password');
     try {
       await signIn(email.trim(), password);
+      setLoading(false);
       router.replace('/(tabs)/home');
     } catch (e: any) {
-      // Account exists but the email was never verified: resend a code and send
-      // them to the verification screen instead of showing a raw error.
       if (e?.code === 'email_not_confirmed' || /not confirmed/i.test(e?.message || '')) {
         authService.resendSignupOtp(email.trim()).catch(() => {});
         return Alert.alert(
@@ -35,7 +36,9 @@ export default function LoginScreen() {
           [{ text: 'OK', onPress: () => router.push({ pathname: '/(auth)/signup', params: { verifyEmail: email.trim() } }) }],
         );
       }
-      Alert.alert('Login Failed', e.message || 'Please check your credentials.');
+      showError(e, 'Login Failed');
+    } finally {
+      setLoading(false);
     }
   };
 
