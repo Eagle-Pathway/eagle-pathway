@@ -7,6 +7,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { Colors, Typography, Radius, Spacing, CommonStyles } from '../../utils/theme';
 import { ScaleBounce } from './ScaleBounce';
 
+import { showError } from '../../utils/errorHandler';
+
 // ─── Button ──────────────────────────────────────────────────────────────────
 interface ButtonProps {
   title: string;
@@ -18,18 +20,39 @@ interface ButtonProps {
   style?: ViewStyle;
   textStyle?: TextStyle;
   fullWidth?: boolean;
+  onTimeout?: () => void;
 }
 
 export const Button: React.FC<ButtonProps> = ({
   title, onPress, variant = 'primary', size = 'lg',
-  loading, disabled, style, textStyle, fullWidth = true,
+  loading, disabled, style, textStyle, fullWidth = true, onTimeout,
 }) => {
+  const [internalTimeout, setInternalTimeout] = React.useState(false);
+
+  React.useEffect(() => {
+    if (!loading) {
+      setInternalTimeout(false);
+      return;
+    }
+    const timer = setTimeout(() => {
+      setInternalTimeout(true);
+      if (onTimeout) {
+        onTimeout();
+      } else {
+        showError(new Error('Request timed out. Please try again.'), 'Operation Timed Out');
+      }
+    }, 20000);
+    return () => clearTimeout(timer);
+  }, [loading, onTimeout]);
+
+  const effectiveLoading = !!(loading && !internalTimeout);
+
   const btnStyle = [
     styles.btn,
     styles[`btn_${variant}`],
     styles[`btn_${size}`],
     fullWidth && styles.btnFull,
-    (disabled || loading) && styles.btnDisabled,
+    (disabled || effectiveLoading) && styles.btnDisabled,
     style,
   ];
 
@@ -44,12 +67,12 @@ export const Button: React.FC<ButtonProps> = ({
     <ScaleBounce
       style={btnStyle}
       onPress={onPress}
-      disabled={disabled || loading}
+      disabled={disabled || effectiveLoading}
       accessibilityRole="button"
       accessibilityLabel={title}
-      accessibilityState={{ disabled: disabled || loading, busy: loading }}
+      accessibilityState={{ disabled: disabled || effectiveLoading, busy: effectiveLoading }}
     >
-      {loading
+      {effectiveLoading
         ? <ActivityIndicator color={variant === 'primary' ? Colors.white : Colors.blue} size="small" />
         : <Text style={txtStyle}>{title}</Text>}
     </ScaleBounce>
