@@ -1,15 +1,23 @@
 'use client';
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/store/useAuthStore';
-import { Settings2, Shield, User as UserIcon, Lock, Loader2, CheckCircle2 } from 'lucide-react';
+import { validatePasswordStrength } from '@eagle-pathway/shared';
+import { Settings2, Shield, User as UserIcon, Lock, Loader2, CheckCircle2, LogOut, Eye, EyeOff, Check, X } from 'lucide-react';
 
 export default function SettingsPage() {
-  const { user } = useAuthStore();
+  const router = useRouter();
+  const { user, setUser, setSession } = useAuthStore();
   const [loading, setLoading] = useState(true);
   const [savingProfile, setSavingProfile] = useState(false);
   const [savingPassword, setSavingPassword] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
   
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
   const [profileMsg, setProfileMsg] = useState({ type: '', text: '' });
   const [passwordMsg, setPasswordMsg] = useState({ type: '', text: '' });
 
@@ -20,9 +28,12 @@ export default function SettingsPage() {
   });
 
   const [passwordData, setPasswordData] = useState({
+    currentPassword: '',
     newPassword: '',
     confirmPassword: ''
   });
+
+  const passwordStrength = validatePasswordStrength(passwordData.newPassword);
 
   useEffect(() => {
     if (user?.id) fetchProfile();
@@ -77,8 +88,35 @@ export default function SettingsPage() {
     setSavingPassword(true);
     setPasswordMsg({ type: '', text: '' });
 
+    if (!passwordData.currentPassword) {
+      setPasswordMsg({ type: 'error', text: 'Please enter your current password.' });
+      setSavingPassword(false);
+      return;
+    }
+
+    // Verify current password first by re-authenticating with Supabase Auth
+    const { error: authVerifyErr } = await supabase.auth.signInWithPassword({
+      email: user?.email || '',
+      password: passwordData.currentPassword
+    });
+
+    if (authVerifyErr) {
+      setPasswordMsg({ type: 'error', text: 'Current password is incorrect. Verification failed.' });
+      setSavingPassword(false);
+      return;
+    }
+
+    if (!passwordStrength.isValid) {
+      setPasswordMsg({
+        type: 'error',
+        text: 'New password is too weak. Requirements: ' + passwordStrength.errors.join(', ')
+      });
+      setSavingPassword(false);
+      return;
+    }
+
     if (passwordData.newPassword !== passwordData.confirmPassword) {
-      setPasswordMsg({ type: 'error', text: 'Passwords do not match' });
+      setPasswordMsg({ type: 'error', text: 'New passwords do not match' });
       setSavingPassword(false);
       return;
     }
@@ -90,11 +128,21 @@ export default function SettingsPage() {
 
       if (error) throw error;
 
-      setPasswordMsg({ type: 'success', text: 'Password successfully changed!' });
-      setPasswordData({ newPassword: '', confirmPassword: '' });
+      setPasswordMsg({
+        type: 'success',
+        text: 'Password changed successfully! For security, you will be logged out in 3 seconds. Please sign in with your new password.'
+      });
+      setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+      setLoggingOut(true);
+
+      setTimeout(async () => {
+        await supabase.auth.signOut();
+        setUser(null);
+        setSession(null);
+        router.push('/login');
+      }, 3000);
     } catch (err: any) {
       setPasswordMsg({ type: 'error', text: err.message || 'Failed to update password' });
-    } finally {
       setSavingPassword(false);
     }
   };
@@ -174,19 +222,130 @@ export default function SettingsPage() {
 
               <div className="grid grid-cols-1 gap-6">
                 <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1.5">Current Password</label>
+                  <div className="relative">
+                    <input
+                      required
+                      type={showCurrentPassword ? 'text' : 'password'}
+                      disabled={savingPassword || loggingOut}
+                      value={passwordData.currentPassword}
+                      onChange={e => setPasswordData({...passwordData, currentPassword: e.target.value})}
+                      className="w-full pl-4 pr-12 py-3 bg-white rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-blue/20 focus:border-brand-blue transition-colors text-gray-900 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                      placeholder="Enter current password"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                      className="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-400 hover:text-gray-600 transition-colors"
+                      title={showCurrentPassword ? 'Hide password' : 'Show password'}
+                    >
+                      {showCurrentPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                    </button>
+                  </div>
+                </div>
+
+                <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-1.5">New Password</label>
-                  <input required minLength={6} type="password" value={passwordData.newPassword} onChange={e => setPasswordData({...passwordData, newPassword: e.target.value})} className="w-full px-4 py-3 bg-white rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-blue/20 focus:border-brand-blue transition-colors text-gray-900" placeholder="••••••••" />
+                  <div className="relative">
+                    <input
+                      required
+                      type={showNewPassword ? 'text' : 'password'}
+                      disabled={savingPassword || loggingOut}
+                      value={passwordData.newPassword}
+                      onChange={e => setPasswordData({...passwordData, newPassword: e.target.value})}
+                      className="w-full pl-4 pr-12 py-3 bg-white rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-blue/20 focus:border-brand-blue transition-colors text-gray-900 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                      placeholder="••••••••"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowNewPassword(!showNewPassword)}
+                      className="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-400 hover:text-gray-600 transition-colors"
+                      title={showNewPassword ? 'Hide password' : 'Show password'}
+                    >
+                      {showNewPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                    </button>
+                  </div>
+
+                  {/* Real-time Password Strength Meter & Checklist */}
+                  {passwordData.newPassword.length > 0 && (
+                    <div className="mt-4 p-4 bg-gray-50 rounded-2xl border border-gray-100 space-y-3">
+                      <div className="flex items-center justify-between text-xs font-semibold">
+                        <span className="text-gray-600">Password Strength:</span>
+                        <span style={{ color: passwordStrength.color }}>{passwordStrength.label}</span>
+                      </div>
+                      
+                      {/* Strength Progress Bar */}
+                      <div className="w-full bg-gray-200 h-2 rounded-full overflow-hidden flex gap-1">
+                        {[1, 2, 3, 4].map(step => (
+                          <div
+                            key={step}
+                            className="h-full flex-1 transition-all duration-300 rounded-full"
+                            style={{
+                              backgroundColor: step <= passwordStrength.score ? passwordStrength.color : '#e5e7eb'
+                            }}
+                          />
+                        ))}
+                      </div>
+
+                      {/* Requirement checklist */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1 text-xs">
+                        <div className={`flex items-center gap-1.5 ${passwordStrength.isMinLength ? 'text-green-600 font-medium' : 'text-gray-400'}`}>
+                          {passwordStrength.isMinLength ? <Check className="w-3.5 h-3.5" /> : <X className="w-3.5 h-3.5 text-gray-300" />}
+                          At least 8 characters
+                        </div>
+                        <div className={`flex items-center gap-1.5 ${passwordStrength.hasUpper && passwordStrength.hasLower ? 'text-green-600 font-medium' : 'text-gray-400'}`}>
+                          {passwordStrength.hasUpper && passwordStrength.hasLower ? <Check className="w-3.5 h-3.5" /> : <X className="w-3.5 h-3.5 text-gray-300" />}
+                          Upper & lowercase letters
+                        </div>
+                        <div className={`flex items-center gap-1.5 ${passwordStrength.hasNumber ? 'text-green-600 font-medium' : 'text-gray-400'}`}>
+                          {passwordStrength.hasNumber ? <Check className="w-3.5 h-3.5" /> : <X className="w-3.5 h-3.5 text-gray-300" />}
+                          At least 1 number (0-9)
+                        </div>
+                        <div className={`flex items-center gap-1.5 ${passwordStrength.hasSpecial ? 'text-green-600 font-medium' : 'text-gray-400'}`}>
+                          {passwordStrength.hasSpecial ? <Check className="w-3.5 h-3.5" /> : <X className="w-3.5 h-3.5 text-gray-300" />}
+                          At least 1 special char (!@#$)
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-1.5">Confirm New Password</label>
-                  <input required minLength={6} type="password" value={passwordData.confirmPassword} onChange={e => setPasswordData({...passwordData, confirmPassword: e.target.value})} className="w-full px-4 py-3 bg-white rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-blue/20 focus:border-brand-blue transition-colors text-gray-900" placeholder="••••••••" />
+                  <div className="relative">
+                    <input
+                      required
+                      type={showConfirmPassword ? 'text' : 'password'}
+                      disabled={savingPassword || loggingOut}
+                      value={passwordData.confirmPassword}
+                      onChange={e => setPasswordData({...passwordData, confirmPassword: e.target.value})}
+                      className="w-full pl-4 pr-12 py-3 bg-white rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-blue/20 focus:border-brand-blue transition-colors text-gray-900 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                      placeholder="••••••••"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      className="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-400 hover:text-gray-600 transition-colors"
+                      title={showConfirmPassword ? 'Hide password' : 'Show password'}
+                    >
+                      {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                    </button>
+                  </div>
                 </div>
               </div>
 
               <div className="pt-2 flex justify-end">
-                <button type="submit" disabled={savingPassword} className="flex items-center justify-center px-6 py-3 text-sm font-bold text-gray-700 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-all disabled:opacity-70">
-                  {savingPassword ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : 'Update Password'}
+                <button type="submit" disabled={savingPassword || loggingOut} className="flex items-center justify-center px-6 py-3 text-sm font-bold text-gray-700 bg-white border border-gray-200 rounded-xl hover:bg-gray-50 transition-all disabled:opacity-70">
+                  {loggingOut ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                      Logging out...
+                    </>
+                  ) : savingPassword ? (
+                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                  ) : (
+                    'Update Password'
+                  )}
                 </button>
               </div>
             </form>
