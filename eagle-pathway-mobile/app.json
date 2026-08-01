@@ -47,6 +47,14 @@
           "color": "#1E4D9B"
         }
       ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "enableEdgeToEdge": true
+          }
+        }
+      ],
       "./plugins/with-cmake-args"
     ],
     "scheme": "eaglepathway",
@@ -60,6 +68,9 @@
     },
     "runtimeVersion": {
       "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/e78c6e36-63e3-4e25-b7df-6323b8b28809"
     }
   }
 }
