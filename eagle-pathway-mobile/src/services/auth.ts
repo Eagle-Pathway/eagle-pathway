@@ -123,40 +123,70 @@ export const authService = {
     email: string,
     attribution: SignupAttribution = {},
   ) {
+    const cleanPhone = phone && phone.trim() ? phone.trim() : null;
     const { data, error } = await supabase
       .from('users')
-      .insert({
-        id: userId,
-        full_name: fullName,
-        phone,
-        role,                  // canonical single role
-        roles: [role],         // legacy mirror — dropped in phase 2
-        active_role: role,     // legacy mirror — dropped in phase 2
-        email,
-        referral_code: attribution.referral_code || null,
-        signup_source: attribution.signup_source || null,
-        utm_source: attribution.utm_source || null,
-        utm_medium: attribution.utm_medium || null,
-        utm_campaign: attribution.utm_campaign || null,
-        utm_content: attribution.utm_content || null,
-        first_landing_url: attribution.first_landing_url || null,
-      })
+      .upsert(
+        {
+          id: userId,
+          full_name: fullName,
+          phone: cleanPhone,
+          role,                  // canonical single role
+          roles: [role],         // legacy mirror — dropped in phase 2
+          active_role: role,     // legacy mirror — dropped in phase 2
+          email,
+          referral_code: attribution.referral_code || null,
+          signup_source: attribution.signup_source || null,
+          utm_source: attribution.utm_source || null,
+          utm_medium: attribution.utm_medium || null,
+          utm_campaign: attribution.utm_campaign || null,
+          utm_content: attribution.utm_content || null,
+          first_landing_url: attribution.first_landing_url || null,
+        },
+        { onConflict: 'id', ignoreDuplicates: true }
+      )
       .select()
-      .single();
-    if (error) throw error;
+      .maybeSingle();
+
+    if (error) {
+      console.error('[createProfile] Upsert error:', error.message);
+      // If phone uniqueness constraint failed, retry without phone so profile exists
+      if (error.message.includes('users_phone_key') || error.message.includes('duplicate key')) {
+        const { data: retryData } = await supabase
+          .from('users')
+          .upsert(
+            {
+              id: userId,
+              full_name: fullName,
+              role,
+              roles: [role],
+              active_role: role,
+              email,
+            },
+            { onConflict: 'id', ignoreDuplicates: true }
+          )
+          .select()
+          .maybeSingle();
+        return retryData as User;
+      }
+      throw error;
+    }
     
     // Add role to user_roles table (source of truth)
-    const { error: roleError } = await supabase
-      .from('user_roles')
-      .insert({
-        user_id: userId,
-        role: role,
-      });
-    if (roleError) throw roleError;
+    try {
+      await supabase
+        .from('user_roles')
+        .upsert(
+          {
+            user_id: userId,
+            role: role,
+          },
+          { onConflict: 'user_id,role', ignoreDuplicates: true }
+        );
+    } catch (e) {
+      console.error('[createProfile] user_roles update skipped:', e);
+    }
 
-    // Note: Tutor/parent profiles are now lazy-created
-    // via database trigger when user switches to that role
-    
     return data as User;
   },
 

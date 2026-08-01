@@ -3,6 +3,7 @@ import { User, UserRole } from '../types';
 import { SignupAttribution, authService } from '../services/auth';
 import { notificationsService } from '../services/notifications';
 import { supabase } from '../services/supabase';
+import { withTimeout } from '../utils/asyncUtils';
 
 const BYPASS_PHONE_VERIFY =
   __DEV__ && process.env.EXPO_PUBLIC_BYPASS_PHONE_VERIFY === 'true';
@@ -48,7 +49,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   signUp: async (email, password, fullName, phone, role, attribution) => {
     set({ isLoading: true });
     try {
-      const data = await authService.signUp(email, password, fullName, phone, role, attribution);
+      const data = await withTimeout(authService.signUp(email, password, fullName, phone, role, attribution));
       if (data.session) {
         set({ session: data.session, user: data.user as any, isAuthenticated: true });
       }
@@ -60,42 +61,57 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   verifySignup: async (email, token) => {
     set({ isLoading: true });
     try {
-      const data = await authService.verifySignupOtp(email, token);
+      const data = await withTimeout(authService.verifySignupOtp(email, token));
       if (data.session) {
         set({ session: data.session });
         const u = data.session.user;
 
-        let profile;
+        let profile: User | null = null;
         try {
           profile = await authService.getProfile(u.id);
-          set({ user: profile, isAuthenticated: true });
         } catch (e) {
-          // Profile doesn't exist yet — create it from the sign-up metadata.
-          const metadata = u.user_metadata || {};
-          profile = await authService.createProfile(
-            u.id,
-            metadata.full_name || 'User',
-            metadata.phone || u.phone || '',
-            metadata.role || 'student',
-            u.email || '',
-            {
-              referral_code: metadata.referral_code,
-              signup_source: metadata.signup_source,
-              utm_source: metadata.utm_source,
-              utm_medium: metadata.utm_medium,
-              utm_campaign: metadata.utm_campaign,
-              utm_content: metadata.utm_content,
-              first_landing_url: metadata.first_landing_url,
-            },
-          );
-          set({ user: profile, isAuthenticated: true });
+          console.error('[verifySignup] getProfile failed, attempting fallback profile creation:', e);
+          try {
+            const metadata = u.user_metadata || {};
+            profile = await authService.createProfile(
+              u.id,
+              metadata.full_name || 'User',
+              metadata.phone || u.phone || '',
+              metadata.role || 'student',
+              u.email || '',
+              {
+                referral_code: metadata.referral_code,
+                signup_source: metadata.signup_source,
+                utm_source: metadata.utm_source,
+                utm_medium: metadata.utm_medium,
+                utm_campaign: metadata.utm_campaign,
+                utm_content: metadata.utm_content,
+                first_landing_url: metadata.first_landing_url,
+              },
+            );
+          } catch (createErr) {
+            console.error('[verifySignup] createProfile failed silently:', createErr);
+          }
         }
+
+        const finalUser: User = profile || {
+          id: u.id,
+          email: u.email || email,
+          full_name: u.user_metadata?.full_name || 'User',
+          phone: u.phone || '',
+          role: u.user_metadata?.role || 'student',
+          roles: [u.user_metadata?.role || 'student'],
+          active_role: u.user_metadata?.role || 'student',
+          created_at: new Date().toISOString(),
+        };
+
+        set({ user: finalUser, isAuthenticated: true });
 
         // Register push token in the background (non-blocking)
         const userId = u.id;
         notificationsService.requestPermission().then(granted => {
           if (granted) notificationsService.registerPushToken(userId);
-        }).catch(e => console.log('Push registration skipped:', e));
+        }).catch(e => console.error('Push registration skipped:', e));
       }
     } finally {
       set({ isLoading: false });
@@ -105,23 +121,20 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   signIn: async (email, password) => {
     set({ isLoading: true });
     try {
-      const data = await authService.signIn(email, password);
+      const data = await withTimeout(authService.signIn(email, password));
       if (data.session) {
         set({ session: data.session });
         
-        let profile;
+        let profile: User | null = null;
         try {
           profile = await authService.getProfile(data.session.user.id);
-          set({ user: profile, isAuthenticated: true });
         } catch (e) {
-          // Profile doesn't exist, create it from metadata
-          const metadata = data.session.user.user_metadata;
-          if (metadata) {
+          console.error('[signIn] getProfile failed, attempting fallback profile creation:', e);
+          try {
+            const metadata = data.session.user.user_metadata || {};
             profile = await authService.createProfile(
               data.session.user.id,
               metadata.full_name || 'User',
-              // Fall back to the auth user's phone (set for phone-auth signups)
-              // before an empty string — '' collides on users.phone UNIQUE.
               metadata.phone || data.session.user.phone || '',
               metadata.role || 'student',
               data.session.user.email || '',
@@ -135,17 +148,29 @@ export const useAuthStore = create<AuthState>((set, get) => ({
                 first_landing_url: metadata.first_landing_url,
               }
             );
-            set({ user: profile, isAuthenticated: true });
-          } else {
-            throw new Error('User profile could not be initialized.');
+          } catch (createErr) {
+            console.error('[signIn] createProfile failed silently:', createErr);
           }
         }
+
+        const finalUser: User = profile || {
+          id: data.session.user.id,
+          email: data.session.user.email || email,
+          full_name: data.session.user.user_metadata?.full_name || 'User',
+          phone: data.session.user.phone || '',
+          role: data.session.user.user_metadata?.role || 'student',
+          roles: [data.session.user.user_metadata?.role || 'student'],
+          active_role: data.session.user.user_metadata?.role || 'student',
+          created_at: new Date().toISOString(),
+        };
+
+        set({ user: finalUser, isAuthenticated: true });
 
         // Register push token in the background (non-blocking)
         const userId = data.session.user.id;
         notificationsService.requestPermission().then(granted => {
           if (granted) notificationsService.registerPushToken(userId);
-        }).catch(e => console.log('Push registration skipped:', e));
+        }).catch(e => console.error('Push registration skipped:', e));
       }
     } finally {
       set({ isLoading: false });
