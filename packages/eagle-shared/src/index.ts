@@ -1,6 +1,7 @@
 export * from './types';
 export * from './utils/theme';
 export * from './utils/logger';
+export * from './utils/passwordStrength';
 export * from './constants/metadata';
 
 export const formatDate = (dateString: string): string => {
