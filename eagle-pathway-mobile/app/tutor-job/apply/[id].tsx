@@ -415,24 +415,24 @@ export default function TutorJobApplyScreen() {
           <>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: Spacing.xs }}>
               <Ionicons name="attach-outline" size={24} color={Colors.text} />
-              <Text style={[styles.sectionTitle, { marginBottom: 0 }]}>Upload Documents</Text>
+              <Text style={[styles.sectionTitle, { marginBottom: 0 }]}>Upload Qualifications & Certificates</Text>
             </View>
-            <Text style={styles.sectionSub}>Upload clear images or PDFs of your official documents.</Text>
+            <Text style={styles.sectionSub}>Upload clear photos or PDFs of your exam results, university transcripts, IELTS, or certificates.</Text>
 
             <UploadButton
-              label="Grade 10 National Exam Result *"
+              label="Academic Exam Result (Grade 10/12/Degree Result)"
               state={grade10}
               onPick={() => uploadFile(setGrade10, 'grade10')}
             />
 
             <UploadButton
-              label="Grade 12 National Exam Result *"
+              label="Transcript or CGPA Document"
               state={grade12}
               onPick={() => uploadFile(setGrade12, 'grade12')}
             />
 
             <UploadButton
-              label="Grade 9–12 Transcript *"
+              label="Certificates & Credentials (IELTS, TOEFL, Teaching Cert)"
               state={transcript}
               onPick={() => uploadFile(setTranscript, 'transcript')}
             />
@@ -442,9 +442,9 @@ export default function TutorJobApplyScreen() {
                 <Ionicons name="bulb-outline" size={18} color={Colors.blue} />
                 <Text style={[styles.tipTitle, { marginBottom: 0 }]}>Upload Tips</Text>
               </View>
-              <Text style={styles.tipText}>• Make sure documents are clear and fully visible</Text>
-              <Text style={styles.tipText}>• Photos should be taken in good lighting</Text>
-              <Text style={styles.tipText}>• PDFs are preferred for digital documents</Text>
+              <Text style={styles.tipText}>• You can upload Grade 10/12 results, University GPA transcripts, or IELTS certificates.</Text>
+              <Text style={styles.tipText}>• Make sure document text is clear and readable.</Text>
+              <Text style={styles.tipText}>• Photos or PDFs are accepted.</Text>
             </View>
           </>
         )}
