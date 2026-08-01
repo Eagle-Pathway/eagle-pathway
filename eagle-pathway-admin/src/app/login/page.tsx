@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useRouter } from 'next/navigation';
-import { Mail, Lock, Loader2 } from 'lucide-react';
+import { Mail, Lock, Loader2, Eye, EyeOff } from 'lucide-react';
 
 interface AdminProfile {
   roles?: string[] | null;
@@ -18,6 +18,7 @@ function hasAdminAccess(profile: AdminProfile | null) {
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const router = useRouter();
@@ -37,19 +38,17 @@ export default function LoginPage() {
       if (authError) throw authError;
 
       if (data.user) {
-        // Verify admin role - check both RLS auth and legacy role column
-        const { data: profile, error: profileError } = await supabase
+        // Verify admin role via is_admin RPC (checks user_roles table) or users table role
+        const { data: isAdminRpc } = await supabase.rpc('is_admin');
+        const { data: profile } = await supabase
           .from('users')
-          .select('roles, active_role, role')
+          .select('role')
           .eq('id', data.user.id)
-          .single();
+          .maybeSingle();
 
-        // Check new multi-role format OR legacy single role
-        const isAdmin = profile?.active_role === 'admin' || 
-                       profile?.roles?.includes('admin') ||
-                       profile?.role === 'admin';
+        const isAdmin = isAdminRpc === true || profile?.role === 'admin';
 
-        if (!profile || profileError || !isAdmin) {
+        if (!isAdmin) {
           await supabase.auth.signOut();
           setError('Access denied. Admin privileges required. Please ensure your account has admin role.');
           setLoading(false);
@@ -117,13 +116,21 @@ export default function LoginPage() {
               <input
                 id="password"
                 name="password"
-                type="password"
+                type={showPassword ? 'text' : 'password'}
                 required
-                className="block w-full pl-12 pr-4 py-3.5 border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 bg-white/50 focus:outline-none focus:ring-2 focus:ring-brand-blue/30 focus:border-brand-blue transition-all sm:text-sm form-input"
+                className="block w-full pl-12 pr-12 py-3.5 border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 bg-white/50 focus:outline-none focus:ring-2 focus:ring-brand-blue/30 focus:border-brand-blue transition-all sm:text-sm form-input"
                 placeholder="Password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
               />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute inset-y-0 right-0 pr-4 flex items-center text-gray-400 hover:text-gray-600 transition-colors"
+                title={showPassword ? 'Hide password' : 'Show password'}
+              >
+                {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+              </button>
             </div>
           </div>
 
