@@ -10,6 +10,7 @@ import { Colors, Typography, Spacing, Radius, CommonStyles } from '@/utils/theme
 import { EmptyState, ErrorState, Avatar } from '@/components/common';
 import { ListSkeleton } from '@/components/LoadingSkeleton';
 import { useAuthStore } from '@/store/authStore';
+import { showError } from '@/utils/errorHandler';
 import { useBookingStore } from '@/store/bookingStore';
 import { supabase } from '@/services/supabase';
 import { getUserRole } from '@/utils/role';
@@ -65,7 +66,7 @@ export function BookingsScreen({ hideHeader = false }: { hideHeader?: boolean })
       setRatingBookingId(null);
       Alert.alert('Thank you! ⭐', 'Your rating has been submitted.');
     } catch (e: any) {
-      Alert.alert('Error', e.message || 'Failed to submit rating');
+      showError(e, 'Rating Failed');
     } finally {
       setRatingLoading(false);
     }

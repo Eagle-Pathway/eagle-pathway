@@ -11,10 +11,13 @@ import * as ImagePicker from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system/legacy';
 import { decode } from 'base64-arraybuffer';
 import { Colors, Typography, Spacing, Radius, CommonStyles } from '../../../src/utils/theme';
+import { Button } from '../../../src/components/common';
+import { KeyboardAwareScreen } from '../../../src/components/KeyboardAwareScreen';
 import { supabase } from '../../../src/services/supabase';
 import { useAuthStore } from '../../../src/store/authStore';
 import { useTutorJobsStore } from '../../../src/store/tutorJobsStore';
-import { KeyboardAwareScreen } from '../../../src/components/KeyboardAwareScreen';
+import { showError } from '@/utils/errorHandler';
+import { withTimeout } from '@/utils/asyncUtils';
 import { Ionicons } from '@expo/vector-icons';
 
 const POLICY_DOC_URL =
@@ -236,7 +239,7 @@ export default function TutorJobApplyScreen() {
       setterFn({ uploading: false, uri, name, path: uploadData.path });
     } catch (err: any) {
       setterFn(prev => ({ ...prev, uploading: false }));
-      Alert.alert('Upload Failed', err.message || 'Could not upload file. Try again.');
+      showError(err, 'Upload Failed');
     }
   };
 
@@ -271,22 +274,24 @@ export default function TutorJobApplyScreen() {
 
     setSubmitting(true);
     try {
-      const { error } = await supabase.from('tutor_job_applications').insert({
-        job_post_id: id,
-        applicant_id: user.id,
-        status: 'pending',
-        education_status: educationStatus,
-        living_address: livingAddress,
-        university_name: universityName,
-        phone_number: phoneNumber,
-        telegram_username: telegramUsername.replace(/^@/, ''), // strip @ for storage
-        cgpa,
-        grade10_result_url: grade10.path,
-        grade12_result_url: grade12.path,
-        transcript_url: transcript.path,
-        policy_agreed: true,
-        policy_agreed_at: new Date().toISOString(),
-      });
+      const { error } = await withTimeout(
+        Promise.resolve(supabase.from('tutor_job_applications').insert({
+          job_post_id: id,
+          applicant_id: user.id,
+          status: 'pending',
+          education_status: educationStatus,
+          living_address: livingAddress,
+          university_name: universityName,
+          phone_number: phoneNumber,
+          telegram_username: telegramUsername.replace(/^@/, ''), // strip @ for storage
+          cgpa,
+          grade10_result_url: grade10.path,
+          grade12_result_url: grade12.path,
+          transcript_url: transcript.path,
+          policy_agreed: true,
+          policy_agreed_at: new Date().toISOString(),
+        }))
+      ) as any;
 
       if (error) {
         if (error.code === '23505') {
@@ -298,7 +303,8 @@ export default function TutorJobApplyScreen() {
         return;
       }
 
-      await fetchMyApplications();
+      await fetchMyApplications().catch(() => {});
+      setSubmitting(false);
 
       Alert.alert(
         'Application Submitted! 🎉',
@@ -308,7 +314,7 @@ export default function TutorJobApplyScreen() {
         ]
       );
     } catch (err: any) {
-      Alert.alert('Submission Failed', err.message || 'Something went wrong. Please try again.');
+      showError(err, 'Submission Failed');
     } finally {
       setSubmitting(false);
     }

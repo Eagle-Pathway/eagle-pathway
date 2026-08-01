@@ -7,8 +7,10 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { router, useLocalSearchParams } from 'expo-router';
 import { Colors, Typography, Spacing, Radius, CommonStyles } from '@/utils/theme';
 import { Button, ProgressBar, Card } from '@/components/common';
+import { KeyboardAwareScreen } from '@/components/KeyboardAwareScreen';
 import { supabase } from '@/services/supabase';
 import { useAuthStore } from '@/store/authStore';
+import { showError } from '@/utils/errorHandler';
 import { useTutorJobStore } from '@/store/tutorJobStore';
 import { tutorJobsService } from '@/services/tutorJobs';
 
@@ -79,7 +81,7 @@ export function JobApplicationScreen() {
       else if (type === 'grade12') setGrade12({ uri: asset.uri, name: asset.name });
       else setTranscript({ uri: asset.uri, name: asset.name });
     } catch (e: any) {
-      Alert.alert('Error', e.message || 'Failed to pick file');
+      showError(e, 'Failed to Pick File');
     }
   };
 
@@ -170,7 +172,7 @@ export function JobApplicationScreen() {
         );
       }
     } catch (e: any) {
-      Alert.alert('Error', e.message || 'Failed to submit application');
+      showError(e, 'Failed to Submit Application');
     } finally {
       setSaving(false);
     }

@@ -15,6 +15,7 @@ import { useDocumentStore } from '@/store/documentStore';
 import { useNotificationStore } from '@/store/notificationStore';
 import { useParentStore } from '@/store/parentStore';
 import { supabase } from '@/services/supabase';
+import { showError } from '@/utils/errorHandler';
 
 export function ProfileScreen() {
   const { user, signOut, uploadAvatar } = useAuthStore();
@@ -55,7 +56,7 @@ export function ProfileScreen() {
       await uploadAvatar(asset.uri, asset.name || 'avatar.jpg');
       Alert.alert('Success', 'Profile picture updated! ✨');
     } catch (e: any) {
-      Alert.alert('Error', e.message || 'Failed to update avatar');
+      showError(e, 'Failed to Update Avatar');
     } finally {
       setUploading(false);
     }
@@ -84,7 +85,7 @@ export function ProfileScreen() {
       const updated = await loadPendingLinks(user!.id, role as any);
       setPendingLinks(updated);
     } catch (e: any) {
-      Alert.alert('Error', e.message);
+      showError(e, 'Link Failed');
     } finally {
       setIsLinking(false);
     }

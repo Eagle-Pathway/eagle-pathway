@@ -13,6 +13,8 @@ import { tutorsService } from '@/services/tutors';
 import { useAuthStore } from '@/store/authStore';
 import { useBookingStore } from '@/store/bookingStore';
 import { Tutor } from '@/types';
+import { showError } from '@/utils/errorHandler';
+import { withTimeout } from '@/utils/asyncUtils';
 
 const TIME_SLOTS = ['8:00 AM','8:30 AM','9:00 AM','9:30 AM','10:00 AM','10:30 AM','11:00 AM','11:30 AM','12:00 PM','12:30 PM','2:00 PM','2:30 PM','3:00 PM','3:30 PM','4:00 PM','4:30 PM','5:00 PM','5:30 PM','6:00 PM','6:30 PM','7:00 PM','7:30 PM'];
 const DURATIONS = [1, 1.5, 2];
@@ -77,12 +79,11 @@ export default function BookingScreen() {
         { text: 'View Bookings', onPress: () => router.push('/(tabs)/bookings') },
       ]);
     } catch (e: any) {
-      // The slot-uniqueness guard (uq_active_booking_slot) surfaces as a 23505 / 409.
       const slotTaken = e?.code === '23505' || /duplicate|already|uq_active_booking_slot|409|conflict/i.test(e?.message || '');
       if (slotTaken) {
         Alert.alert('Time slot unavailable', 'That time is already booked with this tutor. Please choose a different slot.');
       } else {
-        Alert.alert('Error', e?.message || 'Failed to create booking');
+        showError(e, 'Booking Failed');
       }
     } finally {
       setLoading(false);

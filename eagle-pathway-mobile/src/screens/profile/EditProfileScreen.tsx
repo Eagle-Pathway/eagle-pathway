@@ -5,10 +5,12 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import { Colors, Typography, Spacing, Radius, CommonStyles } from '@/utils/theme';
-import { Button } from '@/components/common';
+import { Colors, Typography, Radius, Spacing, CommonStyles } from '@/utils/theme';
+import { Button, Dropdown } from '@/components/common';
 import { KeyboardAwareScreen } from '@/components/KeyboardAwareScreen';
 import { useAuthStore } from '@/store/authStore';
+import { showError } from '@/utils/errorHandler';
+import { withTimeout } from '@/utils/asyncUtils';
 import { getUserRole } from '@/utils/role';
 import { DEPARTMENTS, FIELDS_OF_STUDY, validatePhone } from '@eagle-pathway/shared';
 
@@ -112,11 +114,12 @@ export function EditProfileScreen() {
         updates.gpa_max = formData.gpa_max ? parseFloat(formData.gpa_max.toString()) : undefined;
       }
 
-      await updateProfile(updates);
+      await withTimeout(updateProfile(updates));
+      setLoading(false);
       Alert.alert('Success', 'Profile saved successfully!');
       router.back();
     } catch (e: any) {
-      Alert.alert('Error', e?.message || 'Failed to save profile. Please try again.');
+      showError(e, 'Failed to Save Profile');
     } finally {
       setLoading(false);
     }

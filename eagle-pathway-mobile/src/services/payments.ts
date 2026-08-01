@@ -54,7 +54,7 @@ export const paymentsService = {
       .select()
       .single();
 
-    if (error) throw new Error('Failed to submit payment record. ' + error.message);
+    if (error) throw error;
     
     return data;
   }

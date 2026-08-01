@@ -14,6 +14,7 @@ import { useScholarshipStore } from '@/store/scholarshipStore';
 import { useDocumentStore } from '@/store/documentStore';
 import { PACKAGE_PRICING, formatEtb } from '@/constants/packages';
 import type { PackageTier, DocumentType } from '@/types';
+import { showError } from '@/utils/errorHandler';
 
 export function ApplyScreen() {
   const { scholarshipId, packageTier } = useLocalSearchParams<{ scholarshipId: string; packageTier: PackageTier }>();
@@ -60,7 +61,7 @@ export function ApplyScreen() {
       });
       Alert.alert('Success', 'Document uploaded successfully!');
     } catch (e: any) {
-      Alert.alert('Error', e.message || 'Upload failed');
+      showError(e, 'Upload Failed');
     }
   };
 
@@ -83,7 +84,7 @@ export function ApplyScreen() {
       app = await createApplication(user.id, scholarshipId, packageTier, sopContent);
     } catch (e: any) {
       setLoading(false);
-      Alert.alert('Error', e.message || 'Failed to create your application. Please try again.');
+      showError(e, 'Failed to Create Application');
       return;
     }
 

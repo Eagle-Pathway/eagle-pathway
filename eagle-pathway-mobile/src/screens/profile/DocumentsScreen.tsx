@@ -5,11 +5,13 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import { Colors, Typography, Spacing, Radius, CommonStyles } from '@/utils/theme';
-import { EmptyState, ErrorState, Skeleton } from '@/components/common';
-import { scholarshipsService } from '@/services/scholarships';
+import { Colors, Typography, Radius, Spacing, CommonStyles } from '@/utils/theme';
+import { Button, Pill, EmptyState, ErrorState, Skeleton, ScaleBounce } from '@/components/common';
+import { KeyboardAwareScreen } from '@/components/KeyboardAwareScreen';
 import { useAuthStore } from '@/store/authStore';
+import { showError } from '@/utils/errorHandler';
 import { useDocumentStore } from '@/store/documentStore';
+import { scholarshipsService } from '@/services/scholarships';
 import type { DocumentType, Document } from '@/types';
 
 export function DocumentsScreen() {
@@ -73,7 +75,7 @@ export function DocumentsScreen() {
       await uploadDocument({ userId: user.id, documentType: type, fileUri: asset.uri, fileName: asset.name });
       Alert.alert('Uploaded', 'Your document was added to the vault.');
     } catch (e: any) {
-      Alert.alert('Error', e.message || 'Upload failed');
+      showError(e, 'Upload Failed');
     } finally {
       setUploadingType(null);
     }
@@ -94,7 +96,7 @@ export function DocumentsScreen() {
           try {
             await deleteDocument(doc);
           } catch (e: any) {
-            Alert.alert('Error', e.message || 'Failed to delete');
+            showError(e, 'Failed to Delete');
           }
         },
       },

@@ -6,10 +6,12 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Colors, Typography, Spacing, Radius, CommonStyles } from '@/utils/theme';
-import { Button, Dropdown, Skeleton } from '@/components/common/index';
+import { Button, Dropdown, Skeleton } from '@/components/common';
 import { KeyboardAwareScreen } from '@/components/KeyboardAwareScreen';
 import { supabase } from '@/services/supabase';
 import { useAuthStore } from '@/store/authStore';
+import { showError } from '@/utils/errorHandler';
+import { withTimeout } from '@/utils/asyncUtils';
 import { ALL_COUNTRIES } from '@/utils/countries';
 import { format } from 'date-fns';
 import { Ionicons } from '@expo/vector-icons';
@@ -220,19 +222,12 @@ function NewRequestForm({
     if (Object.keys(errs).length > 0) return;
 
     setLoading(true);
-    
-    const timeoutId = setTimeout(() => {
-      setLoading(false);
-      Alert.alert('Timeout', 'Request timed out. Please check your connection and try again.');
-    }, 15000);
 
     try {
       // Ensure we have a valid session before inserting
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data: { session } } = await withTimeout(supabase.auth.getSession());
       if (!session) {
-        clearTimeout(timeoutId);
-        setLoading(false);
-        Alert.alert('Session Expired', 'Please log out and log back in, then try again.');
+        showError(new Error('Your session has expired. Please log out and log back in, then try again.'), 'Session Expired');
         return;
       }
 
@@ -251,20 +246,11 @@ function NewRequestForm({
         additional_details: additionalDetails.trim() || null,
       };
 
-      const { error } = await supabase
-        .from('service_requests')
-        .insert(insertData);
+      const { error } = await withTimeout(
+        Promise.resolve(supabase.from('service_requests').insert(insertData))
+      ) as any;
 
-      clearTimeout(timeoutId);
-
-      if (error) {
-        // Map common DB errors to friendly messages
-        let msg = error.message;
-        if (error.code === '23503') msg = 'Your account profile is incomplete. Please update your profile and try again.';
-        else if (error.code === '42501' || error.message?.includes('policy')) msg = 'Permission denied. Please log out and log back in, then try again.';
-        else if (error.code === '23514') msg = 'Invalid data. Please check your entries and try again.';
-        throw new Error(msg);
-      }
+      if (error) throw error;
 
       Alert.alert(
         'Request Submitted ✅',
@@ -272,12 +258,8 @@ function NewRequestForm({
         [{ text: 'View My Requests', onPress: onSuccess }],
       );
     } catch (e: any) {
-      clearTimeout(timeoutId);
-      console.error('Submit error:', e);
-      Alert.alert(
-        'Submission Failed',
-        e.message || 'Something went wrong. Please check the console for details and try again.'
-      );
+      console.error('[ServiceRequest] Submit error:', e?.message ?? 'unknown');
+      showError(e, 'Submission Failed');
     } finally {
       setLoading(false);
     }
@@ -289,18 +271,17 @@ function NewRequestForm({
       {/* Service Type */}
       <Text style={styles.sectionTitle}>Service Type *</Text>
       <View style={styles.grid}>
-        {SERVICE_TYPES.map(st => (
+        {SERVICE_TYPES.map((st) => (
           <TouchableOpacity
             key={st.value}
-            style={[
-              styles.serviceCard,
-              serviceType === st.value && styles.serviceCardSelected,
-              errors.serviceType && !serviceType && styles.serviceCardError,
-            ]}
+            style={[styles.serviceCard, serviceType === st.value && styles.serviceCardSelected]}
             onPress={() => setServiceType(st.value)}
-            activeOpacity={0.8}
           >
-            <Ionicons name={st.icon as any} size={24} color={serviceType === st.value ? Colors.blue : Colors.text} />
+            <Ionicons
+              name={st.icon as any}
+              size={24}
+              color={serviceType === st.value ? Colors.blue : Colors.textSecondary}
+            />
             <Text style={[styles.serviceLabel, serviceType === st.value && { color: Colors.blue }]}>
               {st.label}
             </Text>
@@ -309,15 +290,15 @@ function NewRequestForm({
       </View>
       <FieldError message={errors.serviceType} />
 
-      {/* Amount & Currency */}
-      <Text style={[styles.sectionTitle, { marginTop: Spacing.xl }]}>Amount & Currency *</Text>
-      <View style={styles.row}>
+      {/* Transaction Details */}
+      <Text style={styles.sectionTitle}>Transaction Details *</Text>
+      <View style={{ flexDirection: 'row', gap: Spacing.md, marginBottom: Spacing.md }}>
         <View style={{ flex: 1 }}>
           <Dropdown
             label="From Currency"
             options={CURRENCY_OPTIONS}
             selectedValue={fromCurrency}
-            onValueChange={(val) => setFromCurrency(val)}
+            onValueChange={(val: string) => setFromCurrency(val)}
           />
         </View>
         <View style={{ flex: 1 }}>
@@ -325,7 +306,7 @@ function NewRequestForm({
             label="To Currency"
             options={CURRENCY_OPTIONS}
             selectedValue={toCurrency}
-            onValueChange={(val) => setToCurrency(val)}
+            onValueChange={(val: string) => setToCurrency(val)}
           />
         </View>
       </View>
@@ -337,7 +318,7 @@ function NewRequestForm({
             <Dropdown
               options={CURRENCY_OPTIONS}
               selectedValue={fromCurrency}
-              onValueChange={(val) => setFromCurrency(val)}
+              onValueChange={(val: string) => setFromCurrency(val)}
               placeholder="Currency"
             />
           </View>
@@ -362,7 +343,7 @@ function NewRequestForm({
           label="From Country"
           options={ALL_COUNTRIES}
           selectedValue={countryFrom}
-          onValueChange={(val) => setCountryFrom(val)}
+          onValueChange={(val: string) => setCountryFrom(val)}
           searchable={true}
         />
       </View>
