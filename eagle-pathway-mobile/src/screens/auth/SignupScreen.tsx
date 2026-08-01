@@ -119,7 +119,11 @@ export default function SignupScreen() {
     try {
       await verifySignup(email.trim(), code.trim());
       setLoading(false);
-      router.replace('/(tabs)/home');
+      if (role === 'student') {
+        router.replace('/onboarding');
+      } else {
+        router.replace('/(tabs)/home');
+      }
     } catch (e: any) {
       showError(e, 'Verification Failed');
     } finally {
