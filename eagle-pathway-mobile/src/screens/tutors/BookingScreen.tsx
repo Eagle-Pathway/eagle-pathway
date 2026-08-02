@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import {
   View, Text, TouchableOpacity,
-  StyleSheet, Alert, TextInput,
+  StyleSheet, Alert, TextInput, ScrollView
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { format, addDays, startOfMonth, getDaysInMonth, getDay } from 'date-fns';
+import { Ionicons } from '@expo/vector-icons';
 import { Colors, Typography, Spacing, Radius, CommonStyles } from '@/utils/theme';
 import { Button, Avatar } from '@/components/common';
 import { KeyboardAwareScreen } from '@/components/KeyboardAwareScreen';
@@ -14,10 +15,17 @@ import { useAuthStore } from '@/store/authStore';
 import { useBookingStore } from '@/store/bookingStore';
 import { Tutor } from '@/types';
 import { showError } from '@/utils/errorHandler';
-import { withTimeout } from '@/utils/asyncUtils';
 
-const TIME_SLOTS = ['8:00 AM','8:30 AM','9:00 AM','9:30 AM','10:00 AM','10:30 AM','11:00 AM','11:30 AM','12:00 PM','12:30 PM','2:00 PM','2:30 PM','3:00 PM','3:30 PM','4:00 PM','4:30 PM','5:00 PM','5:30 PM','6:00 PM','6:30 PM','7:00 PM','7:30 PM'];
-const DURATIONS = [1, 1.5, 2];
+const MORNING_SLOTS = ['8:00 AM', '8:30 AM', '9:00 AM', '9:30 AM', '10:00 AM', '10:30 AM', '11:00 AM', '11:30 AM'];
+const AFTERNOON_SLOTS = ['12:00 PM', '12:30 PM', '2:00 PM', '2:30 PM', '3:00 PM', '3:30 PM', '4:00 PM', '4:30 PM'];
+const EVENING_SLOTS = ['5:00 PM', '5:30 PM', '6:00 PM', '6:30 PM', '7:00 PM', '7:30 PM'];
+
+const DURATIONS = [
+  { hours: 1, label: '1 Hour' },
+  { hours: 1.5, label: '1.5 Hours', badge: 'Popular' },
+  { hours: 2, label: '2 Hours' },
+];
+
 const PLATFORM_FEE_RATE = 0.10;
 
 export default function BookingScreen() {
@@ -26,8 +34,9 @@ export default function BookingScreen() {
   const { loadBookings } = useBookingStore();
   const [tutor, setTutor] = useState<Tutor | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date>(addDays(new Date(), 1));
-  const [selectedTime, setSelectedTime] = useState<string>('');
-  const [durationHours, setDurationHours] = useState(1);
+  const [selectedTime, setSelectedTime] = useState<string>('9:00 AM');
+  const [timeCategory, setTimeCategory] = useState<'morning' | 'afternoon' | 'evening'>('morning');
+  const [durationHours, setDurationHours] = useState(1.5);
   const [isRecurring, setIsRecurring] = useState(false);
   const [sessionType, setSessionType] = useState<'online' | 'in_person'>('online');
   const [notes, setNotes] = useState('');
@@ -46,10 +55,11 @@ export default function BookingScreen() {
 
   const sessionCost = tutor ? Math.round(tutor.hourly_rate * durationHours) : 0;
   const platformFee = Math.round(sessionCost * PLATFORM_FEE_RATE);
-  const total = sessionCost + platformFee;
+  const totalPerSession = sessionCost + platformFee;
+  const finalTotal = isRecurring ? totalPerSession * 4 : totalPerSession;
 
   const handleConfirm = async () => {
-    if (loading) return; // guard against rapid double-taps
+    if (loading) return;
     if (!selectedTime) return Alert.alert('Select Time', 'Please choose a time slot');
     if (!user || !tutor) return;
 
@@ -81,7 +91,7 @@ export default function BookingScreen() {
     } catch (e: any) {
       const slotTaken = e?.code === '23505' || /duplicate|already|uq_active_booking_slot|409|conflict/i.test(e?.message || '');
       if (slotTaken) {
-        Alert.alert('Time slot unavailable', 'That time is already booked with this tutor. Please choose a different slot.');
+        Alert.alert('Time Slot Unavailable', 'That time is already booked with this tutor. Please choose a different time slot.');
       } else {
         showError(e, 'Booking Failed');
       }
@@ -90,7 +100,7 @@ export default function BookingScreen() {
     }
   };
 
-  // Calendar helpers
+  // Calendar math
   const year = currentMonth.getFullYear();
   const month = currentMonth.getMonth();
   const daysInMonth = getDaysInMonth(currentMonth);
@@ -100,46 +110,60 @@ export default function BookingScreen() {
 
   const insets = useSafeAreaInsets();
   const initials = tutor?.user?.full_name?.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() || 'T';
+  const currentSlots = timeCategory === 'morning' ? MORNING_SLOTS : timeCategory === 'afternoon' ? AFTERNOON_SLOTS : EVENING_SLOTS;
 
   return (
-    <SafeAreaView style={[CommonStyles.flex1, { backgroundColor: Colors.bg }]} edges={['top', 'bottom']}>
+    <SafeAreaView style={[CommonStyles.flex1, { backgroundColor: '#F8FAFC' }]} edges={['top', 'bottom']}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity style={styles.backBtn} onPress={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)/home'))} activeOpacity={0.8} accessibilityRole="button" accessibilityLabel="Go back">
-          <Text style={styles.backIcon}>←</Text>
+        <TouchableOpacity
+          style={styles.backBtn}
+          onPress={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)/home'))}
+          activeOpacity={0.8}
+          accessibilityRole="button"
+          accessibilityLabel="Go back"
+        >
+          <Ionicons name="arrow-back" size={20} color={Colors.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Book a Session</Text>
+        <Text style={styles.headerTitle}>Schedule Session</Text>
       </View>
 
-      {tutor && (
-        <View style={styles.tutorRow}>
-          <Avatar initials={initials} size={44} borderRadius={13} color={Colors.gold} />
-          <View style={{ flex: 1, marginLeft: Spacing.md }}>
-            <Text style={styles.tutorName}>{tutor.user?.full_name}</Text>
-            <Text style={styles.tutorSub}>{tutor.subjects?.[0] || 'General'} · ETB {tutor.hourly_rate}/hr</Text>
-          </View>
-          <View style={styles.availablePill}><Text style={styles.availableText}>Available</Text></View>
-        </View>
-      )}
-
       <KeyboardAwareScreen contentContainerStyle={{ paddingBottom: 120 }}>
-        {/* Calendar */}
-        <View style={styles.section}>
+        {/* Tutor Hero Card */}
+        {tutor && (
+          <View style={styles.tutorCard}>
+            <Avatar initials={initials} size={50} borderRadius={16} color={Colors.blue} />
+            <View style={{ flex: 1, marginLeft: Spacing.md }}>
+              <Text style={styles.tutorName}>{tutor.user?.full_name}</Text>
+              <Text style={styles.tutorSub}>{tutor.subjects?.[0] || 'Expert Tutor'} · {tutor.hourly_rate} ETB/hr</Text>
+            </View>
+            <View style={styles.badge}>
+              <Ionicons name="checkmark-circle" size={14} color={Colors.green} />
+              <Text style={styles.badgeText}>Verified</Text>
+            </View>
+          </View>
+        )}
+
+        {/* Calendar Section */}
+        <View style={styles.cardSection}>
           <View style={styles.calHeader}>
-            <Text style={styles.calMonth}>{format(currentMonth, 'MMMM yyyy')}</Text>
-            <View style={{ flexDirection: 'row', gap: Spacing.sm }}>
-              <TouchableOpacity style={styles.calNav} onPress={() => setCurrentMonth(m => new Date(m.getFullYear(), m.getMonth() - 1, 1))} activeOpacity={0.8}>
-                <Text style={styles.calNavText}>‹</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <Ionicons name="calendar-outline" size={18} color={Colors.blue} />
+              <Text style={styles.calMonth}>{format(currentMonth, 'MMMM yyyy')}</Text>
+            </View>
+            <View style={{ flexDirection: 'row', gap: Spacing.xs }}>
+              <TouchableOpacity style={styles.calNavBtn} onPress={() => setCurrentMonth(m => new Date(m.getFullYear(), m.getMonth() - 1, 1))}>
+                <Ionicons name="chevron-back" size={16} color={Colors.text} />
               </TouchableOpacity>
-              <TouchableOpacity style={styles.calNav} onPress={() => setCurrentMonth(m => new Date(m.getFullYear(), m.getMonth() + 1, 1))} activeOpacity={0.8}>
-                <Text style={styles.calNavText}>›</Text>
+              <TouchableOpacity style={styles.calNavBtn} onPress={() => setCurrentMonth(m => new Date(m.getFullYear(), m.getMonth() + 1, 1))}>
+                <Ionicons name="chevron-forward" size={16} color={Colors.text} />
               </TouchableOpacity>
             </View>
           </View>
 
           <View style={styles.calGrid}>
-            {['Su','Mo','Tu','We','Th','Fr','Sa'].map(d => (
-              <Text key={d} style={styles.calDayLabel}>{d}</Text>
+            {['S','M','T','W','T','F','S'].map((d, idx) => (
+              <Text key={`day-hdr-${idx}`} style={styles.calDayLabel}>{d}</Text>
             ))}
             {Array(firstDayOfWeek).fill(null).map((_, i) => <View key={`empty-${i}`} style={styles.calCell} />)}
             {Array(daysInMonth).fill(null).map((_, i) => {
@@ -151,8 +175,13 @@ export default function BookingScreen() {
               const isToday = format(date, 'yyyy-MM-dd') === format(today, 'yyyy-MM-dd');
               return (
                 <TouchableOpacity
-                  key={day}
-                  style={[styles.calCell, isSelected && styles.calSelected, isToday && !isSelected && styles.calToday, isPast && styles.calPast]}
+                  key={`day-${day}`}
+                  style={[
+                    styles.calCell,
+                    isSelected && styles.calSelected,
+                    isToday && !isSelected && styles.calToday,
+                    isPast && styles.calPast
+                  ]}
                   onPress={() => { if (!isPast) setSelectedDate(date); }}
                   disabled={isPast}
                   activeOpacity={0.8}
@@ -164,85 +193,138 @@ export default function BookingScreen() {
           </View>
         </View>
 
-        {/* Time Slots */}
-        <View style={styles.section}>
-          <Text style={styles.sectionLabel}>Available Slots · {format(selectedDate, 'MMM d')}</Text>
-          <View style={styles.timeGrid}>
-            {TIME_SLOTS.map(time => (
+        {/* Time of Day Slots */}
+        <View style={styles.cardSection}>
+          <View style={styles.sectionHeader}>
+            <Ionicons name="time-outline" size={18} color={Colors.blue} />
+            <Text style={styles.sectionTitle}>Select Time · {format(selectedDate, 'MMM d')}</Text>
+          </View>
+
+          {/* Time Category Tabs */}
+          <View style={styles.segmentContainer}>
+            <TouchableOpacity
+              style={[styles.segmentBtn, timeCategory === 'morning' && styles.segmentBtnActive]}
+              onPress={() => setTimeCategory('morning')}
+            >
+              <Ionicons name="sunny-outline" size={14} color={timeCategory === 'morning' ? Colors.blue : Colors.textSecondary} />
+              <Text style={[styles.segmentText, timeCategory === 'morning' && styles.segmentTextActive]}>Morning</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.segmentBtn, timeCategory === 'afternoon' && styles.segmentBtnActive]}
+              onPress={() => setTimeCategory('afternoon')}
+            >
+              <Ionicons name="partly-sunny-outline" size={14} color={timeCategory === 'afternoon' ? Colors.blue : Colors.textSecondary} />
+              <Text style={[styles.segmentText, timeCategory === 'afternoon' && styles.segmentTextActive]}>Afternoon</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.segmentBtn, timeCategory === 'evening' && styles.segmentBtnActive]}
+              onPress={() => setTimeCategory('evening')}
+            >
+              <Ionicons name="moon-outline" size={14} color={timeCategory === 'evening' ? Colors.blue : Colors.textSecondary} />
+              <Text style={[styles.segmentText, timeCategory === 'evening' && styles.segmentTextActive]}>Evening</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Time Chips Grid */}
+          <View style={styles.slotsGrid}>
+            {currentSlots.map(time => (
               <TouchableOpacity
                 key={time}
-                style={[styles.timeChip, selectedTime === time && styles.timeChipSelected]}
+                style={[styles.slotChip, selectedTime === time && styles.slotChipActive]}
                 onPress={() => setSelectedTime(time)}
-                activeOpacity={0.8}
+                activeOpacity={0.85}
               >
-                <Text style={[styles.timeChipText, selectedTime === time && styles.timeChipTextSelected]}>{time}</Text>
+                <Text style={[styles.slotText, selectedTime === time && styles.slotTextActive]}>{time}</Text>
               </TouchableOpacity>
             ))}
           </View>
         </View>
 
-        {/* Duration */}
-        <View style={styles.section}>
-          <Text style={styles.sectionLabel}>Duration</Text>
-          <View style={{ flexDirection: 'row', gap: Spacing.sm }}>
-            {DURATIONS.map(h => (
+        {/* Duration & Mode Settings */}
+        <View style={styles.cardSection}>
+          <View style={styles.sectionHeader}>
+            <Ionicons name="hourglass-outline" size={18} color={Colors.blue} />
+            <Text style={styles.sectionTitle}>Duration & Format</Text>
+          </View>
+
+          <View style={{ gap: Spacing.sm, marginBottom: Spacing.md }}>
+            {DURATIONS.map(d => (
               <TouchableOpacity
-                key={h}
-                style={[styles.typeChip, durationHours === h && styles.timeChipSelected, { flex: 1 }]}
-                onPress={() => setDurationHours(h)}
-                activeOpacity={0.8}
+                key={d.hours}
+                style={[styles.choiceCard, durationHours === d.hours && styles.choiceCardActive]}
+                onPress={() => setDurationHours(d.hours)}
+                activeOpacity={0.85}
               >
-                <Text style={[styles.timeChipText, durationHours === h && styles.timeChipTextSelected]}>
-                  {h}h {h === 1.5 ? '(recommended)' : ''}
-                </Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                  <Ionicons
+                    name={durationHours === d.hours ? 'radio-button-on' : 'radio-button-off'}
+                    size={18}
+                    color={durationHours === d.hours ? Colors.blue : Colors.textSecondary}
+                  />
+                  <Text style={[styles.choiceText, durationHours === d.hours && styles.choiceTextActive]}>{d.label}</Text>
+                </View>
+                {d.badge && (
+                  <View style={styles.popularTag}>
+                    <Text style={styles.popularTagText}>{d.badge}</Text>
+                  </View>
+                )}
               </TouchableOpacity>
             ))}
           </View>
-        </View>
 
-        {/* Recurring */}
-        <View style={styles.section}>
-          <TouchableOpacity
-            style={[styles.typeChip, isRecurring && styles.timeChipSelected]}
-            onPress={() => setIsRecurring(!isRecurring)}
-            activeOpacity={0.8}
-          >
-            <Text style={[styles.timeChipText, isRecurring && styles.timeChipTextSelected]}>
-              {isRecurring ? '🔄 Weekly (4 sessions)' : '📅 One-time session'}
-            </Text>
-          </TouchableOpacity>
-          {isRecurring && (
-            <Text style={{ fontSize: Typography.sm, color: Colors.textSecondary, marginTop: Spacing.sm }}>
-              This will create 4 weekly sessions starting from your selected date.
-            </Text>
-          )}
-        </View>
-
-        {/* Session Type */}
-        <View style={styles.section}>
-          <Text style={styles.sectionLabel}>Session Type</Text>
+          {/* Session Format */}
           <View style={{ flexDirection: 'row', gap: Spacing.sm }}>
             {(['online', 'in_person'] as const).map(type => (
               <TouchableOpacity
                 key={type}
-                style={[styles.typeChip, sessionType === type && styles.timeChipSelected, { flex: 1 }]}
+                style={[styles.modeCard, sessionType === type && styles.choiceCardActive]}
                 onPress={() => setSessionType(type)}
-                activeOpacity={0.8}
+                activeOpacity={0.85}
               >
-                <Text style={[styles.timeChipText, sessionType === type && styles.timeChipTextSelected]}>
-                  {type === 'online' ? '🌐 Online (Zoom)' : '🏠 In-Person'}
+                <Ionicons
+                  name={type === 'online' ? 'videocam-outline' : 'home-outline'}
+                  size={18}
+                  color={sessionType === type ? Colors.blue : Colors.textSecondary}
+                />
+                <Text style={[styles.choiceText, sessionType === type && styles.choiceTextActive]}>
+                  {type === 'online' ? 'Online (Zoom)' : 'In-Person'}
                 </Text>
               </TouchableOpacity>
             ))}
           </View>
         </View>
 
-        {/* Notes */}
-        <View style={styles.section}>
-          <Text style={styles.sectionLabel}>Session Notes (optional)</Text>
+        {/* Recurring Toggle */}
+        <View style={styles.cardSection}>
+          <TouchableOpacity
+            style={[styles.choiceCard, isRecurring && styles.choiceCardActive]}
+            onPress={() => setIsRecurring(!isRecurring)}
+            activeOpacity={0.85}
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+              <Ionicons
+                name={isRecurring ? 'checkbox' : 'square-outline'}
+                size={20}
+                color={isRecurring ? Colors.blue : Colors.textSecondary}
+              />
+              <Text style={[styles.choiceText, isRecurring && styles.choiceTextActive]}>Repeat Weekly (4 Sessions)</Text>
+            </View>
+          </TouchableOpacity>
+          {isRecurring && (
+            <Text style={styles.recurringHint}>
+              Auto-books 4 weekly sessions on this day/time for seamless continuous learning.
+            </Text>
+          )}
+        </View>
+
+        {/* Special Instructions / Notes */}
+        <View style={styles.cardSection}>
+          <Text style={styles.sectionTitle}>Topics or Specific Notes (Optional)</Text>
           <TextInput
             style={styles.notesInput}
-            placeholder="Topics to focus on, specific questions..."
+            placeholder="e.g. Please help with Grade 11 Physics Chapter 4..."
             value={notes}
             onChangeText={setNotes}
             multiline
@@ -252,19 +334,29 @@ export default function BookingScreen() {
           />
         </View>
 
-        {/* Price summary */}
+        {/* Price Breakdown Card */}
         {tutor && (
-          <View style={styles.priceSummary}>
-            <View style={styles.priceRow}><Text style={styles.priceLabel}>Session ({durationHours}h × ETB {tutor.hourly_rate}/hr)</Text><Text style={styles.priceVal}>ETB {sessionCost}</Text></View>
-            <View style={styles.priceRow}><Text style={styles.priceLabel}>Platform fee (10%)</Text><Text style={styles.priceVal}>ETB {platformFee}</Text></View>
-            <View style={[styles.priceRow, styles.totalRow]}><Text style={styles.totalLabel}>Total {isRecurring ? '× 4 weeks' : ''}</Text><Text style={styles.totalVal}>ETB {isRecurring ? total * 4 : total}</Text></View>
+          <View style={styles.priceCard}>
+            <View style={styles.priceRow}>
+              <Text style={styles.priceLabel}>Session ({durationHours}h × {tutor.hourly_rate} ETB/hr)</Text>
+              <Text style={styles.priceVal}>{sessionCost} ETB</Text>
+            </View>
+            <View style={styles.priceRow}>
+              <Text style={styles.priceLabel}>Service & Platform Fee (10%)</Text>
+              <Text style={styles.priceVal}>{platformFee} ETB</Text>
+            </View>
+            <View style={[styles.priceRow, styles.totalDivider]}>
+              <Text style={styles.totalLabel}>Total {isRecurring ? '(x4 Sessions)' : ''}</Text>
+              <Text style={styles.totalVal}>{finalTotal} ETB</Text>
+            </View>
           </View>
         )}
       </KeyboardAwareScreen>
 
-      <View style={[styles.bottomBar, { paddingBottom: Math.max(insets.bottom, Spacing.lg) }]}>
+      {/* Floating Action Button Bar */}
+      <View style={[styles.bottomBar, { paddingBottom: Math.max(insets.bottom, Spacing.md) }]}>
         <Button
-          title={`Confirm Booking · ETB ${total}`}
+          title={`Confirm Booking · ${finalTotal} ETB`}
           onPress={handleConfirm}
           loading={loading}
         />
@@ -274,43 +366,314 @@ export default function BookingScreen() {
 }
 
 const styles = StyleSheet.create({
-  header: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md, padding: Spacing.xl, backgroundColor: Colors.card, borderBottomWidth: 1, borderBottomColor: Colors.border },
-  backBtn: { width: 36, height: 36, backgroundColor: Colors.grayLight, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
-  backIcon: { fontSize: 20, color: Colors.text },
-  headerTitle: { fontSize: Typography['3xl'], fontWeight: Typography.bold, color: Colors.text },
-  tutorRow: { flexDirection: 'row', alignItems: 'center', padding: Spacing.xl, backgroundColor: Colors.card, borderBottomWidth: 1, borderBottomColor: Colors.border },
-  tutorName: { fontSize: Typography.lg, fontWeight: Typography.bold, color: Colors.text },
-  tutorSub: { fontSize: Typography.sm, color: Colors.textSecondary, marginTop: 2 },
-  availablePill: { backgroundColor: Colors.greenLight, paddingHorizontal: 10, paddingVertical: 4, borderRadius: Radius.full },
-  availableText: { fontSize: Typography.sm, fontWeight: Typography.semibold, color: Colors.green },
-  section: { padding: Spacing.xl },
-  sectionLabel: { fontSize: Typography.base, fontWeight: Typography.bold, color: Colors.text, marginBottom: Spacing.md },
-  calHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.md },
-  calMonth: { fontSize: Typography.lg, fontWeight: Typography.bold, color: Colors.text },
-  calNav: { width: 28, height: 28, backgroundColor: Colors.grayLight, borderRadius: 8, alignItems: 'center', justifyContent: 'center' },
-  calNavText: { fontSize: 18, color: Colors.text },
-  calGrid: { flexDirection: 'row', flexWrap: 'wrap' },
-  calDayLabel: { width: '14.28%', textAlign: 'center', fontSize: Typography.sm, fontWeight: Typography.semibold, color: Colors.textSecondary, paddingVertical: 4 },
-  calCell: { width: '14.28%', aspectRatio: 1, alignItems: 'center', justifyContent: 'center', borderRadius: 10, marginVertical: 2 },
-  calSelected: { backgroundColor: Colors.blue },
-  calToday: { borderWidth: 1.5, borderColor: Colors.blue },
-  calPast: { opacity: 0.3 },
-  calDayNum: { fontSize: Typography.md, fontWeight: Typography.medium, color: Colors.text },
-  calSelectedText: { color: Colors.white, fontWeight: Typography.bold },
-  calPastText: { color: Colors.textSecondary },
-  timeGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm },
-  timeChip: { borderWidth: 1.5, borderColor: Colors.border, borderRadius: 10, paddingVertical: 10, paddingHorizontal: 12, backgroundColor: '#fafafa' },
-  timeChipSelected: { borderColor: Colors.blue, backgroundColor: Colors.blueLight },
-  timeChipText: { fontSize: Typography.base, fontWeight: Typography.semibold, color: Colors.text },
-  timeChipTextSelected: { color: Colors.blue },
-  typeChip: { borderWidth: 1.5, borderColor: Colors.border, borderRadius: 10, paddingVertical: 12, alignItems: 'center', backgroundColor: '#fafafa' },
-  notesInput: { borderWidth: 1.5, borderColor: Colors.border, borderRadius: Radius.lg, padding: Spacing.md, fontSize: Typography.md, color: Colors.text, backgroundColor: '#fafafa', height: 80 },
-  priceSummary: { marginHorizontal: Spacing.xl, backgroundColor: Colors.blueLight, borderRadius: Radius.xl, padding: Spacing.lg },
-  priceRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: Spacing.sm },
-  priceLabel: { fontSize: Typography.base, color: Colors.textSecondary },
-  priceVal: { fontSize: Typography.base, color: Colors.textSecondary },
-  totalRow: { borderTopWidth: 1, borderTopColor: '#c7d7f7', paddingTop: Spacing.sm, marginBottom: 0 },
-  totalLabel: { fontSize: Typography.lg, fontWeight: Typography.bold, color: Colors.blue },
-  totalVal: { fontSize: Typography.lg, fontWeight: Typography.bold, color: Colors.blue },
-  bottomBar: { padding: Spacing.lg, backgroundColor: Colors.card, borderTopWidth: 1, borderTopColor: Colors.border },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.md,
+    paddingHorizontal: Spacing.xl,
+    paddingVertical: Spacing.lg,
+    backgroundColor: Colors.white,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+  },
+  backBtn: {
+    width: 36,
+    height: 36,
+    backgroundColor: '#F1F5F9',
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  headerTitle: {
+    fontSize: Typography.xl,
+    fontWeight: Typography.bold,
+    color: Colors.text,
+  },
+  tutorCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    margin: Spacing.md,
+    padding: Spacing.lg,
+    backgroundColor: Colors.white,
+    borderRadius: Radius.xl,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  tutorName: {
+    fontSize: Typography.base,
+    fontWeight: Typography.bold,
+    color: Colors.text,
+  },
+  tutorSub: {
+    fontSize: Typography.sm,
+    color: Colors.textSecondary,
+    marginTop: 2,
+  },
+  badge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#F0FDF4',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: Radius.full,
+    borderWidth: 1,
+    borderColor: '#DCFCE7',
+  },
+  badgeText: {
+    fontSize: Typography.xs,
+    fontWeight: Typography.semibold,
+    color: Colors.green,
+  },
+  cardSection: {
+    marginHorizontal: Spacing.md,
+    marginBottom: Spacing.md,
+    padding: Spacing.lg,
+    backgroundColor: Colors.white,
+    borderRadius: Radius.xl,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: Spacing.md,
+  },
+  sectionTitle: {
+    fontSize: Typography.base,
+    fontWeight: Typography.bold,
+    color: Colors.text,
+  },
+  calHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: Spacing.md,
+  },
+  calMonth: {
+    fontSize: Typography.base,
+    fontWeight: Typography.bold,
+    color: Colors.text,
+  },
+  calNavBtn: {
+    width: 32,
+    height: 32,
+    backgroundColor: '#F1F5F9',
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  calGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+  },
+  calDayLabel: {
+    width: '14.28%',
+    textAlign: 'center',
+    fontSize: Typography.xs,
+    fontWeight: Typography.bold,
+    color: Colors.textSecondary,
+    paddingVertical: 4,
+  },
+  calCell: {
+    width: '14.28%',
+    aspectRatio: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 10,
+    marginVertical: 2,
+  },
+  calSelected: {
+    backgroundColor: Colors.blue,
+  },
+  calToday: {
+    borderWidth: 1.5,
+    borderColor: Colors.blue,
+  },
+  calPast: {
+    opacity: 0.25,
+  },
+  calDayNum: {
+    fontSize: Typography.sm,
+    fontWeight: Typography.semibold,
+    color: Colors.text,
+  },
+  calSelectedText: {
+    color: Colors.white,
+    fontWeight: Typography.bold,
+  },
+  calPastText: {
+    color: Colors.textSecondary,
+  },
+  segmentContainer: {
+    flexDirection: 'row',
+    backgroundColor: '#F1F5F9',
+    borderRadius: Radius.lg,
+    padding: 3,
+    marginBottom: Spacing.md,
+  },
+  segmentBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+    paddingVertical: 8,
+    borderRadius: Radius.md,
+  },
+  segmentBtnActive: {
+    backgroundColor: Colors.white,
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  segmentText: {
+    fontSize: Typography.xs,
+    fontWeight: Typography.semibold,
+    color: Colors.textSecondary,
+  },
+  segmentTextActive: {
+    color: Colors.blue,
+    fontWeight: Typography.bold,
+  },
+  slotsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: Spacing.xs,
+  },
+  slotChip: {
+    width: '31%',
+    paddingVertical: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: Radius.md,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    backgroundColor: '#FAFAFA',
+  },
+  slotChipActive: {
+    borderColor: Colors.blue,
+    backgroundColor: '#EFF6FF',
+  },
+  slotText: {
+    fontSize: Typography.xs,
+    fontWeight: Typography.semibold,
+    color: Colors.text,
+  },
+  slotTextActive: {
+    color: Colors.blue,
+    fontWeight: Typography.bold,
+  },
+  choiceCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: Spacing.md,
+    borderRadius: Radius.lg,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    backgroundColor: '#FAFAFA',
+  },
+  choiceCardActive: {
+    borderColor: Colors.blue,
+    backgroundColor: '#EFF6FF',
+  },
+  choiceText: {
+    fontSize: Typography.sm,
+    fontWeight: Typography.semibold,
+    color: Colors.text,
+  },
+  choiceTextActive: {
+    color: Colors.blue,
+    fontWeight: Typography.bold,
+  },
+  popularTag: {
+    backgroundColor: '#FEF3C7',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: Radius.full,
+  },
+  popularTagText: {
+    fontSize: 10,
+    fontWeight: Typography.bold,
+    color: '#D97706',
+  },
+  modeCard: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 12,
+    borderRadius: Radius.lg,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    backgroundColor: '#FAFAFA',
+  },
+  recurringHint: {
+    fontSize: Typography.xs,
+    color: Colors.textSecondary,
+    marginTop: Spacing.xs,
+    marginLeft: Spacing.xs,
+  },
+  notesInput: {
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    borderRadius: Radius.lg,
+    padding: Spacing.md,
+    fontSize: Typography.sm,
+    color: Colors.text,
+    backgroundColor: '#FAFAFA',
+    minHeight: 80,
+  },
+  priceCard: {
+    marginHorizontal: Spacing.md,
+    marginBottom: Spacing.lg,
+    padding: Spacing.lg,
+    backgroundColor: '#EFF6FF',
+    borderRadius: Radius.xl,
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
+  },
+  priceRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: Spacing.xs,
+  },
+  priceLabel: {
+    fontSize: Typography.sm,
+    color: Colors.textSecondary,
+  },
+  priceVal: {
+    fontSize: Typography.sm,
+    fontWeight: Typography.semibold,
+    color: Colors.text,
+  },
+  totalDivider: {
+    borderTopWidth: 1,
+    borderTopColor: '#93C5FD',
+    paddingTop: Spacing.sm,
+    marginTop: Spacing.xs,
+    marginBottom: 0,
+  },
+  totalLabel: {
+    fontSize: Typography.base,
+    fontWeight: Typography.bold,
+    color: Colors.blue,
+  },
+  totalVal: {
+    fontSize: Typography.lg,
+    fontWeight: Typography.bold,
+    color: Colors.blue,
+  },
+  bottomBar: {
+    paddingHorizontal: Spacing.lg,
+    paddingTop: Spacing.md,
+    backgroundColor: Colors.white,
+    borderTopWidth: 1,
+    borderTopColor: '#E2E8F0',
+  },
 });
+
