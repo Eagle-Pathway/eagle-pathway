@@ -470,6 +470,30 @@ export default function TutorJobsPage() {
                         >
                           Reject
                         </button>
+                        <button
+                          onClick={() => {
+                            const text = `We have Assigned A Teacher/Tutors With The Details Below:\n\n👉Name: ${app.applicant?.full_name || 'Tutor'}\n👉Experience: Experienced Tutor (${app.university_name || 'Qualified'})\n👉Phone: ${app.applicant?.phone || app.phone_number || 'N/A'}\n\nContact Us for Any inquiries\nEagle Tutors\n+251932508910`;
+                            navigator.clipboard.writeText(text);
+                            showToast('success', 'Parent SMS text copied to clipboard!');
+                          }}
+                          className="px-3 py-1 text-xs font-medium text-purple-700 bg-purple-50 rounded-lg hover:bg-purple-100 border border-purple-200"
+                        >
+                          📋 Copy Parent SMS
+                        </button>
+                        <button
+                          onClick={async () => {
+                            const newCommStatus = app.status === 'commission_paid' ? 'hired' : 'commission_paid';
+                            await handleApplicationStatus(app.id, newCommStatus);
+                            showToast('success', newCommStatus === 'commission_paid' ? '50% Commission marked as PAID!' : 'Commission marked as UNPAID');
+                          }}
+                          className={`px-3 py-1 text-xs font-medium rounded-lg border ${
+                            app.status === 'commission_paid'
+                              ? 'text-emerald-800 bg-emerald-100 border-emerald-300'
+                              : 'text-amber-700 bg-amber-50 border-amber-200 hover:bg-amber-100'
+                          }`}
+                        >
+                          {app.status === 'commission_paid' ? '💸 50% Commission: PAID' : '⏳ Mark 50% Commission Paid'}
+                        </button>
                       </div>
                       {app.telegram_username && (
                         <p className="text-xs text-gray-400 mt-2">Telegram: @{app.telegram_username}</p>
