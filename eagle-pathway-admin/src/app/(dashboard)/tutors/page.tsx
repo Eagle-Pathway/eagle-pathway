@@ -74,11 +74,33 @@ export default function TutorsPage() {
   const [signedDocs, setSignedDocs] = useState<Record<string, string | null>>({});
 
   async function fetchTutors() {
-    const { data, error } = await supabase
-      .from('tutors')
-      .select('user_id, is_verified, subjects, education, location, hourly_rate, users ( full_name, phone, email )')
-      .order('created_at', { ascending: false });
-    if (!error && data) setTutors(data as unknown as TutorWithUser[]);
+    const [{ data: tutorUsers }, { data: tutorProfiles, error }] = await Promise.all([
+      supabase.from('users').select('id, full_name, phone, email, role, roles, active_role'),
+      supabase.from('tutors').select('user_id, is_verified, subjects, education, location, hourly_rate, users ( full_name, phone, email )').order('created_at', { ascending: false }),
+    ]);
+
+    if (!error && tutorProfiles) {
+      const existingUserIds = new Set(tutorProfiles.map((t: any) => t.user_id));
+      const tutorUsersList = (tutorUsers || []).filter(u => 
+        u.role === 'tutor' || u.active_role === 'tutor' || (Array.isArray(u.roles) && u.roles.includes('tutor'))
+      );
+      const missingUsers = tutorUsersList.filter(u => !existingUserIds.has(u.id));
+
+      const merged: TutorWithUser[] = [
+        ...(tutorProfiles as unknown as TutorWithUser[]),
+        ...missingUsers.map(u => ({
+          user_id: u.id,
+          is_verified: false,
+          subjects: [],
+          education: '',
+          location: '',
+          hourly_rate: 0,
+          users: { full_name: u.full_name, phone: u.phone, email: u.email }
+        }))
+      ];
+
+      setTutors(merged);
+    }
   }
 
   async function fetchTutorApplications() {
@@ -103,8 +125,7 @@ export default function TutorsPage() {
     setActionLoading(id);
     const { error: updateError } = await supabase
       .from('tutors')
-      .update({ is_verified: willBeVerified })
-      .eq('user_id', id);
+      .upsert({ user_id: id, is_verified: willBeVerified }, { onConflict: 'user_id' });
     if (updateError) {
       showToast('error', `Failed to update: ${updateError.message}`);
       setActionLoading(null);
