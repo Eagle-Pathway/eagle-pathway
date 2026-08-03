@@ -94,7 +94,7 @@ export function TutorJobFeedScreen() {
             ))}
           </View>
         ) : jobs.length === 0 ? (
-          <EmptyState icon="mail-open-outline" title="No Jobs Yet" subtitle="Check back later for new tutor job postings." />
+          <EmptyState icon="briefcase-outline" title="No Available Jobs" subtitle="Check back later for new tutor job postings." />
         ) : (
           jobs.map(job => (
             <TouchableOpacity

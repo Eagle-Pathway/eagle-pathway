@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { tutorJobsService } from '../services/tutorJobs';
 import type { TutorJobPost, TutorJobApplication, TutorApplication } from '../types';
+import { withTimeout } from '../utils/asyncUtils';
 
 interface TutorJobState {
   // Jobs
@@ -70,7 +71,7 @@ export const useTutorJobStore = create<TutorJobState>((set, get) => ({
   loadJobs: async () => {
     set({ loadingJobs: true });
     try {
-      const jobs = await tutorJobsService.getOpenJobs();
+      const jobs = await withTimeout(tutorJobsService.getOpenJobs(), 3500);
       set({ jobs });
     } catch (e) {
       console.error('Failed to load jobs:', e);
@@ -81,7 +82,7 @@ export const useTutorJobStore = create<TutorJobState>((set, get) => ({
 
   loadJobDetail: async (jobId) => {
     try {
-      const job = await tutorJobsService.getJobById(jobId);
+      const job = await withTimeout(tutorJobsService.getJobById(jobId), 3500);
       set({ selectedJob: job });
     } catch (e) {
       console.error('Failed to load job detail:', e);
@@ -91,7 +92,7 @@ export const useTutorJobStore = create<TutorJobState>((set, get) => ({
   loadApplications: async (userId) => {
     set({ loadingApplications: true });
     try {
-      const applications = await tutorJobsService.getUserApplications(userId);
+      const applications = await withTimeout(tutorJobsService.getUserApplications(userId), 3500);
       set({ applications });
     } catch (e) {
       console.error('Failed to load applications:', e);
@@ -103,7 +104,7 @@ export const useTutorJobStore = create<TutorJobState>((set, get) => ({
   loadTutorApplication: async (tutorId) => {
     set({ loadingTutorApp: true });
     try {
-      const app = await tutorJobsService.getTutorApplication(tutorId);
+      const app = await withTimeout(tutorJobsService.getTutorApplication(tutorId), 3500);
       set({ tutorApplication: app });
     } catch (e) {
       console.error('Failed to load tutor application:', e);
