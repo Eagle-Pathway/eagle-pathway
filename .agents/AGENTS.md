@@ -1,5 +1,14 @@
 # Workspace Guidelines & Deployment Rules
 
+## Secret & Credential Security Rule
+
+> [!CAUTION]
+> **STRICT SECURITY MANDATE**
+> - **NEVER** hardcode API keys, Supabase service role secrets, anon keys, or credentials directly in source code or fallback strings under any circumstances.
+> - Always read credentials strictly from environment variables (`process.env.*`).
+
+---
+
 ## Mobile App Deployment Workflow
 
 Whenever you make new code changes, bug fixes, or UI updates to the mobile app (`eagle-pathway-mobile`), follow this workflow:
