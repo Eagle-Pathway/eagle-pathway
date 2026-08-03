@@ -40,6 +40,13 @@ export interface User {
   university_name?: string;
   telegram_username?: string;
   cgpa?: string;
+  teaching_experience?: string;
+
+  // Parent-specific profile fields (stored on users table)
+  children_count?: number;
+  children_grades?: string[];
+  preferred_tutor_gender?: string;
+  preferred_session_format?: string;
 }
 
 // ─── TUTOR ───────────────────────────────────────────────────────────────────
