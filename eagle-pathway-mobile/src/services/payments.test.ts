@@ -75,7 +75,7 @@ describe('paymentsService.submitPaymentReceipt', () => {
       'decoded:BASE64DATA',
       { contentType: 'image/png', upsert: true },
     );
-    expect(createSignedUrl).toHaveBeenCalledWith(expect.stringContaining('user-1/'), 3600);
+    expect(createSignedUrl).toHaveBeenCalledWith(expect.stringContaining('user-1/'), 604800);
     expect(insert).toHaveBeenCalledWith(
       expect.objectContaining({
         user_id: 'user-1',

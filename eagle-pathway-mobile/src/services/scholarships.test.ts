@@ -197,7 +197,7 @@ describe('scholarshipsService', () => {
         expect.anything(),
         { contentType: 'application/pdf', upsert: false },
       );
-      expect(createSignedUrl).toHaveBeenCalledWith(expect.stringContaining('user-1/transcript/'), 3600);
+      expect(createSignedUrl).toHaveBeenCalledWith(expect.stringContaining('user-1/transcript/'), 604800);
       expect(insert).toHaveBeenCalledWith(
         expect.objectContaining({
           user_id: 'user-1',
@@ -266,7 +266,7 @@ describe('scholarshipsService', () => {
       (mockSupabase.storage.from as ReturnType<typeof vi.fn>).mockReturnValue({ createSignedUrl });
 
       const [doc] = await scholarshipsService.getUserDocuments('user-1');
-      expect(createSignedUrl).toHaveBeenCalledWith('user-1/transcript/x.pdf', 3600);
+      expect(createSignedUrl).toHaveBeenCalledWith('user-1/transcript/x.pdf', 604800);
       expect(doc.file_url).toBe('https://signed/d1');
     });
 

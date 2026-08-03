@@ -4,7 +4,7 @@ import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system/legacy';
 import { decode } from 'base64-arraybuffer';
 
-const SIGNED_URL_TTL_SECONDS = 60 * 60;
+const SIGNED_URL_TTL_SECONDS = 60 * 60 * 24 * 7;
 const SOP_AI_API_URL = process.env.EXPO_PUBLIC_EAGLE_AI_API_URL;
 
 interface SOPFeedback {

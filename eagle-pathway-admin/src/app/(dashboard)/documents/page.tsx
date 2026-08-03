@@ -48,11 +48,28 @@ export default function DocumentsPage() {
 
     const { data } = await supabase.storage
       .from('documents')
-      .createSignedUrl(path, 60 * 60);
+      .createSignedUrl(path, 60 * 60 * 24 * 7);
 
     return data?.signedUrl
       ? { ...document, file_path: path, file_url: data.signedUrl }
       : document;
+  };
+
+  const handleOpenDocument = async (doc: UserDocument) => {
+    const path = doc.file_path || (!doc.file_url?.startsWith('http') ? doc.file_url : null);
+    if (path) {
+      const { data } = await supabase.storage
+        .from('documents')
+        .createSignedUrl(path, 60 * 60 * 24 * 7);
+
+      if (data?.signedUrl) {
+        window.open(data.signedUrl, '_blank', 'noopener,noreferrer');
+        return;
+      }
+    }
+    if (doc.file_url) {
+      window.open(doc.file_url, '_blank', 'noopener,noreferrer');
+    }
   };
 
   async function fetchDocuments() {
@@ -319,15 +336,13 @@ export default function DocumentsPage() {
                    <div className="text-center">
                      <FileText className="w-16 h-16 text-gray-300 mx-auto mb-4" />
                      <p className="text-gray-500 font-medium mb-4">Document Preview Unavailable</p>
-                     <a 
-                       href={selectedDoc.file_url} 
-                       target="_blank" 
-                       rel="noopener noreferrer"
-                       className="inline-flex items-center px-4 py-2 bg-brand-blue text-white rounded-xl shadow-md hover:bg-blue-800 transition-all font-medium"
-                     >
-                       <ExternalLink className="w-4 h-4 mr-2" />
-                       Open Document
-                     </a>
+                      <button 
+                        onClick={() => handleOpenDocument(selectedDoc)}
+                        className="inline-flex items-center px-4 py-2 bg-brand-blue text-white rounded-xl shadow-md hover:bg-blue-800 transition-all font-medium cursor-pointer"
+                      >
+                        <ExternalLink className="w-4 h-4 mr-2" />
+                        Open Document
+                      </button>
                    </div>
                 </div>
               </div>

@@ -9,6 +9,16 @@
 
 ---
 
+## User-Friendly UI & Error Message Rule
+
+> [!IMPORTANT]
+> **STRICT USER EXPERIENCE MANDATE**
+> - **NEVER** expose raw technical error strings (e.g., Supabase `AuthApiError`, `PGRST*`, `unique constraint`, SQL errors, or raw code exceptions) directly to the user in any Alert, Modal, Toast, or UI text.
+> - **ALWAYS** route errors through `showError()` or `getErrorMessage()` from `@/utils/errorHandler`, or use explicit, polite, human-readable UI messages tailored for non-technical users.
+> - Ensure every code change, form validation, success alert, and empty state uses clear, positive, and actionable user-facing language.
+
+---
+
 ## Mobile App Deployment Workflow
 
 Whenever you make new code changes, bug fixes, or UI updates to the mobile app (`eagle-pathway-mobile`), follow this workflow:
@@ -42,3 +52,4 @@ Only required if adding new native Android npm packages or modifying `app.json` 
 eas build --platform android --profile production
 ```
 Upload generated `.aab` file to Google Play Console $\rightarrow$ Closed Testing.
+
