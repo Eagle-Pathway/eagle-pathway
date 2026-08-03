@@ -177,22 +177,22 @@ export default function TutorsScreen() {
 
       {/* Selected Subject Chips */}
       {selectedSubjects.length > 0 && (
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ maxHeight: 36, marginVertical: 4, flexGrow: 0 }} contentContainerStyle={{ paddingHorizontal: Spacing.xl, gap: Spacing.xs, alignItems: 'center' }}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexGrow: 0, marginVertical: 6 }} contentContainerStyle={{ paddingHorizontal: Spacing.xl, gap: Spacing.xs, alignItems: 'center' }}>
           {selectedSubjects.map(sub => (
             <TouchableOpacity
               key={sub}
-              style={[styles.chip, styles.chipActive, { flexDirection: 'row', alignItems: 'center', gap: 4, paddingVertical: 4 }]}
+              style={[styles.chip, styles.chipActive, { flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 6, paddingHorizontal: 12, minHeight: 32 }]}
               onPress={() => setSelectedSubjects(selectedSubjects.filter(s => s !== sub))}
             >
               <Text style={styles.chipTextActive}>{sub}</Text>
-              <Text style={{ fontSize: 10, color: Colors.blue, fontWeight: 'bold' }}>✕</Text>
+              <Text style={{ fontSize: 12, color: Colors.blue, fontWeight: 'bold' }}>✕</Text>
             </TouchableOpacity>
           ))}
         </ScrollView>
       )}
 
       {/* Mode filters */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={[styles.filterScroll2, { flexGrow: 0, marginTop: 4 }]} contentContainerStyle={{ paddingHorizontal: Spacing.xl, gap: Spacing.sm, alignItems: 'center' }}>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={[styles.filterScroll2, { flexGrow: 0 }]} contentContainerStyle={{ paddingHorizontal: Spacing.xl, gap: Spacing.sm, alignItems: 'center' }}>
         {MODES.map(m => (
           <TouchableOpacity
             key={m}
@@ -314,17 +314,18 @@ const styles = StyleSheet.create({
   },
   searchIcon: { fontSize: 16 },
   searchInput: { flex: 1, fontSize: Typography.md, color: Colors.text },
-  filterScroll: { marginTop: Spacing.md, maxHeight: 44 },
-  filterScroll2: { marginTop: Spacing.sm, marginBottom: Spacing.md, maxHeight: 40 },
+  filterScroll: { marginTop: Spacing.md },
+  filterScroll2: { marginTop: Spacing.xs, marginBottom: Spacing.md },
   chip: {
     borderWidth: 1.5, borderColor: Colors.border,
-    borderRadius: Radius.full, paddingHorizontal: Spacing.md, paddingVertical: 6,
-    backgroundColor: Colors.card, alignSelf: 'flex-start',
+    borderRadius: Radius.full, paddingHorizontal: 16, paddingVertical: 8,
+    backgroundColor: Colors.card, alignItems: 'center', justifyContent: 'center',
+    minHeight: 36,
   },
-  chipSm: { paddingVertical: 4 },
+  chipSm: { paddingVertical: 6, paddingHorizontal: 14, minHeight: 34 },
   chipActive: { borderColor: Colors.blue, backgroundColor: Colors.blueLight },
-  chipText: { fontSize: Typography.sm, fontWeight: Typography.semibold, color: Colors.textSecondary },
-  chipTextActive: { color: Colors.blue },
+  chipText: { fontSize: Typography.sm, fontWeight: Typography.semibold, color: Colors.textSecondary, includeFontPadding: false },
+  chipTextActive: { color: Colors.blue, fontWeight: Typography.bold },
   tutorCard: {
     marginHorizontal: Spacing.xl, marginBottom: Spacing.md,
     backgroundColor: Colors.card, borderRadius: Radius['2xl'],
