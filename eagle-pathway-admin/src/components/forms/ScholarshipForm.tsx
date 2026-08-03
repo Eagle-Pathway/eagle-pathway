@@ -5,6 +5,16 @@ import { supabase } from '@/lib/supabase';
 import { X, Loader2, Image as ImageIcon, GraduationCap, Globe, FileText, Settings } from 'lucide-react';
 import { COUNTRIES, DEPARTMENTS, DEGREE_LEVELS, FIELDS_OF_STUDY } from '@eagle-pathway/shared';
 
+const FUNDING_PRESETS = [
+  'Full tuition',
+  'Half tuition',
+  'Full tuition plus stipend',
+  'Full tuition plus stipend plus Accomodation',
+  'Full tuition plus stipend plus Meals',
+  'Full tuition plus stipend plus Accomodation plus meals',
+  'Others (Custom Amount)',
+];
+
 // Using centralized metadata from @eagle-pathway/shared
 
 interface SectionProps {
@@ -219,9 +229,47 @@ export default function ScholarshipForm({ scholarship, onClose, onSuccess }: Sch
             <Section icon={<GraduationCap className="w-5 h-5" />} title="Basic Information" description="Main scholarship details">
               <div className="grid grid-cols-1 gap-4">
                 <InputField label="Scholarship Name" name="name" value={formData.name} onChange={handleChange} required placeholder="e.g. Mastercard Foundation Scholars Program" />
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <InputField label="Organization" name="organization" value={formData.organization} onChange={handleChange} required placeholder="e.g. Mastercard Foundation" />
-                  <InputField label="Funding Amount" name="funding_details" value={formData.funding_details} onChange={handleChange} required placeholder="e.g. $50,000 per year" />
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Funding Amount & Presets</label>
+                    <div className="flex flex-wrap gap-1.5 mb-2">
+                      {FUNDING_PRESETS.map(preset => {
+                        const isSelected = preset === 'Others (Custom Amount)'
+                          ? Boolean(formData.funding_details && !FUNDING_PRESETS.slice(0, 6).includes(formData.funding_details))
+                          : formData.funding_details === preset;
+                        return (
+                          <button
+                            key={preset}
+                            type="button"
+                            onClick={() => {
+                              if (preset === 'Others (Custom Amount)') {
+                                setFormData(f => ({ ...f, funding_details: '' }));
+                              } else {
+                                setFormData(f => ({ ...f, funding_details: preset }));
+                              }
+                            }}
+                            className={`px-2.5 py-1 text-xs font-medium rounded-lg border transition-all cursor-pointer ${
+                              isSelected
+                                ? 'bg-brand-blue text-white border-brand-blue shadow-xs'
+                                : 'bg-white text-gray-700 border-gray-200 hover:border-brand-blue/40'
+                            }`}
+                          >
+                            {preset}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <input
+                      type="text"
+                      name="funding_details"
+                      value={formData.funding_details}
+                      onChange={handleChange}
+                      required
+                      placeholder="Select preset above or type custom amount..."
+                      className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-brand-blue/20 focus:border-brand-blue"
+                    />
+                  </div>
                 </div>
               </div>
             </Section>

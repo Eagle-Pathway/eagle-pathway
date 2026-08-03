@@ -102,7 +102,7 @@ export const scholarshipsService = {
       }
     }
 
-    const { data, error } = await query.order('deadline', { ascending: true });
+    const { data, error } = await query.order('created_at', { ascending: false });
     if (error) throw error;
     return data as Scholarship[];
   },
