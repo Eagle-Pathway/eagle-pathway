@@ -124,13 +124,19 @@ export default function TutorsPage() {
     const willBeVerified = !currentStatus;
     setActionLoading(id);
     try {
-      const res = await fetch('/api/tutor-approval', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: id, isVerified: willBeVerified }),
-      });
-      const data = await res.json();
-      if (!res.ok || data.error) throw new Error(data.error || 'Failed to update tutor verification');
+      const { error: updateError } = await supabase
+        .from('tutors')
+        .update({ is_verified: willBeVerified })
+        .eq('user_id', id);
+
+      if (updateError) throw updateError;
+
+      const notif = willBeVerified
+        ? { user_id: id, title: "You've been approved! 🎉", body: 'Your tutor profile is now live on Eagle Pathway.', type: 'application_update', is_read: false }
+        : { user_id: id, title: 'Account Status Update', body: 'Your tutor verification has been revoked.', type: 'application_update', is_read: false };
+
+      await supabase.from('notifications').insert(notif);
+
       showToast('success', willBeVerified ? 'Tutor approved successfully! 🎉' : 'Tutor verification revoked.');
       await fetchTutors();
     } catch (err: any) {
