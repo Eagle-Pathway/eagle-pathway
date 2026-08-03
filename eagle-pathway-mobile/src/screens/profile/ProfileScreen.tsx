@@ -6,7 +6,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Colors, Typography, Spacing, Radius, CommonStyles } from '@/utils/theme';
-import { Avatar } from '@/components/common';
+import { Avatar, CustomModal } from '@/components/common';
 import { scholarshipsService } from '@/services/scholarships';
 import { getUserRole } from '@/utils/role';
 import { useAuthStore } from '@/store/authStore';
@@ -28,6 +28,7 @@ export function ProfileScreen() {
   const [linkingPhone, setLinkingPhone] = useState('');
   const [isLinking, setIsLinking] = useState(false);
   const [openJobsCount, setOpenJobsCount] = useState(0);
+  const [signOutVisible, setSignOutVisible] = useState(false);
 
   const initials = user?.full_name?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || 'EP';
   const role = getUserRole(user);
@@ -62,11 +63,10 @@ export function ProfileScreen() {
     }
   };
 
-  const handleSignOut = () => {
-    Alert.alert('Sign Out', 'Are you sure you want to sign out?', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Sign Out', style: 'destructive', onPress: async () => { await signOut(); router.replace('/(auth)/splash'); } },
-    ]);
+  const confirmSignOut = async () => {
+    setSignOutVisible(false);
+    await signOut();
+    router.replace('/(auth)/splash');
   };
 
   const handleLinkAction = async () => {
@@ -105,20 +105,19 @@ export function ProfileScreen() {
   const MENU_ITEMS = [
     ...(role === 'tutor'
       ? [
-          { icon: '💼', label: 'Tutor Jobs', badge: openJobsCount > 0 ? `${openJobsCount} open` : null, color: Colors.orangeLight, route: '/tutor-jobs', danger: false },
-          { icon: '📋', label: 'My Applications', badge: null, color: Colors.greenLight, route: '/my-applications', danger: false },
+          { icon: '💼', label: 'Tutor Jobs', badge: openJobsCount > 0 ? `${openJobsCount} open` : null, color: Colors.orangeLight, route: '/tutor-jobs' },
+          { icon: '📋', label: 'My Applications', badge: null, color: Colors.greenLight, route: '/my-applications' },
         ]
       : []),
-    { icon: '📊', label: 'My Progress', badge: null, color: Colors.blueLight, route: '/progress', danger: false },
-    { icon: '🎓', label: 'Scholarship Apps', badge: `${applications.filter(a => !['accepted','rejected'].includes(a.status)).length} Active`, color: Colors.goldLight, route: '/tracker', danger: false },
-    { icon: '📁', label: 'Documents', badge: documents.filter(d => d.status !== 'approved').length > 0 ? 'Action needed' : null, color: Colors.greenLight, route: '/documents', danger: false },
-    { icon: '✉️', label: 'Recommendation Letters', badge: null, color: Colors.blueLight, route: '/recommendations', danger: false },
-    { icon: '🏆', label: 'Success Stories', badge: null, color: Colors.goldLight, route: '/success-stories', danger: false },
-    { icon: '📚', label: 'Resources', badge: null, color: Colors.blueLight, route: '/resources', danger: false },
-    { icon: '📅', label: 'My Bookings', badge: null, color: Colors.grayLight, route: '/(tabs)/bookings', danger: false },
-    { icon: '🔔', label: 'Notifications', badge: unreadCount > 0 ? `${unreadCount} New` : null, color: Colors.blueLight, route: '/notifications', danger: false },
-    { icon: '⚙️', label: 'Settings', badge: null, color: Colors.grayLight, route: '/settings', danger: false },
-    { icon: '🚪', label: 'Sign Out', badge: null, color: '#fef2f2', route: null, danger: true },
+    { icon: '📊', label: 'My Progress', badge: null, color: Colors.blueLight, route: '/progress' },
+    { icon: '🎓', label: 'Scholarship Apps', badge: `${applications.filter(a => !['accepted','rejected'].includes(a.status)).length} Active`, color: Colors.goldLight, route: '/tracker' },
+    { icon: '📁', label: 'Documents', badge: documents.filter(d => d.status !== 'approved').length > 0 ? 'Action needed' : null, color: Colors.greenLight, route: '/documents' },
+    { icon: '✉️', label: 'Recommendation Letters', badge: null, color: Colors.blueLight, route: '/recommendations' },
+    { icon: '🏆', label: 'Success Stories', badge: null, color: Colors.goldLight, route: '/success-stories' },
+    { icon: '📚', label: 'Resources', badge: null, color: Colors.blueLight, route: '/resources' },
+    { icon: '📅', label: 'My Bookings', badge: null, color: Colors.grayLight, route: '/(tabs)/bookings' },
+    { icon: '🔔', label: 'Notifications', badge: unreadCount > 0 ? `${unreadCount} New` : null, color: Colors.blueLight, route: '/notifications' },
+    { icon: '⚙️', label: 'Settings', badge: null, color: Colors.grayLight, route: '/settings' },
   ];
 
   return (
@@ -161,7 +160,7 @@ export function ProfileScreen() {
 
       </View>
 
-      <ScrollView contentContainerStyle={{ paddingBottom: 100 }}>
+      <ScrollView contentContainerStyle={{ paddingBottom: 60 }}>
         {(role === 'student' || role === 'parent') && (
           <View style={profStyles.referralCard}>
             <View style={profStyles.referralContent}>
@@ -225,29 +224,59 @@ export function ProfileScreen() {
           </View>
         )}
 
-        {MENU_ITEMS.map((item, i) => (
-          <TouchableOpacity
-            key={item.label}
-            style={[profStyles.menuItem, i === 0 && profStyles.menuFirst]}
-            onPress={() => item.route ? router.push(item.route as any) : item.danger ? handleSignOut() : null}
-            activeOpacity={0.9}
-          >
-            <View style={[profStyles.menuIcon, { backgroundColor: item.color }]}><Text style={{ fontSize: 16 }}>{item.icon}</Text></View>
-            <Text style={[profStyles.menuLabel, item.danger && { color: Colors.red }]}>{item.label}</Text>
-            {item.badge && (
-              <View style={[profStyles.menuBadge, {
-                backgroundColor: item.danger ? Colors.redLight : item.label === 'Documents' ? Colors.redLight : item.label === 'Tutor Jobs' ? Colors.orangeLight : Colors.blueLight,
-              }]}>
-                <Text style={[profStyles.menuBadgeText, {
-                  color: item.danger ? Colors.red : item.label === 'Documents' ? Colors.red : item.label === 'Tutor Jobs' ? Colors.orange : Colors.blue,
-                }]}>{item.badge}</Text>
-              </View>
-            )}
-            {!item.danger && <Text style={profStyles.menuArrow}>›</Text>}
-          </TouchableOpacity>
-        ))}
+        <View style={profStyles.menuCard}>
+          {MENU_ITEMS.map((item, i) => (
+            <TouchableOpacity
+              key={item.label}
+              style={[profStyles.menuItem, i === 0 && { borderTopWidth: 0 }]}
+              onPress={() => item.route ? router.push(item.route as any) : null}
+              activeOpacity={0.7}
+            >
+              <View style={[profStyles.menuIcon, { backgroundColor: item.color }]}><Text style={{ fontSize: 16 }}>{item.icon}</Text></View>
+              <Text style={profStyles.menuLabel}>{item.label}</Text>
+              {item.badge && (
+                <View style={[profStyles.menuBadge, {
+                  backgroundColor: item.label === 'Documents' ? Colors.redLight : item.label === 'Tutor Jobs' ? Colors.orangeLight : Colors.blueLight,
+                }]}>
+                  <Text style={[profStyles.menuBadgeText, {
+                    color: item.label === 'Documents' ? Colors.red : item.label === 'Tutor Jobs' ? Colors.orange : Colors.blue,
+                  }]}>{item.badge}</Text>
+                </View>
+              )}
+              <Text style={profStyles.menuArrow}>›</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        {/* Distinct Sign Out Card */}
+        <TouchableOpacity
+          style={profStyles.signOutCard}
+          onPress={() => setSignOutVisible(true)}
+          activeOpacity={0.8}
+        >
+          <View style={[profStyles.menuIcon, { backgroundColor: '#FEE2E2' }]}>
+            <Text style={{ fontSize: 16 }}>🚪</Text>
+          </View>
+          <Text style={[profStyles.menuLabel, { color: Colors.red, fontWeight: 'bold' }]}>Sign Out</Text>
+        </TouchableOpacity>
+
         <Text style={profStyles.version}>Eagle Pathway v1.0.0 · Made with ❤️ in Addis Ababa</Text>
       </ScrollView>
+
+      {/* Styled Custom Modal for Sign Out */}
+      <CustomModal
+        visible={signOutVisible}
+        title="Sign Out"
+        message="Are you sure you want to sign out of your Eagle Pathway account?"
+        icon="log-out-outline"
+        iconColor={Colors.red}
+        iconBg="#FEE2E2"
+        confirmText="Sign Out"
+        cancelText="Cancel"
+        confirmVariant="danger"
+        onConfirm={confirmSignOut}
+        onCancel={() => setSignOutVisible(false)}
+      />
     </SafeAreaView>
   );
 }
@@ -259,14 +288,15 @@ const profStyles = StyleSheet.create({
   badges: { flexDirection: 'row', gap: Spacing.sm, marginTop: Spacing.lg, flexWrap: 'wrap', justifyContent: 'center' },
   badge: { backgroundColor: 'rgba(255,255,255,0.12)', borderRadius: Radius.full, paddingHorizontal: Spacing.md, paddingVertical: 5, borderWidth: 1, borderColor: 'rgba(255,255,255,0.15)' },
   badgeText: { fontSize: Typography.sm, fontWeight: Typography.semibold, color: 'rgba(255,255,255,0.9)' },
-  menuItem: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md, padding: Spacing.lg, paddingHorizontal: Spacing.xl, borderBottomWidth: 1, borderBottomColor: Colors.border, backgroundColor: Colors.card },
-  menuFirst: { borderTopWidth: 1, borderTopColor: Colors.border },
+  menuCard: { marginHorizontal: Spacing.xl, marginTop: Spacing.lg, backgroundColor: Colors.card, borderRadius: Radius['2xl'], borderWidth: 1, borderColor: Colors.border, overflow: 'hidden' },
+  signOutCard: { marginHorizontal: Spacing.xl, marginTop: Spacing.md, backgroundColor: Colors.card, borderRadius: Radius['2xl'], borderWidth: 1, borderColor: '#FEE2E2', flexDirection: 'row', alignItems: 'center', gap: Spacing.md, padding: Spacing.md, paddingHorizontal: Spacing.lg },
+  menuItem: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md, padding: Spacing.md, paddingHorizontal: Spacing.lg, borderTopWidth: 1, borderTopColor: Colors.border, backgroundColor: Colors.card },
   menuIcon: { width: 36, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
-  menuLabel: { fontSize: Typography.lg, fontWeight: Typography.medium, color: Colors.text, flex: 1 },
+  menuLabel: { fontSize: Typography.md, fontWeight: Typography.medium, color: Colors.text, flex: 1 },
   menuBadge: { paddingHorizontal: 8, paddingVertical: 2, borderRadius: 10 },
   menuBadgeText: { fontSize: Typography.sm, fontWeight: Typography.bold },
   menuArrow: { fontSize: Typography.xl, color: Colors.textSecondary },
-  version: { textAlign: 'center', fontSize: Typography.sm, color: Colors.textSecondary, padding: Spacing.xl },
+  version: { textAlign: 'center', fontSize: Typography.xs, color: Colors.textSecondary, paddingTop: Spacing.lg, paddingBottom: Spacing.md },
   editBadge: { position: 'absolute', bottom: 15, right: -5, backgroundColor: Colors.blue, width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: Colors.blueDark },
   editProfileBtn: { marginTop: Spacing.xl, backgroundColor: 'rgba(255,255,255,0.15)', paddingHorizontal: 20, paddingVertical: 10, borderRadius: 12, borderWidth: 1, borderColor: 'rgba(255,255,255,0.2)' },
   personaContainer: { flexDirection: 'row', gap: Spacing.sm, marginTop: Spacing.xl, backgroundColor: 'rgba(0,0,0,0.1)', padding: 4, borderRadius: 16 },
