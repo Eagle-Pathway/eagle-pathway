@@ -15,6 +15,8 @@ import type { Application } from '@/types';
 import { getFlagEmoji } from '@eagle-pathway/shared';
 import { Ionicons } from '@expo/vector-icons';
 
+import { withTimeout } from '@/utils/asyncUtils';
+
 const AuthenticationTracker = ({ isPremium }: { isPremium: boolean }) => (
   <View style={[CommonStyles.card, { marginTop: Spacing.xl, marginHorizontal: Spacing.xl }]}>
     <Text style={{ fontSize: Typography.base, fontWeight: 'bold', marginBottom: Spacing.sm, color: Colors.text }}>
@@ -66,7 +68,7 @@ export function TrackerScreen({ hideHeader = false }: { hideHeader?: boolean }) 
     if (!user) return;
     setLoading(true);
     setError(false);
-    try { await loadApplications(user.id); } catch { setError(true); } finally { setLoading(false); }
+    try { await withTimeout(loadApplications(user.id), 3500); } catch { setError(true); } finally { setLoading(false); }
   }, [user?.id, loadApplications]);
 
   useEffect(() => { load(); }, [user?.id]);

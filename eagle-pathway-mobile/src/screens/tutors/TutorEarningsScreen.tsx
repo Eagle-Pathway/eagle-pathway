@@ -13,6 +13,8 @@ import { useAuthStore } from '@/store/authStore';
 import { useBookingStore } from '@/store/bookingStore';
 import { useFinanceStore } from '@/store/financeStore';
 
+import { withTimeout } from '@/utils/asyncUtils';
+
 /**
  * Tutor "Earnings" tab: available balance, payout request, and the full payout
  * history. The dashboard (TutorHome) shows a summary + the 3 most recent; this
@@ -29,7 +31,7 @@ export default function TutorEarningsScreen() {
 
   useEffect(() => {
     if (!user) return;
-    Promise.all([loadTutorBookings(user.id), loadTutorPayouts(user.id), loadBalance()]).finally(() => setLoading(false));
+    withTimeout(Promise.all([loadTutorBookings(user.id), loadTutorPayouts(user.id), loadBalance()]), 3500).finally(() => setLoading(false));
   }, [user?.id]);
 
   // Authoritative balance from the server (same definition the payout trigger

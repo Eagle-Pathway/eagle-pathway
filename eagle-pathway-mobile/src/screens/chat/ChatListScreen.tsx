@@ -10,6 +10,8 @@ import { Avatar, EmptyState, ErrorState, Skeleton } from '@/components/common';
 import { useAuthStore } from '../../store/authStore';
 import { useChatStore } from '@/store/ChatStore';
 
+import { withTimeout } from '@/utils/asyncUtils';
+
 export default function ChatListScreen() {
   const { user } = useAuthStore();
   const { 
@@ -24,7 +26,7 @@ export default function ChatListScreen() {
   const load = useCallback(async () => {
     if (!user) return;
     setError(false);
-    try { await loadConversations(user.id); } catch { setError(true); }
+    try { await withTimeout(loadConversations(user.id), 3500); } catch { setError(true); }
   }, [user?.id, loadConversations]);
 
   useEffect(() => {

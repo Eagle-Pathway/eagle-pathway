@@ -9,6 +9,8 @@ import { EmptyState, Skeleton, ScaleBounce } from '@/components/common';
 import { useAuthStore } from '@/store/authStore';
 import { useTutorJobStore } from '@/store/tutorJobStore';
 
+import { withTimeout } from '@/utils/asyncUtils';
+
 const STATUS_CONFIG: Record<string, { icon: string; label: string; color: string; bg: string }> = {
   pending: { icon: '🟡', label: 'Pending', color: '#b45309', bg: '#fffbeb' },
   contacted: { icon: '🔵', label: 'Contacted', color: '#1d4ed8', bg: '#eff6ff' },
@@ -31,7 +33,7 @@ export function MyApplicationsScreen() {
   const { applications, loadingApplications, loadApplications } = useTutorJobStore();
 
   useEffect(() => {
-    if (user) loadApplications(user.id);
+    if (user) withTimeout(loadApplications(user.id), 3500);
   }, [user?.id]);
 
   return (

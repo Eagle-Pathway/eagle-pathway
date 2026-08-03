@@ -10,6 +10,8 @@ import { resourcesService, type Resource } from '@/services/resources';
 import { useAuthStore } from '@/store/authStore';
 import { getUserRole } from '@/utils/role';
 
+import { withTimeout } from '@/utils/asyncUtils';
+
 interface Section {
   title: string;
   data: Resource[];
@@ -36,8 +38,7 @@ export default function ResourcesScreen() {
   const load = useCallback(() => {
     setLoading(true);
     setError(false);
-    resourcesService
-      .list(role)
+    withTimeout(resourcesService.list(role), 3500)
       .then(setResources)
       .catch(() => setError(true))
       .finally(() => setLoading(false));

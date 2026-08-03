@@ -13,6 +13,8 @@ import { useTutorJobStore } from '@/store/tutorJobStore';
 import { tutorJobsService } from '@/services/tutorJobs';
 import { getUserRole } from '@/utils/role';
 
+import { withTimeout } from '@/utils/asyncUtils';
+
 function timeAgo(utc: string): string {
   try {
     return formatDistanceToNow(new Date(utc), { addSuffix: true });
@@ -25,7 +27,7 @@ export function TutorJobFeedScreen() {
   const [appliedIds, setAppliedIds] = useState<Set<string>>(new Set());
   const [refreshing, setRefreshing] = useState(false);
 
-  useEffect(() => { loadJobs(); }, []);
+  useEffect(() => { withTimeout(loadJobs(), 3500); }, []);
 
   useEffect(() => {
     if (user && jobs.length > 0) {

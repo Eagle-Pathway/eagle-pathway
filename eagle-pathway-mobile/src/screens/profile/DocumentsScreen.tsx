@@ -14,6 +14,8 @@ import { useDocumentStore } from '@/store/documentStore';
 import { scholarshipsService } from '@/services/scholarships';
 import type { DocumentType, Document } from '@/types';
 
+import { withTimeout } from '@/utils/asyncUtils';
+
 export function DocumentsScreen() {
   const { user } = useAuthStore();
   const { documents, loadDocuments, uploadDocument, deleteDocument } = useDocumentStore();
@@ -26,7 +28,7 @@ export function DocumentsScreen() {
     if (!user) return;
     setLoading(true);
     setError(false);
-    try { await loadDocuments(user.id); } catch { setError(true); } finally { setLoading(false); }
+    try { await withTimeout(loadDocuments(user.id), 3500); } catch { setError(true); } finally { setLoading(false); }
   }, [user?.id, loadDocuments]);
 
   useEffect(() => { load(); }, [user?.id]);

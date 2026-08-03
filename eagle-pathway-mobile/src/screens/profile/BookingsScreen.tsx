@@ -13,6 +13,7 @@ import { useAuthStore } from '@/store/authStore';
 import { showError } from '@/utils/errorHandler';
 import { useBookingStore } from '@/store/bookingStore';
 import { supabase } from '@/services/supabase';
+import { withTimeout } from '@/utils/asyncUtils';
 import { getUserRole } from '@/utils/role';
 
 export function BookingsScreen({ hideHeader = false }: { hideHeader?: boolean }) {
@@ -34,7 +35,7 @@ export function BookingsScreen({ hideHeader = false }: { hideHeader?: boolean })
     setLoading(true);
     setError(false);
     try {
-      await (isTutor ? loadTutorBookings(user.id) : loadBookings(user.id));
+      await withTimeout(isTutor ? loadTutorBookings(user.id) : loadBookings(user.id), 3500);
     } catch {
       setError(true);
     } finally {

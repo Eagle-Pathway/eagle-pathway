@@ -31,6 +31,8 @@ function freshnessTone(sourceStatus?: Scholarship['source_status']) {
   return { bg: Colors.goldLight, color: Colors.goldDark };
 }
 
+import { withTimeout } from '@/utils/asyncUtils';
+
 export default function ScholarshipsScreen({ hideBack = false }: { hideBack?: boolean }) {
   const { scholarships, savedScholarshipIds, loadScholarships, toggleSaveScholarship, isLoadingScholarships } = useScholarshipStore();
   const [search, setSearch] = useState('');
@@ -39,7 +41,7 @@ export default function ScholarshipsScreen({ hideBack = false }: { hideBack?: bo
 
   const load = useCallback(async () => {
     setError(false);
-    try { await loadScholarships(); } catch { setError(true); }
+    try { await withTimeout(loadScholarships(), 3500); } catch { setError(true); }
   }, [loadScholarships]);
 
   useEffect(() => { load(); }, []);

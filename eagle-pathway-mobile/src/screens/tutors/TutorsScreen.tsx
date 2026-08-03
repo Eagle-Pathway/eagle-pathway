@@ -11,6 +11,8 @@ import { Pill, EmptyState, ErrorState, Avatar, Dropdown, Skeleton, ScaleBounce }
 import { tutorsService } from '@/services/tutors';
 import { Tutor } from '@/types';
 
+import { withTimeout } from '@/utils/asyncUtils';
+
 const SUBJECT_OPTIONS = [
   { label: 'Mathematics', value: 'Mathematics' },
   { label: 'English', value: 'English' },
@@ -36,11 +38,11 @@ export default function TutorsScreen() {
     setLoading(true);
     setError(false);
     try {
-      const data = await tutorsService.getTutors({
+      const data = await withTimeout(tutorsService.getTutors({
         isOnline: activeMode === 'Online' ? true : undefined,
         isInPerson: activeMode === 'In-Person' ? true : undefined,
         search: search || undefined,
-      });
+      }), 3500);
       setTutors(data);
     } catch (e) {
       console.error(e);

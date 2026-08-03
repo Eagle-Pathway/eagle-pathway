@@ -8,13 +8,15 @@ import { EmptyState, ErrorState, Avatar, Skeleton } from '@/components/common';
 import { useParentStore } from '@/store/parentStore';
 import { Booking } from '@/types';
 
+import { withTimeout } from '@/utils/asyncUtils';
+
 export default function ChildrenSessionsScreen() {
   const { studentId, studentName } = useLocalSearchParams<{ studentId: string; studentName: string }>();
   const { linkedStudentBookings, isLoadingLinkedBookings, loadLinkedStudentBookings } = useParentStore();
   const [activeTab, setActiveTab] = useState<'upcoming' | 'past'>('upcoming');
 
   useEffect(() => {
-    loadLinkedStudentBookings(studentId).catch(() => {});
+    withTimeout(loadLinkedStudentBookings(studentId), 3500).catch(() => {});
   }, [studentId]);
 
   const allBookings: Booking[] = linkedStudentBookings[studentId || ''] || [];
