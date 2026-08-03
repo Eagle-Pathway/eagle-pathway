@@ -139,6 +139,22 @@ export function ApplyScreen() {
       );
       return;
     }
+
+    if (step === 4) {
+      if (!selectedPaymentMethod) {
+        Alert.alert('Payment Method Required', 'Please select a payment method before continuing.');
+        return;
+      }
+      if (!transactionId.trim()) {
+        Alert.alert('Transaction ID Required', 'Please enter your payment transaction ID before continuing.');
+        return;
+      }
+      if (!receiptAsset) {
+        Alert.alert('Receipt Screenshot Required', 'Please upload a screenshot of your payment receipt before continuing.');
+        return;
+      }
+    }
+
     setStep(s => s + 1);
   };
 
@@ -314,7 +330,7 @@ export function ApplyScreen() {
 
               {(selectedPaymentMethod === 'Telebirr' || selectedPaymentMethod === 'CBE Birr / Bank Transfer') && (
                 <View style={{ marginTop: Spacing.lg }}>
-                  <Text style={{ fontSize: 14, fontWeight: 'bold', marginBottom: Spacing.xs }}>Transaction ID</Text>
+                  <Text style={{ fontSize: 14, fontWeight: 'bold', marginBottom: Spacing.xs }}>Transaction ID * (Required)</Text>
                   <TextInput 
                     value={transactionId}
                     onChangeText={setTransactionId}
