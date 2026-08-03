@@ -45,7 +45,11 @@ export default function ResourceDetailScreen() {
     try {
       if (resource.resource_type === 'link') {
         if (!resource.external_url) throw new Error('missing url');
-        await Linking.openURL(resource.external_url);
+        let targetUrl = resource.external_url.trim();
+        if (!targetUrl.startsWith('http://') && !targetUrl.startsWith('https://')) {
+          targetUrl = `https://${targetUrl}`;
+        }
+        await Linking.openURL(targetUrl);
         resourcesService.incrementDownload(resource.id);
         return;
       }

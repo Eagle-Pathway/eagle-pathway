@@ -14,8 +14,10 @@
   "dependencies": {
     "@eagle-pathway/shared": "file:../packages/eagle-shared",
     "@supabase/supabase-js": "^2.100.0",
+    "@types/pg": "^8.20.3",
     "lucide-react": "^1.6.0",
     "next": "16.2.1",
+    "pg": "^8.22.0",
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "recharts": "^3.8.1",
