@@ -47,4 +47,14 @@ export const DEPARTMENTS = [
 
 export const DEGREE_LEVELS = ['undergraduate', 'masters', 'phd', 'all'];
 
-export const FIELDS_OF_STUDY = ['any', 'stem', 'healthcare', 'business', 'humanities', 'arts', 'law'];
+export const FIELDS_OF_STUDY = [
+  'Any Field',
+  'STEM & Tech',
+  'Healthcare & Medicine',
+  'Business & Economics',
+  'Engineering',
+  'Humanities & Social Sciences',
+  'Arts & Design',
+  'Law & Public Policy',
+  'Agriculture & Environment',
+];

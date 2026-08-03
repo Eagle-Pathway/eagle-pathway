@@ -50,8 +50,24 @@ export function OnboardingScreen() {
     }
   };
 
-  const toggle = (list: string[], value: string, setter: (v: string[]) => void) => {
-    setter(list.includes(value) ? list.filter(v => v !== value) : [...list, value]);
+  const [showAllCountries, setShowAllCountries] = useState(false);
+
+  const toggleField = (field: string) => {
+    if (field === 'Any Field') {
+      setInterests(interests.includes('Any Field') ? [] : ['Any Field']);
+      return;
+    }
+    const cleanList = interests.filter(i => i !== 'Any Field');
+    setInterests(cleanList.includes(field) ? cleanList.filter(i => i !== field) : [...cleanList, field]);
+  };
+
+  const toggleCountry = (countryName: string) => {
+    if (countryName === 'Any Location') {
+      setCountries(countries.includes('Any Location') ? [] : ['Any Location']);
+      return;
+    }
+    const cleanList = countries.filter(c => c !== 'Any Location');
+    setCountries(cleanList.includes(countryName) ? cleanList.filter(c => c !== countryName) : [...cleanList, countryName]);
   };
 
   const finish = async (skip = false) => {
@@ -171,20 +187,60 @@ export function OnboardingScreen() {
             <Text style={s.sub}>Pick your fields and preferred destinations.</Text>
             <Text style={s.label}>Fields of study</Text>
             <View style={s.chips}>
-              {FIELDS_OF_STUDY.map(f => (
-                <TouchableOpacity key={f} style={[s.chip, interests.includes(f) && s.chipActive]} onPress={() => toggle(interests, f, setInterests)} activeOpacity={0.8}>
-                  <Text style={[s.chipText, interests.includes(f) && s.chipTextActive]}>{f.charAt(0).toUpperCase() + f.slice(1)}</Text>
-                </TouchableOpacity>
-              ))}
+              {FIELDS_OF_STUDY.map(f => {
+                const isSelected = interests.includes(f);
+                return (
+                  <TouchableOpacity 
+                    key={f} 
+                    style={[s.chip, isSelected && s.chipActive]} 
+                    onPress={() => toggleField(f)} 
+                    activeOpacity={0.8}
+                  >
+                    <Text style={[s.chipText, isSelected && s.chipTextActive]}>
+                      {f === 'Any Field' ? '💡 Any Field' : f}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
             </View>
+
             <Text style={[s.label, { marginTop: Spacing.lg }]}>Preferred countries</Text>
             <View style={s.chips}>
-              {COUNTRIES.slice(0, 12).map(c => (
-                <TouchableOpacity key={c.name} style={[s.chip, countries.includes(c.name) && s.chipActive]} onPress={() => toggle(countries, c.name, setCountries)} activeOpacity={0.8}>
-                  <Text style={[s.chipText, countries.includes(c.name) && s.chipTextActive]}>{c.flag} {c.name}</Text>
-                </TouchableOpacity>
-              ))}
+              <TouchableOpacity 
+                style={[s.chip, countries.includes('Any Location') && s.chipActive]} 
+                onPress={() => toggleCountry('Any Location')} 
+                activeOpacity={0.8}
+              >
+                <Text style={[s.chipText, countries.includes('Any Location') && s.chipTextActive]}>
+                  🌍 Any Location / Open to All
+                </Text>
+              </TouchableOpacity>
+              {(showAllCountries ? COUNTRIES : COUNTRIES.slice(0, 10)).map(c => {
+                const isSelected = countries.includes(c.name);
+                return (
+                  <TouchableOpacity 
+                    key={c.name} 
+                    style={[s.chip, isSelected && s.chipActive]} 
+                    onPress={() => toggleCountry(c.name)} 
+                    activeOpacity={0.8}
+                  >
+                    <Text style={[s.chipText, isSelected && s.chipTextActive]}>
+                      {c.flag} {c.name}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
             </View>
+
+            <TouchableOpacity 
+              style={s.showMoreBtn} 
+              onPress={() => setShowAllCountries(!showAllCountries)}
+              activeOpacity={0.8}
+            >
+              <Text style={s.showMoreText}>
+                {showAllCountries ? '↑ Show Less' : `+ Show All Countries (${COUNTRIES.length})`}
+              </Text>
+            </TouchableOpacity>
           </View>
         )}
 
@@ -258,5 +314,7 @@ const s = StyleSheet.create({
   backBtnText: { color: Colors.text, fontWeight: Typography.semibold, fontSize: Typography.md },
   nextBtn: { flex: 1, paddingVertical: 16, borderRadius: Radius.lg, backgroundColor: Colors.blue, alignItems: 'center' },
   nextBtnText: { color: Colors.white, fontWeight: Typography.bold, fontSize: Typography.md },
+  showMoreBtn: { marginTop: Spacing.md, paddingVertical: Spacing.xs, alignSelf: 'flex-start' },
+  showMoreText: { fontSize: Typography.sm, fontWeight: Typography.bold, color: Colors.blue },
 });
 

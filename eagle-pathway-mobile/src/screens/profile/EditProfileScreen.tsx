@@ -12,7 +12,7 @@ import { useAuthStore } from '@/store/authStore';
 import { showError } from '@/utils/errorHandler';
 import { withTimeout } from '@/utils/asyncUtils';
 import { getUserRole } from '@/utils/role';
-import { DEPARTMENTS, FIELDS_OF_STUDY, validatePhone } from '@eagle-pathway/shared';
+import { DEPARTMENTS, FIELDS_OF_STUDY, COUNTRIES, validatePhone } from '@eagle-pathway/shared';
 
 const DEGREE_TYPES = [
   { label: 'BSc (Science/Engineering)', value: 'BSc' },
@@ -88,21 +88,29 @@ export function EditProfileScreen() {
   const [loading, setLoading] = useState(false);
 
   const toggleSubject = (s: string) => {
-    setFormData(prev => ({
-      ...prev,
-      interested_subjects: prev.interested_subjects.includes(s)
-        ? prev.interested_subjects.filter(x => x !== s)
-        : [...prev.interested_subjects, s],
-    }));
+    setFormData(prev => {
+      if (s === 'Any Field') {
+        return { ...prev, interested_subjects: prev.interested_subjects.includes('Any Field') ? [] : ['Any Field'] };
+      }
+      const cleanList = prev.interested_subjects.filter(x => x !== 'Any Field');
+      return {
+        ...prev,
+        interested_subjects: cleanList.includes(s) ? cleanList.filter(x => x !== s) : [...cleanList, s],
+      };
+    });
   };
 
   const toggleCountry = (c: string) => {
-    setFormData(prev => ({
-      ...prev,
-      target_countries: prev.target_countries.includes(c)
-        ? prev.target_countries.filter(x => x !== c)
-        : [...prev.target_countries, c],
-    }));
+    setFormData(prev => {
+      if (c === 'Any Location') {
+        return { ...prev, target_countries: prev.target_countries.includes('Any Location') ? [] : ['Any Location'] };
+      }
+      const cleanList = prev.target_countries.filter(x => x !== 'Any Location');
+      return {
+        ...prev,
+        target_countries: cleanList.includes(c) ? cleanList.filter(x => x !== c) : [...cleanList, c],
+      };
+    });
   };
 
   const toggleDepartment = (d: string) => {
@@ -243,13 +251,24 @@ export function EditProfileScreen() {
       <Section title="🌍 Study Abroad & Language Goals">
         <Text style={editProfStyles.fieldLabel}>Target Countries (Tap all that apply)</Text>
         <View style={editProfStyles.chipsRow}>
-          {TARGET_COUNTRIES.map(c => (
+          <TouchableOpacity
+            key="Any Location"
+            style={[editProfStyles.chip, formData.target_countries.includes('Any Location') && editProfStyles.chipActive]}
+            onPress={() => toggleCountry('Any Location')}
+          >
+            <Text style={[editProfStyles.chipText, formData.target_countries.includes('Any Location') && editProfStyles.chipTextActive]}>
+              🌍 Any Location / Open to All
+            </Text>
+          </TouchableOpacity>
+          {COUNTRIES.map(c => (
             <TouchableOpacity
-              key={c}
-              style={[editProfStyles.chip, formData.target_countries.includes(c) && editProfStyles.chipActive]}
-              onPress={() => toggleCountry(c)}
+              key={c.name}
+              style={[editProfStyles.chip, formData.target_countries.includes(c.name) && editProfStyles.chipActive]}
+              onPress={() => toggleCountry(c.name)}
             >
-              <Text style={[editProfStyles.chipText, formData.target_countries.includes(c) && editProfStyles.chipTextActive]}>{c}</Text>
+              <Text style={[editProfStyles.chipText, formData.target_countries.includes(c.name) && editProfStyles.chipTextActive]}>
+                {c.flag} {c.name}
+              </Text>
             </TouchableOpacity>
           ))}
         </View>
