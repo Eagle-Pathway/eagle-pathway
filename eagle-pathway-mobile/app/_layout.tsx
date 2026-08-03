@@ -1,8 +1,8 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { Stack, router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { Alert, AppState } from 'react-native';
+import { AppState, Text, TextInput } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import * as SplashScreen from 'expo-splash-screen';
 import { supabase } from '../src/services/supabase';
@@ -13,16 +13,15 @@ import { notificationsService } from '../src/services/notifications';
 import { ErrorBoundary } from '../src/components/ErrorBoundary';
 import { OfflineBanner } from '../src/components/OfflineBanner';
 import { initErrorLogging } from '../src/services/errorLog';
+import { withTimeout } from '../src/utils/asyncUtils';
 
-SplashScreen.preventAutoHideAsync();
+SplashScreen.preventAutoHideAsync().catch(() => {});
 
 // TODO(pre-production): integrate Sentry (@sentry/react-native) for crash/error
 // reporting before the Play Store release. Wrap the app and init here alongside
 // initErrorLogging(). Adding the native SDK will require a new APK build.
 // Configure structured logging + the Supabase error sink before anything renders.
 initErrorLogging();
-
-import { Text, TextInput } from 'react-native';
 
 // Disable global font scaling to prevent UI breakage when users have huge system fonts
 if ((Text as any).defaultProps == null) (Text as any).defaultProps = {};
@@ -34,8 +33,23 @@ export default function RootLayout() {
   const { setSession, loadProfile, setUser, setLoading } = useAuthStore();
   const { subscribeToUpdates, unsubscribeFromUpdates } = useRealtimeStore();
   const { loadSavedScholarships } = useScholarshipStore();
+  const splashHidden = useRef(false);
+
+  const safeHideSplash = () => {
+    if (!splashHidden.current) {
+      splashHidden.current = true;
+      setLoading(false);
+      SplashScreen.hideAsync().catch(() => {});
+    }
+  };
 
   useEffect(() => {
+    // Safety Net: Ensure splash screen ALWAYS hides within 2.5 seconds maximum,
+    // even if network stalls, token refresh hangs, or the device is offline.
+    const splashTimeout = setTimeout(() => {
+      safeHideSplash();
+    }, 2500);
+
     // Manage Supabase AppState for background token refreshing
     const appStateListener = AppState.addEventListener('change', (state) => {
       if (state === 'active') supabase.auth.startAutoRefresh();
@@ -43,13 +57,15 @@ export default function RootLayout() {
     });
 
     // Load local offline caches
-    loadSavedScholarships();
+    loadSavedScholarships().catch(() => {});
+
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       setSession(session);
       if (session) {
-        await loadProfile();
-        subscribeToUpdates(session.user.id);
+        withTimeout(loadProfile(), 3000)
+          .then(() => subscribeToUpdates(session.user.id))
+          .catch(() => {});
       } else {
         setUser(null);
         unsubscribeFromUpdates();
@@ -57,60 +73,44 @@ export default function RootLayout() {
       if (event === 'PASSWORD_RECOVERY') {
         router.push('/(auth)/update-password');
       }
-      SplashScreen.hideAsync();
+      safeHideSplash();
     });
 
-    // Check existing session on mount
-    supabase.auth.getSession().then(({ data: { session }, error }) => {
-      if (error) {
-        console.error('Session error:', error);
-        if (error.message.includes('Refresh Token')) {
-          supabase.auth.signOut();
+    // Check existing session on mount with 3s timeout
+    withTimeout(supabase.auth.getSession(), 3000)
+      .then(({ data: { session }, error }) => {
+        if (error) {
+          console.error('Session error:', error);
+          if (error.message.includes('Refresh Token')) {
+            supabase.auth.signOut().catch(() => {});
+          }
+          safeHideSplash();
+          return;
         }
-        // Session check is over — release the router gate so it can route.
-        setLoading(false);
-        SplashScreen.hideAsync();
-        return;
-      }
 
-      setSession(session);
-      if (session) {
-        loadProfile()
-          .then(() => {
-            subscribeToUpdates(session.user.id);
-            Alert.alert(
-              'Stay Updated',
-              'Eagle Pathway needs notifications to send you session reminders and important scholarship alerts.',
-              [
-                { text: 'Not Now', style: 'cancel' },
-                {
-                  text: 'Allow',
-                  onPress: () => {
-                    notificationsService.requestPermission().then(granted => {
-                      if (granted) notificationsService.registerPushToken(session.user.id);
-                    });
-                  }
-                }
-              ]
-            );
-          })
-          .catch(e => {
-            console.error('Profile load error:', e);
-            if (e.message?.includes('Refresh Token')) {
-              supabase.auth.signOut();
-            }
-          })
-          .finally(() => {
-            // loadProfile already clears isLoading, but ensure it's cleared even
-            // if it short-circuits (e.g. the dev bypass returns early).
-            setLoading(false);
-            SplashScreen.hideAsync();
-          });
-      } else {
-        setLoading(false);
-        SplashScreen.hideAsync();
-      }
-    });
+        setSession(session);
+        if (session) {
+          withTimeout(loadProfile(), 3000)
+            .then(() => {
+              subscribeToUpdates(session.user.id);
+            })
+            .catch(e => {
+              console.error('Profile load error:', e);
+              if (e.message?.includes('Refresh Token')) {
+                supabase.auth.signOut().catch(() => {});
+              }
+            })
+            .finally(() => {
+              safeHideSplash();
+            });
+        } else {
+          safeHideSplash();
+        }
+      })
+      .catch((err) => {
+        console.warn('Session restoration timed out or failed:', err);
+        safeHideSplash();
+      });
 
     // Listeners
     const notificationListener = notificationsService.addNotificationListener(notification => {
@@ -125,6 +125,7 @@ export default function RootLayout() {
     });
 
     return () => {
+      clearTimeout(splashTimeout);
       appStateListener.remove();
       subscription.unsubscribe();
       unsubscribeFromUpdates();
