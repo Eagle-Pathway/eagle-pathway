@@ -152,39 +152,50 @@ export const ParentHome: React.FC<ParentHomeProps> = ({
             })}
 
             <SectionTitle title="Recent Activity" />
-            {(Object.values(linkedStudentApplications).flat() as Application[]).slice(0, 3).map(app => (
-              <ScaleBounce 
-                key={app.id} 
-                style={styles.sessionCard}
-                onPress={() => router.push('/progress')}
-              >
-                <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: Colors.bg, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: Colors.border, padding: 4 }}>
-                  {(() => {
-                    const flag = getFlagEmoji(app.scholarship?.country_flag);
-                    const isWord = /[a-zA-Z]/.test(flag);
-                    return (
-                      <Text 
-                        numberOfLines={1} 
-                        adjustsFontSizeToFit 
-                        minimumFontScale={0.5} 
-                        style={{ 
-                          fontSize: isWord ? 9 : 22, 
-                          fontWeight: isWord ? 'bold' : 'normal', 
-                          textAlign: 'center', 
-                          color: Colors.text 
-                        }}
-                      >
-                        {flag}
-                      </Text>
-                    );
-                  })()}
-                </View>
-                <View style={{ flex: 1, marginLeft: Spacing.md }}>
-                  <Text style={styles.sessionName}>{app.scholarship?.name}</Text>
-                  <Text style={styles.sessionSub}>{app.status.replace(/_/g, ' ').toUpperCase()}</Text>
-                </View>
-              </ScaleBounce>
-            ))}
+            {(() => {
+              const recentApps = (Object.values(linkedStudentApplications).flat() as Application[]).slice(0, 3);
+              if (recentApps.length === 0) {
+                return (
+                  <View style={styles.emptyActivityCard}>
+                    <Ionicons name="time-outline" size={22} color={Colors.textSecondary} />
+                    <Text style={styles.emptyActivityText}>No recent activity</Text>
+                  </View>
+                );
+              }
+              return recentApps.map(app => (
+                <ScaleBounce 
+                  key={app.id} 
+                  style={styles.sessionCard}
+                  onPress={() => router.push('/progress')}
+                >
+                  <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: Colors.bg, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: Colors.border, padding: 4 }}>
+                    {(() => {
+                      const flag = getFlagEmoji(app.scholarship?.country_flag);
+                      const isWord = /[a-zA-Z]/.test(flag);
+                      return (
+                        <Text 
+                          numberOfLines={1} 
+                          adjustsFontSizeToFit 
+                          minimumFontScale={0.5} 
+                          style={{ 
+                            fontSize: isWord ? 9 : 22, 
+                            fontWeight: isWord ? 'bold' : 'normal', 
+                            textAlign: 'center', 
+                            color: Colors.text 
+                          }}
+                        >
+                          {flag}
+                        </Text>
+                      );
+                    })()}
+                  </View>
+                  <View style={{ flex: 1, marginLeft: Spacing.md }}>
+                    <Text style={styles.sessionName}>{app.scholarship?.name}</Text>
+                    <Text style={styles.sessionSub}>{app.status.replace(/_/g, ' ').toUpperCase()}</Text>
+                  </View>
+                </ScaleBounce>
+              ));
+            })()}
           </>
         )}
         <View style={{ height: 40 }} />
@@ -234,4 +245,21 @@ const styles = StyleSheet.create({
   sessionSub: { fontSize: Typography.sm, color: Colors.textSecondary, marginTop: 2 },
   sessionTime: { paddingHorizontal: 12, paddingVertical: 6, backgroundColor: Colors.blueLight, borderRadius: 10 },
   sessionTypeBadge: { fontSize: 12, fontWeight: Typography.bold, color: Colors.blue },
+  emptyActivityCard: {
+    backgroundColor: Colors.white,
+    marginHorizontal: Spacing.xl,
+    paddingVertical: Spacing.xl,
+    paddingHorizontal: Spacing.lg,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: Spacing.xs,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  emptyActivityText: {
+    fontSize: Typography.sm,
+    color: Colors.textSecondary,
+    fontWeight: Typography.medium,
+  },
 });

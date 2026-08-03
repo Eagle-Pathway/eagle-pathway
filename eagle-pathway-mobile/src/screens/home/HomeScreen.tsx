@@ -9,6 +9,7 @@ import { syncDeadlineReminders } from '@/services/deadlineReminders';
 import { getApplicationDeadlines } from '@/utils/deadlines';
 import { notificationPrefsService } from '@/services/notificationPrefs';
 import { getUserRole } from '@/utils/role';
+import { withTimeout } from '@/utils/asyncUtils';
 
 // Specialized Domain Stores
 import { useScholarshipStore } from '@/store/scholarshipStore';
@@ -104,8 +105,13 @@ export default function HomeScreen() {
   useEffect(() => { 
     const init = async () => {
       setLoading(true);
-      await load();
-      setLoading(false);
+      try {
+        await withTimeout(load(), 3500);
+      } catch {
+        // Suppress timeout so loading state always clears
+      } finally {
+        setLoading(false);
+      }
     };
     init();
   }, [user?.id, activeRole]);
