@@ -1,11 +1,11 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL as string;
-const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY as string;
-
-// Admin Service Role Supabase Client — bypasses RLS safely for admin operations
-const adminSupabase = createClient(supabaseUrl, serviceRoleKey);
+function getAdminSupabase() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://bkkhheaeqhhfeyfwjjxx.supabase.co';
+  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'sb_publishable_VbwNpq5HT2kCv4enDaifNQ_sn8F1Rsm';
+  return createClient(supabaseUrl, serviceRoleKey);
+}
 
 export async function POST(request: Request) {
   try {
@@ -14,6 +14,8 @@ export async function POST(request: Request) {
     if (!userId) {
       return NextResponse.json({ error: 'Missing userId parameter' }, { status: 400 });
     }
+
+    const adminSupabase = getAdminSupabase();
 
     // Upsert tutor verification status using Admin Service Role key
     const { error: upsertErr } = await adminSupabase
