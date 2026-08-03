@@ -17,9 +17,9 @@
       "env": {
         "EXPO_PUBLIC_SUPABASE_URL": "https://bkkhheaeqhhfeyfwjjxx.supabase.co",
         "EXPO_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_VbwNpq5HT2kCv4enDaifNQ_sn8F1Rsm",
-        "EXPO_PUBLIC_EAGLE_AI_API_URL": "https://eagle-pathway.vercel.app/api/sop-review",
-        "EXPO_PUBLIC_EAGLE_ASSISTANT_API_URL": "https://eagle-pathway.vercel.app/api/assistant",
-        "EXPO_PUBLIC_EAGLE_INTERVIEW_API_URL": "https://eagle-pathway.vercel.app/api/interview"
+        "EXPO_PUBLIC_EAGLE_AI_API_URL": "https://admin.eaglespathway.com/api/sop-review",
+        "EXPO_PUBLIC_EAGLE_ASSISTANT_API_URL": "https://admin.eaglespathway.com/api/assistant",
+        "EXPO_PUBLIC_EAGLE_INTERVIEW_API_URL": "https://admin.eaglespathway.com/api/interview"
       },
       "channel": "preview"
     },
@@ -28,9 +28,9 @@
       "env": {
         "EXPO_PUBLIC_SUPABASE_URL": "https://bkkhheaeqhhfeyfwjjxx.supabase.co",
         "EXPO_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_VbwNpq5HT2kCv4enDaifNQ_sn8F1Rsm",
-        "EXPO_PUBLIC_EAGLE_AI_API_URL": "https://eagle-pathway.vercel.app/api/sop-review",
-        "EXPO_PUBLIC_EAGLE_ASSISTANT_API_URL": "https://eagle-pathway.vercel.app/api/assistant",
-        "EXPO_PUBLIC_EAGLE_INTERVIEW_API_URL": "https://eagle-pathway.vercel.app/api/interview"
+        "EXPO_PUBLIC_EAGLE_AI_API_URL": "https://admin.eaglespathway.com/api/sop-review",
+        "EXPO_PUBLIC_EAGLE_ASSISTANT_API_URL": "https://admin.eaglespathway.com/api/assistant",
+        "EXPO_PUBLIC_EAGLE_INTERVIEW_API_URL": "https://admin.eaglespathway.com/api/interview"
       },
       "android": {
         "buildType": "app-bundle"
