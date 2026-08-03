@@ -198,15 +198,20 @@ export function EditProfileScreen() {
       <Section title="🎓 Academic Status">
         <Text style={editProfStyles.fieldLabel}>Current Level</Text>
         <View style={editProfStyles.chipsRow}>
-          {['Grade 9', 'Grade 10', 'Grade 11', 'Grade 12', 'Undergraduate', 'Postgraduate'].map(lvl => (
-            <TouchableOpacity
-              key={lvl}
-              style={[editProfStyles.chip, formData.grade_level === lvl && editProfStyles.chipActive]}
-              onPress={() => setFormData(f => ({ ...f, grade_level: lvl }))}
-            >
-              <Text style={[editProfStyles.chipText, formData.grade_level === lvl && editProfStyles.chipTextActive]}>{lvl}</Text>
-            </TouchableOpacity>
-          ))}
+          {['High School', 'Undergraduate', 'Postgraduate'].map(lvl => {
+            const isSelected = lvl === 'High School'
+              ? ['High School', 'highschool', 'Grade 9', 'Grade 10', 'Grade 11', 'Grade 12'].includes(formData.grade_level)
+              : formData.grade_level === lvl;
+            return (
+              <TouchableOpacity
+                key={lvl}
+                style={[editProfStyles.chip, isSelected && editProfStyles.chipActive]}
+                onPress={() => setFormData(f => ({ ...f, grade_level: lvl }))}
+              >
+                <Text style={[editProfStyles.chipText, isSelected && editProfStyles.chipTextActive]}>{lvl}</Text>
+              </TouchableOpacity>
+            );
+          })}
         </View>
 
         <Text style={[editProfStyles.fieldLabel, { marginTop: Spacing.md }]}>Target Degree Program</Text>
