@@ -5,6 +5,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { AppState, Text, TextInput } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import * as SplashScreen from 'expo-splash-screen';
+import * as Updates from 'expo-updates';
 import { supabase } from '../src/services/supabase';
 import { useAuthStore } from '../src/store/authStore';
 import { useRealtimeStore } from '../src/store/realtimeStore';
@@ -44,6 +45,19 @@ export default function RootLayout() {
   };
 
   useEffect(() => {
+    // Check for Over-The-Air production updates on mount
+    if (!__DEV__) {
+      Updates.checkForUpdateAsync()
+        .then(({ isAvailable }) => {
+          if (isAvailable) {
+            Updates.fetchUpdateAsync().then(() => {
+              Updates.reloadAsync();
+            }).catch(() => {});
+          }
+        })
+        .catch(() => {});
+    }
+
     // Safety Net: Ensure splash screen ALWAYS hides within 2.5 seconds maximum,
     // even if network stalls, token refresh hangs, or the device is offline.
     const splashTimeout = setTimeout(() => {
