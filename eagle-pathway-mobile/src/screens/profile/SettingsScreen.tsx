@@ -8,8 +8,9 @@ import { router } from 'expo-router';
 import { Colors, Typography, Spacing, Radius } from '@/utils/theme';
 import { useAuthStore } from '@/store/authStore';
 import { notificationPrefsService, DEFAULT_PREFERENCES, type NotificationPreferences } from '@/services/notificationPrefs';
-import * as ExpoLinking from 'expo-linking';
+import { CustomModal } from '@/components/common';
 import { Ionicons } from '@expo/vector-icons';
+import { showError } from '@/utils/errorHandler';
 
 // Public privacy policy — must be published here before Play submission.
 const PRIVACY_POLICY_URL = 'https://www.eaglespathway.com/privacy';
@@ -20,63 +21,34 @@ export function SettingsScreen() {
   const [prefs, setPrefs] = useState<NotificationPreferences>(DEFAULT_PREFERENCES);
   const [deleting, setDeleting] = useState(false);
 
+  // Modal State
+  const [changePasswordVisible, setChangePasswordVisible] = useState(false);
+  const [deleteAccountVisible, setDeleteAccountVisible] = useState(false);
+
   useEffect(() => {
     if (user) notificationPrefsService.get(user.id).then(setPrefs).catch(() => {});
   }, [user?.id]);
 
-  // Two-step confirmation — account deletion is permanent and cascades to all data.
-  const handleDeleteAccount = () => {
-    if (deleting) return;
-    Alert.alert(
-      'Delete Account',
-      'This permanently deletes your account and all your data — applications, documents, bookings, and messages. This cannot be undone.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: () => Alert.alert(
-            'Are you absolutely sure?',
-            'There is no way to recover your account after this.',
-            [
-              { text: 'Cancel', style: 'cancel' },
-              {
-                text: 'Delete forever',
-                style: 'destructive',
-                onPress: async () => {
-                  setDeleting(true);
-                  try {
-                    await deleteAccount();
-                    router.replace('/(auth)/splash');
-                  } catch (e: any) {
-                    setDeleting(false);
-                    Alert.alert('Error', e?.message || 'Failed to delete account. Please try again.');
-                  }
-                },
-              },
-            ],
-          ),
-        },
-      ],
-    );
+  const confirmDeleteAccount = async () => {
+    setDeleting(true);
+    try {
+      await deleteAccount();
+      setDeleteAccountVisible(false);
+      router.replace('/(auth)/splash');
+    } catch (e: any) {
+      setDeleting(false);
+      setDeleteAccountVisible(false);
+      showError(e, 'Account Deletion Failed');
+    }
   };
 
-  const handleChangePassword = () => {
-    if (!user?.email) {
-      Alert.alert('No email on file', 'Add an email to your profile first, then you can reset your password.');
-      return;
-    }
-    Alert.alert('Change Password', `We'll email a 6-digit code to ${user.email} to verify it's you.`, [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Continue',
-        onPress: () => router.push({ pathname: '/(auth)/forgot-password', params: { email: user.email } }),
-      },
-    ]);
+  const confirmChangePassword = () => {
+    setChangePasswordVisible(false);
+    router.push({ pathname: '/(auth)/forgot-password', params: { email: user?.email } });
   };
 
   const handlePrivacy = () => {
-    Linking.openURL(PRIVACY_POLICY_URL).catch(() => Alert.alert('Error', 'Could not open the privacy policy.'));
+    Linking.openURL(PRIVACY_POLICY_URL).catch(() => showError('Could not open the privacy policy.', 'Notice'));
   };
 
   const handleRate = () => {
@@ -105,7 +77,7 @@ export function SettingsScreen() {
     {
       title: 'Account',
       items: [
-        { icon: 'lock-closed-outline', label: 'Change Password', type: 'nav', onPress: handleChangePassword },
+        { icon: 'lock-closed-outline', label: 'Change Password', type: 'nav', onPress: () => setChangePasswordVisible(true) },
         { icon: 'shield-checkmark-outline', label: 'Privacy & Data', type: 'nav', onPress: handlePrivacy },
       ],
     },
@@ -113,7 +85,7 @@ export function SettingsScreen() {
       title: 'Support',
       items: [
         { icon: 'star-outline', label: 'Rate Eagle Pathway', type: 'nav', onPress: handleRate },
-        { icon: 'trash-outline', label: deleting ? 'Deleting…' : 'Delete Account', type: 'danger', route: null, onPress: handleDeleteAccount },
+        { icon: 'trash-outline', label: deleting ? 'Deleting…' : 'Delete Account', type: 'danger', route: null, onPress: () => setDeleteAccountVisible(true) },
       ],
     },
   ];
@@ -165,6 +137,35 @@ export function SettingsScreen() {
           </View>
         ))}
       </ScrollView>
+
+      {/* Styled Custom Modals */}
+      <CustomModal
+        visible={changePasswordVisible}
+        title="Change Password"
+        message={`We'll email a 6-digit code to ${user?.email || 'your email'} to verify it's you.`}
+        icon="key-outline"
+        iconColor={Colors.blue}
+        iconBg="#EFF6FF"
+        confirmText="Continue"
+        cancelText="Cancel"
+        onConfirm={confirmChangePassword}
+        onCancel={() => setChangePasswordVisible(false)}
+      />
+
+      <CustomModal
+        visible={deleteAccountVisible}
+        title="Delete Account"
+        message="This permanently deletes your account and all your data (applications, documents, bookings, and messages). This action cannot be undone."
+        icon="trash-outline"
+        iconColor={Colors.red}
+        iconBg="#FEE2E2"
+        confirmText="Delete Forever"
+        cancelText="Cancel"
+        confirmVariant="danger"
+        loading={deleting}
+        onConfirm={confirmDeleteAccount}
+        onCancel={() => setDeleteAccountVisible(false)}
+      />
     </SafeAreaView>
   );
 }
@@ -182,3 +183,4 @@ const styles = StyleSheet.create({
   navValue: { fontSize: Typography.base, fontWeight: Typography.semibold, color: Colors.blue },
   arrow: { fontSize: Typography.xl, color: Colors.textSecondary },
 });
+

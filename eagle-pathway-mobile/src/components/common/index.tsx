@@ -265,3 +265,6 @@ const styles = StyleSheet.create({
   progressTrack: { backgroundColor: Colors.grayLight, borderRadius: Radius.full, overflow: 'hidden' },
   progressFill: { borderRadius: Radius.full },
 });
+
+export * from './CustomModal';
+
