@@ -195,20 +195,40 @@ export const authService = {
       .from('users')
       .select('*')
       .eq('id', userId)
-      .single();
+      .maybeSingle();
     if (error) throw error;
+    if (!data) throw new Error('User profile not found.');
     return data as User;
   },
 
   async updateProfile(userId: string, updates: Partial<User>) {
+    const cleanUpdates = Object.fromEntries(
+      Object.entries(updates).filter(([_, v]) => v !== undefined && !Number.isNaN(v))
+    );
+
+    // Perform update with maybeSingle
     const { data, error } = await supabase
       .from('users')
-      .update(updates)
+      .update(cleanUpdates)
       .eq('id', userId)
       .select()
-      .single();
+      .maybeSingle();
+
     if (error) throw error;
-    return data as User;
+    if (data) return data as User;
+
+    // Fallback: If profile row was missing in public.users, upsert it!
+    const { data: upsertData, error: upsertError } = await supabase
+      .from('users')
+      .upsert({ id: userId, ...cleanUpdates })
+      .select()
+      .maybeSingle();
+
+    if (upsertError) throw upsertError;
+    if (upsertData) return upsertData as User;
+
+    // Final fallback: fetch profile
+    return this.getProfile(userId);
   },
 
   async uploadAvatar(userId: string, fileUri: string, fileName: string): Promise<string> {

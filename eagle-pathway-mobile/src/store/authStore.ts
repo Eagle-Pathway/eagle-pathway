@@ -244,7 +244,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({ isLoading: true });
     try {
       const updated = await authService.updateProfile(user.id, updates);
-      set({ user: updated });
+      set({ user: { ...user, ...updated } });
     } finally {
       set({ isLoading: false });
     }

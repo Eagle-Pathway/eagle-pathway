@@ -177,8 +177,10 @@ export function EditProfileScreen() {
         updates.has_extracurriculars = formData.has_extracurriculars;
         updates.target_departments = formData.target_departments;
         updates.grade_level = formData.grade_level;
-        updates.gpa = formData.gpa ? parseFloat(formData.gpa.toString()) : undefined;
-        updates.gpa_max = formData.gpa_max ? parseFloat(formData.gpa_max.toString()) : undefined;
+        const parsedGpa = formData.gpa ? parseFloat(formData.gpa.toString()) : NaN;
+        const parsedGpaMax = formData.gpa_max ? parseFloat(formData.gpa_max.toString()) : NaN;
+        if (!Number.isNaN(parsedGpa)) updates.gpa = parsedGpa;
+        if (!Number.isNaN(parsedGpaMax)) updates.gpa_max = parsedGpaMax;
       }
 
       await withTimeout(updateProfile(updates));
