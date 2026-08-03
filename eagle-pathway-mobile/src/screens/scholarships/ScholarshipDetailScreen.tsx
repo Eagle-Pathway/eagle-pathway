@@ -13,6 +13,7 @@ import { scholarshipsService } from '@/services/scholarships';
 import { useScholarshipStore } from '@/store/scholarshipStore';
 import { useAuthStore } from '@/store/authStore';
 import { analyzeEligibility } from '@/utils/eligibility';
+import { showError } from '@/utils/errorHandler';
 import type { Scholarship } from '@/types';
 import { getFlagEmoji } from '@eagle-pathway/shared';
 
@@ -108,6 +109,16 @@ export function ScholarshipDetailScreen() {
     ? { text: 'Finish profile to check', color: Colors.goldDark, bg: Colors.goldLight }
     : { text: "You're eligible ✓", color: Colors.green, bg: Colors.greenLight };
   const sourceTone = sourceStatusTone(scholarship.source_status);
+
+  const handleApplySelf = () => {
+    if (scholarship?.website_url) {
+      Linking.openURL(scholarship.website_url).catch(() =>
+        showError('Could not open the official website. Please check if you have a browser installed.', 'Notice')
+      );
+    } else {
+      showError('Official application link is not available for this scholarship.', 'Notice');
+    }
+  };
 
   return (
     <SafeAreaView style={[CommonStyles.flex1, { backgroundColor: Colors.blueDark }]} edges={['top', 'bottom']}>
@@ -214,7 +225,7 @@ export function ScholarshipDetailScreen() {
               </View>
               <ScaleBounce 
                 style={sdStyles.linkButton} 
-                onPress={() => Linking.openURL(scholarship.website_url!).catch(() => Alert.alert('Error', 'Could not open this link. Please check if you have a supported app installed.'))}
+                onPress={() => Linking.openURL(scholarship.website_url!).catch(() => showError('Could not open this link.', 'Notice'))}
               >
                 <Text style={sdStyles.linkButtonText}>🌐 Open Official Link</Text>
               </ScaleBounce>
@@ -300,9 +311,23 @@ export function ScholarshipDetailScreen() {
         </View>
       </ScrollView>
 
-      <View style={[sdStyles.bottomBar, { paddingBottom: Math.max(insets.bottom, Spacing.lg) }]}>
-        <Button title="View Packages" variant="outline" onPress={() => router.push({ pathname: '/packages', params: { scholarshipId: scholarship.id } })} style={{ flex: 1 }} fullWidth={false} />
-        <Button title="Apply with Eagle Pathway" variant="primary" onPress={() => router.push({ pathname: '/packages', params: { scholarshipId: scholarship.id } })} style={{ flex: 1 }} fullWidth={false} />
+      <View style={[sdStyles.bottomBar, { paddingBottom: Math.max(insets.bottom, Spacing.md) }]}>
+        <Button
+          title="Apply by Yourself"
+          variant="outline"
+          size="md"
+          onPress={handleApplySelf}
+          style={{ flex: 1 }}
+          fullWidth={false}
+        />
+        <Button
+          title="Apply with Eagle Pathway"
+          variant="primary"
+          size="md"
+          onPress={() => router.push({ pathname: '/packages', params: { scholarshipId: scholarship.id } })}
+          style={{ flex: 1 }}
+          fullWidth={false}
+        />
       </View>
     </SafeAreaView>
   );
