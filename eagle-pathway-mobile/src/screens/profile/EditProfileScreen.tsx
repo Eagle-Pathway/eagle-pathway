@@ -153,12 +153,16 @@ export function EditProfileScreen() {
 
       if (isTutor) {
         updates.living_address = formData.living_address;
+        updates.sub_city = formData.living_address;
         updates.university_name = formData.university_name;
         updates.telegram_username = formData.telegram_username;
+        updates.telegram_handle = formData.telegram_username;
         updates.cgpa = formData.cgpa;
         updates.teaching_experience = formData.teaching_experience;
         updates.interested_subjects = formData.interested_subjects;
+        updates.subjects_taught = formData.interested_subjects;
         updates.academic_summary = formData.academic_summary;
+        updates.bio = formData.academic_summary;
       } else if (isParent) {
         updates.living_address = formData.living_address;
         updates.children_count = formData.children_count;

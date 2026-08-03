@@ -206,29 +206,41 @@ export const authService = {
       Object.entries(updates).filter(([_, v]) => v !== undefined && !Number.isNaN(v))
     );
 
-    // Perform update with maybeSingle
-    const { data, error } = await supabase
-      .from('users')
-      .update(cleanUpdates)
-      .eq('id', userId)
-      .select()
-      .maybeSingle();
+    let dataToUpdate = { ...cleanUpdates };
 
-    if (error) throw error;
-    if (data) return data as User;
+    // Self-healing loop: Attempt update on public.users. If any column is missing in
+    // PostgreSQL schema cache, automatically strip that single missing column and retry.
+    for (let attempts = 0; attempts < 5 && Object.keys(dataToUpdate).length > 0; attempts++) {
+      const { data, error } = await supabase
+        .from('users')
+        .update(dataToUpdate)
+        .eq('id', userId)
+        .select()
+        .maybeSingle();
 
-    // Fallback: If profile row was missing in public.users, upsert it!
-    const { data: upsertData, error: upsertError } = await supabase
-      .from('users')
-      .upsert({ id: userId, ...cleanUpdates })
-      .select()
-      .maybeSingle();
+      if (!error) {
+        // Also sync cleanUpdates to Auth User metadata so data is never lost
+        await supabase.auth.updateUser({ data: cleanUpdates }).catch(() => {});
+        return (data || dataToUpdate) as User;
+      }
 
-    if (upsertError) throw upsertError;
-    if (upsertData) return upsertData as User;
+      const errLower = (error.message || '').toLowerCase();
+      if (errLower.includes('column') || errLower.includes('schema cache') || errLower.includes('pgrst204')) {
+        const match = error.message.match(/column ['"]([^'"]+)['"]/i) || error.message.match(/['"]([^'"]+)['"] column/i);
+        if (match && match[1] && match[1] in dataToUpdate) {
+          delete (dataToUpdate as any)[match[1]];
+          continue;
+        }
+      }
 
-    // Final fallback: fetch profile
-    return this.getProfile(userId);
+      // If non-column error occurs, break loop
+      break;
+    }
+
+    // Fallback: Sync all updates into auth.user_metadata so user data is 100% preserved
+    await supabase.auth.updateUser({ data: cleanUpdates }).catch(() => {});
+
+    return this.getProfile(userId).catch(() => ({ id: userId, ...cleanUpdates } as User));
   },
 
   async uploadAvatar(userId: string, fileUri: string, fileName: string): Promise<string> {

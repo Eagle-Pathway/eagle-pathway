@@ -69,8 +69,11 @@ export function parseError(error: unknown): AppError {
   if (msg.includes('timeout') || msg.includes('timed out'))
     return { userMessage: 'Connection timed out. Please check your internet connection and try again.' };
 
-  // Database / Postgres / Technical errors
+  // Database / Postgres / Schema / Technical errors
   if (
+    msg.includes('schema cache') ||
+    msg.includes('column') ||
+    msg.includes('could not find') ||
     msg.includes('constraint') ||
     msg.includes('violates') ||
     msg.includes('syntax') ||
@@ -82,7 +85,7 @@ export function parseError(error: unknown): AppError {
     msg.includes('typeerror') ||
     msg.includes('authapierror')
   )
-    return { userMessage: 'Something went wrong on our server. Please try again in a moment.' };
+    return { userMessage: 'Something went wrong while saving your details. Please try again in a moment.' };
 
   if (msg.includes('500') || msg.includes('503') || msg.includes('server'))
     return { userMessage: 'Server busy. Please try again in a moment.' };
@@ -95,8 +98,18 @@ export function parseError(error: unknown): AppError {
   if (msg.includes('rate limit') || msg.includes('too many requests'))
     return { userMessage: 'Too many attempts in a short time. Please wait a minute and try again.' };
 
-  // Fallback — clean message if short and safe (no technical symbols or raw code)
-  if (message && message.length < 90 && !/[{}\[\]<>]/.test(message) && !msg.includes('error:') && !msg.includes('authapierror')) {
+  // Fallback — clean message ONLY if strictly human-readable text
+  if (
+    message &&
+    message.length < 90 &&
+    !/[{}\[\]<>]/.test(message) &&
+    !msg.includes('error:') &&
+    !msg.includes('authapierror') &&
+    !msg.includes('column') &&
+    !msg.includes('schema') &&
+    !msg.includes('pgrst') &&
+    !msg.includes('sql')
+  ) {
     return { userMessage: message };
   }
 
