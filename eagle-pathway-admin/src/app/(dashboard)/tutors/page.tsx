@@ -124,9 +124,13 @@ export default function TutorsPage() {
     const willBeVerified = !currentStatus;
     setActionLoading(id);
     try {
+      const session = (await supabase.auth.getSession()).data.session;
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
+
       const res = await fetch('/api/tutor-approval', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({ userId: id, isVerified: willBeVerified }),
       });
 
@@ -154,9 +158,13 @@ export default function TutorsPage() {
       if (app.telegram_username) userUpdates.telegram_username = app.telegram_username.replace('@', '');
       if (app.cgpa) userUpdates.cgpa = app.cgpa;
 
+      const session = (await supabase.auth.getSession()).data.session;
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
+
       const res = await fetch('/api/tutor-approval', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({
           userId: app.tutor_id,
           isVerified: true,
