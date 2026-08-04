@@ -220,15 +220,25 @@ export const tutorJobsService = {
 
   // ── Profile Completion Check ──
 
-  isJobProfileComplete(user: {
-    full_name?: string;
-    phone_number?: string;
-    phone?: string;
-    living_address?: string;
-    university_name?: string;
-    cgpa?: string;
-    telegram_username?: string;
-  }): boolean {
-    return !!(user.full_name && (user.phone_number || user.phone) && user.living_address && user.university_name && user.cgpa && user.telegram_username);
+  isJobProfileComplete(
+    user: {
+      full_name?: string;
+      phone_number?: string;
+      phone?: string;
+      living_address?: string;
+      university_name?: string;
+      cgpa?: string;
+      telegram_username?: string;
+    },
+    tutorApp?: TutorApplication | null
+  ): boolean {
+    if (tutorApp?.status === 'approved') return true;
+    const name = user?.full_name;
+    const phone = user?.phone_number || user?.phone || tutorApp?.phone_number;
+    const address = user?.living_address || tutorApp?.living_address;
+    const uni = user?.university_name || tutorApp?.university_name;
+    const cgpa = user?.cgpa || tutorApp?.cgpa;
+    const tg = user?.telegram_username || tutorApp?.telegram_username;
+    return !!(name && phone && address && uni && cgpa && tg);
   },
 };

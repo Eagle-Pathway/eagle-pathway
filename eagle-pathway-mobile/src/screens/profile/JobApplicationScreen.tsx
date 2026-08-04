@@ -53,24 +53,29 @@ export function JobApplicationScreen() {
         telegramUsername: (user as any).telegram_username || '',
         cgpa: (user as any).cgpa || '',
       });
-      setShowProfileGate(!tutorJobsService.isJobProfileComplete(user as any));
-      if (user) loadTutorApplication(user.id);
+      loadTutorApplication(user.id);
     }
   }, [user?.id]);
 
   useEffect(() => {
-    if (tutorApplication) {
-      setForm(prev => ({
-        ...prev,
-        educationStatus: prev.educationStatus || tutorApplication.education_status || '',
-        livingAddress: prev.livingAddress || tutorApplication.living_address || '',
-        universityName: prev.universityName || tutorApplication.university_name || '',
-        phoneNumber: prev.phoneNumber || tutorApplication.phone_number || '',
-        telegramUsername: prev.telegramUsername || tutorApplication.telegram_username || '',
-        cgpa: prev.cgpa || tutorApplication.cgpa || '',
-      }));
+    if (user) {
+      const isApproved = tutorApplication?.status === 'approved';
+      const isComplete = tutorJobsService.isJobProfileComplete(user as any, tutorApplication);
+      setShowProfileGate(!isApproved && !isComplete);
+
+      if (tutorApplication) {
+        setForm(prev => ({
+          ...prev,
+          educationStatus: prev.educationStatus || tutorApplication.education_status || '',
+          livingAddress: prev.livingAddress || tutorApplication.living_address || '',
+          universityName: prev.universityName || tutorApplication.university_name || '',
+          phoneNumber: prev.phoneNumber || tutorApplication.phone_number || '',
+          telegramUsername: prev.telegramUsername || tutorApplication.telegram_username || '',
+          cgpa: prev.cgpa || tutorApplication.cgpa || '',
+        }));
+      }
     }
-  }, [tutorApplication]);
+  }, [tutorApplication, user]);
 
   const handlePickFile = async (type: 'grade10' | 'grade12' | 'transcript') => {
     try {

@@ -34,6 +34,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: upsertErr.message }, { status: 500 });
     }
 
+    // Sync tutor_applications status
+    await adminSupabase
+      .from('tutor_applications')
+      .update({ status: isVerified ? 'approved' : 'rejected' })
+      .eq('tutor_id', userId);
+
     // Insert notification for the tutor
     const notif = isVerified
       ? { user_id: userId, title: "You've been approved! 🎉", body: 'Your tutor profile is now live on Eagle Pathway.', type: 'application_update', is_read: false }
