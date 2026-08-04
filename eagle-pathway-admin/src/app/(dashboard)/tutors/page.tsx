@@ -124,29 +124,14 @@ export default function TutorsPage() {
     const willBeVerified = !currentStatus;
     setActionLoading(id);
     try {
-      const { error: updateError } = await supabase
-        .from('tutors')
-        .upsert(
-          { 
-            user_id: id, 
-            is_verified: willBeVerified, 
-            hourly_rate: 400 
-          }, 
-          { onConflict: 'user_id' }
-        );
+      const res = await fetch('/api/tutor-approval', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: id, isVerified: willBeVerified }),
+      });
 
-      if (updateError) throw updateError;
-
-      await supabase
-        .from('tutor_applications')
-        .update({ status: willBeVerified ? 'approved' : 'rejected' })
-        .eq('tutor_id', id);
-
-      const notif = willBeVerified
-        ? { user_id: id, title: "You've been approved! 🎉", body: 'Your tutor profile is now live on Eagle Pathway.', type: 'application_update', is_read: false }
-        : { user_id: id, title: 'Account Status Update', body: 'Your tutor verification has been revoked.', type: 'application_update', is_read: false };
-
-      await supabase.from('notifications').insert(notif);
+      const resData = await res.json();
+      if (!res.ok) throw new Error(resData.error || 'Failed to update tutor approval');
 
       showToast('success', willBeVerified ? 'Tutor approved successfully! 🎉' : 'Tutor verification revoked.');
       await Promise.all([fetchTutors(), fetchTutorApplications()]);
@@ -161,50 +146,35 @@ export default function TutorsPage() {
     if (!await confirm({ title: 'Approve Tutor', message: `Approve ${app.tutor?.full_name} as a verified tutor?` })) return;
     setActionLoading(app.id);
 
-    const { error } = await supabase
-      .from('tutor_applications')
-      .update({ status: 'approved', reviewed_at: new Date().toISOString(), reviewed_by: (await supabase.auth.getUser()).data.user?.id })
-      .eq('id', app.id);
+    try {
+      const userUpdates: Record<string, any> = {};
+      if (app.living_address) userUpdates.living_address = app.living_address;
+      if (app.university_name) userUpdates.university_name = app.university_name;
+      if (app.phone_number) userUpdates.phone = app.phone_number;
+      if (app.telegram_username) userUpdates.telegram_username = app.telegram_username.replace('@', '');
+      if (app.cgpa) userUpdates.cgpa = app.cgpa;
 
-    if (error) { showToast('error', 'Failed to approve application'); setActionLoading(null); return; }
+      const res = await fetch('/api/tutor-approval', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: app.tutor_id,
+          isVerified: true,
+          userUpdates,
+        }),
+      });
 
-    await supabase
-      .from('tutors')
-      .upsert(
-        { 
-          user_id: app.tutor_id, 
-          is_verified: true, 
-          hourly_rate: 400 
-        }, 
-        { onConflict: 'user_id' }
-      );
+      const resData = await res.json();
+      if (!res.ok) throw new Error(resData.error || 'Failed to approve application');
 
-    const userUpdates: Record<string, any> = {};
-    if (app.living_address) userUpdates.living_address = app.living_address;
-    if (app.university_name) userUpdates.university_name = app.university_name;
-    if (app.phone_number) userUpdates.phone = app.phone_number;
-    if (app.telegram_username) userUpdates.telegram_username = app.telegram_username.replace('@', '');
-    if (app.cgpa) userUpdates.cgpa = app.cgpa;
-
-    if (Object.keys(userUpdates).length > 0) {
-      await supabase
-        .from('users')
-        .update(userUpdates)
-        .eq('id', app.tutor_id);
+      showToast('success', `${app.tutor?.full_name} approved!`);
+      setSelectedApp(null);
+      await Promise.all([fetchTutorApplications(), fetchTutors()]);
+    } catch (err: any) {
+      showToast('error', `Failed to approve: ${err.message}`);
+    } finally {
+      setActionLoading(null);
     }
-
-    await supabase.from('notifications').insert({
-      user_id: app.tutor_id,
-      title: 'Tutor Profile Approved 🎉',
-      body: 'Your tutor profile has been approved! You can now apply for tutor jobs.',
-      type: 'tutor_application_update',
-      is_read: false,
-    });
-
-    showToast('success', `${app.tutor?.full_name} approved!`);
-    setSelectedApp(null);
-    await Promise.all([fetchTutorApplications(), fetchTutors()]);
-    setActionLoading(null);
   }
 
   function openRejectModal(app: TutorApplication) {

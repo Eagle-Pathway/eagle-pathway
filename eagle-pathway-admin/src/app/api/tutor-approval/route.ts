@@ -9,7 +9,7 @@ function getAdminSupabase() {
 
 export async function POST(request: Request) {
   try {
-    const { userId, isVerified } = await request.json();
+    const { userId, isVerified, userUpdates } = await request.json();
 
     if (!userId) {
       return NextResponse.json({ error: 'Missing userId parameter' }, { status: 400 });
@@ -39,6 +39,14 @@ export async function POST(request: Request) {
       .from('tutor_applications')
       .update({ status: isVerified ? 'approved' : 'rejected' })
       .eq('tutor_id', userId);
+
+    // Sync profile fields to users table if provided
+    if (userUpdates && Object.keys(userUpdates).length > 0) {
+      await adminSupabase
+        .from('users')
+        .update(userUpdates)
+        .eq('id', userId);
+    }
 
     // Insert notification for the tutor
     const notif = isVerified
