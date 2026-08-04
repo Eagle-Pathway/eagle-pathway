@@ -35,6 +35,17 @@
 
 ---
 
+## Pre-Push CI & Vercel Build Verification Rule
+
+> [!IMPORTANT]
+> **STRICT PRE-PUSH CI & VERCEL BUILD MANDATE**
+> - **NEVER** push code changes to GitHub without FIRST running all CI, type checks, unit tests, and production build checks locally across both projects:
+>   1. Mobile (`eagle-pathway-mobile`): Run `npx tsc --noEmit` and `npx vitest run`.
+>   2. Admin (`eagle-pathway-admin`): Run `npm run build` (to ensure Vercel deployments succeed with zero build/type errors).
+> - All checks MUST pass locally with 0 errors before pushing code to GitHub.
+
+---
+
 ## Mobile App Deployment Workflow
 
 Whenever you make new code changes, bug fixes, or UI updates to the mobile app (`eagle-pathway-mobile`), follow this workflow:
