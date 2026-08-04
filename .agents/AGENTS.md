@@ -19,6 +19,22 @@
 
 ---
 
+## Strict Planning Mandate Rule
+
+> [!IMPORTANT]
+> **STRICT PLANNING MANDATE**
+> - **NEVER** make source code changes, database modifications, or file edits for non-trivial features or fixes without FIRST presenting a clear implementation plan artifact and obtaining explicit user review and approval.
+
+---
+
+## Pre-Push Verification & User Testing Rule
+
+> [!IMPORTANT]
+> **STRICT USER TESTING BEFORE PUSH MANDATE**
+> - **NEVER** push code changes to GitHub or deploy Over-The-Air (OTA) updates without FIRST making the changes locally, asking the user to manually test and verify the fix, and obtaining explicit user approval to push/deploy.
+
+---
+
 ## Mobile App Deployment Workflow
 
 Whenever you make new code changes, bug fixes, or UI updates to the mobile app (`eagle-pathway-mobile`), follow this workflow:
