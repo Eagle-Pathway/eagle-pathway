@@ -182,7 +182,7 @@ export default function TutorsPage() {
     const userUpdates: Record<string, any> = {};
     if (app.living_address) userUpdates.living_address = app.living_address;
     if (app.university_name) userUpdates.university_name = app.university_name;
-    if (app.phone_number) userUpdates.phone_number = app.phone_number;
+    if (app.phone_number) userUpdates.phone = app.phone_number;
     if (app.telegram_username) userUpdates.telegram_username = app.telegram_username.replace('@', '');
     if (app.cgpa) userUpdates.cgpa = app.cgpa;
 
