@@ -208,8 +208,8 @@ export const StudentHome: React.FC<StudentHomeProps> = ({
                 activeOpacity={0.8}
               >
                 <View style={styles.quickCardIcon}><Ionicons name={card.icon} size={16} color={Colors.white} /></View>
-                <Text style={styles.quickCardLabel} numberOfLines={1}>{card.label}</Text>
-                <Text style={styles.quickCardSub} numberOfLines={1}>{card.sub}</Text>
+                <Text style={styles.quickCardLabel} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75}>{card.label}</Text>
+                <Text style={styles.quickCardSub} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75}>{card.sub}</Text>
               </TouchableOpacity>
             ))}
           </View>

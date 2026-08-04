@@ -22,18 +22,18 @@ export default function SplashScreen() {
               Claims" safe). */}
           <View style={styles.statsRow}>
             <View style={styles.statItem}>
-              <Ionicons name="school-outline" size={26} color={Colors.white} style={{ marginBottom: 4 }} />
-              <Text style={styles.statLbl}>Scholarship</Text>
+              <Ionicons name="school-outline" size={24} color={Colors.white} style={{ marginBottom: 4 }} />
+              <Text style={styles.statLbl} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75}>Scholarships</Text>
             </View>
             <View style={styles.statDivider} />
             <View style={styles.statItem}>
-              <Ionicons name="create-outline" size={26} color={Colors.white} style={{ marginBottom: 4 }} />
-              <Text style={styles.statLbl}>SOP</Text>
+              <Ionicons name="create-outline" size={24} color={Colors.white} style={{ marginBottom: 4 }} />
+              <Text style={styles.statLbl} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75}>SOP Review</Text>
             </View>
             <View style={styles.statDivider} />
             <View style={styles.statItem}>
-              <Ionicons name="library-outline" size={26} color={Colors.white} style={{ marginBottom: 4 }} />
-              <Text style={styles.statLbl}>Tutor</Text>
+              <Ionicons name="library-outline" size={24} color={Colors.white} style={{ marginBottom: 4 }} />
+              <Text style={styles.statLbl} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75}>Tutors</Text>
             </View>
           </View>
         </View>
@@ -98,15 +98,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     backgroundColor: 'rgba(255,255,255,0.08)',
     borderRadius: Radius.xl,
-    paddingVertical: Spacing.lg,
-    paddingHorizontal: Spacing.xl,
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.sm,
+    width: '100%',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.1)',
   },
-  statItem: { flex: 1, alignItems: 'center' },
+  statItem: { flex: 1, alignItems: 'center', paddingHorizontal: 2 },
   statNum: { fontSize: Typography['2xl'], fontWeight: Typography.bold, color: Colors.white },
-  statLbl: { fontSize: Typography.xs, color: 'rgba(255,255,255,0.55)', marginTop: 2 },
-  statDivider: { width: 1, backgroundColor: 'rgba(255,255,255,0.15)', marginHorizontal: Spacing.sm },
+  statLbl: { fontSize: Typography.xs, color: 'rgba(255,255,255,0.85)', marginTop: 2, textAlign: 'center' },
+  statDivider: { width: 1, backgroundColor: 'rgba(255,255,255,0.15)', marginHorizontal: 2 },
   actions: { padding: Spacing['2xl'], gap: Spacing.md },
   btnPrimary: {
     backgroundColor: Colors.white,

@@ -31,6 +31,8 @@ function TabIcon({ icon, label, focused, dot }: { icon: React.ComponentProps<typ
         style={[tabStyles.label, { fontSize: labelFontSize }, focused && tabStyles.labelActive]}
         numberOfLines={1}
         allowFontScaling={false}
+        adjustsFontSizeToFit
+        minimumFontScale={0.7}
       >
         {label}
       </Text>

@@ -141,7 +141,7 @@ export function ProfileScreen() {
           </View>
         </TouchableOpacity>
         <Text style={profStyles.name}>{user?.full_name || 'User'}</Text>
-        <Text style={profStyles.role}>
+        <Text style={profStyles.role} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>
           {(role || 'student').charAt(0).toUpperCase()}{(role || 'student').slice(1)}
         </Text>
         <View style={profStyles.badges}>
