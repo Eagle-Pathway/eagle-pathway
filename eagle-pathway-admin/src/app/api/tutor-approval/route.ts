@@ -71,16 +71,31 @@ export async function POST(request: Request) {
       .update({ status: isVerified ? 'approved' : 'rejected' })
       .eq('tutor_id', userId);
 
-    if (userUpdates && Object.keys(userUpdates).length > 0) {
-      await serviceClient
-        .from('users')
-        .update(userUpdates)
-        .eq('id', userId);
-    }
+    const finalUserUpdates = {
+      ...(userUpdates || {}),
+      is_verified: isVerified,
+    };
+
+    await serviceClient
+      .from('users')
+      .update(finalUserUpdates)
+      .eq('id', userId);
 
     const notif = isVerified
-      ? { user_id: userId, title: "You've been approved! 🎉", body: 'Your tutor profile is now live on Eagle Pathway.', type: 'application_update', is_read: false }
-      : { user_id: userId, title: 'Account Status Update', body: 'Your tutor verification status has been updated.', type: 'application_update', is_read: false };
+      ? {
+          user_id: userId,
+          title: "Verification Approved! 🎉",
+          body: 'Your tutor profile is now verified and live on Eagle Pathway. You can now apply for open tutoring jobs!',
+          type: 'application_update',
+          is_read: false,
+        }
+      : {
+          user_id: userId,
+          title: 'Verification Status Revoked ⚠️',
+          body: 'Your tutor verification status has been revoked by an administrator. You can no longer apply for open jobs. Please contact support or resubmit your profile.',
+          type: 'application_update',
+          is_read: false,
+        };
 
     try {
       await serviceClient.from('notifications').insert(notif);

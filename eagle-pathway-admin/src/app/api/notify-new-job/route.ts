@@ -18,7 +18,8 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Supabase configuration missing' }, { status: 500 });
     }
 
-    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || supabaseAnonKey;
+    const supabase = createClient(supabaseUrl, serviceRoleKey, {
       auth: { persistSession: false, autoRefreshToken: false },
     });
 
@@ -35,28 +36,40 @@ export async function POST(req: Request) {
       return NextResponse.json({ message: 'Notifications already sent' });
     }
 
-    // 2. Get approved tutors' push tokens
-    const { data: tokens, error: tokensError } = await supabase.rpc('get_approved_tutor_push_tokens');
-    if (tokensError) {
-      console.error('Failed to fetch push tokens:', tokensError);
-    }
+    // 2. Get all approved tutor IDs from tutors table and users table
+    const [tutorsRes, appsRes, usersRes] = await Promise.all([
+      supabase.from('tutors').select('user_id').eq('is_verified', true),
+      supabase.from('tutor_applications').select('tutor_id').eq('status', 'approved'),
+      supabase.from('users').select('id').eq('is_verified', true).eq('role', 'tutor'),
+    ]);
 
-    const pushTokens = (tokens as { token: string; user_id: string }[] | null) || [];
+    const approvedUserIds = Array.from(
+      new Set([
+        ...(tutorsRes.data || []).map(t => t.user_id),
+        ...(appsRes.data || []).map(a => a.tutor_id),
+        ...(usersRes.data || []).map(u => u.id),
+      ].filter(Boolean))
+    );
 
-    // 3. Insert in-app notifications for all approved tutors
-    const inAppNotifs = pushTokens.map(t => ({
-      user_id: t.user_id,
-      type: 'tutor_job_alert' as const,
-      title: 'New Tutor Job Available',
-      body: `A new job for ${job.grade} — ${job.subjects?.[0] || 'tutoring'} just posted. Tap to view.`,
-      data: { url: '/tutor-jobs', job_post_id: job.id },
-      is_read: false,
-    }));
+    // 3. Insert in-app notifications for ALL approved tutors
+    if (approvedUserIds.length > 0) {
+      const subjectText = job.subjects && job.subjects.length > 0 ? job.subjects.join(', ') : 'Tutoring';
+      const inAppNotifs = approvedUserIds.map(userId => ({
+        user_id: userId,
+        type: 'tutor_job_alert' as const,
+        title: 'New Tutor Job Posted! 💼',
+        body: `New job posted in ${job.place} for ${job.grade} (${subjectText}). Tap to view & apply!`,
+        data: { url: '/tutor-jobs', job_post_id: job.id },
+        is_read: false,
+      }));
 
-    if (inAppNotifs.length > 0) {
       const { error: notifError } = await supabase.from('notifications').insert(inAppNotifs);
       if (notifError) console.error('Failed to insert in-app notifications:', notifError);
     }
+
+    // 4. Get push tokens for mobile push notifications
+    const { data: tokens } = await supabase.rpc('get_approved_tutor_push_tokens');
+    const pushTokens = (tokens as { token: string; user_id: string }[] | null) || [];
 
     // 4. Send Expo push notifications
     const expoMessages = pushTokens

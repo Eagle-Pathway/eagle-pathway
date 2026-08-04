@@ -46,6 +46,30 @@ const SUBJECTS_LIST = [
   'Music', 'Art', 'Physical Education', 'Other',
 ];
 
+function formatTimeToPostgres(input: string): string {
+  if (!input) return '09:00:00';
+  let cleaned = input.trim().replace(/(LT|EAT)/gi, '').trim();
+
+  const pmMatch = cleaned.match(/(\d{1,2})(?::(\d{2}))?\s*(am|pm)/i);
+  if (pmMatch) {
+    let hours = parseInt(pmMatch[1], 10);
+    const minutes = pmMatch[2] || '00';
+    const period = pmMatch[3].toLowerCase();
+    if (period === 'pm' && hours < 12) hours += 12;
+    if (period === 'am' && hours === 12) hours = 0;
+    return `${hours.toString().padStart(2, '0')}:${minutes}:00`;
+  }
+
+  const timeMatch = cleaned.match(/(\d{1,2})(?::(\d{2}))?/);
+  if (timeMatch) {
+    const hours = parseInt(timeMatch[1], 10) % 24;
+    const minutes = timeMatch[2] || '00';
+    return `${hours.toString().padStart(2, '0')}:${minutes}:00`;
+  }
+
+  return '09:00:00';
+}
+
 export default function TutorJobsPage() {
   const showToast = useToast();
   const [jobs, setJobs] = useState<JobPost[]>([]);
@@ -98,18 +122,24 @@ export default function TutorJobsPage() {
     }
     setSaving(true);
     const { data: { user } } = await supabase.auth.getUser();
-    const { error } = await supabase.from('tutor_job_posts').insert({
-      posted_by: user?.id,
-      place: newJob.place,
-      grade: newJob.grade,
-      subjects: newJob.subjects,
-      session_hours: parseFloat(newJob.session_hours),
-      days_per_week: parseInt(newJob.days_per_week, 10),
-      start_time: newJob.start_time,
-      hourly_rate: parseFloat(newJob.hourly_rate),
-      gender_preference: newJob.gender_preference,
-      status: 'open',
-    });
+    const formattedStartTime = formatTimeToPostgres(newJob.start_time);
+    const { data: createdJob, error } = await supabase
+      .from('tutor_job_posts')
+      .insert({
+        posted_by: user?.id,
+        place: newJob.place,
+        grade: newJob.grade,
+        subjects: newJob.subjects,
+        session_hours: parseFloat(newJob.session_hours),
+        days_per_week: parseInt(newJob.days_per_week, 10),
+        start_time: formattedStartTime,
+        hourly_rate: parseFloat(newJob.hourly_rate),
+        gender_preference: newJob.gender_preference,
+        status: 'open',
+      })
+      .select('id')
+      .single();
+
     if (error) {
       showToast('error', 'Failed to create job: ' + error.message);
     } else {
@@ -121,21 +151,14 @@ export default function TutorJobsPage() {
       // Trigger push notifications to approved tutors (background, non-blocking)
       const session = await supabase.auth.getSession();
       const token = session.data.session?.access_token;
-      if (token) {
-        // We need the job ID from the insert. Re-fetch the last inserted job.
-        const { data: lastJob } = await supabase
-          .from('tutor_job_posts')
-          .select('id')
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .single();
-        if (lastJob) {
-          fetch('/api/notify-new-job', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-            body: JSON.stringify({ job_post_id: lastJob.id }),
-          }).catch(e => console.error('Push notification failed:', e));
-        }
+      const targetJobId = createdJob?.id;
+
+      if (token && targetJobId) {
+        fetch('/api/notify-new-job', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ job_post_id: targetJobId }),
+        }).catch(e => console.error('Push notification failed:', e));
       }
     }
     setSaving(false);

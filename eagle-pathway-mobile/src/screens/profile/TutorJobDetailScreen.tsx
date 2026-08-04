@@ -99,7 +99,7 @@ export function TutorJobDetailScreen() {
 
   const insets = useSafeAreaInsets();
   const job = selectedJob;
-  const isApproved = tutorApplication?.status === 'approved';
+  const isApproved = tutorJobsService.isJobProfileComplete(user, tutorApplication) || tutorApplication?.status === 'approved';
   const showApply = !hasApplied && job.status === 'open';
 
   return (

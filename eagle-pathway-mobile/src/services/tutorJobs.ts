@@ -221,7 +221,7 @@ export const tutorJobsService = {
   // ── Profile Completion Check ──
 
   isJobProfileComplete(
-    user: {
+    user?: {
       full_name?: string;
       phone_number?: string;
       phone?: string;
@@ -229,10 +229,12 @@ export const tutorJobsService = {
       university_name?: string;
       cgpa?: string;
       telegram_username?: string;
-    },
+      is_verified?: boolean;
+    } | null,
     tutorApp?: TutorApplication | null
   ): boolean {
-    if (tutorApp?.status === 'approved') return true;
+    if (tutorApp?.status === 'rejected' || user?.is_verified === false) return false;
+    if (tutorApp?.status === 'approved' || user?.is_verified === true) return true;
     const name = user?.full_name;
     const phone = user?.phone_number || user?.phone || tutorApp?.phone_number;
     const address = user?.living_address || tutorApp?.living_address;
