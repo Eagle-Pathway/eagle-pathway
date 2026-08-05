@@ -243,8 +243,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     if (!user) return;
     set({ isLoading: true });
     try {
-      const updated = await authService.updateProfile(user.id, updates);
-      set({ user: { ...user, ...updated } });
+      await authService.updateProfile(user.id, updates);
+      let freshUser = user;
+      try {
+        freshUser = await authService.getProfile(user.id);
+      } catch (e) {
+        freshUser = { ...user, ...updates };
+      }
+      set({ user: freshUser });
     } finally {
       set({ isLoading: false });
     }

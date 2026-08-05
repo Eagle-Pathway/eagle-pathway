@@ -13,6 +13,7 @@ import { useAuthStore } from '@/store/authStore';
 import { showError } from '@/utils/errorHandler';
 import { useTutorJobStore } from '@/store/tutorJobStore';
 import { tutorJobsService } from '@/services/tutorJobs';
+import { authService } from '@/services/auth';
 
 const POLICY_URL = 'https://docs.google.com/document/d/1manAx_EUc8eIu4ScyddKyo1jdFAIwiQn2tZFunAqRdQ/edit?usp=sharing';
 
@@ -93,27 +94,17 @@ export function JobApplicationScreen() {
   const saveProfileFields = async () => {
     if (!user) return;
     try {
-      await updateProfile({
-        academic_summary: form.educationStatus,
-      } as any);
-      await supabaseUpdateFields({
+      await authService.updateProfile(user.id, {
         living_address: form.livingAddress,
         university_name: form.universityName,
-        phone_number: form.phoneNumber,
+        phone: form.phoneNumber,
         telegram_username: form.telegramUsername.replace('@', ''),
         cgpa: form.cgpa,
+        academic_summary: form.educationStatus,
       });
     } catch (e) {
       console.error('Failed to save profile fields:', e);
     }
-  };
-
-  const supabaseUpdateFields = async (fields: Record<string, string>) => {
-    const { error } = await supabase
-      .from('users')
-      .update(fields)
-      .eq('id', user?.id);
-    if (error) console.error('Failed to update user fields:', error);
   };
 
   const handleSubmit = async () => {

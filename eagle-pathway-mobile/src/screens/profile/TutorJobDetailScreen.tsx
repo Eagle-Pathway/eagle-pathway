@@ -4,6 +4,7 @@ import {
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
+import { useIsFocused } from '@react-navigation/native';
 import { Colors, Typography, Spacing, Radius, CommonStyles } from '@/utils/theme';
 import { Button, Skeleton } from '@/components/common';
 import { useTutorJobStore } from '@/store/tutorJobStore';
@@ -26,6 +27,7 @@ export function TutorJobDetailScreen() {
   const { loadJobDetail, selectedJob, clearSelectedJob, loadTutorApplication, tutorApplication } = useTutorJobStore();
   const [hasApplied, setHasApplied] = useState(false);
   const [loading, setLoading] = useState(true);
+  const isFocused = useIsFocused();
 
   useEffect(() => {
     let isMounted = true;

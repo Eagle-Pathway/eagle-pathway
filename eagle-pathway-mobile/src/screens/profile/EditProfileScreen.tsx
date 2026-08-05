@@ -86,29 +86,29 @@ export function EditProfileScreen() {
     is_current_student: false,
   });
   const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState<{ [key: string]: string }>({});
 
   const toggleSubject = (s: string) => {
-    setFormData(prev => {
-      if (s === 'Any Field') {
-        return { ...prev, interested_subjects: prev.interested_subjects.includes('Any Field') ? [] : ['Any Field'] };
-      }
-      const cleanList = prev.interested_subjects.filter(x => x !== 'Any Field');
-      return {
-        ...prev,
-        interested_subjects: cleanList.includes(s) ? cleanList.filter(x => x !== s) : [...cleanList, s],
-      };
-    });
+    setFormData(prev => ({
+      ...prev,
+      interested_subjects: prev.interested_subjects.includes(s)
+        ? prev.interested_subjects.filter(i => i !== s)
+        : [...prev.interested_subjects, s],
+    }));
   };
 
   const toggleCountry = (c: string) => {
     setFormData(prev => {
       if (c === 'Any Location') {
-        return { ...prev, target_countries: prev.target_countries.includes('Any Location') ? [] : ['Any Location'] };
+        const hasAny = prev.target_countries.includes('Any Location');
+        return { ...prev, target_countries: hasAny ? [] : ['Any Location'] };
       }
-      const cleanList = prev.target_countries.filter(x => x !== 'Any Location');
+      const filtered = prev.target_countries.filter(i => i !== 'Any Location');
       return {
         ...prev,
-        target_countries: cleanList.includes(c) ? cleanList.filter(x => x !== c) : [...cleanList, c],
+        target_countries: filtered.includes(c)
+          ? filtered.filter(i => i !== c)
+          : [...filtered, c],
       };
     });
   };
@@ -117,31 +117,52 @@ export function EditProfileScreen() {
     setFormData(prev => ({
       ...prev,
       target_departments: prev.target_departments.includes(d)
-        ? prev.target_departments.filter(x => x !== d)
+        ? prev.target_departments.filter(i => i !== d)
         : [...prev.target_departments, d],
     }));
   };
 
-  const toggleChildrenGrade = (g: string) => {
+  const toggleGrade = (g: string) => {
     setFormData(prev => ({
       ...prev,
       children_grades: prev.children_grades.includes(g)
-        ? prev.children_grades.filter(x => x !== g)
+        ? prev.children_grades.filter(i => i !== g)
         : [...prev.children_grades, g],
     }));
   };
 
   const handleSave = async () => {
+    const newErrors: { [key: string]: string } = {};
     const name = formData.full_name?.toString().trim();
     const phone = formData.phone?.toString().trim();
-    if (!name) { Alert.alert('Required', 'Please enter your full name.'); return; }
-    if (!phone) { Alert.alert('Required', 'Please enter your phone number.'); return; }
-    if (!validatePhone(phone)) { Alert.alert('Invalid phone', 'Enter a valid Ethiopian phone number (e.g. 0911234567).'); return; }
 
-    if (isTutor && !formData.university_name?.trim()) {
-      Alert.alert('Required', 'Please enter your university / college name.');
+    if (!name) newErrors.full_name = 'Full name is required';
+    if (!phone) {
+      newErrors.phone = 'Phone number is required';
+    } else if (!validatePhone(phone)) {
+      newErrors.phone = 'Enter a valid Ethiopian phone number (e.g. 0911234567)';
+    }
+
+    if (isTutor) {
+      if (!formData.living_address?.toString().trim()) {
+        newErrors.living_address = 'Residence address / sub-city is required';
+      }
+      if (!formData.university_name?.toString().trim()) {
+        newErrors.university_name = 'University / college name is required';
+      }
+      if (!formData.cgpa?.toString().trim()) {
+        newErrors.cgpa = 'Current CGPA is required';
+      }
+      if (!formData.telegram_username?.toString().trim()) {
+        newErrors.telegram_username = 'Telegram username is required';
+      }
+    }
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
       return;
     }
+    setErrors({});
 
     setLoading(true);
     try {
@@ -153,22 +174,13 @@ export function EditProfileScreen() {
 
       if (isTutor) {
         updates.living_address = formData.living_address;
-        updates.sub_city = formData.living_address;
         updates.university_name = formData.university_name;
         updates.telegram_username = formData.telegram_username;
-        updates.telegram_handle = formData.telegram_username;
         updates.cgpa = formData.cgpa;
-        updates.teaching_experience = formData.teaching_experience;
         updates.interested_subjects = formData.interested_subjects;
-        updates.subjects_taught = formData.interested_subjects;
         updates.academic_summary = formData.academic_summary;
-        updates.bio = formData.academic_summary;
       } else if (isParent) {
         updates.living_address = formData.living_address;
-        updates.children_count = formData.children_count;
-        updates.children_grades = formData.children_grades;
-        updates.preferred_tutor_gender = formData.preferred_tutor_gender;
-        updates.preferred_session_format = formData.preferred_session_format;
         updates.academic_summary = formData.academic_summary;
       } else {
         // Student role
@@ -356,32 +368,36 @@ export function EditProfileScreen() {
       <Section title="📍 Location & Contact">
         <Text style={editProfStyles.fieldLabel}>Living Address / Sub-city *</Text>
         <TextInput
-          style={editProfStyles.input}
+          style={[editProfStyles.input, errors.living_address && editProfStyles.inputError]}
           value={formData.living_address}
-          onChangeText={t => setFormData(f => ({ ...f, living_address: t }))}
+          onChangeText={t => { setErrors(e => ({ ...e, living_address: '' })); setFormData(f => ({ ...f, living_address: t })); }}
           placeholder="e.g. Bole, Addis Ababa (near Medhanialem)"
           placeholderTextColor={Colors.textSecondary}
         />
-        <Text style={[editProfStyles.fieldLabel, { marginTop: Spacing.sm }]}>Telegram Username</Text>
+        {errors.living_address && <Text style={editProfStyles.fieldError}>{errors.living_address}</Text>}
+
+        <Text style={[editProfStyles.fieldLabel, { marginTop: Spacing.sm }]}>Telegram Username *</Text>
         <TextInput
-          style={editProfStyles.input}
+          style={[editProfStyles.input, errors.telegram_username && editProfStyles.inputError]}
           value={formData.telegram_username}
-          onChangeText={t => setFormData(f => ({ ...f, telegram_username: t }))}
+          onChangeText={t => { setErrors(e => ({ ...e, telegram_username: '' })); setFormData(f => ({ ...f, telegram_username: t })); }}
           placeholder="e.g. @yourusername"
           autoCapitalize="none"
           placeholderTextColor={Colors.textSecondary}
         />
+        {errors.telegram_username && <Text style={editProfStyles.fieldError}>{errors.telegram_username}</Text>}
       </Section>
 
       <Section title="🎓 Qualifications & Education">
         <Text style={editProfStyles.fieldLabel}>University / College Name *</Text>
         <TextInput
-          style={editProfStyles.input}
+          style={[editProfStyles.input, errors.university_name && editProfStyles.inputError]}
           value={formData.university_name}
-          onChangeText={t => setFormData(f => ({ ...f, university_name: t }))}
+          onChangeText={t => { setErrors(e => ({ ...e, university_name: '' })); setFormData(f => ({ ...f, university_name: t })); }}
           placeholder="e.g. Addis Ababa University (AAiT)"
           placeholderTextColor={Colors.textSecondary}
         />
+        {errors.university_name && <Text style={editProfStyles.fieldError}>{errors.university_name}</Text>}
 
         <Text style={[editProfStyles.fieldLabel, { marginTop: Spacing.sm }]}>Degree Type / Program</Text>
         <View style={editProfStyles.chipsRow}>
@@ -396,15 +412,16 @@ export function EditProfileScreen() {
           ))}
         </View>
 
-        <Text style={[editProfStyles.fieldLabel, { marginTop: Spacing.sm }]}>Current CGPA</Text>
+        <Text style={[editProfStyles.fieldLabel, { marginTop: Spacing.sm }]}>Current CGPA *</Text>
         <TextInput
-          style={editProfStyles.input}
+          style={[editProfStyles.input, errors.cgpa && editProfStyles.inputError]}
           keyboardType="numeric"
           value={formData.cgpa}
-          onChangeText={t => setFormData(f => ({ ...f, cgpa: t }))}
+          onChangeText={t => { setErrors(e => ({ ...e, cgpa: '' })); setFormData(f => ({ ...f, cgpa: t })); }}
           placeholder="e.g. 3.75"
           placeholderTextColor={Colors.textSecondary}
         />
+        {errors.cgpa && <Text style={editProfStyles.fieldError}>{errors.cgpa}</Text>}
         <Text style={{ fontSize: 11, color: Colors.textSecondary, marginTop: 4 }}>Out of 4.0</Text>
       </Section>
 
@@ -471,7 +488,7 @@ export function EditProfileScreen() {
             <TouchableOpacity
               key={g}
               style={[editProfStyles.chip, formData.children_grades.includes(g) && editProfStyles.chipActive]}
-              onPress={() => toggleChildrenGrade(g)}
+              onPress={() => toggleGrade(g)}
             >
               <Text style={[editProfStyles.chipText, formData.children_grades.includes(g) && editProfStyles.chipTextActive]}>{g}</Text>
             </TouchableOpacity>
@@ -537,21 +554,25 @@ export function EditProfileScreen() {
         <Section title="👤 Personal Information">
           <Text style={editProfStyles.fieldLabel}>Full Name *</Text>
           <TextInput
-            style={editProfStyles.input}
+            style={[editProfStyles.input, errors.full_name && editProfStyles.inputError]}
             value={formData.full_name}
-            onChangeText={t => setFormData(f => ({ ...f, full_name: t }))}
+            onChangeText={t => { setErrors(e => ({ ...e, full_name: '' })); setFormData(f => ({ ...f, full_name: t })); }}
             placeholder="Your full name"
             placeholderTextColor={Colors.textSecondary}
           />
+          {errors.full_name && <Text style={editProfStyles.fieldError}>{errors.full_name}</Text>}
+
           <Text style={[editProfStyles.fieldLabel, { marginTop: Spacing.sm }]}>Phone Number *</Text>
           <TextInput
-            style={editProfStyles.input}
+            style={[editProfStyles.input, errors.phone && editProfStyles.inputError]}
             value={formData.phone}
-            onChangeText={t => setFormData(f => ({ ...f, phone: t }))}
+            onChangeText={t => { setErrors(e => ({ ...e, phone: '' })); setFormData(f => ({ ...f, phone: t })); }}
             placeholder="+251 9xx xxx xxxx"
             keyboardType="phone-pad"
             placeholderTextColor={Colors.textSecondary}
           />
+          {errors.phone && <Text style={editProfStyles.fieldError}>{errors.phone}</Text>}
+
           <Text style={[editProfStyles.fieldLabel, { marginTop: Spacing.sm }]}>City</Text>
           <TextInput
             style={editProfStyles.input}
@@ -584,6 +605,8 @@ const editProfStyles = StyleSheet.create({
   sectionTitle: { fontSize: Typography.lg, fontWeight: Typography.bold, color: Colors.text, marginBottom: Spacing.md },
   fieldLabel: { fontSize: Typography.sm, fontWeight: Typography.semibold, color: Colors.textSecondary, marginBottom: Spacing.xs },
   input: { backgroundColor: Colors.card, borderWidth: 1, borderColor: Colors.border, borderRadius: Radius.lg, padding: Spacing.md, fontSize: Typography.base, color: Colors.text, textAlignVertical: 'top' },
+  inputError: { borderColor: Colors.red },
+  fieldError: { fontSize: Typography.xs, color: Colors.red, marginTop: 4, fontWeight: Typography.semibold },
   chipsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: Spacing.sm },
   chip: { paddingHorizontal: 12, paddingVertical: 8, borderRadius: Radius.lg, backgroundColor: Colors.card, borderWidth: 1, borderColor: Colors.border },
   chipActive: { backgroundColor: Colors.blue, borderColor: Colors.blue },

@@ -194,24 +194,40 @@ export const tutorJobsService = {
     }
     await Promise.all(uploads);
 
+    const hasExisting = await this.hasApplied(params.jobPostId, params.applicantId);
+
+    const payload = {
+      job_post_id: params.jobPostId,
+      applicant_id: params.applicantId,
+      status: 'pending',
+      education_status: params.educationStatus,
+      living_address: params.livingAddress,
+      university_name: params.universityName,
+      phone_number: params.phoneNumber,
+      telegram_username: params.telegramUsername.replace('@', ''),
+      cgpa: params.cgpa,
+      grade10_result_url: grade10Url || null,
+      grade12_result_url: grade12Url || null,
+      transcript_url: transcriptUrl || null,
+      policy_agreed: true,
+      policy_agreed_at: new Date().toISOString(),
+    };
+
+    if (hasExisting) {
+      const { data, error } = await supabase
+        .from('tutor_job_applications')
+        .update(payload)
+        .eq('job_post_id', params.jobPostId)
+        .eq('applicant_id', params.applicantId)
+        .select()
+        .single();
+      if (error) throw error;
+      return data as TutorJobApplication;
+    }
+
     const { data, error } = await supabase
       .from('tutor_job_applications')
-      .insert({
-        job_post_id: params.jobPostId,
-        applicant_id: params.applicantId,
-        status: 'pending',
-        education_status: params.educationStatus,
-        living_address: params.livingAddress,
-        university_name: params.universityName,
-        phone_number: params.phoneNumber,
-        telegram_username: params.telegramUsername.replace('@', ''),
-        cgpa: params.cgpa,
-        grade10_result_url: grade10Url || null,
-        grade12_result_url: grade12Url || null,
-        transcript_url: transcriptUrl || null,
-        policy_agreed: true,
-        policy_agreed_at: new Date().toISOString(),
-      })
+      .insert(payload)
       .select()
       .single();
     if (error) throw error;

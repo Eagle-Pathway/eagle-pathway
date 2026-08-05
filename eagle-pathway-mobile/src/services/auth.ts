@@ -221,6 +221,26 @@ export const authService = {
       if (!error) {
         // Also sync cleanUpdates to Auth User metadata so data is never lost
         await supabase.auth.updateUser({ data: cleanUpdates }).catch(() => {});
+
+        // Dual-table sync: Also sync tutor fields directly to tutor_applications table
+        try {
+          const tutorAppUpdates: any = {};
+          if (updates.living_address !== undefined) tutorAppUpdates.living_address = updates.living_address;
+          if (updates.university_name !== undefined) tutorAppUpdates.university_name = updates.university_name;
+          if (updates.phone !== undefined) tutorAppUpdates.phone_number = updates.phone;
+          if (updates.telegram_username !== undefined) tutorAppUpdates.telegram_username = updates.telegram_username.replace('@', '');
+          if (updates.cgpa !== undefined) tutorAppUpdates.cgpa = updates.cgpa;
+
+          if (Object.keys(tutorAppUpdates).length > 0) {
+            await supabase
+              .from('tutor_applications')
+              .update(tutorAppUpdates)
+              .eq('tutor_id', userId);
+          }
+        } catch (tutorSyncErr) {
+          console.error('[updateProfile] tutor_applications sync skipped:', tutorSyncErr);
+        }
+
         return (data || dataToUpdate) as User;
       }
 
