@@ -123,7 +123,11 @@ export default function ChatDetailScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* FlatList takes up remaining space */}
+      {/* Chat Messages + Input in KeyboardAvoidingView */}
+      <KeyboardAvoidingView 
+        style={{ flex: 1 }} 
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
         {isLoadingMessages && activeMessages.length === 0 ? (
           <View style={[CommonStyles.flex1, { padding: Spacing.lg }]}>
             <View style={[styles.messageRow, styles.theirRow]}>
@@ -155,27 +159,24 @@ export default function ChatDetailScreen() {
         )}
 
         {/* Input area */}
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
-        >
-          <View style={[styles.inputArea, { paddingBottom: Math.max(insets.bottom, Spacing.md) }]}>
-            <TextInput
-              style={styles.input}
-              placeholder="Type a message..."
-              value={inputText}
-              onChangeText={setInputText}
-              multiline
-            />
-            <TouchableOpacity 
-              style={[styles.sendBtn, !inputText.trim() && { opacity: 0.5 }]} 
-              onPress={handleSend}
-              disabled={!inputText.trim()}
-            >
-              <Text style={styles.sendIcon}>🏹</Text>
-            </TouchableOpacity>
-          </View>
-        </KeyboardAvoidingView>
+        <View style={[styles.inputArea, { paddingBottom: Math.max(insets.bottom, Spacing.md) }]}>
+          <TextInput
+            style={styles.input}
+            placeholder="Type a message..."
+            placeholderTextColor={Colors.textSecondary}
+            value={inputText}
+            onChangeText={setInputText}
+            multiline
+          />
+          <TouchableOpacity 
+            style={[styles.sendBtn, !inputText.trim() && { opacity: 0.5 }]} 
+            onPress={handleSend}
+            disabled={!inputText.trim()}
+          >
+            <Text style={styles.sendIcon}>🏹</Text>
+          </TouchableOpacity>
+        </View>
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
@@ -200,7 +201,7 @@ const styles = StyleSheet.create({
   myTime: { color: 'rgba(255,255,255,0.7)' },
   theirTime: { color: Colors.textSecondary },
   inputArea: { flexDirection: 'row', padding: Spacing.md, backgroundColor: Colors.white, borderTopWidth: 1, borderTopColor: Colors.border, alignItems: 'center' },
-  input: { flex: 1, backgroundColor: Colors.grayLight, borderRadius: 24, paddingHorizontal: Spacing.lg, paddingVertical: 8, maxHeight: 100, fontSize: Typography.md, color: Colors.text },
+  input: { flex: 1, backgroundColor: Colors.white, borderWidth: 1.5, borderColor: Colors.border, borderRadius: 24, paddingHorizontal: Spacing.lg, paddingVertical: 8, maxHeight: 100, fontSize: Typography.md, color: Colors.text },
   sendBtn: { marginLeft: Spacing.md, width: 44, height: 44, backgroundColor: Colors.blue, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
   sendIcon: { fontSize: 18, color: Colors.white },
 });

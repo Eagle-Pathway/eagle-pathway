@@ -218,29 +218,93 @@ export const tutorJobsService = {
     return data as TutorJobApplication;
   },
 
-  // ── Profile Completion Check ──
+  // ── Profile Completion & Approval Check ──
 
-  isJobProfileComplete(
-    user?: {
-      full_name?: string;
-      phone_number?: string;
-      phone?: string;
-      living_address?: string;
-      university_name?: string;
-      cgpa?: string;
-      telegram_username?: string;
-      is_verified?: boolean;
-    } | null,
+  getTutorProfileMissingFields(
+    user?: any | null,
     tutorApp?: TutorApplication | null
-  ): boolean {
-    if (tutorApp?.status === 'rejected' || user?.is_verified === false) return false;
-    if (tutorApp?.status === 'approved' || user?.is_verified === true) return true;
+  ): string[] {
+    const missing: string[] = [];
     const name = user?.full_name;
     const phone = user?.phone_number || user?.phone || tutorApp?.phone_number;
-    const address = user?.living_address || tutorApp?.living_address;
+    const address = user?.living_address || user?.sub_city || tutorApp?.living_address;
     const uni = user?.university_name || tutorApp?.university_name;
     const cgpa = user?.cgpa || tutorApp?.cgpa;
-    const tg = user?.telegram_username || tutorApp?.telegram_username;
-    return !!(name && phone && address && uni && cgpa && tg);
+    const tg = user?.telegram_username || user?.telegram_handle || tutorApp?.telegram_username;
+
+    if (!name) missing.push('Full Name');
+    if (!phone) missing.push('Phone Number');
+    if (!address) missing.push('Residence Address');
+    if (!uni) missing.push('University Name');
+    if (!cgpa) missing.push('CGPA');
+    if (!tg) missing.push('Telegram Username');
+
+    return missing;
+  },
+
+  getTutorApprovalStatus(
+    user?: any | null,
+    tutorApp?: TutorApplication | null
+  ): { 
+    canApply: boolean; 
+    missingFields: string[]; 
+    status: 'can_apply' | 'missing_fields' | 'pending_approval' | 'rejected'; 
+    reason: string 
+  } {
+    const missing = this.getTutorProfileMissingFields(user, tutorApp);
+
+    if (missing.length > 0) {
+      return {
+        canApply: false,
+        missingFields: missing,
+        status: 'missing_fields',
+        reason: `Please fill in your missing profile info: ${missing.join(', ')}`,
+      };
+    }
+
+    if (tutorApp?.status === 'rejected') {
+      return {
+        canApply: false,
+        missingFields: [],
+        status: 'rejected',
+        reason: 'Your tutor application was rejected by admin. Please contact support.',
+      };
+    }
+
+    if (tutorApp?.status === 'pending') {
+      return {
+        canApply: false,
+        missingFields: [],
+        status: 'pending_approval',
+        reason: 'Your profile is complete, but your tutor account is currently pending admin review. You will be notified once approved.',
+      };
+    }
+
+    const role = (user?.role || user?.user_metadata?.role || '').toLowerCase();
+    const isApproved = tutorApp?.status === 'approved' || user?.is_verified === true || role === 'tutor';
+
+    if (isApproved) {
+      return {
+        canApply: true,
+        missingFields: [],
+        status: 'can_apply',
+        reason: 'Your account is approved! You can apply for jobs immediately.',
+      };
+    }
+
+    return {
+      canApply: false,
+      missingFields: [],
+      status: 'pending_approval',
+      reason: 'Your tutor profile application is under review by admin.',
+    };
+  },
+
+  isJobProfileComplete(
+    user?: any | null,
+    tutorApp?: TutorApplication | null
+  ): boolean {
+    const status = this.getTutorApprovalStatus(user, tutorApp);
+    return status.canApply;
   },
 };

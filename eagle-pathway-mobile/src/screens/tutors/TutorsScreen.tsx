@@ -200,7 +200,7 @@ export default function TutorsScreen() {
             onPress={() => setActiveMode(m)}
             activeOpacity={0.8}
           >
-            <Text style={[styles.chipText, activeMode === m && styles.chipTextActive]}>{m}</Text>
+            <Text style={[styles.chipText, activeMode === m && styles.chipTextActive]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>{m}</Text>
           </TouchableOpacity>
         ))}
       </ScrollView>

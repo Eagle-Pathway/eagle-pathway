@@ -99,7 +99,7 @@ export function TutorJobDetailScreen() {
 
   const insets = useSafeAreaInsets();
   const job = selectedJob;
-  const isApproved = tutorJobsService.isJobProfileComplete(user, tutorApplication) || tutorApplication?.status === 'approved';
+  const approval = tutorJobsService.getTutorApprovalStatus(user, tutorApplication);
   const showApply = !hasApplied && job.status === 'open';
 
   return (
@@ -111,7 +111,7 @@ export function TutorJobDetailScreen() {
         <Text style={s.headerTitle}>Job Details</Text>
         <View style={{ width: 40 }} />
       </View>
-      <ScrollView contentContainerStyle={{ padding: Spacing.lg, paddingBottom: 120 }}>
+      <ScrollView contentContainerStyle={{ padding: Spacing.lg, paddingBottom: 140 }}>
         <Text style={s.title}>📌 Tutor at {job.place}</Text>
         <Text style={s.subtitle}>{job.grade}</Text>
 
@@ -125,6 +125,51 @@ export function TutorJobDetailScreen() {
           <DetailRow icon="💰" label="Hourly Rate" value={`${job.hourly_rate} ETB/hr`} highlight />
           <DetailRow icon="👤" label="Gender" value={job.gender_preference === 'both' ? 'Male & Female' : job.gender_preference === 'male' ? 'Male Only' : 'Female Only'} />
         </View>
+
+        {/* Notice Card for Non-Approved / Missing Fields Status */}
+        {!approval.canApply && showApply && (
+          <View style={[
+            s.noticeCard,
+            approval.status === 'missing_fields' && { backgroundColor: '#fff7ed', borderColor: Colors.orange },
+            approval.status === 'pending_approval' && { backgroundColor: Colors.blueLight, borderColor: Colors.blue },
+            approval.status === 'rejected' && { backgroundColor: Colors.redLight, borderColor: Colors.red },
+          ]}>
+            <View style={s.noticeHeader}>
+              <Text style={s.noticeIcon}>
+                {approval.status === 'missing_fields' ? '📝' : approval.status === 'pending_approval' ? '🔒' : '❌'}
+              </Text>
+              <Text style={[
+                s.noticeTitle,
+                approval.status === 'missing_fields' && { color: Colors.orange },
+                approval.status === 'pending_approval' && { color: Colors.blue },
+                approval.status === 'rejected' && { color: Colors.red },
+              ]}>
+                {approval.status === 'missing_fields'
+                  ? 'Complete Your Profile to Apply'
+                  : approval.status === 'pending_approval'
+                  ? 'Application Under Admin Review'
+                  : 'Account Not Approved'}
+              </Text>
+            </View>
+
+            {approval.status === 'missing_fields' ? (
+              <>
+                <Text style={s.noticeSub}>
+                  Fill in these required fields in your profile to unlock job applications:
+                </Text>
+                <View style={s.missingList}>
+                  {approval.missingFields.map(field => (
+                    <View key={field} style={s.missingBadge}>
+                      <Text style={s.missingBadgeText}>• {field}</Text>
+                    </View>
+                  ))}
+                </View>
+              </>
+            ) : (
+              <Text style={s.noticeSub}>{approval.reason}</Text>
+            )}
+          </View>
+        )}
 
         {hasApplied && (
           <View style={[s.infoBox, { backgroundColor: Colors.blueLight }]}>
@@ -143,7 +188,7 @@ export function TutorJobDetailScreen() {
 
       {showApply && (
         <View style={[s.bottomBar, { paddingBottom: Math.max(insets.bottom, Spacing.lg) }]}>
-          {isApproved ? (
+          {approval.canApply ? (
             <Button
               title="Apply for This Job"
               onPress={() => router.push({ pathname: '/apply-job', params: { jobId: job.id } } as any)}
@@ -151,17 +196,32 @@ export function TutorJobDetailScreen() {
               size="lg"
               fullWidth
             />
+          ) : approval.status === 'missing_fields' ? (
+            <Button
+              title="Complete Profile & Apply"
+              onPress={() => router.push('/profile/edit')}
+              variant="primary"
+              size="lg"
+              fullWidth
+            />
+          ) : approval.status === 'pending_approval' ? (
+            <Button
+              title="Under Admin Review"
+              onPress={() => router.push('/my-applications' as any)}
+              variant="outline"
+              size="lg"
+              fullWidth
+              disabled
+            />
           ) : (
-            <>
-              <Button
-                title="Complete Profile & Apply"
-                onPress={() => router.push('/my-applications' as any)}
-                variant="primary"
-                size="lg"
-                fullWidth
-              />
-              <Text style={s.hint}>Your profile must be approved before applying.</Text>
-            </>
+            <Button
+              title="Application Not Approved"
+              onPress={() => router.push('/my-applications' as any)}
+              variant="outline"
+              size="lg"
+              fullWidth
+              disabled
+            />
           )}
         </View>
       )}
@@ -191,6 +251,14 @@ const s = StyleSheet.create({
   detailIcon: { fontSize: 16, width: 28 },
   detailLabel: { fontSize: Typography.base, color: Colors.textSecondary, width: 90 },
   detailValue: { fontSize: Typography.base, color: Colors.text, flex: 1, textAlign: 'right' },
+  noticeCard: { marginTop: Spacing.lg, borderRadius: Radius.xl, padding: Spacing.lg, borderWidth: 1.5 },
+  noticeHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 },
+  noticeIcon: { fontSize: 20 },
+  noticeTitle: { fontSize: Typography.base, fontWeight: Typography.bold },
+  noticeSub: { fontSize: Typography.sm, color: Colors.textSecondary, lineHeight: 20 },
+  missingList: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: 10 },
+  missingBadge: { backgroundColor: Colors.white, borderWidth: 1, borderColor: 'rgba(0,0,0,0.08)', paddingHorizontal: 10, paddingVertical: 5, borderRadius: Radius.md },
+  missingBadgeText: { fontSize: Typography.xs, fontWeight: Typography.semibold, color: Colors.text },
   infoBox: { flexDirection: 'row', alignItems: 'center', borderRadius: Radius.lg, padding: Spacing.md, marginTop: Spacing.lg, gap: Spacing.sm },
   infoIcon: { fontSize: 18 },
   infoText: { fontSize: Typography.base, color: Colors.text, flex: 1 },

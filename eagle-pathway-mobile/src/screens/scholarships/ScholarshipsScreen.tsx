@@ -37,6 +37,7 @@ export default function ScholarshipsScreen({ hideBack = false }: { hideBack?: bo
   const { scholarships, savedScholarshipIds, loadScholarships, toggleSaveScholarship, isLoadingScholarships } = useScholarshipStore();
   const [search, setSearch] = useState('');
   const [selectedFilters, setSelectedFilters] = useState<string[]>(['All']);
+  const [showSavedOnly, setShowSavedOnly] = useState(false);
   const [error, setError] = useState(false);
 
   const load = useCallback(async () => {
@@ -62,6 +63,10 @@ export default function ScholarshipsScreen({ hideBack = false }: { hideBack?: bo
   const filtered = (scholarships || []).filter(s => {
     const matchSearch = !search || (s.name || '').toLowerCase().includes(search.toLowerCase()) || (s.country || '').toLowerCase().includes(search.toLowerCase());
     
+    if (showSavedOnly && !savedScholarshipIds.includes(s.id)) {
+      return false;
+    }
+
     if (selectedFilters.includes('All') || selectedFilters.length === 0) {
       return matchSearch;
     }
@@ -78,19 +83,42 @@ export default function ScholarshipsScreen({ hideBack = false }: { hideBack?: bo
   return (
     <SafeAreaView style={CommonStyles.screenBg} edges={hideBack ? ['bottom'] : ['top', 'bottom']}>
       <View style={styles.hero}>
-        {!hideBack && (
-          <View style={{ marginBottom: Spacing.md }}>
-            <TouchableOpacity 
-              style={{ width: 36, height: 36, backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 10, alignItems: 'center', justifyContent: 'center' }} 
-              onPress={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)/home'))}
-            >
-              <Text style={{ fontSize: 20, color: Colors.white }}>←</Text>
-            </TouchableOpacity>
-          </View>
-        )}
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: Spacing.sm }}>
+          <TouchableOpacity 
+            style={{ width: 36, height: 36, backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 10, alignItems: 'center', justifyContent: 'center' }} 
+            onPress={() => {
+              if (showSavedOnly) {
+                setShowSavedOnly(false);
+              } else if (router.canGoBack()) {
+                router.back();
+              } else {
+                router.replace('/(tabs)/home');
+              }
+            }}
+            activeOpacity={0.8}
+          >
+            <Text style={{ fontSize: 20, color: Colors.white }}>←</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity 
+            style={[
+              styles.filterIconBtn, 
+              showSavedOnly && { backgroundColor: Colors.gold, borderColor: Colors.gold },
+              { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 12, height: 34 }
+            ]} 
+            onPress={() => setShowSavedOnly(!showSavedOnly)}
+            activeOpacity={0.8}
+          >
+            <Ionicons name={showSavedOnly ? "bookmark" : "bookmark-outline"} size={16} color={Colors.white} />
+            <Text style={{ fontSize: 13, fontWeight: Typography.bold, color: Colors.white }}>
+              {savedScholarshipIds.length}
+            </Text>
+          </TouchableOpacity>
+        </View>
+
         <View style={styles.heroTop}>
           <View>
-            <Text style={styles.heroTitle}>Scholarships</Text>
+            <Text style={styles.heroTitle}>{showSavedOnly ? 'Saved Scholarships 🔖' : 'Scholarships'}</Text>
             <Text style={styles.heroSub}>{filtered.length} opportunities available</Text>
           </View>
           <TouchableOpacity style={styles.filterIconBtn} activeOpacity={0.8}>
@@ -161,7 +189,7 @@ export default function ScholarshipsScreen({ hideBack = false }: { hideBack?: bo
   );
 }
 
-function ScholarshipCard({ scholarship: s, isSaved, onSave }: { scholarship: Scholarship; isSaved: boolean; onSave: () => void }) {
+export function ScholarshipCard({ scholarship: s, isSaved, onSave }: { scholarship: Scholarship; isSaved: boolean; onSave: () => void }) {
   const freshness = freshnessTone(s.source_status);
 
   return (

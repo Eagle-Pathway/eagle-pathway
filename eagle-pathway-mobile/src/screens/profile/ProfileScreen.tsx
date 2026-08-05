@@ -19,7 +19,7 @@ import { showError } from '@/utils/errorHandler';
 
 export function ProfileScreen() {
   const { user, signOut, uploadAvatar } = useAuthStore();
-  const { applications } = useScholarshipStore();
+  const { applications, savedScholarshipIds } = useScholarshipStore();
   const { documents } = useDocumentStore();
   const { unreadCount } = useNotificationStore();
   const { inviteParent, linkStudent, loadPendingLinks, verifyLink, removeLink } = useParentStore();

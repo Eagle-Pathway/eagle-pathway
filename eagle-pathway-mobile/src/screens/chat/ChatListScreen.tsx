@@ -10,10 +10,12 @@ import { Avatar, EmptyState, ErrorState, Skeleton } from '@/components/common';
 import { useAuthStore } from '../../store/authStore';
 import { useChatStore } from '@/store/ChatStore';
 
+import { getUserRole } from '@/utils/role';
 import { withTimeout } from '@/utils/asyncUtils';
 
 export default function ChatListScreen() {
   const { user } = useAuthStore();
+  const isTutor = getUserRole(user).toLowerCase() === 'tutor';
   const { 
     conversations, 
     loadConversations, 
@@ -105,9 +107,13 @@ export default function ChatListScreen() {
         <EmptyState
           icon="chatbubbles-outline"
           title="No messages yet"
-          subtitle="Direct messages from your consultants and tutors will appear here."
-          actionLabel="Browse Tutors"
-          onAction={() => router.push('/(tabs)/tutors')}
+          subtitle={
+            isTutor
+              ? "Direct messages from students and parents will appear here when they book a session or send an inquiry."
+              : "Direct messages from your consultants and tutors will appear here."
+          }
+          actionLabel={isTutor ? "View Tutor Jobs" : "Browse Tutors"}
+          onAction={() => router.push(isTutor ? '/(tabs)/explore' : '/(tabs)/tutors')}
         />
       ) : (
         <FlatList

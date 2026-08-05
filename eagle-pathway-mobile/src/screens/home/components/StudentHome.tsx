@@ -10,6 +10,7 @@ import { openWhatsApp } from '@/utils/linking';
 import { getApplicationDeadlines, deadlineUrgency, deadlineLabel } from '@/utils/deadlines';
 import { User, Application, Scholarship, Booking, StudentTask } from '@/types';
 import { getFlagEmoji } from '@eagle-pathway/shared';
+import { useScholarshipStore } from '@/store/scholarshipStore';
 
 interface StudentHomeProps {
   user: User;
@@ -44,8 +45,36 @@ export const StudentHome: React.FC<StudentHomeProps> = ({
   toggleTask,
   openScholarshipsCount,
   availableTutorsCount,
-  loading,
+  loading = false,
 }) => {
+  const { savedScholarshipIds } = useScholarshipStore();
+
+  const activeApplications = React.useMemo(
+    () => (applications || []).filter(a => !['accepted', 'rejected'].includes(a.status)),
+    [applications]
+  );
+
+  const closingSoon = React.useMemo(() => getApplicationDeadlines(applications), [applications]);
+
+  const readinessScore = React.useMemo(() => {
+    let score = 0;
+    if (activeApplications.length > 0) score += 30;
+    if ((bookings || []).length > 0) score += 20;
+    if ((tasks || []).filter(t => t.status === 'completed').length > 0) score += 10;
+    score += Math.min((applications || []).length * 10, 20);
+    return Math.min(score + 20, 100);
+  }, [activeApplications, bookings, applications, tasks]);
+
+  const upcomingBookings = React.useMemo(
+    () => (bookings || []).filter(b => b.status === 'confirmed' || b.status === 'pending').slice(0, 2),
+    [bookings]
+  );
+
+  const pendingTasks = React.useMemo(
+    () => (tasks || []).filter(t => t.status === 'pending' || t.status === 'overdue').slice(0, 3),
+    [tasks]
+  );
+
   if (loading) {
     return (
       <SafeAreaView style={CommonStyles.screenBg} edges={['top', 'bottom']}>
@@ -137,27 +166,6 @@ export const StudentHome: React.FC<StudentHomeProps> = ({
       </SafeAreaView>
     );
   }
-
-  const activeApplications = (applications || []).filter(a => !['accepted', 'rejected'].includes(a.status));
-
-  const closingSoon = React.useMemo(() => getApplicationDeadlines(applications), [applications]);
-
-  const readinessScore = React.useMemo(() => {
-    let score = 0;
-    if (activeApplications.length > 0) score += 30;
-    if ((bookings || []).length > 0) score += 20;
-    if ((tasks || []).filter(t => t.status === 'completed').length > 0) score += 10;
-    score += Math.min((applications || []).length * 10, 20);
-    return Math.min(score + 20, 100);
-  }, [activeApplications, bookings, applications, tasks]);
-
-  const upcomingBookings = (bookings || [])
-    .filter(b => b.status === 'confirmed' || b.status === 'pending')
-    .slice(0, 2);
-
-  const pendingTasks = (tasks || [])
-    .filter(t => t.status === 'pending' || t.status === 'overdue')
-    .slice(0, 3);
 
   const premiumApp = applications.find(a => a.package_tier === 'premium' || a.package_tier === 'standard');
   const assignedConsultant = premiumApp?.consultant;
