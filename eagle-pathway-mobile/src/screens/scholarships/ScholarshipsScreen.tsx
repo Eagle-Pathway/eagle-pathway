@@ -36,7 +36,7 @@ import { withTimeout } from '@/utils/asyncUtils';
 export default function ScholarshipsScreen({ hideBack = false }: { hideBack?: boolean }) {
   const { scholarships, savedScholarshipIds, loadScholarships, toggleSaveScholarship, isLoadingScholarships } = useScholarshipStore();
   const [search, setSearch] = useState('');
-  const [activeFilter, setActiveFilter] = useState('All');
+  const [selectedFilters, setSelectedFilters] = useState<string[]>(['All']);
   const [error, setError] = useState(false);
 
   const load = useCallback(async () => {
@@ -46,12 +46,33 @@ export default function ScholarshipsScreen({ hideBack = false }: { hideBack?: bo
 
   useEffect(() => { load(); }, []);
 
+  const toggleFilter = (filter: string) => {
+    if (filter === 'All') {
+      setSelectedFilters(['All']);
+      return;
+    }
+    setSelectedFilters(prev => {
+      const withoutAll = prev.filter(f => f !== 'All');
+      const exists = withoutAll.includes(filter);
+      const next = exists ? withoutAll.filter(f => f !== filter) : [...withoutAll, filter];
+      return next.length === 0 ? ['All'] : next;
+    });
+  };
+
   const filtered = (scholarships || []).filter(s => {
     const matchSearch = !search || (s.name || '').toLowerCase().includes(search.toLowerCase()) || (s.country || '').toLowerCase().includes(search.toLowerCase());
-    const matchFilter = activeFilter === 'All' ||
-      (activeFilter === 'Fully Funded' && s.funding_type === 'fully_funded') ||
-      (s.degree_levels && s.degree_levels.some(d => d.toLowerCase() === activeFilter.toLowerCase()));
-    return matchSearch && matchFilter;
+    
+    if (selectedFilters.includes('All') || selectedFilters.length === 0) {
+      return matchSearch;
+    }
+
+    const degreeFilters = selectedFilters.filter(f => f !== 'Fully Funded');
+    const hasFullyFundedFilter = selectedFilters.includes('Fully Funded');
+
+    const matchDegree = degreeFilters.length === 0 || (s.degree_levels && s.degree_levels.some(d => degreeFilters.some(df => df.toLowerCase() === d.toLowerCase())));
+    const matchFunding = !hasFullyFundedFilter || s.funding_type === 'fully_funded';
+
+    return matchSearch && matchDegree && matchFunding;
   });
 
   return (
@@ -70,7 +91,7 @@ export default function ScholarshipsScreen({ hideBack = false }: { hideBack?: bo
         <View style={styles.heroTop}>
           <View>
             <Text style={styles.heroTitle}>Scholarships</Text>
-            <Text style={styles.heroSub}>{(scholarships || []).length} opportunities available</Text>
+            <Text style={styles.heroSub}>{filtered.length} opportunities available</Text>
           </View>
           <TouchableOpacity style={styles.filterIconBtn} activeOpacity={0.8}>
             <Text style={{ fontSize: 16, color: Colors.white }}>⚙️</Text>
@@ -87,16 +108,21 @@ export default function ScholarshipsScreen({ hideBack = false }: { hideBack?: bo
           />
         </View>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: Spacing.md }} contentContainerStyle={{ gap: Spacing.sm }}>
-          {DEGREE_FILTERS.map(f => (
-            <TouchableOpacity
-              key={f}
-              style={[styles.filterChip, activeFilter === f && styles.filterChipActive]}
-              onPress={() => setActiveFilter(f)}
-              activeOpacity={0.8}
-            >
-              <Text style={[styles.filterChipText, activeFilter === f && styles.filterChipTextActive]}>{f}</Text>
-            </TouchableOpacity>
-          ))}
+          {DEGREE_FILTERS.map(f => {
+            const isActive = selectedFilters.includes(f);
+            return (
+              <TouchableOpacity
+                key={f}
+                style={[styles.filterChip, isActive && styles.filterChipActive]}
+                onPress={() => toggleFilter(f)}
+                activeOpacity={0.8}
+              >
+                <Text style={[styles.filterChipText, isActive && styles.filterChipTextActive]}>
+                  {isActive && f !== 'All' ? `✓ ${f}` : f}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
         </ScrollView>
       </View>
 
@@ -112,7 +138,7 @@ export default function ScholarshipsScreen({ hideBack = false }: { hideBack?: bo
           title="No scholarships found" 
           subtitle="Try adjusting your search or filters"
           actionLabel="Clear Filters"
-          onAction={() => { setSearch(''); setActiveFilter('All'); }}
+          onAction={() => { setSearch(''); setSelectedFilters(['All']); }}
         />
       ) : (
         <FlatList
