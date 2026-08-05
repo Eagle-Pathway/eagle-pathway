@@ -1,23 +1,41 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Colors, Typography, Spacing, Radius } from '../../src/utils/theme';
 import { Button } from '../../src/components/common';
 import { PasswordInput } from '../../src/components/PasswordInput';
 import { KeyboardAwareScreen } from '../../src/components/KeyboardAwareScreen';
 import { useAuthStore } from '../../src/store/authStore';
 import { authService } from '../../src/services/auth';
-
 import { showError } from '../../src/utils/errorHandler';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const SAVED_LOGIN_INFO_KEY = '@eagle_pathway_saved_login_info';
 
 export default function LoginScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [rememberMe, setRememberMe] = useState(true);
   const passwordRef = useRef<TextInput>(null);
   const { signIn, isLoading, setLoading } = useAuthStore();
+
+  useEffect(() => {
+    AsyncStorage.getItem(SAVED_LOGIN_INFO_KEY).then(data => {
+      if (data) {
+        try {
+          const parsed = JSON.parse(data);
+          if (parsed.email) setEmail(parsed.email);
+          if (parsed.password) setPassword(parsed.password);
+          if (typeof parsed.rememberMe === 'boolean') setRememberMe(parsed.rememberMe);
+        } catch {
+          // Ignore parse errors
+        }
+      }
+    });
+  }, []);
 
   const handleLogin = async () => {
     if (!email.trim()) return Alert.alert('Error', 'Please enter your email');
@@ -25,6 +43,13 @@ export default function LoginScreen() {
     if (!password) return Alert.alert('Error', 'Please enter your password');
     try {
       await signIn(email.trim(), password);
+
+      if (rememberMe) {
+        await AsyncStorage.setItem(SAVED_LOGIN_INFO_KEY, JSON.stringify({ email: email.trim(), password, rememberMe: true }));
+      } else {
+        await AsyncStorage.removeItem(SAVED_LOGIN_INFO_KEY);
+      }
+
       setLoading(false);
       router.replace('/(tabs)/home');
     } catch (e: any) {
@@ -73,7 +98,7 @@ export default function LoginScreen() {
           />
         </View>
 
-        <View style={{ marginBottom: Spacing.sm }}>
+        <View style={{ marginBottom: Spacing.md }}>
           <Text style={{ fontSize: 13, fontWeight: Typography.semibold, color: Colors.text, marginBottom: 6 }}>Password</Text>
           <PasswordInput
             ref={passwordRef}
@@ -87,9 +112,24 @@ export default function LoginScreen() {
           />
         </View>
 
-        <TouchableOpacity style={{ alignSelf: 'flex-end', marginBottom: Spacing.xl }} onPress={goToForgotPassword} activeOpacity={0.7}>
-          <Text style={{ fontSize: 13, color: Colors.blue, fontWeight: Typography.semibold }}>Forgot password?</Text>
-        </TouchableOpacity>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: Spacing.xl }}>
+          <TouchableOpacity 
+            style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }} 
+            onPress={() => setRememberMe(!rememberMe)}
+            activeOpacity={0.8}
+          >
+            <Ionicons 
+              name={rememberMe ? "checkbox" : "square-outline"} 
+              size={20} 
+              color={rememberMe ? Colors.blue : Colors.textSecondary} 
+            />
+            <Text style={{ fontSize: 13, color: Colors.text, fontWeight: Typography.medium }}>Save login info</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity onPress={goToForgotPassword} activeOpacity={0.7}>
+            <Text style={{ fontSize: 13, color: Colors.blue, fontWeight: Typography.semibold }}>Forgot password?</Text>
+          </TouchableOpacity>
+        </View>
 
         <Button title="Sign In" onPress={handleLogin} loading={isLoading} />
         
