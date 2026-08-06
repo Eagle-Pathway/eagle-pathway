@@ -45,41 +45,25 @@ export default function RootLayout() {
   };
 
   useEffect(() => {
-    // Check for Over-The-Air production updates on mount
-    if (!__DEV__) {
-      Updates.checkForUpdateAsync()
-        .then(({ isAvailable }) => {
-          if (isAvailable) {
-            Updates.fetchUpdateAsync().then(() => {
-              Updates.reloadAsync();
-            }).catch(() => {});
-          }
-        })
-        .catch(() => {});
-    }
-
-    // Safety Net: Ensure splash screen ALWAYS hides within 2.5 seconds maximum,
-    // even if network stalls, token refresh hangs, or the device is offline.
+    // 1. Fallback Safety Net: Hide splash screen within 800ms max under all conditions
     const splashTimeout = setTimeout(() => {
       safeHideSplash();
-    }, 2500);
+    }, 800);
 
-    // Manage Supabase AppState for background token refreshing
+    // 2. Manage Supabase AppState for background token refreshing
     const appStateListener = AppState.addEventListener('change', (state) => {
       if (state === 'active') supabase.auth.startAutoRefresh();
       else supabase.auth.stopAutoRefresh();
     });
 
-    // Load local offline caches
+    // 3. Load local offline caches in background
     loadSavedScholarships().catch(() => {});
 
-    // Listen for auth changes
+    // 4. Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       setSession(session);
       if (session) {
-        withTimeout(loadProfile(), 3000)
-          .then(() => subscribeToUpdates(session.user.id))
-          .catch(() => {});
+        loadProfile().then(() => subscribeToUpdates(session.user.id)).catch(() => {});
       } else {
         setUser(null);
         unsubscribeFromUpdates();
@@ -87,15 +71,14 @@ export default function RootLayout() {
       if (event === 'PASSWORD_RECOVERY') {
         router.push('/(auth)/update-password');
       }
-      safeHideSplash();
     });
 
-    // Check existing session on mount with 3s timeout
-    withTimeout(supabase.auth.getSession(), 3000)
+    // 5. Restore local session instantly from AsyncStorage (< 100ms)
+    supabase.auth.getSession()
       .then(({ data: { session }, error }) => {
         if (error) {
           console.error('Session error:', error);
-          if (error.message.includes('Refresh Token')) {
+          if (error.message?.includes('Refresh Token')) {
             supabase.auth.signOut().catch(() => {});
           }
           safeHideSplash();
@@ -103,30 +86,42 @@ export default function RootLayout() {
         }
 
         setSession(session);
+        // HIDE SPLASH SCREEN IMMEDIATELY ONCE LOCAL SESSION IS RESTORED
+        safeHideSplash();
+
+        // Perform remote profile sync & realtime subscriptions in background
         if (session) {
-          withTimeout(loadProfile(), 3000)
-            .then(() => {
-              subscribeToUpdates(session.user.id);
-            })
+          loadProfile()
+            .then(() => subscribeToUpdates(session.user.id))
             .catch(e => {
               console.error('Profile load error:', e);
-              if (e.message?.includes('Refresh Token')) {
+              if (e?.message?.includes('Refresh Token')) {
                 supabase.auth.signOut().catch(() => {});
               }
-            })
-            .finally(() => {
-              safeHideSplash();
             });
-        } else {
-          safeHideSplash();
         }
       })
       .catch((err) => {
-        console.warn('Session restoration timed out or failed:', err);
+        console.warn('Session restoration failed:', err);
         safeHideSplash();
       });
 
-    // Listeners
+    // 6. Silent background OTA update check (non-blocking)
+    if (!__DEV__) {
+      setTimeout(() => {
+        Updates.checkForUpdateAsync()
+          .then(({ isAvailable }) => {
+            if (isAvailable) {
+              Updates.fetchUpdateAsync().then(() => {
+                Updates.reloadAsync();
+              }).catch(() => {});
+            }
+          })
+          .catch(() => {});
+      }, 3000);
+    }
+
+    // 7. Notification Listeners
     const notificationListener = notificationsService.addNotificationListener(notification => {
       console.log('Notification received:', notification);
     });
