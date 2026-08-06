@@ -134,15 +134,15 @@ export default function LoginScreen() {
         <Button title="Sign In" onPress={handleLogin} loading={isLoading} />
         
         <TouchableOpacity 
-          style={{ marginTop: Spacing.xl, paddingVertical: Spacing.sm, alignItems: 'center', width: '100%' }} 
+          style={{ marginTop: Spacing.xl, paddingVertical: Spacing.sm, flexDirection: 'row', justifyContent: 'center', alignItems: 'center' }} 
           onPress={() => router.push('/(auth)/signup')}
           activeOpacity={0.7}
         >
-          <Text style={{ fontSize: Typography.base, color: Colors.textSecondary, textAlign: 'center', includeFontPadding: false }}>
-            {"Don't have an account? "}
-            <Text style={{ color: Colors.blue, fontWeight: Typography.bold, includeFontPadding: false }}>
-              Sign Up
-            </Text>
+          <Text style={{ fontSize: Typography.base, color: Colors.textSecondary }}>
+            Don't have an account?
+          </Text>
+          <Text style={{ fontSize: Typography.base, color: Colors.blue, fontWeight: Typography.bold, marginLeft: 4 }}>
+            Sign Up
           </Text>
         </TouchableOpacity>
       </KeyboardAwareScreen>

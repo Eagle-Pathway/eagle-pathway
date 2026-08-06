@@ -116,8 +116,10 @@ export default function ForgotPasswordScreen() {
 
               <TouchableOpacity style={styles.linkRow} onPress={backToLogin} activeOpacity={0.7}>
                 <Text style={styles.linkMuted}>
-                  {"Remembered it? "}
-                  <Text style={styles.link}>Back to Sign In</Text>
+                  Remembered it?
+                </Text>
+                <Text style={styles.link}>
+                  Back to Sign In
                 </Text>
               </TouchableOpacity>
             </>
@@ -181,7 +183,7 @@ const styles = StyleSheet.create({
   codeInput: { fontSize: 24, letterSpacing: 8, textAlign: 'center', fontWeight: Typography.bold },
   inputError: { borderColor: Colors.red },
   errorText: { fontSize: 12, color: Colors.red, marginTop: 6 },
-  linkRow: { marginTop: Spacing.xl, alignItems: 'center', width: '100%' },
-  linkMuted: { fontSize: 13, color: Colors.textSecondary, textAlign: 'center', includeFontPadding: false },
-  link: { color: Colors.blue, fontWeight: Typography.semibold, includeFontPadding: false },
+  linkRow: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginTop: Spacing.xl },
+  linkMuted: { fontSize: 13, color: Colors.textSecondary },
+  link: { fontSize: 13, color: Colors.blue, fontWeight: Typography.semibold, marginLeft: 4 },
 });
