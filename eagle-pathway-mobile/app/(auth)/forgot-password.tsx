@@ -115,10 +115,10 @@ export default function ForgotPasswordScreen() {
               <Button title="Send reset code" onPress={sendResetCode} loading={loading} style={{ marginTop: Spacing.xl }} />
 
               <TouchableOpacity style={styles.linkRow} onPress={backToLogin} activeOpacity={0.7}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
-                  <Text style={styles.linkMuted}>Remembered it? </Text>
+                <Text style={styles.linkMuted}>
+                  {"Remembered it? "}
                   <Text style={styles.link}>Back to Sign In</Text>
-                </View>
+                </Text>
               </TouchableOpacity>
             </>
           ) : (

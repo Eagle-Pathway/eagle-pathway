@@ -138,14 +138,12 @@ export default function LoginScreen() {
           onPress={() => router.push('/(auth)/signup')}
           activeOpacity={0.7}
         >
-          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
-            <Text style={{ fontSize: Typography.base, color: Colors.textSecondary }}>
-              Don't have an account?{' '}
-            </Text>
-            <Text style={{ fontSize: Typography.base, color: Colors.blue, fontWeight: Typography.bold }}>
+          <Text style={{ fontSize: Typography.base, color: Colors.textSecondary, textAlign: 'center' }}>
+            {"Don't have an account? "}
+            <Text style={{ color: Colors.blue, fontWeight: Typography.bold }}>
               Sign Up
             </Text>
-          </View>
+          </Text>
         </TouchableOpacity>
       </KeyboardAwareScreen>
     </SafeAreaView>
