@@ -319,11 +319,14 @@ export default function SignupScreen() {
             </View>
 
             <TouchableOpacity style={styles.loginLink} onPress={() => router.push('/(auth)/login')} activeOpacity={0.7}>
-              <Text style={styles.loginText}>
-                Already have an account?
-              </Text>
-              <Text style={styles.loginHighlight}>
-                Sign In
+              <Text 
+                numberOfLines={1} 
+                adjustsFontSizeToFit 
+                minimumFontScale={0.8}
+                style={styles.loginText}
+              >
+                {"Already have an account? "}
+                <Text style={styles.loginHighlight}>Sign In</Text>
               </Text>
             </TouchableOpacity>
           </View>
@@ -376,9 +379,9 @@ const styles = StyleSheet.create({
   dividerRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
   dividerLine: { flex: 1, height: 1, backgroundColor: Colors.border },
   dividerText: { fontSize: Typography.sm, color: Colors.textSecondary },
-  loginLink: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginTop: Spacing.sm, paddingVertical: Spacing.xs },
-  loginText: { fontSize: Typography.base, color: Colors.textSecondary },
-  loginHighlight: { fontSize: Typography.base, color: Colors.blue, fontWeight: Typography.bold, marginLeft: 4 },
+  loginLink: { alignItems: 'center', width: '100%', marginTop: Spacing.sm, paddingVertical: Spacing.xs },
+  loginText: { fontSize: Typography.base, color: Colors.textSecondary, textAlign: 'center' },
+  loginHighlight: { color: Colors.blue, fontWeight: Typography.bold },
   successContent: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: Spacing.xl },
   successTitle: { fontSize: Typography.xl, fontWeight: Typography.bold, color: Colors.text, marginTop: Spacing.xl },
   successSubtitle: { fontSize: Typography.base, color: Colors.textSecondary, textAlign: 'center', marginTop: Spacing.sm },
