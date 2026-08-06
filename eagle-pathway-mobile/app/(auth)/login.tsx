@@ -133,8 +133,11 @@ export default function LoginScreen() {
 
         <Button title="Sign In" onPress={handleLogin} loading={isLoading} />
         
-        <TouchableOpacity style={{ marginTop: Spacing.lg, alignItems: 'center' }} onPress={() => router.push('/(auth)/signup')}>
-          <Text style={{ fontSize: 13, color: Colors.textSecondary }}>Don't have an account? <Text style={{ color: Colors.blue, fontWeight: Typography.semibold }}>Sign up</Text></Text>
+        <TouchableOpacity style={{ marginTop: Spacing.xl, paddingVertical: Spacing.sm, alignItems: 'center', width: '100%' }} onPress={() => router.push('/(auth)/signup')}>
+          <Text style={{ fontSize: Typography.base, color: Colors.textSecondary, textAlign: 'center' }}>
+            Don't have an account?{' '}
+            <Text style={{ color: Colors.blue, fontWeight: Typography.semibold }}>Sign{"\u00A0"}up</Text>
+          </Text>
         </TouchableOpacity>
       </KeyboardAwareScreen>
     </SafeAreaView>
