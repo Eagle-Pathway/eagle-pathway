@@ -138,9 +138,9 @@ export default function LoginScreen() {
           onPress={() => router.push('/(auth)/signup')}
           activeOpacity={0.7}
         >
-          <Text style={{ fontSize: Typography.base, color: Colors.textSecondary, textAlign: 'center' }}>
+          <Text style={{ fontSize: Typography.base, color: Colors.textSecondary, textAlign: 'center', includeFontPadding: false }}>
             {"Don't have an account? "}
-            <Text style={{ color: Colors.blue, fontWeight: Typography.bold }}>
+            <Text style={{ color: Colors.blue, fontWeight: Typography.bold, includeFontPadding: false }}>
               Sign Up
             </Text>
           </Text>
