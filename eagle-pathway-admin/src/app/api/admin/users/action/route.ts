@@ -20,7 +20,7 @@ export async function POST(req: NextRequest) {
 
     const supabaseAdmin = getAdminClient();
 
-    // 0. GET ALL USERS WITH LIVE SUSPENSION STATUS
+    // 0. GET ALL USERS WITH LIVE SUSPENSION & ARCHIVED STATUS
     if (action === 'get_all_users') {
       const [{ data: dbUsers, error: dbErr }, { data: authData, error: authErr }] = await Promise.all([
         supabaseAdmin.from('users').select('*').order('created_at', { ascending: false }),
@@ -31,21 +31,29 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: dbErr.message }, { status: 500 });
       }
 
-      // Map banned user IDs
-      const bannedUserMap = new Map<string, string>();
+      // Map auth metadata (banned status, is_deleted, previous_role)
+      const authUserMap = new Map<string, any>();
       if (authData?.users) {
         for (const u of authData.users) {
-          if (u.banned_until && new Date(u.banned_until) > new Date()) {
-            bannedUserMap.set(u.id, u.banned_until);
-          }
+          authUserMap.set(u.id, u);
         }
       }
 
-      const usersWithStatus = (dbUsers || []).map((u: any) => ({
-        ...u,
-        is_suspended: bannedUserMap.has(u.id),
-        banned_until: bannedUserMap.get(u.id) || null,
-      }));
+      const usersWithStatus = (dbUsers || []).map((u: any) => {
+        const authUser = authUserMap.get(u.id);
+        const isBanned = !!(authUser?.banned_until && new Date(authUser.banned_until) > new Date());
+        const isDeleted = !!(authUser?.user_metadata?.is_deleted || u.role === 'archived');
+        const deletedAt = authUser?.user_metadata?.deleted_at || null;
+
+        return {
+          ...u,
+          is_suspended: isBanned && !isDeleted,
+          is_deleted: isDeleted,
+          deleted_at: deletedAt,
+          previous_role: authUser?.user_metadata?.previous_role || u.role || 'student',
+          last_sign_in_at: authUser?.last_sign_in_at || null,
+        };
+      });
 
       return NextResponse.json({ users: usersWithStatus });
     }
@@ -54,7 +62,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Missing userId parameter' }, { status: 400 });
     }
 
-    // 1. GET FULL DETAILS (auth user + db profile + activity stats)
+    // 1. GET FULL DETAILS
     if (action === 'get_details') {
       const [{ data: dbUser, error: dbErr }, { data: authUser, error: authErr }] = await Promise.all([
         supabaseAdmin.from('users').select('*').eq('id', userId).single(),
@@ -72,13 +80,16 @@ export async function POST(req: NextRequest) {
         supabaseAdmin.from('sop_reviews').select('id', { count: 'exact', head: true }).eq('user_id', userId),
       ]);
 
-      const isSuspended = !!(authUser?.user?.banned_until && new Date(authUser.user.banned_until) > new Date());
+      const isBanned = !!(authUser?.user?.banned_until && new Date(authUser.user.banned_until) > new Date());
+      const isDeleted = !!(authUser?.user?.user_metadata?.is_deleted || dbUser.role === 'archived');
 
       return NextResponse.json({
         user: {
           ...dbUser,
-          is_suspended: isSuspended,
-          banned_until: authUser?.user?.banned_until || null,
+          is_suspended: isBanned && !isDeleted,
+          is_deleted: isDeleted,
+          deleted_at: authUser?.user?.user_metadata?.deleted_at || null,
+          previous_role: authUser?.user?.user_metadata?.previous_role || dbUser.role || 'student',
           last_sign_in_at: authUser?.user?.last_sign_in_at || null,
           email_confirmed_at: authUser?.user?.email_confirmed_at || null,
         },
@@ -112,7 +123,56 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: true, message: 'User account has been reactivated.', user: data.user });
     }
 
-    // 4. RESET PASSWORD (generate recovery link or set new password directly)
+    // 4. SOFT DELETE / ARCHIVE USER
+    if (action === 'delete') {
+      const { data: currentDbUser } = await supabaseAdmin.from('users').select('role').eq('id', userId).single();
+      const currentRole = currentDbUser?.role || 'student';
+
+      // 1. Update Auth user metadata & ban user
+      const { error: authErr } = await supabaseAdmin.auth.admin.updateUserById(userId, {
+        ban_duration: '876000h',
+        user_metadata: { is_deleted: true, deleted_at: new Date().toISOString(), previous_role: currentRole },
+      });
+      if (authErr) {
+        console.warn('Auth soft delete warning:', authErr);
+      }
+
+      // 2. Update DB user role to 'archived'
+      await supabaseAdmin.from('users').update({ role: 'archived', active_role: 'archived' }).eq('id', userId);
+
+      return NextResponse.json({ success: true, message: 'User account has been archived.' });
+    }
+
+    // 5. RESTORE ARCHIVED USER
+    if (action === 'restore') {
+      const { data: authUser } = await supabaseAdmin.auth.admin.getUserById(userId);
+      const previousRole = authUser?.user?.user_metadata?.previous_role || 'student';
+
+      // 1. Unban & update metadata in Auth
+      const { error: authErr } = await supabaseAdmin.auth.admin.updateUserById(userId, {
+        ban_duration: 'none',
+        user_metadata: { is_deleted: false, deleted_at: null },
+      });
+      if (authErr) {
+        return NextResponse.json({ error: authErr.message }, { status: 500 });
+      }
+
+      // 2. Restore DB user role via RPC
+      await supabaseAdmin.rpc('admin_set_user_role', { p_user_id: userId, p_role: previousRole });
+
+      return NextResponse.json({ success: true, message: `User account restored to ${previousRole}.` });
+    }
+
+    // 6. PERMANENT PURGE (HARD DELETE)
+    if (action === 'purge') {
+      const { error: authErr } = await supabaseAdmin.auth.admin.deleteUser(userId);
+      if (authErr) console.warn('Auth purge warning:', authErr);
+      const { error: dbErr } = await supabaseAdmin.from('users').delete().eq('id', userId);
+      if (dbErr) return NextResponse.json({ error: dbErr.message }, { status: 500 });
+      return NextResponse.json({ success: true, message: 'User account permanently purged.' });
+    }
+
+    // 7. RESET PASSWORD
     if (action === 'reset_password') {
       if (newPassword) {
         const { error } = await supabaseAdmin.auth.admin.updateUserById(userId, { password: newPassword });
@@ -135,7 +195,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // 5. SEND DIRECT NOTIFICATION / MESSAGE
+    // 8. SEND DIRECT NOTIFICATION
     if (action === 'send_notification') {
       if (!title || !message) {
         return NextResponse.json({ error: 'Title and message are required' }, { status: 400 });
@@ -149,19 +209,6 @@ export async function POST(req: NextRequest) {
       });
       if (error) return NextResponse.json({ error: error.message }, { status: 500 });
       return NextResponse.json({ success: true, message: 'Notification sent to user.' });
-    }
-
-    // 6. DELETE USER ACCOUNT (hard delete from Auth & Users table)
-    if (action === 'delete') {
-      const { error: authErr } = await supabaseAdmin.auth.admin.deleteUser(userId);
-      if (authErr) {
-        console.warn('Auth delete warning:', authErr);
-      }
-      const { error: dbErr } = await supabaseAdmin.from('users').delete().eq('id', userId);
-      if (dbErr) {
-        return NextResponse.json({ error: dbErr.message }, { status: 500 });
-      }
-      return NextResponse.json({ success: true, message: 'User account deleted permanently.' });
     }
 
     return NextResponse.json({ error: 'Invalid action' }, { status: 400 });

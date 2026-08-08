@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { roleOf } from '@/lib/role';
-import { Search, Mail, Phone, MapPin, MoreVertical, Download, ChevronLeft, ChevronRight, Filter, MessageSquare, Eye, Shield, Trash2 } from 'lucide-react';
+import { Search, Mail, Phone, MapPin, MoreVertical, Download, ChevronLeft, ChevronRight, Filter, MessageSquare, Eye, Shield, Trash2, RotateCcw } from 'lucide-react';
 import { exportToCSV } from '@/utils/export';
 import { TableSkeleton } from '@/components/ui/TableSkeleton';
 import { useToast, useConfirm } from '@/components/ui/Feedback';
@@ -20,6 +20,9 @@ interface User {
   city: string;
   created_at: string;
   is_suspended?: boolean;
+  is_deleted?: boolean;
+  deleted_at?: string | null;
+  previous_role?: string;
 }
 
 export default function UsersPage() {
@@ -31,13 +34,12 @@ export default function UsersPage() {
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState('all');
   const [cityFilter, setCityFilter] = useState('all');
+  const [statusFilter, setStatusFilter] = useState('all');
   const [savingRole, setSavingRole] = useState<string | null>(null);
   
   // Interactive menu & detail modal state
   const [activeMenuUserId, setActiveMenuUserId] = useState<string | null>(null);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
-
-  const [statusFilter, setStatusFilter] = useState('all');
 
   async function fetchUsers() {
     setLoading(true);
@@ -51,7 +53,6 @@ export default function UsersPage() {
       if (res.ok && json.users) {
         setUsers(json.users);
       } else {
-        // Fallback to table fetch if endpoint errors
         const { data } = await supabase.from('users').select('*').order('created_at', { ascending: false });
         if (data) setUsers(data);
       }
@@ -98,11 +99,11 @@ export default function UsersPage() {
     }
   };
 
-  const handleDeleteUser = async (user: User) => {
+  const handleSoftDeleteUser = async (user: User) => {
     const ok = await confirm({
-      title: 'Delete Account Permanently?',
-      message: `Are you sure you want to delete ${user.full_name || 'this user'}? This action is IRREVERSIBLE and deletes all their records.`,
-      confirmLabel: 'Delete Permanently',
+      title: 'Archive Account?',
+      message: `Move ${user.full_name || 'this user'} to Archived accounts? The user will be blocked from logging in, but historical records will be preserved. You can restore this user anytime.`,
+      confirmLabel: 'Archive Account',
     });
     if (!ok) return;
 
@@ -113,12 +114,60 @@ export default function UsersPage() {
         body: JSON.stringify({ action: 'delete', userId: user.id }),
       });
       const json = await res.json();
-      if (!res.ok) throw new Error(json.error || 'Failed to delete user');
+      if (!res.ok) throw new Error(json.error || 'Failed to archive user');
 
-      toast('success', 'User deleted permanently.');
+      toast('success', 'User account archived.');
       fetchUsers();
     } catch (err: any) {
-      toast('error', err.message || 'Failed to delete user.');
+      toast('error', err.message || 'Failed to archive user.');
+    }
+  };
+
+  const handleRestoreUser = async (user: User) => {
+    const ok = await confirm({
+      title: 'Restore Account?',
+      message: `Restore ${user.full_name || 'this user'}'s account back to active status?`,
+      confirmLabel: 'Restore Account',
+    });
+    if (!ok) return;
+
+    try {
+      const res = await fetch('/api/admin/users/action', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'restore', userId: user.id }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || 'Failed to restore user');
+
+      toast('success', 'User account restored to active status.');
+      fetchUsers();
+    } catch (err: any) {
+      toast('error', err.message || 'Failed to restore user.');
+    }
+  };
+
+  const handlePurgeUser = async (user: User) => {
+    const ok = await confirm({
+      title: 'Permanently Purge Account?',
+      message: `PERMANENTLY PURGE ${user.full_name || 'this user'}? This action is 100% IRREVERSIBLE and wipes all their data forever.`,
+      confirmLabel: 'Permanently Purge',
+    });
+    if (!ok) return;
+
+    try {
+      const res = await fetch('/api/admin/users/action', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'purge', userId: user.id }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || 'Failed to purge user');
+
+      toast('success', 'User permanently purged.');
+      fetchUsers();
+    } catch (err: any) {
+      toast('error', err.message || 'Failed to purge user.');
     }
   };
 
@@ -151,9 +200,15 @@ export default function UsersPage() {
     const matchesRole = roleFilter === 'all' || roleOf(u) === roleFilter;
     const matchesCity = cityFilter === 'all' || u.city === cityFilter;
     const matchesStatus = 
-      statusFilter === 'all' || 
-      (statusFilter === 'suspended' && u.is_suspended) || 
-      (statusFilter === 'active' && !u.is_suspended);
+      statusFilter === 'all'
+        ? !u.is_deleted
+        : statusFilter === 'suspended'
+        ? u.is_suspended && !u.is_deleted
+        : statusFilter === 'active'
+        ? !u.is_suspended && !u.is_deleted
+        : statusFilter === 'deleted'
+        ? u.is_deleted
+        : true;
 
     return matchesSearch && matchesRole && matchesCity && matchesStatus;
   });
@@ -204,9 +259,10 @@ export default function UsersPage() {
               onChange={(e) => setStatusFilter(e.target.value)}
               className="px-3 py-2 border border-gray-200 rounded-lg text-sm font-medium focus:ring-brand-blue focus:border-brand-blue bg-white"
             >
-              <option value="all">All Statuses</option>
+              <option value="all">All Users</option>
               <option value="active">Active Only</option>
               <option value="suspended">Suspended Only</option>
+              <option value="deleted">Deleted / Archived</option>
             </select>
 
             <select
@@ -261,7 +317,9 @@ export default function UsersPage() {
                 paginatedUsers.map((user) => {
                   const primaryRole = roleOf(user);
                   return (
-                  <tr key={user.id} className={`hover:bg-gray-50/50 transition-colors ${user.is_suspended ? 'bg-red-50/30' : ''}`}>
+                  <tr key={user.id} className={`hover:bg-gray-50/50 transition-colors ${
+                    user.is_deleted ? 'bg-gray-100/50 opacity-75' : user.is_suspended ? 'bg-red-50/30' : ''
+                  }`}>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
                         <div className="h-10 w-10 flex-shrink-0 bg-brand-gold/20 rounded-full flex items-center justify-center">
@@ -272,11 +330,15 @@ export default function UsersPage() {
                         <div className="ml-4">
                           <div className="flex items-center gap-2">
                             <span className="text-sm font-medium text-gray-900">{user.full_name || 'Unknown Name'}</span>
-                            {user.is_suspended && (
+                            {user.is_deleted ? (
+                              <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-gray-200 text-gray-700 uppercase tracking-wide border border-gray-300">
+                                Archived
+                              </span>
+                            ) : user.is_suspended ? (
                               <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-red-100 text-red-700 uppercase tracking-wide border border-red-200">
                                 Suspended
                               </span>
-                            )}
+                            ) : null}
                           </div>
                           <div className="text-xs text-gray-500">ID: {user.id.slice(0, 8)}...</div>
                         </div>
@@ -292,13 +354,13 @@ export default function UsersPage() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <select
-                        value={primaryRole}
-                        disabled={savingRole === user.id}
+                        value={user.is_deleted ? 'archived' : primaryRole}
+                        disabled={savingRole === user.id || user.is_deleted}
                         onChange={(e) => changeRole(user, e.target.value)}
                         className="text-xs font-semibold rounded-lg border border-gray-200 px-2 py-1 capitalize bg-white disabled:opacity-50 focus:ring-2 focus:ring-brand-blue focus:outline-none"
                         title="Change role"
                       >
-                        {['student', 'parent', 'tutor', 'admin'].map((r) => (
+                        {['student', 'parent', 'tutor', 'admin', 'archived'].map((r) => (
                           <option key={r} value={r}>{r}</option>
                         ))}
                       </select>
@@ -334,7 +396,7 @@ export default function UsersPage() {
                           {/* Dropdown Menu */}
                           {activeMenuUserId === user.id && (
                             <div 
-                              className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-100 py-1.5 z-40 text-left animate-in fade-in zoom-in-95 duration-100"
+                              className="absolute right-0 mt-2 w-52 bg-white rounded-xl shadow-lg border border-gray-100 py-1.5 z-40 text-left animate-in fade-in zoom-in-95 duration-100"
                               onClick={(e) => e.stopPropagation()}
                             >
                               <button
@@ -359,29 +421,57 @@ export default function UsersPage() {
                                 Direct Message
                               </button>
 
-                              <button
-                                onClick={() => {
-                                  handleToggleSuspension(user);
-                                  setActiveMenuUserId(null);
-                                }}
-                                className="w-full text-left px-4 py-2 text-xs font-medium text-amber-700 hover:bg-amber-50 flex items-center"
-                              >
-                                <Shield className="w-3.5 h-3.5 mr-2 text-amber-600" />
-                                {user.is_suspended ? 'Reactivate Account' : 'Suspend Account'}
-                              </button>
+                              {user.is_deleted ? (
+                                <>
+                                  <div className="my-1 border-t border-gray-100" />
+                                  <button
+                                    onClick={() => {
+                                      handleRestoreUser(user);
+                                      setActiveMenuUserId(null);
+                                    }}
+                                    className="w-full text-left px-4 py-2 text-xs font-medium text-green-700 hover:bg-green-50 flex items-center"
+                                  >
+                                    <RotateCcw className="w-3.5 h-3.5 mr-2 text-green-600" />
+                                    Restore Account
+                                  </button>
+                                  <button
+                                    onClick={() => {
+                                      handlePurgeUser(user);
+                                      setActiveMenuUserId(null);
+                                    }}
+                                    className="w-full text-left px-4 py-2 text-xs font-medium text-red-600 hover:bg-red-50 flex items-center"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5 mr-2 text-red-500" />
+                                    Permanently Purge
+                                  </button>
+                                </>
+                              ) : (
+                                <>
+                                  <button
+                                    onClick={() => {
+                                      handleToggleSuspension(user);
+                                      setActiveMenuUserId(null);
+                                    }}
+                                    className="w-full text-left px-4 py-2 text-xs font-medium text-amber-700 hover:bg-amber-50 flex items-center"
+                                  >
+                                    <Shield className="w-3.5 h-3.5 mr-2 text-amber-600" />
+                                    {user.is_suspended ? 'Reactivate Account' : 'Suspend Account'}
+                                  </button>
 
-                              <div className="my-1 border-t border-gray-100" />
+                                  <div className="my-1 border-t border-gray-100" />
 
-                              <button
-                                onClick={() => {
-                                  handleDeleteUser(user);
-                                  setActiveMenuUserId(null);
-                                }}
-                                className="w-full text-left px-4 py-2 text-xs font-medium text-red-600 hover:bg-red-50 flex items-center"
-                              >
-                                <Trash2 className="w-3.5 h-3.5 mr-2 text-red-500" />
-                                Delete Account
-                              </button>
+                                  <button
+                                    onClick={() => {
+                                      handleSoftDeleteUser(user);
+                                      setActiveMenuUserId(null);
+                                    }}
+                                    className="w-full text-left px-4 py-2 text-xs font-medium text-red-600 hover:bg-red-50 flex items-center"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5 mr-2 text-red-500" />
+                                    Archive Account
+                                  </button>
+                                </>
+                              )}
                             </div>
                           )}
                         </div>
