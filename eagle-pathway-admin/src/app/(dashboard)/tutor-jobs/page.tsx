@@ -288,6 +288,7 @@ export default function TutorJobsPage() {
                                     method: 'POST',
                                     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
                                     body: JSON.stringify({
+                                      job_post_id: job.id,
                                       jobId: job.id,
                                       place: job.place,
                                       grade: job.grade,

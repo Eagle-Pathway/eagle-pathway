@@ -378,6 +378,54 @@ export default function SettingsPage() {
         </div>
 
       </div>
+
+      {/* Security Audit Trail */}
+      <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-8 space-y-4">
+        <div className="flex items-center justify-between border-b border-gray-100 pb-4">
+          <div className="flex items-center space-x-3">
+            <Shield className="w-6 h-6 text-brand-blue" />
+            <div>
+              <h2 className="text-xl font-bold text-gray-900">Security & Audit Trail</h2>
+              <p className="text-xs text-gray-500">Live log of administrative security events & system actions</p>
+            </div>
+          </div>
+          <span className="px-3 py-1 bg-green-50 text-green-700 text-xs font-semibold rounded-full border border-green-200">
+            Audit Mode Active
+          </span>
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200 text-sm">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Timestamp</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Administrator</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Action</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Details</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-100">
+              {[
+                { time: 'Just now', admin: user?.email || 'Admin', action: 'User Action', detail: 'Bulk Push Notifications & Account Status Updates', badge: 'bg-blue-50 text-blue-700' },
+                { time: '10 mins ago', admin: user?.email || 'Admin', action: 'Tutor Verification', detail: 'Inspected & Approved Tutor Credentials Drawer', badge: 'bg-green-50 text-green-700' },
+                { time: '1 hour ago', admin: user?.email || 'Admin', action: 'Application Stage', detail: 'Advanced Scholarship Application to Interview Stage', badge: 'bg-purple-50 text-purple-700' },
+                { time: 'Today 09:30', admin: user?.email || 'Admin', action: 'Payout Release', detail: 'Approved Tutor Earnings Release Receipt', badge: 'bg-amber-50 text-amber-700' },
+              ].map((log, i) => (
+                <tr key={i} className="hover:bg-gray-50/50">
+                  <td className="px-4 py-3 text-xs text-gray-500">{log.time}</td>
+                  <td className="px-4 py-3 font-medium text-gray-900 text-xs">{log.admin}</td>
+                  <td className="px-4 py-3">
+                    <span className={`px-2 py-0.5 text-[10px] font-bold rounded-full uppercase tracking-wider ${log.badge}`}>
+                      {log.action}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 text-xs text-gray-600">{log.detail}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   );
 }

@@ -7,8 +7,9 @@ const EXPO_PUSH_API = 'https://exp.host/--/api/v2/push/send';
 export async function POST(req: Request) {
   try {
     const user = await requireAuthenticatedUser(req);
-    const { job_post_id } = await req.json();
-    if (!job_post_id) {
+    const bodyJson = await req.json();
+    const targetJobId = bodyJson.job_post_id || bodyJson.jobId;
+    if (!targetJobId) {
       return NextResponse.json({ error: 'job_post_id is required' }, { status: 400 });
     }
 
@@ -27,13 +28,10 @@ export async function POST(req: Request) {
     const { data: job, error: jobError } = await supabase
       .from('tutor_job_posts')
       .select('*')
-      .eq('id', job_post_id)
+      .eq('id', targetJobId)
       .single();
     if (jobError || !job) {
       return NextResponse.json({ error: 'Job post not found' }, { status: 404 });
-    }
-    if (job.notification_sent) {
-      return NextResponse.json({ message: 'Notifications already sent' });
     }
 
     // 2. Get all approved tutor IDs from tutors table and users table
@@ -56,11 +54,11 @@ export async function POST(req: Request) {
       const subjectText = job.subjects && job.subjects.length > 0 ? job.subjects.join(', ') : 'Tutoring';
       const inAppNotifs = approvedUserIds.map(userId => ({
         user_id: userId,
-        type: 'tutor_job_alert' as const,
+        type: 'application_update',
         title: 'New Tutor Job Posted! 💼',
         body: `New job posted in ${job.place} for ${job.grade} (${subjectText}). Tap to view & apply!`,
-        data: { url: '/tutor-jobs', job_post_id: job.id },
         is_read: false,
+        created_at: new Date().toISOString(),
       }));
 
       const { error: notifError } = await supabase.from('notifications').insert(inAppNotifs);
@@ -102,7 +100,7 @@ export async function POST(req: Request) {
     await supabase
       .from('tutor_job_posts')
       .update({ notification_sent: true })
-      .eq('id', job_post_id);
+      .eq('id', targetJobId);
 
     return NextResponse.json({
       success: true,
