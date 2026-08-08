@@ -129,14 +129,15 @@ export default function BookingsPage() {
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Users</th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Payment</th>
+                <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {loading ? (
-                <TableSkeleton cols={4} rows={5} avatarCol={false} />
+                <TableSkeleton cols={5} rows={5} avatarCol={false} />
               ) : filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={4} className="px-6 py-10 text-center text-sm text-gray-500">No bookings found.</td>
+                  <td colSpan={5} className="px-6 py-10 text-center text-sm text-gray-500">No bookings found.</td>
                 </tr>
               ) : (
                 paginatedBookings.map((booking) => (
@@ -170,6 +171,33 @@ export default function BookingsPage() {
                         <CreditCard className={`w-4 h-4 mr-1.5 ${booking.payment_status === 'paid' ? 'text-green-500' : 'text-gray-400'}`} />
                         <span className="capitalize font-medium">{booking.payment_status}</span>
                       </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-xs">
+                      <select
+                        value={booking.status}
+                        onChange={async (e) => {
+                          const newStatus = e.target.value;
+                          const { error } = await supabase.from('bookings').update({ status: newStatus }).eq('id', booking.id);
+                          if (!error) {
+                            fetchBookings();
+                            if (booking.student_id) {
+                              await supabase.from('notifications').insert({
+                                user_id: booking.student_id,
+                                title: 'Booking Status Updated',
+                                body: `Your tutoring session status is now "${newStatus.toUpperCase()}".`,
+                                type: 'application_update',
+                                is_read: false,
+                              });
+                            }
+                          }
+                        }}
+                        className="px-2.5 py-1 font-semibold rounded-lg border border-gray-200 bg-white text-gray-700 focus:ring-brand-blue"
+                      >
+                        <option value="confirmed">Confirmed</option>
+                        <option value="completed">Completed</option>
+                        <option value="disputed">Disputed</option>
+                        <option value="cancelled">Cancelled & Refund</option>
+                      </select>
                     </td>
                   </tr>
                 ))

@@ -278,13 +278,45 @@ export default function TutorJobsPage() {
                           Applicants
                         </button>
                         {job.status === 'open' && (
-                          <button
-                            onClick={() => handleCloseJob(job.id)}
-                            className="inline-flex items-center px-2.5 py-1.5 text-xs font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded-lg hover:bg-amber-100"
-                          >
-                            <XCircle className="w-3 h-3 mr-1" />
-                            Close
-                          </button>
+                          <>
+                            <button
+                              onClick={async () => {
+                                try {
+                                  const session = await supabase.auth.getSession();
+                                  const token = session.data.session?.access_token;
+                                  const res = await fetch('/api/notify-new-job', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                                    body: JSON.stringify({
+                                      jobId: job.id,
+                                      place: job.place,
+                                      grade: job.grade,
+                                      subjects: job.subjects,
+                                      hourly_rate: job.hourly_rate,
+                                    }),
+                                  });
+                                  if (res.ok) {
+                                    showToast('success', `Push notification alert sent to verified tutors! 🚀`);
+                                  } else {
+                                    showToast('error', 'Failed to broadcast job alert.');
+                                  }
+                                } catch {
+                                  showToast('error', 'Network error broadcasting job alert.');
+                                }
+                              }}
+                              className="inline-flex items-center px-2.5 py-1.5 text-xs font-semibold text-white bg-brand-blue hover:bg-blue-700 rounded-lg shadow-sm"
+                            >
+                              <Bell className="w-3 h-3 mr-1" />
+                              Alert Tutors
+                            </button>
+                            <button
+                              onClick={() => handleCloseJob(job.id)}
+                              className="inline-flex items-center px-2.5 py-1.5 text-xs font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded-lg hover:bg-amber-100"
+                            >
+                              <XCircle className="w-3 h-3 mr-1" />
+                              Close
+                            </button>
+                          </>
                         )}
                       </div>
                     </td>

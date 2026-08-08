@@ -15,12 +15,12 @@ export async function POST(req: Request) {
     }
 
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-    if (!supabaseUrl || !supabaseAnonKey) {
+    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    if (!supabaseUrl || !supabaseServiceKey) {
       return NextResponse.json({ error: 'Supabase configuration missing' }, { status: 500 });
     }
 
-    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+    const supabase = createClient(supabaseUrl, supabaseServiceKey, {
       auth: { persistSession: false, autoRefreshToken: false },
     });
 
@@ -38,12 +38,16 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'No users found for this audience' }, { status: 404 });
     }
 
+    // Validate notification type against PostgreSQL enum
+    const validEnums = ['application_update', 'sop_reviewed', 'new_resource', 'document_rejected', 'document_approved'];
+    const safeType = validEnums.includes(type) ? type : 'application_update';
+
     // 3. Prepare in-app notifications
     const inAppNotifs = users.map(u => ({
       user_id: u.id,
       title,
       body,
-      type,
+      type: safeType,
       is_read: false,
     }));
 
