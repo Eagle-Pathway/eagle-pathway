@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { roleOf } from '@/lib/role';
-import { Search, Mail, Phone, MapPin, MoreVertical, Download, ChevronLeft, ChevronRight, Filter, MessageSquare, Eye, Shield, Trash2, RotateCcw } from 'lucide-react';
+import { Search, Mail, Phone, MapPin, MoreVertical, Download, ChevronLeft, ChevronRight, Filter, MessageSquare, Eye, Shield, Trash2, RotateCcw, Send } from 'lucide-react';
 import { exportToCSV } from '@/utils/export';
 import { TableSkeleton } from '@/components/ui/TableSkeleton';
 import { useToast, useConfirm } from '@/components/ui/Feedback';
@@ -41,6 +41,13 @@ export default function UsersPage() {
   const [activeMenuUserId, setActiveMenuUserId] = useState<string | null>(null);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
 
+  // Bulk Selection & Batch Actions State
+  const [selectedUserIds, setSelectedUserIds] = useState<Set<string>>(new Set());
+  const [bulkActionLoading, setBulkActionLoading] = useState(false);
+  const [showBulkNotifyModal, setShowBulkNotifyModal] = useState(false);
+  const [bulkNotifyTitle, setBulkNotifyTitle] = useState('');
+  const [bulkNotifyMessage, setBulkNotifyMessage] = useState('');
+
   async function fetchUsers() {
     setLoading(true);
     try {
@@ -63,6 +70,99 @@ export default function UsersPage() {
       setLoading(false);
     }
   }
+
+  // Bulk selection helpers
+  const toggleSelectUser = (id: string) => {
+    setSelectedUserIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const handleBulkSuspend = async () => {
+    if (selectedUserIds.size === 0) return;
+    const ok = await confirm({
+      title: `Suspend ${selectedUserIds.size} Users?`,
+      message: `Are you sure you want to suspend all ${selectedUserIds.size} selected user accounts? They will be blocked from accessing the app.`,
+      confirmLabel: `Suspend ${selectedUserIds.size} Users`,
+    });
+    if (!ok) return;
+
+    setBulkActionLoading(true);
+    const userIdsArr = Array.from(selectedUserIds);
+    const results = await Promise.all(
+      userIdsArr.map((userId) =>
+        fetch('/api/admin/users/action', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'suspend', userId }),
+        }).then((res) => res.ok).catch(() => false)
+      )
+    );
+    const successCount = results.filter(Boolean).length;
+    setBulkActionLoading(false);
+    toast('success', `Successfully suspended ${successCount} users.`);
+    setSelectedUserIds(new Set());
+    fetchUsers();
+  };
+
+  const handleBulkReactivate = async () => {
+    if (selectedUserIds.size === 0) return;
+    const ok = await confirm({
+      title: `Reactivate ${selectedUserIds.size} Users?`,
+      message: `Reactivate all ${selectedUserIds.size} selected user accounts?`,
+      confirmLabel: `Reactivate ${selectedUserIds.size} Users`,
+    });
+    if (!ok) return;
+
+    setBulkActionLoading(true);
+    const userIdsArr = Array.from(selectedUserIds);
+    const results = await Promise.all(
+      userIdsArr.map((userId) =>
+        fetch('/api/admin/users/action', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'unsuspend', userId }),
+        }).then((res) => res.ok).catch(() => false)
+      )
+    );
+    const successCount = results.filter(Boolean).length;
+    setBulkActionLoading(false);
+    toast('success', `Successfully reactivated ${successCount} users.`);
+    setSelectedUserIds(new Set());
+    fetchUsers();
+  };
+
+  const handleBulkSendNotifySubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!bulkNotifyTitle.trim() || !bulkNotifyMessage.trim() || selectedUserIds.size === 0) return;
+
+    setBulkActionLoading(true);
+    const userIdsArr = Array.from(selectedUserIds);
+    const results = await Promise.all(
+      userIdsArr.map((userId) =>
+        fetch('/api/admin/users/action', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'send_notification',
+            userId,
+            title: bulkNotifyTitle,
+            message: bulkNotifyMessage,
+          }),
+        }).then((res) => res.ok).catch(() => false)
+      )
+    );
+    const successCount = results.filter(Boolean).length;
+    setBulkActionLoading(false);
+    toast('success', `Notification sent to ${successCount} users.`);
+    setShowBulkNotifyModal(false);
+    setBulkNotifyTitle('');
+    setBulkNotifyMessage('');
+    setSelectedUserIds(new Set());
+  };
 
   // Close active dropdown menu when clicking anywhere on page
   useEffect(() => {
@@ -286,20 +386,90 @@ export default function UsersPage() {
               ))}
             </select>
             <button 
-              onClick={() => exportToCSV(filtered, 'users_export')}
+              onClick={() => exportToCSV(
+                selectedUserIds.size > 0 ? users.filter(u => selectedUserIds.has(u.id)) : filtered,
+                'users_export'
+              )}
               className="flex items-center px-4 py-2 bg-white text-gray-700 border border-gray-200 rounded-lg shadow-sm hover:bg-gray-50 transition-colors text-sm font-medium whitespace-nowrap"
             >
               <Download className="w-4 h-4 mr-2 text-gray-500" />
-              Export CSV
+              {selectedUserIds.size > 0 ? `Export (${selectedUserIds.size})` : 'Export CSV'}
             </button>
           </div>
+
+          {/* Floating Bulk Action Bar */}
+          {selectedUserIds.size > 0 && (
+            <div className="mt-3 p-3 bg-brand-blue/10 border border-brand-blue/20 rounded-xl flex flex-wrap items-center justify-between gap-2 animate-in fade-in slide-in-from-top-2 duration-200">
+              <div className="flex items-center space-x-3 text-xs font-semibold text-brand-blue">
+                <div className="flex items-center space-x-1.5">
+                  <span className="bg-brand-blue text-white px-2 py-0.5 rounded-full font-bold">{selectedUserIds.size}</span>
+                  <span>of {filtered.length} users selected</span>
+                </div>
+                {selectedUserIds.size < filtered.length && (
+                  <button
+                    onClick={() => setSelectedUserIds(new Set(filtered.map(u => u.id)))}
+                    className="underline text-brand-blue hover:text-blue-800 text-xs font-bold"
+                  >
+                    Select all {filtered.length} users
+                  </button>
+                )}
+              </div>
+              <div className="flex items-center space-x-2">
+                <button
+                  onClick={() => setShowBulkNotifyModal(true)}
+                  disabled={bulkActionLoading}
+                  className="px-3 py-1.5 text-xs font-semibold text-white bg-brand-blue hover:bg-blue-700 rounded-lg shadow-sm flex items-center transition-colors"
+                >
+                  <Send className="w-3.5 h-3.5 mr-1.5" />
+                  Send Push Notification
+                </button>
+                <button
+                  onClick={handleBulkSuspend}
+                  disabled={bulkActionLoading}
+                  className="px-3 py-1.5 text-xs font-semibold text-white bg-amber-600 hover:bg-amber-700 rounded-lg shadow-sm flex items-center transition-colors"
+                >
+                  <Shield className="w-3.5 h-3.5 mr-1.5" />
+                  Suspend Selected
+                </button>
+                <button
+                  onClick={handleBulkReactivate}
+                  disabled={bulkActionLoading}
+                  className="px-3 py-1.5 text-xs font-semibold text-white bg-green-600 hover:bg-green-700 rounded-lg shadow-sm flex items-center transition-colors"
+                >
+                  <RotateCcw className="w-3.5 h-3.5 mr-1.5" />
+                  Reactivate Selected
+                </button>
+                <button
+                  onClick={() => setSelectedUserIds(new Set())}
+                  className="px-2 py-1.5 text-xs text-gray-500 hover:text-gray-700 hover:bg-gray-200/50 rounded-lg"
+                >
+                  Clear Selection
+                </button>
+              </div>
+            </div>
+          )}
         </div>
         
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
+                <th scope="col" className="px-4 py-3 text-left">
+                  <input
+                    type="checkbox"
+                    checked={filtered.length > 0 && filtered.every(u => selectedUserIds.has(u.id))}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        setSelectedUserIds(new Set(filtered.map(u => u.id)));
+                      } else {
+                        setSelectedUserIds(new Set());
+                      }
+                    }}
+                    title="Select all filtered users"
+                    className="rounded border-gray-300 text-brand-blue focus:ring-brand-blue h-4 w-4 cursor-pointer"
+                  />
+                </th>
+                <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contact</th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role & City</th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Joined</th>
@@ -308,19 +478,28 @@ export default function UsersPage() {
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {loading ? (
-                <TableSkeleton cols={5} rows={5} />
+                <TableSkeleton cols={6} rows={5} />
               ) : filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-6 py-10 text-center text-sm text-gray-500">No users found.</td>
+                  <td colSpan={6} className="px-6 py-10 text-center text-sm text-gray-500">No users found.</td>
                 </tr>
               ) : (
                 paginatedUsers.map((user) => {
                   const primaryRole = roleOf(user);
+                  const isSelected = selectedUserIds.has(user.id);
                   return (
                   <tr key={user.id} className={`hover:bg-gray-50/50 transition-colors ${
-                    user.is_deleted ? 'bg-gray-100/50 opacity-75' : user.is_suspended ? 'bg-red-50/30' : ''
+                    isSelected ? 'bg-blue-50/40' : user.is_deleted ? 'bg-gray-100/50 opacity-75' : user.is_suspended ? 'bg-red-50/30' : ''
                   }`}>
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-4 py-4 whitespace-nowrap">
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={() => toggleSelectUser(user.id)}
+                        className="rounded border-gray-300 text-brand-blue focus:ring-brand-blue h-4 w-4"
+                      />
+                    </td>
+                    <td className="px-4 py-4 whitespace-nowrap">
                       <div className="flex items-center">
                         <div className="h-10 w-10 flex-shrink-0 bg-brand-gold/20 rounded-full flex items-center justify-center">
                           <span className="text-brand-gold font-bold text-sm">
@@ -521,6 +700,65 @@ export default function UsersPage() {
           onClose={() => setSelectedUserId(null)}
           onRefresh={fetchUsers}
         />
+      )}
+
+      {/* Bulk Push Notification Modal */}
+      {showBulkNotifyModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 animate-in fade-in duration-200">
+          <div className="bg-white rounded-2xl shadow-xl max-w-lg w-full overflow-hidden p-6 space-y-4">
+            <div className="flex items-center justify-between border-b border-gray-100 pb-3">
+              <h3 className="text-lg font-bold text-gray-900">
+                Send Push Notification to {selectedUserIds.size} Users
+              </h3>
+              <button
+                onClick={() => setShowBulkNotifyModal(false)}
+                className="text-gray-400 hover:text-gray-600 p-1 rounded-lg"
+              >
+                ✕
+              </button>
+            </div>
+            <form onSubmit={handleBulkSendNotifySubmit} className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">Title</label>
+                <input
+                  type="text"
+                  placeholder="Notification title (e.g. Platform Update)"
+                  value={bulkNotifyTitle}
+                  onChange={(e) => setBulkNotifyTitle(e.target.value)}
+                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-brand-blue focus:border-brand-blue"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">Message Body</label>
+                <textarea
+                  placeholder="Enter notification body..."
+                  value={bulkNotifyMessage}
+                  onChange={(e) => setBulkNotifyMessage(e.target.value)}
+                  rows={3}
+                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-brand-blue focus:border-brand-blue"
+                  required
+                />
+              </div>
+              <div className="flex justify-end space-x-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowBulkNotifyModal(false)}
+                  className="px-4 py-2 text-xs font-medium text-gray-600 hover:bg-gray-100 rounded-lg"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={bulkActionLoading}
+                  className="px-4 py-2 text-xs font-semibold text-white bg-brand-blue hover:bg-blue-700 rounded-lg shadow-sm"
+                >
+                  Send to {selectedUserIds.size} Users
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
       )}
     </div>
   );

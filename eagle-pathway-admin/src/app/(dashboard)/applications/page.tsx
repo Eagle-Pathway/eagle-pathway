@@ -129,7 +129,20 @@ export default function ApplicationsPage() {
       if (!error) {
         setApplications(prev => prev.map(app => app.id === appId ? { ...app, status, updated_at: new Date().toISOString() } : app));
         if (selectedApp?.id === appId) setSelectedApp(prev => prev ? { ...prev, status, updated_at: new Date().toISOString() } : null);
-        setNotification({ type: 'success', message: 'Status updated successfully!' });
+
+        // Auto insert push notification for student on mobile app
+        const targetApp = applications.find(a => a.id === appId);
+        if (targetApp?.student_id) {
+          await supabase.from('notifications').insert({
+            user_id: targetApp.student_id,
+            title: `Application Status Update`,
+            message: `Your scholarship application status is now "${status.replace('_', ' ').toUpperCase()}".`,
+            read: false,
+            created_at: new Date().toISOString(),
+          });
+        }
+
+        setNotification({ type: 'success', message: 'Status updated and notification sent!' });
         setTimeout(() => setNotification(null), 3000);
       } else {
         setNotification({ type: 'error', message: 'Failed to update status: ' + error.message });

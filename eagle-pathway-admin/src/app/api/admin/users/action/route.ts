@@ -203,11 +203,15 @@ export async function POST(req: NextRequest) {
       const { error } = await supabaseAdmin.from('notifications').insert({
         user_id: userId,
         title,
-        message,
-        read: false,
+        body: message,
+        type: 'application_update',
+        is_read: false,
         created_at: new Date().toISOString(),
       });
-      if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+      if (error) {
+        console.error('Notification insert error:', error);
+        return NextResponse.json({ error: error.message }, { status: 500 });
+      }
       return NextResponse.json({ success: true, message: 'Notification sent to user.' });
     }
 
