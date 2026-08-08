@@ -13,7 +13,9 @@ import {
   GraduationCap,
   Clock,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  LayoutGrid,
+  List
 } from 'lucide-react';
 
 interface Application {
@@ -64,6 +66,8 @@ export default function ApplicationsPage() {
   const [savingFeedback, setSavingFeedback] = useState(false);
   const [savingStatus, setSavingStatus] = useState(false);
   const [notification, setNotification] = useState<{type: 'error' | 'success' | 'info'; message: string} | null>(null);
+
+  const [viewMode, setViewMode] = useState<'kanban' | 'table'>('kanban');
 
   useEffect(() => {
     fetchData();
@@ -277,136 +281,234 @@ export default function ApplicationsPage() {
               <option key={name} value={applications.find(a => a.scholarship?.name === name)?.scholarship_id}>{name}</option>
             ))}
           </select>
+
+          {/* View Mode Toggle */}
+          <div className="flex bg-gray-100 p-1 rounded-xl border border-gray-200">
+            <button
+              onClick={() => setViewMode('kanban')}
+              className={`flex items-center px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors ${
+                viewMode === 'kanban'
+                  ? 'bg-white text-brand-blue shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              <LayoutGrid className="w-3.5 h-3.5 mr-1.5" />
+              Kanban
+            </button>
+            <button
+              onClick={() => setViewMode('table')}
+              className={`flex items-center px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors ${
+                viewMode === 'table'
+                  ? 'bg-white text-brand-blue shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              <List className="w-3.5 h-3.5 mr-1.5" />
+              Table View
+            </button>
+          </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 overflow-x-auto pb-4 pt-2">
-        {STAGES.map(stage => (
-          <div key={stage.id} className="flex flex-col gap-4 min-w-[200px]">
-            <div className="flex items-center justify-between px-2">
-              <h3 className="font-bold text-gray-900 flex items-center gap-2">
-                <div className={`w-2 h-2 rounded-full ${stage.id === 'accepted' ? 'bg-green-500' : 'bg-brand-blue'}`} />
-                {stage.label}
-              </h3>
-              <span className="text-xs font-bold text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
-                {filtered.filter(a => a.status === stage.id).length}
-              </span>
+      {/* Conditional View Mode */}
+      {viewMode === 'kanban' ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 overflow-x-auto pb-4 pt-2">
+          {STAGES.map(stage => (
+            <div key={stage.id} className="flex flex-col gap-4 min-w-[200px]">
+              <div className="flex items-center justify-between px-2">
+                <h3 className="font-bold text-gray-900 flex items-center gap-2">
+                  <div className={`w-2 h-2 rounded-full ${stage.id === 'accepted' ? 'bg-green-500' : 'bg-brand-blue'}`} />
+                  {stage.label}
+                </h3>
+                <span className="text-xs font-bold text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
+                  {filtered.filter(a => a.status === stage.id).length}
+                </span>
+              </div>
+              
+              <div 
+                className="flex-1 space-y-3 min-h-[500px] bg-gray-50/50 rounded-2xl p-2 border border-dashed border-gray-200 transition-colors"
+                onDragOver={(e) => {
+                  e.preventDefault();
+                  e.currentTarget.classList.add('bg-blue-50', 'border-blue-200');
+                }}
+                onDragLeave={(e) => {
+                  e.currentTarget.classList.remove('bg-blue-50', 'border-blue-200');
+                }}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  e.currentTarget.classList.remove('bg-blue-50', 'border-blue-200');
+                  const appId = e.dataTransfer.getData('applicationId');
+                  if (appId && applications.find(a => a.id === appId)?.status !== stage.id) {
+                    handleUpdateStatus(appId, stage.id);
+                  }
+                }}
+              >
+                {loading ? (
+                  <div className="space-y-3 w-full">
+                    {[1, 2].map(i => (
+                      <div key={i} className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm h-32 flex flex-col justify-between animate-pulse">
+                        <div className="space-y-2">
+                          <div className="h-4 bg-gray-100 rounded w-3/4"></div>
+                          <div className="h-3 bg-gray-100 rounded w-1/2"></div>
+                        </div>
+                        <div className="flex justify-between items-center pt-2">
+                          <div className="h-6 w-6 bg-gray-100 rounded-full"></div>
+                          <div className="h-4 bg-gray-100 rounded w-12"></div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <>
+                    {filtered.filter(a => a.status === stage.id).map(app => (
+                      <div key={app.id} 
+                        draggable
+                        onDragStart={(e) => {
+                          e.dataTransfer.setData('applicationId', app.id);
+                        }}
+                        onClick={(e) => {
+                          if ((e.target as HTMLElement).closest('button') || (e.target as HTMLElement).closest('select')) return;
+                          setSelectedApp(app);
+                          setNotesInput(app.notes || '');
+                        }}
+                        className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow group cursor-grab active:cursor-grabbing w-full"
+                      >
+                        <div className="flex justify-between items-start mb-2">
+                          <span className={`text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded ${
+                            app.package_tier === 'premium' ? 'bg-brand-gold/10 text-brand-gold' : 'bg-gray-100 text-gray-500'
+                          }`}>
+                            {app.package_tier}
+                          </span>
+                        </div>
+                        
+                        <h4 className="font-bold text-gray-900 text-sm mb-1">{app.student?.full_name}</h4>
+                        <p className="text-xs text-brand-blue font-medium mb-3 truncate max-w-full" title={app.scholarship?.name}>
+                          {app.scholarship?.name}
+                        </p>
+                        
+                        <div className="flex items-center justify-between mt-4 pt-3 border-t border-gray-50">
+                          <div className="flex -space-x-2">
+                            <div className="h-6 w-6 rounded-full bg-brand-gold flex items-center justify-center text-[10px] font-bold text-white border-2 border-white ring-1 ring-gray-100">
+                              {app.student?.full_name?.charAt(0)}
+                            </div>
+                            {app.consultant ? (
+                              <div className="h-6 w-6 rounded-full bg-brand-blue flex items-center justify-center text-[10px] font-bold text-white border-2 border-white ring-1 ring-gray-100" title={`Assigned to ${app.consultant.full_name}`}>
+                                {app.consultant.full_name.charAt(0)}
+                              </div>
+                            ) : (
+                              <div className="h-6 w-6 rounded-full bg-gray-200 flex items-center justify-center border-2 border-white ring-1 ring-gray-100">
+                                <UserPlus className="w-3 h-3 text-gray-400" />
+                              </div>
+                            )}
+                          </div>
+                          
+                          <div className="flex items-center gap-1.5">
+                            <select 
+                              className="text-[10px] font-bold bg-transparent text-gray-400 hover:text-brand-blue cursor-pointer border-none p-0 focus:ring-0"
+                              onChange={(e) => handleAssignConsultant(app.id, e.target.value)}
+                              value={app.consultant_id || ''}
+                            >
+                              <option value="">Assign</option>
+                              {consultants.map(c => (
+                                <option key={c.id} value={c.id}>{c.full_name}</option>
+                              ))}
+                            </select>
+                          </div>
+                        </div>
+
+                        <div className="mt-3 flex items-center gap-2">
+                           <button 
+                             onClick={() => handleUpdateStatus(app.id, STAGES[Math.min(STAGES.length-1, STAGES.findIndex(s => s.id === stage.id) + 1)].id)}
+                             className="w-full py-1.5 bg-gray-50 hover:bg-brand-blue/5 text-gray-400 hover:text-brand-blue rounded-lg text-[10px] font-bold transition-colors flex items-center justify-center gap-1"
+                           >
+                              Next Stage <ChevronRight className="w-3 h-3" />
+                           </button>
+                        </div>
+                      </div>
+                    ))}
+                    
+                    {filtered.filter(a => a.status === stage.id).length === 0 && (
+                      <div className="flex flex-col items-center justify-center py-10 opacity-30 w-full">
+                        <Clock className="w-8 h-8 text-gray-400 mb-2" />
+                        <span className="text-xs font-medium">Empty</span>
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
             </div>
-            
-            <div 
-              className="flex-1 space-y-3 min-h-[500px] bg-gray-50/50 rounded-2xl p-2 border border-dashed border-gray-200 transition-colors"
-              onDragOver={(e) => {
-                e.preventDefault();
-                e.currentTarget.classList.add('bg-blue-50', 'border-blue-200');
-              }}
-              onDragLeave={(e) => {
-                e.currentTarget.classList.remove('bg-blue-50', 'border-blue-200');
-              }}
-              onDrop={(e) => {
-                e.preventDefault();
-                e.currentTarget.classList.remove('bg-blue-50', 'border-blue-200');
-                const appId = e.dataTransfer.getData('applicationId');
-                if (appId && applications.find(a => a.id === appId)?.status !== stage.id) {
-                  handleUpdateStatus(appId, stage.id);
-                }
-              }}
-            >
-              {loading ? (
-                <div className="space-y-3 w-full">
-                  {[1, 2].map(i => (
-                    <div key={i} className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm h-32 flex flex-col justify-between animate-pulse">
-                      <div className="space-y-2">
-                        <div className="h-4 bg-gray-100 rounded w-3/4"></div>
-                        <div className="h-3 bg-gray-100 rounded w-1/2"></div>
-                      </div>
-                      <div className="flex justify-between items-center pt-2">
-                        <div className="h-6 w-6 bg-gray-100 rounded-full"></div>
-                        <div className="h-4 bg-gray-100 rounded w-12"></div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <>
-                  {filtered.filter(a => a.status === stage.id).map(app => (
-                    <div key={app.id} 
-                      draggable
-                      onDragStart={(e) => {
-                        e.dataTransfer.setData('applicationId', app.id);
-                      }}
+          ))}
+        </div>
+      ) : (
+        /* Table View Mode */
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Student</th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Scholarship</th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stage Status</th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Consultant</th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tier</th>
+                <th scope="col" className="relative px-6 py-3"><span className="sr-only">Actions</span></th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {filtered.map((app) => (
+                <tr 
+                  key={app.id}
+                  onClick={() => {
+                    setSelectedApp(app);
+                    setNotesInput(app.notes || '');
+                  }}
+                  className="hover:bg-gray-50/50 transition-colors cursor-pointer"
+                >
+                  <td className="px-6 py-4 whitespace-nowrap font-medium text-gray-900 text-sm">
+                    {app.student?.full_name || 'Student'}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-brand-blue font-medium">
+                    {app.scholarship?.name || 'N/A'}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <select
+                      value={app.status}
+                      onClick={(e) => e.stopPropagation()}
+                      onChange={(e) => handleUpdateStatus(app.id, e.target.value)}
+                      className="text-xs font-bold px-3 py-1.5 rounded-lg border border-gray-200 bg-gray-50 capitalize focus:ring-brand-blue"
+                    >
+                      {STAGES.map((s) => (
+                        <option key={s.id} value={s.id}>{s.label}</option>
+                      ))}
+                    </select>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-xs text-gray-600">
+                    {app.consultant?.full_name || 'Unassigned'}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded ${
+                      app.package_tier === 'premium' ? 'bg-brand-gold/10 text-brand-gold border border-brand-gold/20' : 'bg-gray-100 text-gray-500'
+                    }`}>
+                      {app.package_tier}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm">
+                    <button
                       onClick={(e) => {
-                        if ((e.target as HTMLElement).closest('button') || (e.target as HTMLElement).closest('select')) return;
+                        e.stopPropagation();
                         setSelectedApp(app);
                         setNotesInput(app.notes || '');
                       }}
-                      className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow group cursor-grab active:cursor-grabbing w-full"
+                      className="px-3 py-1 text-xs font-semibold text-brand-blue bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors"
                     >
-                      <div className="flex justify-between items-start mb-2">
-                        <span className={`text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded ${
-                          app.package_tier === 'premium' ? 'bg-brand-gold/10 text-brand-gold' : 'bg-gray-100 text-gray-500'
-                        }`}>
-                          {app.package_tier}
-                        </span>
-                      </div>
-                      
-                      <h4 className="font-bold text-gray-900 text-sm mb-1">{app.student?.full_name}</h4>
-                      <p className="text-xs text-brand-blue font-medium mb-3 truncate max-w-full" title={app.scholarship?.name}>
-                        {app.scholarship?.name}
-                      </p>
-                      
-                      <div className="flex items-center justify-between mt-4 pt-3 border-t border-gray-50">
-                        <div className="flex -space-x-2">
-                          <div className="h-6 w-6 rounded-full bg-brand-gold flex items-center justify-center text-[10px] font-bold text-white border-2 border-white ring-1 ring-gray-100">
-                            {app.student?.full_name?.charAt(0)}
-                          </div>
-                          {app.consultant ? (
-                            <div className="h-6 w-6 rounded-full bg-brand-blue flex items-center justify-center text-[10px] font-bold text-white border-2 border-white ring-1 ring-gray-100" title={`Assigned to ${app.consultant.full_name}`}>
-                              {app.consultant.full_name.charAt(0)}
-                            </div>
-                          ) : (
-                            <div className="h-6 w-6 rounded-full bg-gray-200 flex items-center justify-center border-2 border-white ring-1 ring-gray-100">
-                              <UserPlus className="w-3 h-3 text-gray-400" />
-                            </div>
-                          )}
-                        </div>
-                        
-                        <div className="flex items-center gap-1.5">
-                          <select 
-                            className="text-[10px] font-bold bg-transparent text-gray-400 hover:text-brand-blue cursor-pointer border-none p-0 focus:ring-0"
-                            onChange={(e) => handleAssignConsultant(app.id, e.target.value)}
-                            value={app.consultant_id || ''}
-                          >
-                            <option value="">Assign</option>
-                            {consultants.map(c => (
-                              <option key={c.id} value={c.id}>{c.full_name}</option>
-                            ))}
-                          </select>
-                        </div>
-                      </div>
-
-                      <div className="mt-3 flex items-center gap-2">
-                         <button 
-                           onClick={() => handleUpdateStatus(app.id, STAGES[Math.min(STAGES.length-1, STAGES.findIndex(s => s.id === stage.id) + 1)].id)}
-                           className="w-full py-1.5 bg-gray-50 hover:bg-brand-blue/5 text-gray-400 hover:text-brand-blue rounded-lg text-[10px] font-bold transition-colors flex items-center justify-center gap-1"
-                         >
-                            Next Stage <ChevronRight className="w-3 h-3" />
-                         </button>
-                      </div>
-                    </div>
-                  ))}
-                  
-                  {filtered.filter(a => a.status === stage.id).length === 0 && (
-                    <div className="flex flex-col items-center justify-center py-10 opacity-30 w-full">
-                      <Clock className="w-8 h-8 text-gray-400 mb-2" />
-                      <span className="text-xs font-medium">Empty</span>
-                    </div>
-                  )}
-                </>
-              )}
-            </div>
-          </div>
-        ))}
-      </div>
+                      View Journey
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
       {/* Application Detail Modal */}
       {selectedApp && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-gray-900/40 backdrop-blur-sm animate-in fade-in zoom-in-95 duration-200">

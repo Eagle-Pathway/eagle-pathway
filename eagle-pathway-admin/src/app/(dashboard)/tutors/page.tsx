@@ -211,7 +211,7 @@ export default function TutorsPage() {
       user_id: rejectApp.tutor_id,
       title: 'Tutor Application Update',
       body: `Your tutor application was not approved. Reason: ${reason}`,
-      type: 'tutor_application_update',
+      type: 'application_update',
       is_read: false,
     });
     showToast('success', 'Application rejected');
@@ -233,10 +233,18 @@ export default function TutorsPage() {
     setActionLoading(null);
   }
 
-  async function loadSignedDoc(path: string | undefined | null, key: string) {
+  const [inlineDocViewer, setInlineDocViewer] = useState<{ url: string; title: string; app?: TutorApplication | null } | null>(null);
+
+  async function loadSignedDoc(path: string | undefined | null, key: string, label?: string, targetApp?: TutorApplication | null) {
+    if (!path) return;
+    setActionLoading(key);
     const url = await createSignedUrl(path);
-    setSignedDocs(prev => ({ ...prev, [key]: url }));
-    if (url) window.open(url, '_blank');
+    setActionLoading(null);
+    if (url) {
+      setInlineDocViewer({ url, title: label || 'Tutor Document', app: targetApp !== undefined ? targetApp : selectedApp });
+    } else {
+      showToast('error', 'Unable to generate secure document URL');
+    }
   }
 
   const filteredTutors = tutors.filter(t =>
@@ -308,13 +316,16 @@ export default function TutorsPage() {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tutor Info</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Expertise & Rate</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Verification</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Documents</th>
                   <th className="relative px-6 py-3"><span className="sr-only">Actions</span></th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {loading ? <TableSkeleton cols={4} rows={5} avatarCol={true} /> : filteredTutors.length === 0 ? (
-                  <tr><td colSpan={4} className="px-6 py-10 text-center text-sm text-gray-500">No tutors found.</td></tr>
-                ) : filteredTutors.map((tutor) => (
+                {loading ? <TableSkeleton cols={5} rows={5} avatarCol={true} /> : filteredTutors.length === 0 ? (
+                  <tr><td colSpan={5} className="px-6 py-10 text-center text-sm text-gray-500">No tutors found.</td></tr>
+                ) : filteredTutors.map((tutor) => {
+                  const matchingApp = tutorApps.find(a => a.tutor_id === tutor.user_id);
+                  return (
                   <tr key={tutor.user_id} className="hover:bg-gray-50/50 transition-colors">
                     <td className="px-6 py-4">
                       <div className="flex items-center">
@@ -345,6 +356,41 @@ export default function TutorsPage() {
                         <FileText className="w-3 h-3 mr-1" /> {tutor.education || 'No background'}
                       </div>
                     </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      {matchingApp ? (
+                        <div className="flex items-center space-x-1.5">
+                          {matchingApp.grade10_result_url && (
+                            <button
+                              onClick={() => loadSignedDoc(matchingApp.grade10_result_url, `${matchingApp.id}_g10`, `Grade 10 Result - ${tutor.users?.full_name}`, matchingApp)}
+                              className="px-2 py-1 bg-blue-50 hover:bg-blue-100 text-brand-blue text-[11px] font-semibold rounded border border-blue-200 transition-colors flex items-center"
+                            >
+                              <FileText className="w-3 h-3 mr-1" /> G10
+                            </button>
+                          )}
+                          {matchingApp.grade12_result_url && (
+                            <button
+                              onClick={() => loadSignedDoc(matchingApp.grade12_result_url, `${matchingApp.id}_g12`, `Grade 12 Result - ${tutor.users?.full_name}`, matchingApp)}
+                              className="px-2 py-1 bg-blue-50 hover:bg-blue-100 text-brand-blue text-[11px] font-semibold rounded border border-blue-200 transition-colors flex items-center"
+                            >
+                              <FileText className="w-3 h-3 mr-1" /> G12
+                            </button>
+                          )}
+                          {matchingApp.transcript_url && (
+                            <button
+                              onClick={() => loadSignedDoc(matchingApp.transcript_url, `${matchingApp.id}_trans`, `Transcript - ${tutor.users?.full_name}`, matchingApp)}
+                              className="px-2 py-1 bg-purple-50 hover:bg-purple-100 text-purple-700 text-[11px] font-semibold rounded border border-purple-200 transition-colors flex items-center"
+                            >
+                              <FileText className="w-3 h-3 mr-1" /> Transcript
+                            </button>
+                          )}
+                          {!matchingApp.grade10_result_url && !matchingApp.grade12_result_url && !matchingApp.transcript_url && (
+                            <span className="text-xs text-gray-400">No docs</span>
+                          )}
+                        </div>
+                      ) : (
+                        <span className="text-xs text-gray-400">No application</span>
+                      )}
+                    </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right">
                       <button onClick={() => toggleVerification(tutor.user_id, tutor.is_verified)}
                         disabled={actionLoading === tutor.user_id}
@@ -355,7 +401,8 @@ export default function TutorsPage() {
                       </button>
                     </td>
                   </tr>
-                ))}
+                );
+                })}
               </tbody>
             </table>
           </div>
@@ -555,6 +602,91 @@ export default function TutorsPage() {
                 className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 disabled:opacity-50">
                 {actionLoading === rejectApp.id ? 'Rejecting...' : 'Confirm Reject'}
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Inline Document Inspection Modal */}
+      {inlineDocViewer && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-4xl max-h-[92vh] flex flex-col overflow-hidden ring-1 ring-black/5">
+            <div className="p-4 sm:p-6 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
+              <div className="flex items-center space-x-3">
+                <div className="p-2 bg-brand-blue/10 rounded-xl text-brand-blue">
+                  <FileText className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-gray-900">{inlineDocViewer.title}</h3>
+                  <p className="text-xs text-gray-500">Secure Document Inspection Drawer</p>
+                </div>
+              </div>
+              <div className="flex items-center space-x-2">
+                <a
+                  href={inlineDocViewer.url}
+                  download
+                  target="_blank"
+                  rel="noreferrer"
+                  className="px-3 py-1.5 text-xs font-semibold text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 flex items-center transition-colors"
+                >
+                  <Download className="w-3.5 h-3.5 mr-1 text-gray-500" /> Download
+                </a>
+                <button
+                  onClick={() => setInlineDocViewer(null)}
+                  className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100"
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+
+            <div className="p-4 flex-1 overflow-auto bg-gray-900/5 flex items-center justify-center min-h-[450px]">
+              {inlineDocViewer.url.includes('.pdf') ? (
+                <iframe src={inlineDocViewer.url} className="w-full h-[65vh] rounded-xl border border-gray-200 bg-white shadow-inner" />
+              ) : (
+                <img
+                  src={inlineDocViewer.url}
+                  alt={inlineDocViewer.title}
+                  className="max-h-[65vh] max-w-full object-contain rounded-xl shadow-lg border border-gray-200 bg-white"
+                />
+              )}
+            </div>
+
+            <div className="p-4 border-t border-gray-100 bg-white flex items-center justify-between">
+              <div className="text-xs text-gray-500">
+                Inspecting verification record securely in modal
+              </div>
+              <div className="flex items-center space-x-2">
+                {inlineDocViewer.app && inlineDocViewer.app.status === 'pending' && (
+                  <>
+                    <button
+                      onClick={() => {
+                        const target = inlineDocViewer.app!;
+                        setInlineDocViewer(null);
+                        handleApprove(target);
+                      }}
+                      className="px-4 py-2 text-xs font-semibold text-white bg-green-600 hover:bg-green-700 rounded-xl shadow-sm flex items-center"
+                    >
+                      <CheckCircle className="w-4 h-4 mr-1.5" /> Approve Tutor
+                    </button>
+                    <button
+                      onClick={() => {
+                        const target = inlineDocViewer.app!;
+                        setInlineDocViewer(null);
+                        openRejectModal(target);
+                      }}
+                      className="px-4 py-2 text-xs font-semibold text-white bg-red-600 hover:bg-red-700 rounded-xl shadow-sm flex items-center"
+                    >
+                      <XCircle className="w-4 h-4 mr-1.5" /> Reject
+                    </button>
+                  </>
+                )}
+                <button
+                  onClick={() => setInlineDocViewer(null)}
+                  className="px-4 py-2 text-xs font-medium text-gray-600 hover:bg-gray-100 rounded-xl"
+                >
+                  Close Viewer
+                </button>
+              </div>
             </div>
           </div>
         </div>
