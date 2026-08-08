@@ -2,11 +2,12 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
 import { roleOf } from '@/lib/role';
-import { Search, Mail, Phone, MapPin, MoreVertical, Download, ChevronLeft, ChevronRight, Filter, MessageSquare } from 'lucide-react';
+import { Search, Mail, Phone, MapPin, MoreVertical, Download, ChevronLeft, ChevronRight, Filter, MessageSquare, Eye, Shield, Trash2 } from 'lucide-react';
 import { exportToCSV } from '@/utils/export';
 import { TableSkeleton } from '@/components/ui/TableSkeleton';
 import { useToast, useConfirm } from '@/components/ui/Feedback';
 import { useRouter } from 'next/navigation';
+import { UserDetailModal } from '@/components/users/UserDetailModal';
 
 interface User {
   id: string;
@@ -18,6 +19,7 @@ interface User {
   active_role?: string | null;
   city: string;
   created_at: string;
+  is_suspended?: boolean;
 }
 
 export default function UsersPage() {
@@ -30,22 +32,97 @@ export default function UsersPage() {
   const [roleFilter, setRoleFilter] = useState('all');
   const [cityFilter, setCityFilter] = useState('all');
   const [savingRole, setSavingRole] = useState<string | null>(null);
+  
+  // Interactive menu & detail modal state
+  const [activeMenuUserId, setActiveMenuUserId] = useState<string | null>(null);
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+
+  const [statusFilter, setStatusFilter] = useState('all');
 
   async function fetchUsers() {
     setLoading(true);
-    const { data, error } = await supabase
-      .from('users')
-      .select('*')
-      .order('created_at', { ascending: false });
-
-    if (!error && data) {
-      setUsers(data);
+    try {
+      const res = await fetch('/api/admin/users/action', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'get_all_users' }),
+      });
+      const json = await res.json();
+      if (res.ok && json.users) {
+        setUsers(json.users);
+      } else {
+        // Fallback to table fetch if endpoint errors
+        const { data } = await supabase.from('users').select('*').order('created_at', { ascending: false });
+        if (data) setUsers(data);
+      }
+    } catch {
+      const { data } = await supabase.from('users').select('*').order('created_at', { ascending: false });
+      if (data) setUsers(data);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   }
 
-  // Change a user's role via the admin_set_user_role RPC, which keeps all three
-  // role sources (users.role, users.roles/active_role, user_roles) in sync.
+  // Close active dropdown menu when clicking anywhere on page
+  useEffect(() => {
+    const handleOutsideClick = () => setActiveMenuUserId(null);
+    window.addEventListener('click', handleOutsideClick);
+    return () => window.removeEventListener('click', handleOutsideClick);
+  }, []);
+
+  const handleToggleSuspension = async (user: User) => {
+    const isSuspended = !!user.is_suspended;
+    const action = isSuspended ? 'unsuspend' : 'suspend';
+    const ok = await confirm({
+      title: isSuspended ? 'Reactivate Account?' : 'Suspend Account?',
+      message: isSuspended
+        ? `Reactivate ${user.full_name || 'this user'}'s account? They will be able to log in to the mobile app.`
+        : `Suspend ${user.full_name || 'this user'}'s account? They will be immediately logged out and blocked from accessing the app.`,
+      confirmLabel: isSuspended ? 'Reactivate' : 'Suspend Account',
+    });
+    if (!ok) return;
+
+    try {
+      const res = await fetch('/api/admin/users/action', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action, userId: user.id }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || 'Operation failed');
+
+      toast('success', isSuspended ? 'User account reactivated.' : 'User account suspended.');
+      fetchUsers();
+    } catch (err: any) {
+      toast('error', err.message || 'Failed to update suspension status.');
+    }
+  };
+
+  const handleDeleteUser = async (user: User) => {
+    const ok = await confirm({
+      title: 'Delete Account Permanently?',
+      message: `Are you sure you want to delete ${user.full_name || 'this user'}? This action is IRREVERSIBLE and deletes all their records.`,
+      confirmLabel: 'Delete Permanently',
+    });
+    if (!ok) return;
+
+    try {
+      const res = await fetch('/api/admin/users/action', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'delete', userId: user.id }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || 'Failed to delete user');
+
+      toast('success', 'User deleted permanently.');
+      fetchUsers();
+    } catch (err: any) {
+      toast('error', err.message || 'Failed to delete user.');
+    }
+  };
+
+  // Change a user's role via the admin_set_user_role RPC
   const changeRole = async (user: User, role: string) => {
     if (role === roleOf(user)) return;
     const ok = await confirm({
@@ -73,7 +150,12 @@ export default function UsersPage() {
       u.phone?.includes(search);
     const matchesRole = roleFilter === 'all' || roleOf(u) === roleFilter;
     const matchesCity = cityFilter === 'all' || u.city === cityFilter;
-    return matchesSearch && matchesRole && matchesCity;
+    const matchesStatus = 
+      statusFilter === 'all' || 
+      (statusFilter === 'suspended' && u.is_suspended) || 
+      (statusFilter === 'active' && !u.is_suspended);
+
+    return matchesSearch && matchesRole && matchesCity && matchesStatus;
   });
 
   const cities = [...new Set(users.map(u => u.city).filter(Boolean))].sort();
@@ -90,7 +172,7 @@ export default function UsersPage() {
   // Reset to page 1 on active search
   useEffect(() => {
     setCurrentPage(1);
-  }, [search, roleFilter, cityFilter]);
+  }, [search, roleFilter, cityFilter, statusFilter]);
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
@@ -116,6 +198,17 @@ export default function UsersPage() {
                 className="block w-full pl-10 pr-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-brand-blue focus:border-brand-blue"
               />
             </div>
+
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="px-3 py-2 border border-gray-200 rounded-lg text-sm font-medium focus:ring-brand-blue focus:border-brand-blue bg-white"
+            >
+              <option value="all">All Statuses</option>
+              <option value="active">Active Only</option>
+              <option value="suspended">Suspended Only</option>
+            </select>
+
             <select
               value={roleFilter}
               onChange={(e) => setRoleFilter(e.target.value)}
@@ -168,7 +261,7 @@ export default function UsersPage() {
                 paginatedUsers.map((user) => {
                   const primaryRole = roleOf(user);
                   return (
-                  <tr key={user.id} className="hover:bg-gray-50/50 transition-colors">
+                  <tr key={user.id} className={`hover:bg-gray-50/50 transition-colors ${user.is_suspended ? 'bg-red-50/30' : ''}`}>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
                         <div className="h-10 w-10 flex-shrink-0 bg-brand-gold/20 rounded-full flex items-center justify-center">
@@ -177,7 +270,14 @@ export default function UsersPage() {
                           </span>
                         </div>
                         <div className="ml-4">
-                          <div className="text-sm font-medium text-gray-900">{user.full_name || 'Unknown Name'}</div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm font-medium text-gray-900">{user.full_name || 'Unknown Name'}</span>
+                            {user.is_suspended && (
+                              <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-red-100 text-red-700 uppercase tracking-wide border border-red-200">
+                                Suspended
+                              </span>
+                            )}
+                          </div>
                           <div className="text-xs text-gray-500">ID: {user.id.slice(0, 8)}...</div>
                         </div>
                       </div>
@@ -209,17 +309,83 @@ export default function UsersPage() {
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       {new Date(user.created_at).toLocaleDateString()}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
-                      <button 
-                        onClick={() => router.push(`/chat?userId=${user.id}`)}
-                        className="inline-flex items-center p-1.5 rounded-full hover:bg-gray-100 text-gray-500 hover:text-brand-blue transition-colors"
-                        title="Chat with user"
-                      >
-                        <MessageSquare className="h-4 w-4" />
-                      </button>
-                      <button className="text-gray-400 hover:text-gray-600 p-1 inline-flex items-center rounded-full hover:bg-gray-100 transition-colors">
-                        <MoreVertical className="h-5 w-5" />
-                      </button>
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium relative">
+                      <div className="flex items-center justify-end space-x-2">
+                        <button 
+                          onClick={() => router.push(`/chat?userId=${user.id}`)}
+                          className="inline-flex items-center p-1.5 rounded-full hover:bg-gray-100 text-gray-500 hover:text-brand-blue transition-colors"
+                          title="Chat with user"
+                        >
+                          <MessageSquare className="h-4 w-4" />
+                        </button>
+                        
+                        <div className="relative">
+                          <button 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setActiveMenuUserId(activeMenuUserId === user.id ? null : user.id);
+                            }}
+                            className="text-gray-400 hover:text-gray-600 p-1.5 inline-flex items-center rounded-full hover:bg-gray-100 transition-colors"
+                            title="Actions"
+                          >
+                            <MoreVertical className="h-5 w-5" />
+                          </button>
+
+                          {/* Dropdown Menu */}
+                          {activeMenuUserId === user.id && (
+                            <div 
+                              className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-100 py-1.5 z-40 text-left animate-in fade-in zoom-in-95 duration-100"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <button
+                                onClick={() => {
+                                  setSelectedUserId(user.id);
+                                  setActiveMenuUserId(null);
+                                }}
+                                className="w-full text-left px-4 py-2 text-xs font-medium text-gray-700 hover:bg-gray-50 flex items-center"
+                              >
+                                <Eye className="w-3.5 h-3.5 mr-2 text-brand-blue" />
+                                View Full Profile
+                              </button>
+
+                              <button
+                                onClick={() => {
+                                  router.push(`/chat?userId=${user.id}`);
+                                  setActiveMenuUserId(null);
+                                }}
+                                className="w-full text-left px-4 py-2 text-xs font-medium text-gray-700 hover:bg-gray-50 flex items-center"
+                              >
+                                <MessageSquare className="w-3.5 h-3.5 mr-2 text-green-600" />
+                                Direct Message
+                              </button>
+
+                              <button
+                                onClick={() => {
+                                  handleToggleSuspension(user);
+                                  setActiveMenuUserId(null);
+                                }}
+                                className="w-full text-left px-4 py-2 text-xs font-medium text-amber-700 hover:bg-amber-50 flex items-center"
+                              >
+                                <Shield className="w-3.5 h-3.5 mr-2 text-amber-600" />
+                                {user.is_suspended ? 'Reactivate Account' : 'Suspend Account'}
+                              </button>
+
+                              <div className="my-1 border-t border-gray-100" />
+
+                              <button
+                                onClick={() => {
+                                  handleDeleteUser(user);
+                                  setActiveMenuUserId(null);
+                                }}
+                                className="w-full text-left px-4 py-2 text-xs font-medium text-red-600 hover:bg-red-50 flex items-center"
+                              >
+                                <Trash2 className="w-3.5 h-3.5 mr-2 text-red-500" />
+                                Delete Account
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
                     </td>
                   </tr>
                   );
@@ -257,6 +423,15 @@ export default function UsersPage() {
           </div>
         )}
       </div>
+
+      {/* User Detail & Quick Actions Modal */}
+      {selectedUserId && (
+        <UserDetailModal
+          userId={selectedUserId}
+          onClose={() => setSelectedUserId(null)}
+          onRefresh={fetchUsers}
+        />
+      )}
     </div>
   );
 }

@@ -17,6 +17,10 @@ export function parseError(error: unknown): AppError {
 
   const msg = (message || '').toLowerCase();
 
+  // Banned / Suspended account check (highest priority)
+  if (msg.includes('banned') || msg.includes('user is banned') || msg.includes('account suspended') || msg.includes('is_suspended'))
+    return { userMessage: 'Your account has been suspended by an administrator. Please contact support if you believe this is an error.', shouldLogout: true };
+
   // Auth errors
   if (msg.includes('invalid login credentials') || msg.includes('invalid password') || msg.includes('invalid credentials'))
     return { userMessage: 'Incorrect email or password. Please check your credentials and try again.' };
