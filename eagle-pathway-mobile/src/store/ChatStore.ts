@@ -111,18 +111,29 @@ export const useChatStore = create<ChatState>((set, get) => ({
 
   subscribeToMessages: (userId: string) => {
     const subscription = supabase
-      .channel(`user_messages_${userId}`)
+      .channel(`user_messages_store_${userId}`)
       .on(
         'postgres_changes' as any,
         {
-          event: 'INSERT',
+          event: '*',
+          schema: 'public',
           table: 'messages',
-          filter: `recipient_id=eq.${userId}`,
         },
         (payload: any) => {
-          const newMsg = payload.new as Message;
-          get().addMessage(newMsg);
-          get().loadConversations(userId);
+          if (payload.eventType === 'INSERT') {
+            const newMsg = payload.new as Message;
+            if (newMsg.recipient_id === userId || newMsg.sender_id === userId) {
+              get().addMessage(newMsg);
+              get().loadConversations(userId);
+            }
+          } else if (payload.eventType === 'UPDATE') {
+            const updatedMsg = payload.new as Message;
+            set((state) => ({
+              activeMessages: state.activeMessages.map(m => 
+                m.id === updatedMsg.id ? { ...m, is_read: updatedMsg.is_read } : m
+              )
+            }));
+          }
         }
       )
       .subscribe();

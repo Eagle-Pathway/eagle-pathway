@@ -56,8 +56,12 @@ export default function Sidebar() {
         )
         .subscribe();
 
+      const handleChatRead = () => fetchUnreadCount();
+      window.addEventListener('chat_read_event', handleChatRead);
+
       return () => {
         supabase.removeChannel(channel);
+        window.removeEventListener('chat_read_event', handleChatRead);
       };
     }
   }, [user]);

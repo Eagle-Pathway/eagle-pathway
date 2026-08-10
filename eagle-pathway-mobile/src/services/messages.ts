@@ -58,9 +58,9 @@ export const messageService = {
       .on(
         'postgres_changes' as any,
         {
-          event: 'INSERT',
+          event: '*',
+          schema: 'public',
           table: 'messages',
-          filter: `recipient_id=eq.${userId}`,
         },
         callback
       )

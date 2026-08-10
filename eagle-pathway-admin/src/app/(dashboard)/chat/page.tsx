@@ -18,6 +18,7 @@ interface ChatMessage {
   sender_id: string;
   recipient_id: string;
   content: string;
+  is_read?: boolean;
   created_at: string;
 }
 
@@ -28,6 +29,7 @@ interface UserPreview {
   role: string;
   last_message?: string;
   last_time?: string;
+  unread_count?: number;
 }
 
 export default function AdminChatPage() {
@@ -51,7 +53,7 @@ export default function AdminChatPage() {
       setSelectedUserSetFromUrl(true);
       const existing = conversations.find(c => c.id === userId);
       if (existing) {
-        setSelectedUser(existing);
+        handleSelectUser(existing);
       } else {
         const fetchUser = async () => {
           const { data, error } = await supabase
@@ -65,8 +67,9 @@ export default function AdminChatPage() {
               full_name: data.full_name,
               email: data.email,
               role: data.role || 'student',
+              unread_count: 0
             };
-            setSelectedUser(userPrev);
+            handleSelectUser(userPrev);
             setConversations(prev => [userPrev, ...prev]);
           }
         };
@@ -75,24 +78,52 @@ export default function AdminChatPage() {
     }
   }, [conversations, loading, selectedUserSetFromUrl]);
 
+  const handleSelectUser = async (u: UserPreview) => {
+    setSelectedUser(u);
+    // Instantly clear unread count in conversations state
+    setConversations(prev => prev.map(c => c.id === u.id ? { ...c, unread_count: 0 } : c));
+    if (user?.id) {
+      await supabase
+        .from('messages')
+        .update({ is_read: true })
+        .eq('sender_id', u.id)
+        .eq('recipient_id', user.id)
+        .eq('is_read', false);
+      window.dispatchEvent(new Event('chat_read_event'));
+    }
+  };
+
   useEffect(() => {
     fetchConversations();
     
     const subscription = supabase
-      .channel('admin_messages')
-      .on('postgres_changes' as any, { event: 'INSERT', schema: 'public', table: 'messages' }, (payload) => {
-        const newMsg = payload.new as ChatMessage;
-        if (selectedUser && (newMsg.sender_id === selectedUser.id || newMsg.recipient_id === selectedUser.id)) {
-          setMessages(prev => [...prev, newMsg]);
+      .channel('admin_messages_realtime')
+      .on('postgres_changes' as any, { event: '*', schema: 'public', table: 'messages' }, (payload: any) => {
+        if (!payload) return;
+        if (payload.eventType === 'INSERT') {
+          const newMsg = payload.new as ChatMessage;
+          if (selectedUser && (newMsg.sender_id === selectedUser.id || newMsg.recipient_id === selectedUser.id)) {
+            setMessages(prev => [...prev, newMsg]);
+            if (newMsg.sender_id === selectedUser.id && user?.id) {
+              supabase
+                .from('messages')
+                .update({ is_read: true })
+                .eq('id', newMsg.id)
+                .then(() => window.dispatchEvent(new Event('chat_read_event')));
+            }
+          }
+          fetchConversations();
+        } else if (payload.eventType === 'UPDATE') {
+          const updatedMsg = payload.new as ChatMessage;
+          setMessages(prev => prev.map(m => m.id === updatedMsg.id ? { ...m, is_read: updatedMsg.is_read } : m));
         }
-        fetchConversations(); // Update previews
       })
       .subscribe();
 
     return () => {
       supabase.removeChannel(subscription);
     };
-  }, [selectedUser]);
+  }, [selectedUser, user]);
 
   useEffect(() => {
     if (selectedUser) {
@@ -109,7 +140,6 @@ export default function AdminChatPage() {
     setLoading(true);
     
     try {
-      // Fetch unique users involved in messages
       const { data: rawMessages, error } = await supabase
         .from('messages')
         .select('*, sender:users!messages_sender_id_fkey(id, full_name, email, role), recipient:users!messages_recipient_id_fkey(id, full_name, email, role)')
@@ -124,10 +154,13 @@ export default function AdminChatPage() {
         const otherUser = msg.sender_id === user.id ? msg.recipient : msg.sender;
         if (!otherUser) return;
         if (!userMap.has(otherUser.id)) {
+          // Count unread messages from this specific sender to user
+          const unread = rawMessages.filter((m: any) => m.sender_id === otherUser.id && m.recipient_id === user.id && !m.is_read).length;
           userMap.set(otherUser.id, {
             ...otherUser,
             last_message: msg.content,
-            last_time: msg.created_at
+            last_time: msg.created_at,
+            unread_count: unread
           });
         }
       });
@@ -168,7 +201,8 @@ export default function AdminChatPage() {
         { 
           sender_id: user.id, 
           recipient_id: selectedUser.id, 
-          content 
+          content,
+          is_read: false
         }
       ]);
 
@@ -223,18 +257,25 @@ export default function AdminChatPage() {
             filteredConversations.map((conv) => (
               <button
                 key={conv.id}
-                onClick={() => setSelectedUser(conv)}
+                onClick={() => handleSelectUser(conv)}
                 className={`w-full p-4 flex items-center gap-3 hover:bg-gray-50 transition-colors border-b border-gray-50 ${selectedUser?.id === conv.id ? 'bg-brand-blue/5 border-r-4 border-r-brand-blue' : ''}`}
               >
-                <div className="h-12 w-12 bg-brand-blue/10 rounded-full flex items-center justify-center shrink-0">
-                  <span className="text-brand-blue font-bold text-lg">{conv.full_name?.charAt(0)}</span>
+                <div className="relative shrink-0">
+                  <div className="h-12 w-12 bg-brand-blue/10 rounded-full flex items-center justify-center">
+                    <span className="text-brand-blue font-bold text-lg">{conv.full_name?.charAt(0)}</span>
+                  </div>
+                  {!!conv.unread_count && conv.unread_count > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full border-2 border-white shadow-sm">
+                      {conv.unread_count}
+                    </span>
+                  )}
                 </div>
                 <div className="flex-1 min-w-0 text-left">
                   <div className="flex justify-between items-start mb-0.5">
-                    <p className="text-sm font-bold text-gray-900 truncate">{conv.full_name}</p>
+                    <p className={`text-sm truncate ${conv.unread_count ? 'font-black text-gray-900' : 'font-bold text-gray-800'}`}>{conv.full_name}</p>
                     <p className="text-[10px] text-gray-400">{conv.last_time ? new Date(conv.last_time).toLocaleDateString() : ''}</p>
                   </div>
-                  <p className="text-xs text-gray-500 truncate">{conv.last_message}</p>
+                  <p className={`text-xs truncate ${conv.unread_count ? 'font-semibold text-gray-900' : 'text-gray-500'}`}>{conv.last_message}</p>
                   <span className="inline-block mt-1 px-2 py-0.5 bg-gray-100 text-[10px] font-bold text-gray-600 rounded-full uppercase tracking-tighter">
                     {conv.role}
                   </span>
@@ -260,8 +301,8 @@ export default function AdminChatPage() {
                 </div>
                 <div>
                   <h3 className="text-sm font-bold text-gray-900">{selectedUser.full_name}</h3>
-                  <p className="text-[10px] text-green-500 font-bold uppercase tracking-widest flex items-center gap-1">
-                    <span className="h-1.5 w-1.5 bg-green-500 rounded-full animate-pulse" /> Online
+                  <p className="text-[10px] text-green-600 font-bold uppercase tracking-widest flex items-center gap-1">
+                    <span className="h-1.5 w-1.5 bg-green-500 rounded-full animate-pulse" /> Active
                   </p>
                 </div>
               </div>
@@ -284,7 +325,9 @@ export default function AdminChatPage() {
                           <span className="text-[10px] text-gray-400">
                             {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                           </span>
-                          {isMine && <CheckCheck className="h-3 w-3 text-brand-blue" />}
+                          {isMine && (
+                            <CheckCheck className={`h-3.5 w-3.5 ${msg.is_read ? 'text-blue-500 font-bold' : 'text-gray-400'}`} />
+                          )}
                        </div>
                     </div>
                   </div>
