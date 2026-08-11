@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import {
   View, Text, TouchableOpacity,
-  StyleSheet, Alert, TextInput, ScrollView
+  StyleSheet, TextInput, ScrollView
 } from 'react-native';
+import { toast } from '@/utils/toast';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { format, addDays, startOfMonth, getDaysInMonth, getDay } from 'date-fns';
@@ -60,7 +61,7 @@ export default function BookingScreen() {
 
   const handleConfirm = async () => {
     if (loading) return;
-    if (!selectedTime) return Alert.alert('Select Time', 'Please choose a time slot');
+    if (!selectedTime) return toast.warning('Select Time', 'Please choose a time slot');
     if (!user || !tutor) return;
 
     setLoading(true);
@@ -85,13 +86,12 @@ export default function BookingScreen() {
       }
       await loadBookings(user.id);
       const msg = isRecurring ? `Weekly sessions for the next ${bookingsToCreate} weeks are booked.` : `Your session with ${tutor.user?.full_name} is confirmed.`;
-      Alert.alert('Booking Confirmed! 🎉', msg, [
-        { text: 'View Bookings', onPress: () => router.push('/(tabs)/bookings') },
-      ]);
+      toast.success('Booking Confirmed! 🎉', msg);
+      router.push('/(tabs)/bookings');
     } catch (e: any) {
       const slotTaken = e?.code === '23505' || /duplicate|already|uq_active_booking_slot|409|conflict/i.test(e?.message || '');
       if (slotTaken) {
-        Alert.alert('Time Slot Unavailable', 'That time is already booked with this tutor. Please choose a different time slot.');
+        toast.warning('Time Slot Unavailable', 'That time is already booked with this tutor. Please choose a different time slot.');
       } else {
         showError(e, 'Booking Failed');
       }

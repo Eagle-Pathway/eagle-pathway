@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import {
   View, Text, TouchableOpacity,
-  StyleSheet, ActivityIndicator, TextInput, Alert,
+  StyleSheet, ActivityIndicator, TextInput,
 } from 'react-native';
+import { toast } from '@/utils/toast';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuthStore } from '@/store/authStore';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -54,9 +55,9 @@ export default function TutorProfileScreen() {
       });
       setTutor({ ...tutor, bio: editBio, hourly_rate: parseInt(editRate) || tutor.hourly_rate });
       setIsEditing(false);
-      Alert.alert('Success', 'Profile updated successfully');
+      toast.success('Profile updated', 'Your tutor profile changes have been saved.');
     } catch (e) {
-      Alert.alert('Error', 'Failed to update profile');
+      toast.error('Update Failed', 'Failed to update tutor profile.');
     } finally {
       setLoading(false);
     }

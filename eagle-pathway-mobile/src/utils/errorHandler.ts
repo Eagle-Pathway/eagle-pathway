@@ -1,5 +1,3 @@
-import { Alert } from 'react-native';
-
 export interface AppError {
   userMessage: string;
   shouldLogout?: boolean;
@@ -120,10 +118,12 @@ export function parseError(error: unknown): AppError {
   return { userMessage: 'Something went wrong. Please try again in a moment.' };
 }
 
-// Convenience function for Alert
+import { toast } from '@/utils/toast';
+
+// Convenience function for Toast
 export function showError(error: unknown, title = 'Notice') {
   const { userMessage } = parseError(error);
-  Alert.alert(title, userMessage);
+  toast.error(title, userMessage);
 }
 
 // For inline error text (no Alert)

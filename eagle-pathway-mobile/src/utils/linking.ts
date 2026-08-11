@@ -1,4 +1,5 @@
-import { Linking, Alert } from 'react-native';
+import { Linking } from 'react-native';
+import { toast } from '@/utils/toast';
 
 export const openWhatsApp = async (phone: string, message: string = 'Hello!') => {
   // Clean phone number: remove non-digits
@@ -19,6 +20,6 @@ export const openWhatsApp = async (phone: string, message: string = 'Hello!') =>
       await Linking.openURL(webUrl);
     }
   } catch (error) {
-    Alert.alert('Error', 'Could not open WhatsApp. Please make sure it is installed.');
+    toast.error('WhatsApp Error', 'Could not open WhatsApp. Please make sure it is installed.');
   }
 };

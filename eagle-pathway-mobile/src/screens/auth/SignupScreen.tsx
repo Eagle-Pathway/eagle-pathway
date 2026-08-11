@@ -3,6 +3,7 @@ import {
   View, Text, TextInput, TouchableOpacity, ScrollView,
   StyleSheet, KeyboardAvoidingView, Platform, Alert,
 } from 'react-native';
+import { toast } from '@/utils/toast';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -66,20 +67,20 @@ export default function SignupScreen() {
   }, [resendCooldown]);
 
   const handleContinue = async () => {
-    if (!fullName.trim()) return Alert.alert('Error', 'Please enter your full name');
-    if (!email.trim()) return Alert.alert('Error', 'Please enter your email');
-    if (!EMAIL_RE.test(email.trim())) return Alert.alert('Error', 'Please enter a valid email address');
-    if (!phone.trim()) return Alert.alert('Error', 'Please enter your phone number');
+    if (!fullName.trim()) return toast.warning('Name Required', 'Please enter your full name');
+    if (!email.trim()) return toast.warning('Email Required', 'Please enter your email');
+    if (!EMAIL_RE.test(email.trim())) return toast.warning('Invalid Email', 'Please enter a valid email address');
+    if (!phone.trim()) return toast.warning('Phone Required', 'Please enter your phone number');
     
     const strength = validatePasswordStrength(password);
     if (!strength.isValid) {
-      return Alert.alert(
+      return toast.warning(
         'Weak Password',
-        'Your password does not meet security requirements:\n• ' + strength.errors.join('\n• ')
+        'Your password does not meet security requirements.'
       );
     }
     
-    if (password !== confirmPassword) return Alert.alert('Error', 'Passwords do not match');
+    if (password !== confirmPassword) return toast.warning('Password Mismatch', 'Passwords do not match');
 
     try {
       const referralCode = params.referral_code || params.ref;
@@ -106,7 +107,7 @@ export default function SignupScreen() {
         );
       }
       if (e?.code === 'phone_exists') {
-        return Alert.alert('Phone number in use', getErrorMessage(e));
+        return toast.warning('Phone number in use', getErrorMessage(e));
       }
       showError(e, 'Signup Failed');
     } finally {
@@ -115,7 +116,7 @@ export default function SignupScreen() {
   };
 
   const handleVerify = async () => {
-    if (code.trim().length < 6) return Alert.alert('Error', 'Enter the 6-digit code from your email');
+    if (code.trim().length < 6) return toast.warning('Invalid Code', 'Enter the 6-digit code from your email');
     try {
       await verifySignup(email.trim(), code.trim());
       setLoading(false);
@@ -137,7 +138,7 @@ export default function SignupScreen() {
     try {
       await authService.resendSignupOtp(email.trim());
       setResendCooldown(RESEND_COOLDOWN_SECONDS);
-      Alert.alert('Code sent', `We sent a new code to ${email.trim()}.`);
+      toast.info('Code sent', `We sent a new code to ${email.trim()}.`);
     } catch (e: any) {
       showError(e, 'Could not resend code');
     } finally {

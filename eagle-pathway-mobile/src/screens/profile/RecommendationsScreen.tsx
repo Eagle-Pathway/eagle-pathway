@@ -3,6 +3,7 @@ import {
   View, Text, TouchableOpacity, StyleSheet,
   Alert, Modal, TextInput, Linking, ActivityIndicator,
 } from 'react-native';
+import { toast } from '@/utils/toast';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { format } from 'date-fns';
@@ -38,9 +39,9 @@ export function RecommendationsScreen() {
   const received = items.filter(i => i.status === 'received').length;
 
   const handleAdd = async () => {
-    if (!user || !form.refereeName.trim()) return Alert.alert('Name required', "Enter the referee's name.");
+    if (!user || !form.refereeName.trim()) return toast.warning('Name required', "Enter the referee's name.");
     if (!form.refereeEmail.trim() && !form.refereePhone.trim()) {
-      return Alert.alert('Contact required', 'Add an email or phone so you can send a reminder.');
+      return toast.warning('Contact required', 'Add an email or phone so you can send a reminder.');
     }
     setSaving(true);
     try {
@@ -54,8 +55,9 @@ export function RecommendationsScreen() {
       setItems(prev => [created, ...prev]);
       setForm({ refereeName: '', relationship: '', refereeEmail: '', refereePhone: '' });
       setModal(false);
+      toast.success('Request Added', 'Recommendation request added successfully.');
     } catch (e: any) {
-      Alert.alert('Error', e?.message || 'Could not add the request.');
+      toast.error('Error', e?.message || 'Could not add the request.');
     } finally {
       setSaving(false);
     }
@@ -69,7 +71,7 @@ export function RecommendationsScreen() {
     } else if (item.referee_email) {
       const subject = encodeURIComponent('Recommendation letter request');
       Linking.openURL(`mailto:${item.referee_email}?subject=${subject}&body=${encodeURIComponent(msg)}`)
-        .catch(() => Alert.alert('Error', 'Could not open your email app.'));
+        .catch(() => toast.error('Email Error', 'Could not open your email app.'));
     }
   };
 
@@ -77,8 +79,9 @@ export function RecommendationsScreen() {
     try {
       await recommendationsService.updateStatus(item.id, status);
       setItems(prev => prev.map(i => (i.id === item.id ? { ...i, status, received_at: status === 'received' ? new Date().toISOString() : null } : i)));
+      toast.success('Status Updated', `Recommendation status updated to ${status}.`);
     } catch (e: any) {
-      Alert.alert('Error', e?.message || 'Could not update status.');
+      toast.error('Update Error', e?.message || 'Could not update status.');
     }
   };
 
@@ -92,8 +95,9 @@ export function RecommendationsScreen() {
           try {
             await recommendationsService.remove(item.id);
             setItems(prev => prev.filter(i => i.id !== item.id));
+            toast.success('Removed', 'Recommendation request removed.');
           } catch (e: any) {
-            Alert.alert('Error', e?.message || 'Could not remove.');
+            toast.error('Error', e?.message || 'Could not remove.');
           }
         },
       },

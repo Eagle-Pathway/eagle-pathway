@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, Alert, KeyboardAvoidingView, Platform } from 'react-native';
+import { toast } from '@/utils/toast';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -26,11 +27,8 @@ export default function UpdatePasswordScreen() {
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (cancelled) return;
       if (!session) {
-        Alert.alert(
-          'Session expired',
-          'Your password reset link is no longer active. Please request a new code.',
-          [{ text: 'OK', onPress: () => router.replace('/(auth)/forgot-password') }],
-        );
+        toast.warning('Session expired', 'Your password reset link is no longer active. Please request a new code.');
+        router.replace('/(auth)/forgot-password');
         return;
       }
       setCheckingSession(false);
@@ -41,10 +39,7 @@ export default function UpdatePasswordScreen() {
   const handleUpdatePassword = async () => {
     const strength = validatePasswordStrength(password);
     if (!strength.isValid) {
-      return Alert.alert(
-        'Weak Password',
-        'Password does not meet security requirements:\n• ' + strength.errors.join('\n• ')
-      );
+      return toast.warning('Weak Password', 'Password does not meet security requirements.');
     }
 
     setLoading(true);
@@ -52,9 +47,8 @@ export default function UpdatePasswordScreen() {
       const { error } = await supabase.auth.updateUser({ password });
       if (error) throw error;
       setLoading(false);
-      Alert.alert('Success', 'Your password has been updated.', [
-        { text: 'OK', onPress: () => router.replace('/(tabs)/home') }
-      ]);
+      toast.success('Password Updated', 'Your password has been updated.');
+      router.replace('/(tabs)/home');
     } catch (e: any) {
       showError(e, 'Update Failed');
     } finally {

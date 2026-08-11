@@ -3,6 +3,7 @@ import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
   Alert, Linking, RefreshControl
 } from 'react-native';
+import { toast } from '@/utils/toast';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Colors, Typography, Radius, Spacing, CommonStyles } from '@/utils/theme';
@@ -75,7 +76,7 @@ export function DocumentsScreen() {
       const asset = result.assets[0];
       setUploadingType(type);
       await uploadDocument({ userId: user.id, documentType: type, fileUri: asset.uri, fileName: asset.name });
-      Alert.alert('Uploaded', 'Your document was added to the vault.');
+      toast.success('Uploaded', 'Your document was added to the vault.');
     } catch (e: any) {
       showError(e, 'Upload Failed');
     } finally {
@@ -84,8 +85,8 @@ export function DocumentsScreen() {
   };
 
   const openDoc = (doc: Document) => {
-    if (!doc.file_url) return Alert.alert('Unavailable', 'This document has no preview link.');
-    Linking.openURL(doc.file_url).catch(() => Alert.alert('Error', 'Could not open this document.'));
+    if (!doc.file_url) return toast.warning('Unavailable', 'This document has no preview link.');
+    Linking.openURL(doc.file_url).catch(() => toast.error('Error', 'Could not open this document.'));
   };
 
   const confirmDelete = (doc: Document) => {

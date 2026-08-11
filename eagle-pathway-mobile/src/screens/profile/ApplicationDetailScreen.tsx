@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
-  ActivityIndicator, Alert,
+  ActivityIndicator,
 } from 'react-native';
+import { toast } from '@/utils/toast';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Colors, Typography, Spacing, Radius, CommonStyles } from '@/utils/theme';
@@ -36,7 +37,7 @@ export function ApplicationDetailScreen() {
     if (applicationId) {
       tutorJobsService.getApplicationById(applicationId)
         .then(setApp)
-        .catch(e => Alert.alert('Error', 'Failed to load application'))
+        .catch(e => toast.error('Error', 'Failed to load application'))
         .finally(() => setLoading(false));
     }
   }, [applicationId]);
@@ -160,7 +161,7 @@ function DocRow({ label, path }: { label: string; path: string }) {
       const signedUrl = await tutorJobsService.getDocumentSignedUrl(path);
       setUrl(signedUrl);
     } catch (e) {
-      Alert.alert('Error', 'Failed to load document');
+      toast.error('Load Failed', 'Failed to load document');
     } finally {
       setLoading(false);
     }

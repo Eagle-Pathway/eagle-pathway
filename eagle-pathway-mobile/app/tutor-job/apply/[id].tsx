@@ -4,6 +4,7 @@ import {
   Alert, ScrollView, ActivityIndicator, Linking,
   Platform,
 } from 'react-native';
+import { toast } from '@/utils/toast';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, router } from 'expo-router';
 import * as DocumentPicker from 'expo-document-picker';
@@ -246,14 +247,14 @@ export default function TutorJobApplyScreen() {
   // ── Step navigation ────────────────────────────────────────────────────────
 
   const validateStep1 = () => {
-    if (!phoneNumber.trim()) { Alert.alert('Required', 'Phone number is required.'); return false; }
+    if (!phoneNumber.trim()) { toast.warning('Phone Required', 'Phone number is required.'); return false; }
     return true;
   };
 
   const validateStep2 = () => {
-    if (!grade10.path) { Alert.alert('Required', 'Please upload your Grade 10 result.'); return false; }
-    if (!grade12.path) { Alert.alert('Required', 'Please upload your Grade 12 result.'); return false; }
-    if (!transcript.path) { Alert.alert('Required', 'Please upload your transcript.'); return false; }
+    if (!grade10.path) { toast.warning('Grade 10 Required', 'Please upload your Grade 10 result.'); return false; }
+    if (!grade12.path) { toast.warning('Grade 12 Required', 'Please upload your Grade 12 result.'); return false; }
+    if (!transcript.path) { toast.warning('Transcript Required', 'Please upload your transcript.'); return false; }
     return true;
   };
 
@@ -267,7 +268,7 @@ export default function TutorJobApplyScreen() {
 
   const handleSubmit = async () => {
     if (!policyAgreed) {
-      Alert.alert('Policy Agreement Required', 'Please read and agree to the Eagle Tutorials policy before submitting.');
+      toast.warning('Policy Agreement Required', 'Please read and agree to the Eagle Tutorials policy before submitting.');
       return;
     }
     if (!user || !id) return;
@@ -295,7 +296,7 @@ export default function TutorJobApplyScreen() {
 
       if (error) {
         if (error.code === '23505') {
-          Alert.alert('Already Applied', 'You have already submitted an application for this job.');
+          toast.warning('Already Applied', 'You have already submitted an application for this job.');
         } else {
           throw error;
         }
@@ -306,13 +307,8 @@ export default function TutorJobApplyScreen() {
       await fetchMyApplications().catch(() => {});
       setSubmitting(false);
 
-      Alert.alert(
-        'Application Submitted! 🎉',
-        "We'll review your details and contact you via in-app chat or Telegram. You can track your application status in My Applications.",
-        [
-          { text: 'View My Applications', onPress: () => router.replace('/(tabs)/my-applications') },
-        ]
-      );
+      toast.success('Application Submitted! 🎉', "We'll review your details and contact you via in-app chat or Telegram.");
+      router.replace('/(tabs)/my-applications');
     } catch (err: any) {
       showError(err, 'Submission Failed');
     } finally {
@@ -467,7 +463,7 @@ export default function TutorJobApplyScreen() {
               </Text>
 
               <TouchableOpacity
-                onPress={() => Linking.openURL(POLICY_DOC_URL).catch(() => Alert.alert('Error', 'Could not open this link. Please check if you have a supported app installed.'))}
+                onPress={() => Linking.openURL(POLICY_DOC_URL).catch(() => toast.error('Link Error', 'Could not open this link. Please check if you have a supported app installed.'))}
                 style={[styles.policyLink, { flexDirection: 'row', alignItems: 'center', gap: 6 }]}
               >
                 <Ionicons name="document-text-outline" size={16} color={Colors.blue} />

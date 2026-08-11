@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import {
-  View, Text, ScrollView, TouchableOpacity, Alert, Modal, TextInput,
+  View, Text, ScrollView, TouchableOpacity, Modal, TextInput,
   ActivityIndicator, StyleSheet,
 } from 'react-native';
+import { toast } from '@/utils/toast';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { format } from 'date-fns';
 import { Ionicons } from '@expo/vector-icons';
@@ -44,10 +45,10 @@ export default function TutorEarningsScreen() {
 
   const handleSubmit = async () => {
     const amt = parseInt(form.amount, 10);
-    if (!amt || amt <= 0) return Alert.alert('Error', 'Please enter a valid amount');
-    if (amt > availableBalance) return Alert.alert('Error', 'Amount exceeds available balance');
+    if (!amt || amt <= 0) return toast.warning('Invalid Amount', 'Please enter a valid amount');
+    if (amt > availableBalance) return toast.warning('Balance Exceeded', 'Amount exceeds available balance');
     if (!form.bankName || !form.accountNumber || !form.accountName) {
-      return Alert.alert('Error', 'Please fill all bank details');
+      return toast.warning('Incomplete Details', 'Please fill all bank details');
     }
     try {
       await submitPayoutRequest({
@@ -59,9 +60,9 @@ export default function TutorEarningsScreen() {
       });
       setModalVisible(false);
       setForm({ amount: '', bankName: '', accountNumber: '', accountName: '' });
-      Alert.alert('Success', 'Payout request submitted successfully');
+      toast.success('Payout Requested', 'Payout request submitted successfully');
     } catch (e: any) {
-      Alert.alert('Error', e?.message || 'Failed to submit request');
+      toast.error('Submission Failed', e?.message || 'Failed to submit request');
     }
   };
 

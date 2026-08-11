@@ -14,7 +14,8 @@ import { notificationsService } from '../src/services/notifications';
 import { ErrorBoundary } from '../src/components/ErrorBoundary';
 import { OfflineBanner } from '../src/components/OfflineBanner';
 import { initErrorLogging } from '../src/services/errorLog';
-import { withTimeout } from '../src/utils/asyncUtils';
+import Toast from 'react-native-toast-message';
+import { toastConfig } from '../src/components/ToastConfig';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
@@ -173,6 +174,7 @@ export default function RootLayout() {
             <Stack.Screen name="application-detail" options={{ presentation: 'card' }} />
           </Stack>
           <OfflineBanner />
+          <Toast config={toastConfig} topOffset={60} visibilityTime={3500} />
         </ErrorBoundary>
       </SafeAreaProvider>
     </GestureHandlerRootView>

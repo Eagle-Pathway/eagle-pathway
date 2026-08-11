@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Linking, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Linking, ActivityIndicator } from 'react-native';
+import { toast } from '@/utils/toast';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Colors, Typography, Spacing, Radius, CommonStyles } from '@/utils/theme';
@@ -60,7 +61,7 @@ export default function ResourceDetailScreen() {
       await Linking.openURL(url);
       resourcesService.incrementDownload(resource.id);
     } catch {
-      Alert.alert('Unavailable', "We couldn't open this resource. Please try again.");
+      toast.error('Unavailable', "We couldn't open this resource. Please try again.");
     } finally {
       setOpening(false);
     }

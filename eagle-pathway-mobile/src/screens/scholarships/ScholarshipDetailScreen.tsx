@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
-  Alert, Linking,
+  Linking,
 } from 'react-native';
+import { toast } from '@/utils/toast';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { format } from 'date-fns';
@@ -28,7 +29,7 @@ const renderLinkedText = (text: string) => {
         <Text
           key={index}
           style={{ color: Colors.blue, textDecorationLine: 'underline' }}
-          onPress={() => Linking.openURL(part).catch(() => Alert.alert('Error', 'Could not open this link. Please check if you have a supported app installed.'))}
+          onPress={() => Linking.openURL(part).catch(() => toast.error('Link Error', 'Could not open this link. Please check if you have a supported app installed.'))}
         >
           {part}
         </Text>
@@ -73,7 +74,7 @@ export function ScholarshipDetailScreen() {
         .catch(err => {
           if (isMounted) {
             console.error('Failed to load scholarship:', err);
-            Alert.alert('Error', 'Failed to load scholarship details. Please check your connection.');
+            toast.error('Load Error', 'Failed to load scholarship details. Please check your connection.');
           }
         })
         .finally(() => {

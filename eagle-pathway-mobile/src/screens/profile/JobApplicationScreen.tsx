@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
-  TextInput, Alert, ActivityIndicator, Linking,
+  TextInput, ActivityIndicator, Linking,
 } from 'react-native';
+import { toast } from '@/utils/toast';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Colors, Typography, Spacing, Radius, CommonStyles } from '@/utils/theme';
@@ -110,7 +111,7 @@ export function JobApplicationScreen() {
   const handleSubmit = async () => {
     if (!user) return;
     if (!policyAgreed) {
-      Alert.alert('Policy Required', 'Please read and agree to the Eagle Tutorials policy.');
+      toast.warning('Policy Required', 'Please read and agree to the Eagle Tutorials policy.');
       return;
     }
     setSaving(true);
@@ -139,14 +140,8 @@ export function JobApplicationScreen() {
           existingGrade12Url: existingApp?.grade12_result_url,
           existingTranscriptUrl: existingApp?.transcript_url,
         });
-        Alert.alert(
-          'Application Submitted!',
-          "We'll review your details and contact you via in-app chat or Telegram. Track your application status below.",
-          [
-            { text: 'View My Applications', onPress: () => router.replace('/my-applications' as any) },
-            { text: 'OK', onPress: () => router.back() },
-          ]
-        );
+        toast.success('Application Submitted!', "We'll review your details and contact you via in-app chat or Telegram.");
+        router.replace('/my-applications' as any);
       } else {
         // Submitting tutor profile application (no specific job)
         await useTutorJobStore.getState().createTutorApplication({
@@ -161,11 +156,8 @@ export function JobApplicationScreen() {
           ...(grade12 && { grade12Uri: grade12.uri, grade12Name: grade12.name }),
           ...(transcript && { transcriptUri: transcript.uri, transcriptName: transcript.name }),
         });
-        Alert.alert(
-          'Profile Submitted!',
-          'Your tutor profile has been submitted for review. We will notify you once your application is approved.',
-          [{ text: 'OK', onPress: () => router.back() }]
-        );
+        toast.success('Profile Submitted!', 'Your tutor profile has been submitted for review. We will notify you once approved.');
+        router.back();
       }
     } catch (e: any) {
       showError(e, 'Failed to Submit Application');
@@ -278,7 +270,7 @@ export function JobApplicationScreen() {
               </Text>
             </View>
 
-            <TouchableOpacity onPress={() => Linking.openURL(POLICY_URL).catch(() => Alert.alert('Error', 'Could not open this link. Please check if you have a supported app installed.'))} style={profStyles.policyLink}>
+            <TouchableOpacity onPress={() => Linking.openURL(POLICY_URL).catch(() => toast.error('Link Error', 'Could not open this link. Please check if you have a supported app installed.'))} style={profStyles.policyLink}>
               <Text style={profStyles.policyLinkText}>📄 Read our full policy document →</Text>
             </TouchableOpacity>
 

@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
-  ActivityIndicator, Alert, TextInput,
+  ActivityIndicator, TextInput,
 } from 'react-native';
+import { toast } from '@/utils/toast';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Colors, Typography, Spacing, Radius, CommonStyles } from '@/utils/theme';
@@ -55,7 +56,7 @@ export function ProfileScreen() {
       setUploading(true);
       const asset = result.assets[0];
       await uploadAvatar(asset.uri, asset.name || 'avatar.jpg');
-      Alert.alert('Success', 'Profile picture updated! ✨');
+      toast.success('Success', 'Profile picture updated! ✨');
     } catch (e: any) {
       showError(e, 'Failed to Update Avatar');
     } finally {
@@ -71,15 +72,15 @@ export function ProfileScreen() {
 
   const handleLinkAction = async () => {
     if (!user) return;
-    if (!linkingPhone) return Alert.alert('Error', 'Please enter a phone number');
+    if (!linkingPhone) return toast.warning('Phone Required', 'Please enter a phone number');
     setIsLinking(true);
     try {
       if (role === 'student') {
         await inviteParent(user.id, linkingPhone);
-        Alert.alert('Success', 'Invitation sent to your parent! They need to verify it in their app.');
+        toast.success('Invitation Sent', 'Invitation sent to your parent! They need to verify it in their app.');
       } else {
         await linkStudent(user!.id, linkingPhone);
-        Alert.alert('Success', 'Link request sent to the student!');
+        toast.success('Link Sent', 'Link request sent to the student!');
       }
       setLinkingPhone('');
       const updated = await loadPendingLinks(user!.id, role as any);
@@ -94,11 +95,11 @@ export function ProfileScreen() {
   const handleVerifyLink = async (linkId: string) => {
     try {
       await verifyLink(linkId);
-      Alert.alert('Success', 'Link verified successfully! ✨');
+      toast.success('Verified! ✨', 'Link verified successfully!');
       const updated = await loadPendingLinks(user!.id, role as any);
       setPendingLinks(updated);
     } catch (e: any) {
-      Alert.alert('Error', 'Failed to verify link');
+      toast.error('Verification Failed', 'Failed to verify link');
     }
   };
 

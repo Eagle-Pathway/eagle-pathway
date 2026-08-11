@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
-  Alert, TextInput,
+  TextInput,
 } from 'react-native';
+import { toast } from '@/utils/toast';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Colors, Typography, Spacing, Radius, CommonStyles } from '@/utils/theme';
@@ -51,7 +52,7 @@ export function ApplyScreen() {
       if (result.canceled || !result.assets?.[0]) return;
       const asset = result.assets[0];
       if (!user) return;
-      Alert.alert('Uploading...', 'Please wait');
+      toast.info('Uploading...', 'Please wait while your document is being uploaded.');
       await uploadDocument({ 
         userId: user.id, 
         applicationId: undefined, 
@@ -59,7 +60,7 @@ export function ApplyScreen() {
         fileUri: asset.uri, 
         fileName: asset.name 
       });
-      Alert.alert('Success', 'Document uploaded successfully!');
+      toast.success('Success', 'Document uploaded successfully!');
     } catch (e: any) {
       showError(e, 'Upload Failed');
     }
@@ -69,11 +70,11 @@ export function ApplyScreen() {
     if (loading) return; // guard against double-submit -> duplicate applications
     if (!user || !scholarshipId || !packageTier) return;
     if (!selectedPaymentMethod) {
-      Alert.alert('Missing Info', 'Please select a payment method before submitting your application.');
+      toast.warning('Missing Info', 'Please select a payment method before submitting your application.');
       return;
     }
     if (!transactionId || !receiptAsset) {
-      Alert.alert('Missing Info', 'Please provide the transaction ID and upload the receipt screenshot for manual verification.');
+      toast.warning('Missing Info', 'Please provide the transaction ID and upload the receipt screenshot for manual verification.');
       return;
     }
     setLoading(true);
@@ -104,18 +105,17 @@ export function ApplyScreen() {
       });
     } catch (e: any) {
       setLoading(false);
-      Alert.alert(
+      toast.error(
         'Application created — payment not recorded',
-        "Your application was created, but we couldn't upload your payment receipt. Open the tracker and retry the payment so a consultant can verify it.",
-        [{ text: 'View Tracker', onPress: () => router.push('/tracker') }],
+        "Your application was created, but we couldn't upload your payment receipt. Open the tracker and retry the payment so a consultant can verify it."
       );
+      router.push('/tracker');
       return;
     }
 
     setLoading(false);
-    Alert.alert('Application Started! 🎉', 'Your consultant has been notified and will reach out shortly.', [
-      { text: 'View Tracker', onPress: () => router.push('/tracker') },
-    ]);
+    toast.success('Application Started! 🎉', 'Your consultant has been notified and will reach out shortly.');
+    router.push('/tracker');
   };
 
   const requiredDocs = ['Degree Certificate', 'Official Transcript', 'Passport Copy', 'IELTS Certificate', 'CV / Resume', 'Reference Letter 1', 'Reference Letter 2'];
@@ -129,28 +129,22 @@ export function ApplyScreen() {
   // are missing on the Docs step — previously you could submit with zero docs.
   const handleContinue = () => {
     if (step === 2 && !allDocsUploaded) {
-      Alert.alert(
-        'Documents incomplete',
-        'Some required documents are still missing. You can add them now, or continue and upload them later.',
-        [
-          { text: 'Add documents', style: 'cancel' },
-          { text: 'Continue anyway', onPress: () => setStep(s => s + 1) },
-        ],
-      );
+      toast.warning('Documents incomplete', 'Some required documents are still missing. You can add them now, or continue and upload them later.');
+      setStep(s => s + 1);
       return;
     }
 
     if (step === 4) {
       if (!selectedPaymentMethod) {
-        Alert.alert('Payment Method Required', 'Please select a payment method before continuing.');
+        toast.warning('Payment Method Required', 'Please select a payment method before continuing.');
         return;
       }
       if (!transactionId.trim()) {
-        Alert.alert('Transaction ID Required', 'Please enter your payment transaction ID before continuing.');
+        toast.warning('Transaction ID Required', 'Please enter your payment transaction ID before continuing.');
         return;
       }
       if (!receiptAsset) {
-        Alert.alert('Receipt Screenshot Required', 'Please upload a screenshot of your payment receipt before continuing.');
+        toast.warning('Receipt Screenshot Required', 'Please upload a screenshot of your payment receipt before continuing.');
         return;
       }
     }
@@ -283,11 +277,11 @@ export function ApplyScreen() {
               variant="outline" 
               onPress={async () => {
                 if (!sopContent || sopContent.length < 50) {
-                  Alert.alert('Too short', 'Please write at least 50 characters to get meaningful feedback.');
+                  toast.warning('Too short', 'Please write at least 50 characters to get meaningful feedback.');
                   return;
                 }
                 const result = await useScholarshipStore.getState().reviewSOP(sopContent);
-                Alert.alert(`AI Score: ${result.score}/100`, result.feedback + '\n\n' + result.suggestions.map(s => '• ' + s).join('\n'));
+                toast.info(`AI Score: ${result.score}/100`, result.feedback);
               }}
               loading={useScholarshipStore.getState().isReviewingSOP}
               style={{ marginTop: Spacing.md }}

@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet,
-  TextInput, Alert, FlatList, ActivityIndicator, RefreshControl
+  TextInput, FlatList, ActivityIndicator, RefreshControl
 } from 'react-native';
+import { toast } from '@/utils/toast';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Colors, Typography, Spacing, Radius, CommonStyles } from '@/utils/theme';
@@ -252,11 +253,8 @@ function NewRequestForm({
 
       if (error) throw error;
 
-      Alert.alert(
-        'Request Submitted ✅',
-        'We will review your request and contact you shortly. You can track the status in "My Requests".',
-        [{ text: 'View My Requests', onPress: onSuccess }],
-      );
+      toast.success('Request Submitted ✅', 'We will review your request and contact you shortly.');
+      onSuccess();
     } catch (e: any) {
       console.error('[ServiceRequest] Submit error:', e?.message ?? 'unknown');
       showError(e, 'Submission Failed');

@@ -3,6 +3,7 @@ import {
   View, Text, StyleSheet, ActivityIndicator,
   TouchableOpacity, ScrollView, Alert,
 } from 'react-native';
+import { toast } from '@/utils/toast';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, router } from 'expo-router';
 import { Colors, Typography, Spacing, Radius, CommonStyles } from '../../src/utils/theme';
@@ -56,7 +57,7 @@ export default function TutorJobDetailScreen() {
     if (!error && data) {
       setJob(data as TutorJobPost);
     } else {
-      Alert.alert('Error', 'Could not load job details.');
+      toast.error('Load Error', 'Could not load job details.');
     }
     setLoading(false);
   }

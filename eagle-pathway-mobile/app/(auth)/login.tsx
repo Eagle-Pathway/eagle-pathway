@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
+import { toast } from '@/utils/toast';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -38,9 +39,9 @@ export default function LoginScreen() {
   }, []);
 
   const handleLogin = async () => {
-    if (!email.trim()) return Alert.alert('Error', 'Please enter your email');
-    if (!EMAIL_RE.test(email.trim())) return Alert.alert('Error', 'Please enter a valid email address');
-    if (!password) return Alert.alert('Error', 'Please enter your password');
+    if (!email.trim()) return toast.warning('Email Required', 'Please enter your email');
+    if (!EMAIL_RE.test(email.trim())) return toast.warning('Invalid Email', 'Please enter a valid email address');
+    if (!password) return toast.warning('Password Required', 'Please enter your password');
     try {
       await signIn(email.trim(), password);
 
@@ -55,11 +56,9 @@ export default function LoginScreen() {
     } catch (e: any) {
       if (e?.code === 'email_not_confirmed' || /not confirmed/i.test(e?.message || '')) {
         authService.resendSignupOtp(email.trim()).catch(() => {});
-        return Alert.alert(
-          'Verify your email',
-          "Your email isn't verified yet. We've sent a fresh 6-digit code — enter it to finish setting up your account.",
-          [{ text: 'OK', onPress: () => router.push({ pathname: '/(auth)/signup', params: { verifyEmail: email.trim() } }) }],
-        );
+        toast.warning('Verify your email', "Your email isn't verified yet. We've sent a fresh 6-digit code.");
+        router.push({ pathname: '/(auth)/signup', params: { verifyEmail: email.trim() } });
+        return;
       }
       showError(e, 'Login Failed');
     } finally {

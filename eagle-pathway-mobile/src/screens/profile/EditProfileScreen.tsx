@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet,
-  TextInput, Alert,
+  TextInput,
 } from 'react-native';
+import { toast } from '@/utils/toast';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Colors, Typography, Radius, Spacing, CommonStyles } from '@/utils/theme';
@@ -201,7 +202,7 @@ export function EditProfileScreen() {
 
       await withTimeout(updateProfile(updates));
       setLoading(false);
-      Alert.alert('Success', 'Profile saved successfully!');
+      toast.success('Profile Saved', 'Profile saved successfully!');
       router.back();
     } catch (e: any) {
       showError(e, 'Failed to Save Profile');

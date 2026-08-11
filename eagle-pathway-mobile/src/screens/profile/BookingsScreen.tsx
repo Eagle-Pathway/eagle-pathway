@@ -3,6 +3,7 @@ import {
   View, Text, FlatList, TouchableOpacity, StyleSheet,
   Alert, Linking, TextInput, RefreshControl
 } from 'react-native';
+import { toast } from '@/utils/toast';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { format } from 'date-fns';
@@ -54,7 +55,7 @@ export function BookingsScreen({ hideHeader = false }: { hideHeader?: boolean })
 
   const handleSubmitRating = async () => {
     if (!ratingBookingId || rating === 0) {
-      Alert.alert('Please Select a Rating', 'Tap a star to rate this session.');
+      toast.warning('Please Select a Rating', 'Tap a star to rate this session.');
       return;
     }
     setRatingLoading(true);
@@ -65,7 +66,7 @@ export function BookingsScreen({ hideHeader = false }: { hideHeader?: boolean })
         comment: ratingComment.trim() || null,
       });
       setRatingBookingId(null);
-      Alert.alert('Thank you! ⭐', 'Your rating has been submitted.');
+      toast.success('Thank you! ⭐', 'Your rating has been submitted.');
     } catch (e: any) {
       showError(e, 'Rating Failed');
     } finally {
@@ -137,7 +138,7 @@ export function BookingsScreen({ hideHeader = false }: { hideHeader?: boolean })
                   <View style={bkgStyles.actions}>
                     {!isTutor ? (
                       <>
-                        <TouchableOpacity style={bkgStyles.btnJoin} onPress={() => b.zoom_link && Linking.openURL(b.zoom_link).catch(() => Alert.alert('Error', 'Could not open this link. Please check if you have a supported app installed.'))} activeOpacity={0.85}>
+                        <TouchableOpacity style={bkgStyles.btnJoin} onPress={() => b.zoom_link && Linking.openURL(b.zoom_link).catch(() => toast.error('Link Error', 'Could not open this link. Please check if you have a supported app installed.'))} activeOpacity={0.85}>
                           <Text style={bkgStyles.btnJoinText}>Join Session</Text>
                         </TouchableOpacity>
                         <TouchableOpacity style={bkgStyles.btnCancel} onPress={() => Alert.alert('Cancel Booking?', 'Are you sure?', [{ text: 'Cancel', style: 'cancel' }, { text: 'Yes, cancel', style: 'destructive', onPress: () => cancelBooking(b.id) }])} activeOpacity={0.85}>

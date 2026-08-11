@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import {
   View, Text, StyleSheet, TextInput, ScrollView,
-  TouchableOpacity, ActivityIndicator, Alert, Modal
+  TouchableOpacity, ActivityIndicator, Modal
 } from 'react-native';
+import { toast } from '@/utils/toast';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, router } from 'expo-router';
 import { Colors, Typography, Spacing, Radius, CommonStyles } from '@/utils/theme';
@@ -44,22 +45,22 @@ export default function SOPEditorScreen() {
     setIsSaving(true);
     try {
       await updateSOP(applicationId, content);
-      Alert.alert('Success', 'Draft saved successfully');
+      toast.success('Draft saved', 'Your SOP draft was saved successfully.');
     } catch (error) {
-      Alert.alert('Error', 'Failed to save draft');
+      toast.error('Save Failed', 'Failed to save SOP draft.');
     } finally {
       setIsSaving(false);
     }
   };
 
   const handleAiReview = async () => {
-    if (!content.trim()) return Alert.alert('Empty SOP', 'Please write something before requesting a review.');
+    if (!content.trim()) return toast.warning('Empty SOP', 'Please write something before requesting a review.');
     try {
       const result = await reviewSOP(content, application?.scholarship_id, user?.id);
       setAiReport(result);
       setShowAiModal(true);
     } catch (error) {
-      Alert.alert('Error', 'AI service is currently busy. Please try again later.');
+      toast.error('AI Review Error', 'AI service is currently busy. Please try again later.');
     }
   };
 

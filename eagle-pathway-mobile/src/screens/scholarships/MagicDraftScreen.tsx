@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
-  Alert,
 } from 'react-native';
+import { toast } from '@/utils/toast';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Colors, Typography, Spacing, Radius, CommonStyles } from '@/utils/theme';
@@ -33,7 +33,7 @@ export function MagicDraftScreen() {
 
   const handleCopy = () => {
     // In a real app, use Clipboard.setString
-    Alert.alert('Copied!', 'Draft copied to clipboard. You can now use it in your application.');
+    toast.success('Copied!', 'Draft copied to clipboard. You can now use it in your application.');
   };
 
   return (

@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { 
   View, Text, ScrollView, RefreshControl, TouchableOpacity, 
-  Alert, Modal, TextInput, ActivityIndicator, StyleSheet 
+  Modal, TextInput, ActivityIndicator, StyleSheet 
 } from 'react-native';
+import { toast } from '@/utils/toast';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { format } from 'date-fns';
@@ -118,8 +119,9 @@ export const TutorHome: React.FC<TutorHomeProps> = ({
     try {
       setUpdatingId(id);
       await updateBookingStatus(id, status);
+      toast.success('Status Updated', `Session status updated to ${status}.`);
     } catch {
-      Alert.alert('Error', 'Could not update session status.');
+      toast.error('Error', 'Could not update session status.');
     } finally {
       setUpdatingId(null);
     }
@@ -127,10 +129,10 @@ export const TutorHome: React.FC<TutorHomeProps> = ({
 
   const handlePayoutRequest = async () => {
     const amt = parseInt(payoutForm.amount);
-    if (!amt || amt <= 0) return Alert.alert('Error', 'Please enter a valid amount');
-    if (amt > availableBalance) return Alert.alert('Error', 'Amount exceeds available balance');
+    if (!amt || amt <= 0) return toast.warning('Invalid Amount', 'Please enter a valid amount');
+    if (amt > availableBalance) return toast.warning('Balance Exceeded', 'Amount exceeds available balance');
     if (!payoutForm.bankName || !payoutForm.accountNumber || !payoutForm.accountName) {
-      return Alert.alert('Error', 'Please fill all bank details');
+      return toast.warning('Incomplete Details', 'Please fill all bank details');
     }
 
     try {
@@ -143,9 +145,9 @@ export const TutorHome: React.FC<TutorHomeProps> = ({
       });
       setIsPayoutModalVisible(false);
       setPayoutForm({ amount: '', bankName: '', accountNumber: '', accountName: '' });
-      Alert.alert('Success', 'Payout request submitted successfully');
+      toast.success('Payout Requested', 'Payout request submitted successfully');
     } catch {
-      Alert.alert('Error', 'Failed to submit request');
+      toast.error('Error', 'Failed to submit request');
     }
   };
 

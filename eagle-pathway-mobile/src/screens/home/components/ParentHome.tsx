@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, Text, ScrollView, RefreshControl, TouchableOpacity, Alert, StyleSheet } from 'react-native';
+import { View, Text, ScrollView, RefreshControl, TouchableOpacity, StyleSheet } from 'react-native';
+import { toast } from '@/utils/toast';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -115,7 +116,7 @@ export const ParentHome: React.FC<ParentHomeProps> = ({
               title="No linked students"
               subtitle="Link your child's account to track their scholarship applications and progress."
               actionLabel="How It Works"
-              onAction={() => Alert.alert('Link Student', 'Ask your child to go to Profile → Link Parent and enter your phone number.')}
+              onAction={() => toast.info('Link Student', 'Ask your child to go to Profile → Link Parent and enter your phone number.')}
             />
           </View>
         ) : (
