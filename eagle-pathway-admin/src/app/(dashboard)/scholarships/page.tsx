@@ -247,18 +247,41 @@ export default function ScholarshipsPage() {
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <div className="flex justify-end space-x-2">
-                        <button 
-                          onClick={() => {
-                            setEditingScholarship(scholarship);
-                            setIsFormOpen(true);
+                      <div className="flex items-center justify-end space-x-2">
+                        <button
+                          onClick={async () => {
+                            try {
+                              const session = await supabase.auth.getSession();
+                              const token = session.data.session?.access_token;
+                              const res = await fetch('/api/broadcast', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                                body: JSON.stringify({
+                                  title: `Scholarship Opportunity 🎓: ${scholarship.name}`,
+                                  body: `${scholarship.organization} (${scholarship.country}) — ${scholarship.funding_details}. Deadline: ${new Date(scholarship.deadline).toLocaleDateString()}. Tap to view details & apply!`,
+                                  audience: 'student',
+                                  type: 'application_update',
+                                }),
+                              });
+                              if (res.ok) {
+                                toast('success', `Broadcast recommendation sent to matching candidates! 🚀`);
+                              } else {
+                                toast('error', 'Failed to broadcast scholarship alert.');
+                              }
+                            } catch {
+                              toast('error', 'Network error broadcasting scholarship alert.');
+                            }
                           }}
-                          className="text-gray-400 hover:text-brand-blue p-1 rounded-md hover:bg-blue-50 transition-colors"
+                          className="px-2 py-1 text-xs font-semibold bg-brand-blue text-white rounded-md hover:bg-blue-700 shadow-xs"
+                          title="Broadcast scholarship alert to candidates"
                         >
-                          <Edit2 className="h-4 w-4" />
+                          📢 Recommend
                         </button>
-                        <button onClick={() => handleDelete(scholarship.id)} className="text-gray-400 hover:text-red-600 p-1 rounded-md hover:bg-red-50 transition-colors">
-                          <Trash2 className="h-4 w-4" />
+                        <button onClick={() => { setEditingScholarship(scholarship); setIsFormOpen(true); }} className="text-gray-400 hover:text-brand-blue transition-colors">
+                          <Edit2 className="w-4 h-4" />
+                        </button>
+                        <button onClick={() => handleDelete(scholarship.id)} className="text-gray-400 hover:text-red-600 transition-colors">
+                          <Trash2 className="w-4 h-4" />
                         </button>
                       </div>
                     </td>
