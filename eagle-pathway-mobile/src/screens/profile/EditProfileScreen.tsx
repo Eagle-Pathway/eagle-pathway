@@ -7,7 +7,7 @@ import { toast } from '@/utils/toast';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Colors, Typography, Radius, Spacing, CommonStyles } from '@/utils/theme';
-import { Button } from '@/components/common';
+import { Button, Dropdown, DropdownOption } from '@/components/common';
 import { KeyboardAwareScreen } from '@/components/KeyboardAwareScreen';
 import { useAuthStore } from '@/store/authStore';
 import { showError } from '@/utils/errorHandler';
@@ -15,21 +15,64 @@ import { withTimeout } from '@/utils/asyncUtils';
 import { getUserRole } from '@/utils/role';
 import { DEPARTMENTS, FIELDS_OF_STUDY, COUNTRIES, validatePhone } from '@eagle-pathway/shared';
 
-const DEGREE_TYPES = [
-  { label: 'BSc (Science/Engineering)', value: 'BSc' },
-  { label: 'BA (Arts/Humanities)', value: 'BA' },
-  { label: 'BEd (Education)', value: 'BEd' },
-  { label: 'LLB (Law)', value: 'LLB' },
-  { label: 'MD (Medicine)', value: 'MD' },
-  { label: 'MSc (Master of Science)', value: 'MSc' },
-  { label: 'MA (Master of Arts)', value: 'MA' },
-  { label: 'MBA (Business Admin)', value: 'MBA' },
-  { label: 'PhD / Doctorate', value: 'PhD' },
+const CURRENT_LEVEL_OPTIONS: DropdownOption[] = [
+  { label: 'High School Student', value: 'High School Student' },
+  { label: 'Undergraduate Student', value: 'Undergraduate Student' },
+  { label: 'Bachelor\'s Degree Holder', value: 'Bachelor\'s Degree Holder' },
+  { label: 'Master\'s Student', value: 'Master\'s Student' },
+  { label: 'Master\'s Degree Holder', value: 'Master\'s Degree Holder' },
+  { label: 'PhD Student', value: 'PhD Student' },
+  { label: 'PhD Degree Holder', value: 'PhD Degree Holder' },
 ];
 
-const TARGET_COUNTRIES = [
-  'USA', 'Canada', 'UK / Europe', 'Asia / China', 'Australia', 'Other'
+const TARGET_DEGREE_OPTIONS: DropdownOption[] = [
+  { label: 'High School Diploma', value: 'High School Diploma' },
+  { label: 'BSc (Science / Engineering)', value: 'BSc' },
+  { label: 'BA (Arts / Humanities)', value: 'BA' },
+  { label: 'BEd (Education)', value: 'BEd' },
+  { label: 'LLB (Law)', value: 'LLB' },
+  { label: 'MD / MBBS (Medicine)', value: 'MD' },
+  { label: 'MSc (Master of Science)', value: 'MSc' },
+  { label: 'MA (Master of Arts)', value: 'MA' },
+  { label: 'MBA (Business Administration)', value: 'MBA' },
+  { label: 'MPH (Master of Public Health)', value: 'MPH' },
+  { label: 'LLM (Master of Laws)', value: 'LLM' },
+  { label: 'PhD / Doctorate', value: 'PhD' },
+  { label: 'Postdoctoral Research', value: 'Postdoctoral Research' },
 ];
+
+function normalizeCurrentLevel(level?: string): string {
+  if (!level) return 'Undergraduate Student';
+  if (['High School', 'highschool', 'Grade 9', 'Grade 10', 'Grade 11', 'Grade 12'].includes(level)) {
+    return 'High School Student';
+  }
+  if (level === 'Undergraduate') return 'Undergraduate Student';
+  if (level === 'Postgraduate') return 'Master\'s Student';
+  if (CURRENT_LEVEL_OPTIONS.some(o => o.value === level)) return level;
+  return 'Undergraduate Student';
+}
+
+function normalizeTargetDegree(degree?: string): string {
+  if (!degree) return 'BSc';
+  if (TARGET_DEGREE_OPTIONS.some(o => o.value === degree)) return degree;
+  if (degree === 'PhD') return 'PhD';
+  return 'BSc';
+}
+
+const COUNTRY_DROPDOWN_OPTIONS: DropdownOption[] = [
+  { label: 'Any Location / Open to All', value: 'Any Location', icon: '🌍' },
+  ...COUNTRIES.map(c => ({ label: c.name, value: c.name, icon: c.flag })),
+];
+
+const FIELDS_OF_STUDY_OPTIONS: DropdownOption[] = FIELDS_OF_STUDY.map(s => ({
+  label: s.charAt(0).toUpperCase() + s.slice(1),
+  value: s,
+}));
+
+const DEPARTMENT_DROPDOWN_OPTIONS: DropdownOption[] = DEPARTMENTS.map(d => ({
+  label: d,
+  value: d,
+}));
 
 const TUTOR_SUBJECTS = [
   'Math', 'Physics', 'Chemistry', 'Biology', 'English', 'Amharic',
@@ -44,6 +87,34 @@ const TEACHING_EXPERIENCE_OPTIONS = [
   '3 – 5 Years',
   '5+ Years',
   'International School Experience'
+];
+
+const TUTOR_SUBJECT_OPTIONS: DropdownOption[] = TUTOR_SUBJECTS.map(s => ({
+  label: s,
+  value: s,
+}));
+
+const TEACHING_EXPERIENCE_DROPDOWN: DropdownOption[] = TEACHING_EXPERIENCE_OPTIONS.map(exp => ({
+  label: exp,
+  value: exp,
+}));
+
+const CHILDREN_GRADE_OPTIONS: DropdownOption[] = [
+  { label: 'KG / Primary (Grades 1-8)', value: 'KG / Primary (Grades 1-8)' },
+  { label: 'High School (Grades 9-12)', value: 'High School (Grades 9-12)' },
+  { label: 'College / SAT Prep', value: 'College / SAT Prep' },
+];
+
+const PREFERRED_GENDER_OPTIONS: DropdownOption[] = [
+  { label: 'No Preference', value: 'No Preference' },
+  { label: 'Female Tutor Preferred', value: 'Female Tutor Preferred' },
+  { label: 'Male Tutor Preferred', value: 'Male Tutor Preferred' },
+];
+
+const SESSION_FORMAT_OPTIONS: DropdownOption[] = [
+  { label: 'In-Person (Home Tutoring)', value: 'In-Person (Home Tutoring)' },
+  { label: 'Online Tutoring', value: 'Online Tutoring' },
+  { label: 'Flexible / Either', value: 'Flexible / Either' },
 ];
 
 const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
@@ -68,11 +139,11 @@ export function EditProfileScreen() {
     academic_summary: user?.academic_summary || '',
     has_ielts: user?.has_ielts || false,
     is_english_medium: user?.is_english_medium || false,
-    target_degree_level: user?.target_degree_level || 'BSc',
+    target_degree_level: normalizeTargetDegree(user?.target_degree_level),
     target_countries: user?.target_countries || ['USA'],
     has_extracurriculars: user?.has_extracurriculars || false,
     target_departments: user?.target_departments || [],
-    grade_level: user?.grade_level || 'Grade 12',
+    grade_level: normalizeCurrentLevel(user?.grade_level),
     gpa: user?.gpa ? user.gpa.toString() : '',
     gpa_max: user?.gpa_max ? user.gpa_max.toString() : '4.0',
     living_address: user?.living_address || '',
@@ -214,39 +285,28 @@ export function EditProfileScreen() {
   // 🎓 Student Fields
   const renderStudentFields = () => (
     <>
-      <Section title="🎓 Academic Status">
-        <Text style={editProfStyles.fieldLabel}>Current Level</Text>
-        <View style={editProfStyles.chipsRow}>
-          {['High School', 'Undergraduate', 'Postgraduate'].map(lvl => {
-            const isSelected = lvl === 'High School'
-              ? ['High School', 'highschool', 'Grade 9', 'Grade 10', 'Grade 11', 'Grade 12'].includes(formData.grade_level)
-              : formData.grade_level === lvl;
-            return (
-              <TouchableOpacity
-                key={lvl}
-                style={[editProfStyles.chip, isSelected && editProfStyles.chipActive]}
-                onPress={() => setFormData(f => ({ ...f, grade_level: lvl }))}
-              >
-                <Text style={[editProfStyles.chipText, isSelected && editProfStyles.chipTextActive]}>{lvl}</Text>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
+      <Section title="Academic Status">
+        <Dropdown
+          label="Current Academic Level *"
+          options={CURRENT_LEVEL_OPTIONS}
+          selectedValue={formData.grade_level}
+          onValueChange={val => setFormData(f => ({ ...f, grade_level: val }))}
+          placeholder="Select your current academic level..."
+          searchable
+          style={{ marginBottom: Spacing.md }}
+        />
 
-        <Text style={[editProfStyles.fieldLabel, { marginTop: Spacing.md }]}>Target Degree Program</Text>
-        <View style={editProfStyles.chipsRow}>
-          {DEGREE_TYPES.map(deg => (
-            <TouchableOpacity
-              key={deg.value}
-              style={[editProfStyles.chip, formData.target_degree_level === deg.value && editProfStyles.chipActive]}
-              onPress={() => setFormData(f => ({ ...f, target_degree_level: deg.value }))}
-            >
-              <Text style={[editProfStyles.chipText, formData.target_degree_level === deg.value && editProfStyles.chipTextActive]}>{deg.label}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
+        <Dropdown
+          label="Target Degree Program *"
+          options={TARGET_DEGREE_OPTIONS}
+          selectedValue={formData.target_degree_level}
+          onValueChange={val => setFormData(f => ({ ...f, target_degree_level: val }))}
+          placeholder="Select target degree program..."
+          searchable
+          style={{ marginBottom: Spacing.md }}
+        />
 
-        <Text style={[editProfStyles.fieldLabel, { marginTop: Spacing.md }]}>Cumulative GPA / Academic Score</Text>
+        <Text style={[editProfStyles.fieldLabel, { marginTop: Spacing.xs }]}>Cumulative GPA / Academic Score</Text>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
           <View style={{ flex: 1 }}>
             <Text style={{ fontSize: 10, color: Colors.textSecondary, marginBottom: 4, fontWeight: '600' }}>YOUR GPA</Text>
@@ -272,32 +332,19 @@ export function EditProfileScreen() {
         </View>
       </Section>
 
-      <Section title="🌍 Study Abroad & Language Goals">
-        <Text style={editProfStyles.fieldLabel}>Target Countries (Tap all that apply)</Text>
-        <View style={editProfStyles.chipsRow}>
-          <TouchableOpacity
-            key="Any Location"
-            style={[editProfStyles.chip, formData.target_countries.includes('Any Location') && editProfStyles.chipActive]}
-            onPress={() => toggleCountry('Any Location')}
-          >
-            <Text style={[editProfStyles.chipText, formData.target_countries.includes('Any Location') && editProfStyles.chipTextActive]}>
-              🌍 Any Location / Open to All
-            </Text>
-          </TouchableOpacity>
-          {COUNTRIES.map(c => (
-            <TouchableOpacity
-              key={c.name}
-              style={[editProfStyles.chip, formData.target_countries.includes(c.name) && editProfStyles.chipActive]}
-              onPress={() => toggleCountry(c.name)}
-            >
-              <Text style={[editProfStyles.chipText, formData.target_countries.includes(c.name) && editProfStyles.chipTextActive]}>
-                {c.flag} {c.name}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
+      <Section title="Study Abroad & Language Goals">
+        <Dropdown
+          label="Target Countries *"
+          options={COUNTRY_DROPDOWN_OPTIONS}
+          isMultiSelect
+          selectedValues={formData.target_countries}
+          onMultiValueChange={(vals: string[]) => setFormData(f => ({ ...f, target_countries: vals }))}
+          placeholder="Select target countries..."
+          searchable
+          style={{ marginBottom: Spacing.md }}
+        />
 
-        <Text style={[editProfStyles.fieldLabel, { marginTop: Spacing.md }]}>Language & Standardized Tests</Text>
+        <Text style={[editProfStyles.fieldLabel, { marginTop: Spacing.xs }]}>Language & Standardized Tests</Text>
         <View style={editProfStyles.switchCard}>
           <View style={editProfStyles.switchRow}>
             <View style={{ flex: 1 }}>
@@ -322,31 +369,28 @@ export function EditProfileScreen() {
         </View>
       </Section>
 
-      <Section title="💼 Target Fields of Study">
-        <Text style={editProfStyles.fieldLabel}>Target Fields (Tap to select)</Text>
-        <View style={editProfStyles.chipsRow}>
-          {FIELDS_OF_STUDY.map(s => (
-            <TouchableOpacity
-              key={s}
-              style={[editProfStyles.chip, formData.interested_subjects.includes(s) && editProfStyles.chipActive]}
-              onPress={() => toggleSubject(s)}
-            >
-              <Text style={[editProfStyles.chipText, formData.interested_subjects.includes(s) && editProfStyles.chipTextActive]}>{s.charAt(0).toUpperCase() + s.slice(1)}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-        <Text style={[editProfStyles.fieldLabel, { marginTop: Spacing.md }]}>Target Departments</Text>
-        <View style={editProfStyles.chipsRow}>
-          {DEPARTMENTS.map(d => (
-            <TouchableOpacity
-              key={d}
-              style={[editProfStyles.chip, formData.target_departments.includes(d) && editProfStyles.chipActive]}
-              onPress={() => toggleDepartment(d)}
-            >
-              <Text style={[editProfStyles.chipText, formData.target_departments.includes(d) && editProfStyles.chipTextActive]}>{d}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
+      <Section title=" Target Fields of Study">
+        <Dropdown
+          label="Target Fields of Study *"
+          options={FIELDS_OF_STUDY_OPTIONS}
+          isMultiSelect
+          selectedValues={formData.interested_subjects}
+          onMultiValueChange={(vals: string[]) => setFormData(f => ({ ...f, interested_subjects: vals }))}
+          placeholder="Select target fields of study..."
+          searchable
+          style={{ marginBottom: Spacing.md }}
+        />
+
+        <Dropdown
+          label="Target Departments *"
+          options={DEPARTMENT_DROPDOWN_OPTIONS}
+          isMultiSelect
+          selectedValues={formData.target_departments}
+          onMultiValueChange={(vals: string[]) => setFormData(f => ({ ...f, target_departments: vals }))}
+          placeholder="Select target departments..."
+          searchable
+          style={{ marginBottom: Spacing.md }}
+        />
       </Section>
 
       <Section title="✨ About You">
@@ -400,18 +444,15 @@ export function EditProfileScreen() {
         />
         {errors.university_name && <Text style={editProfStyles.fieldError}>{errors.university_name}</Text>}
 
-        <Text style={[editProfStyles.fieldLabel, { marginTop: Spacing.sm }]}>Degree Type / Program</Text>
-        <View style={editProfStyles.chipsRow}>
-          {DEGREE_TYPES.map(deg => (
-            <TouchableOpacity
-              key={deg.value}
-              style={[editProfStyles.chip, formData.target_degree_level === deg.value && editProfStyles.chipActive]}
-              onPress={() => setFormData(f => ({ ...f, target_degree_level: deg.value }))}
-            >
-              <Text style={[editProfStyles.chipText, formData.target_degree_level === deg.value && editProfStyles.chipTextActive]}>{deg.value}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
+        <Dropdown
+          label="Degree Type / Program"
+          options={TARGET_DEGREE_OPTIONS}
+          selectedValue={formData.target_degree_level}
+          onValueChange={val => setFormData(f => ({ ...f, target_degree_level: val }))}
+          placeholder="Select degree type..."
+          searchable
+          style={{ marginTop: Spacing.sm }}
+        />
 
         <Text style={[editProfStyles.fieldLabel, { marginTop: Spacing.sm }]}>Current CGPA *</Text>
         <TextInput
@@ -427,31 +468,25 @@ export function EditProfileScreen() {
       </Section>
 
       <Section title="📚 Teaching Experience & Subjects">
-        <Text style={editProfStyles.fieldLabel}>Teaching Experience</Text>
-        <View style={editProfStyles.chipsRow}>
-          {TEACHING_EXPERIENCE_OPTIONS.map(exp => (
-            <TouchableOpacity
-              key={exp}
-              style={[editProfStyles.chip, formData.teaching_experience === exp && editProfStyles.chipActive]}
-              onPress={() => setFormData(f => ({ ...f, teaching_experience: exp }))}
-            >
-              <Text style={[editProfStyles.chipText, formData.teaching_experience === exp && editProfStyles.chipTextActive]}>{exp}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
+        <Dropdown
+          label="Teaching Experience"
+          options={TEACHING_EXPERIENCE_DROPDOWN}
+          selectedValue={formData.teaching_experience}
+          onValueChange={val => setFormData(f => ({ ...f, teaching_experience: val }))}
+          placeholder="Select teaching experience level..."
+          style={{ marginBottom: Spacing.md }}
+        />
 
-        <Text style={[editProfStyles.fieldLabel, { marginTop: Spacing.md }]}>Subjects You Teach (Tap all that apply)</Text>
-        <View style={editProfStyles.chipsRow}>
-          {TUTOR_SUBJECTS.map(s => (
-            <TouchableOpacity
-              key={s}
-              style={[editProfStyles.chip, formData.interested_subjects.includes(s) && editProfStyles.chipActive]}
-              onPress={() => toggleSubject(s)}
-            >
-              <Text style={[editProfStyles.chipText, formData.interested_subjects.includes(s) && editProfStyles.chipTextActive]}>{s}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
+        <Dropdown
+          label="Subjects You Teach"
+          options={TUTOR_SUBJECT_OPTIONS}
+          isMultiSelect
+          selectedValues={formData.interested_subjects}
+          onMultiValueChange={(vals: string[]) => setFormData(f => ({ ...f, interested_subjects: vals }))}
+          placeholder="Select subjects you teach..."
+          searchable
+          style={{ marginBottom: Spacing.md }}
+        />
       </Section>
 
       <Section title="✍️ About Yourself">
@@ -483,44 +518,33 @@ export function EditProfileScreen() {
       </Section>
 
       <Section title="👨‍👩‍👧 Family & Children Details">
-        <Text style={editProfStyles.fieldLabel}>Children's Grade Levels</Text>
-        <View style={editProfStyles.chipsRow}>
-          {['KG / Primary (Grades 1-8)', 'High School (Grades 9-12)', 'College / SAT Prep'].map(g => (
-            <TouchableOpacity
-              key={g}
-              style={[editProfStyles.chip, formData.children_grades.includes(g) && editProfStyles.chipActive]}
-              onPress={() => toggleGrade(g)}
-            >
-              <Text style={[editProfStyles.chipText, formData.children_grades.includes(g) && editProfStyles.chipTextActive]}>{g}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
+        <Dropdown
+          label="Children's Grade Levels"
+          options={CHILDREN_GRADE_OPTIONS}
+          isMultiSelect
+          selectedValues={formData.children_grades}
+          onMultiValueChange={(vals: string[]) => setFormData(f => ({ ...f, children_grades: vals }))}
+          placeholder="Select grade levels..."
+          style={{ marginBottom: Spacing.md }}
+        />
 
-        <Text style={[editProfStyles.fieldLabel, { marginTop: Spacing.md }]}>Preferred Tutor Gender</Text>
-        <View style={editProfStyles.chipsRow}>
-          {['Female Tutor Preferred', 'Male Tutor Preferred', 'No Preference'].map(pref => (
-            <TouchableOpacity
-              key={pref}
-              style={[editProfStyles.chip, formData.preferred_tutor_gender === pref && editProfStyles.chipActive]}
-              onPress={() => setFormData(f => ({ ...f, preferred_tutor_gender: pref }))}
-            >
-              <Text style={[editProfStyles.chipText, formData.preferred_tutor_gender === pref && editProfStyles.chipTextActive]}>{pref}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
+        <Dropdown
+          label="Preferred Tutor Gender"
+          options={PREFERRED_GENDER_OPTIONS}
+          selectedValue={formData.preferred_tutor_gender}
+          onValueChange={val => setFormData(f => ({ ...f, preferred_tutor_gender: val }))}
+          placeholder="Select gender preference..."
+          style={{ marginBottom: Spacing.md }}
+        />
 
-        <Text style={[editProfStyles.fieldLabel, { marginTop: Spacing.md }]}>Preferred Session Format</Text>
-        <View style={editProfStyles.chipsRow}>
-          {['In-Person (Home Tutoring)', 'Online Tutoring', 'Flexible / Either'].map(fmt => (
-            <TouchableOpacity
-              key={fmt}
-              style={[editProfStyles.chip, formData.preferred_session_format === fmt && editProfStyles.chipActive]}
-              onPress={() => setFormData(f => ({ ...f, preferred_session_format: fmt }))}
-            >
-              <Text style={[editProfStyles.chipText, formData.preferred_session_format === fmt && editProfStyles.chipTextActive]}>{fmt}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
+        <Dropdown
+          label="Preferred Session Format"
+          options={SESSION_FORMAT_OPTIONS}
+          selectedValue={formData.preferred_session_format}
+          onValueChange={val => setFormData(f => ({ ...f, preferred_session_format: val }))}
+          placeholder="Select session format..."
+          style={{ marginBottom: Spacing.md }}
+        />
       </Section>
 
       <Section title="✍️ Specific Tutor Requirements">

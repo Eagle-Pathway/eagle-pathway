@@ -20,7 +20,7 @@ import { showError } from '@/utils/errorHandler';
 export function ApplyScreen() {
   const { scholarshipId, packageTier } = useLocalSearchParams<{ scholarshipId: string; packageTier: PackageTier }>();
   const { user } = useAuthStore();
-  const { createApplication, reviewSOP, isReviewingSOP } = useScholarshipStore();
+  const { scholarships, createApplication, reviewSOP, isReviewingSOP, generateMagicSOP, isGeneratingMagicSOP } = useScholarshipStore();
   const { loadDocuments, uploadDocument, documents } = useDocumentStore();
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState<number>(1);
@@ -29,6 +29,37 @@ export function ApplyScreen() {
   const [transactionId, setTransactionId] = useState('');
   const [receiptAsset, setReceiptAsset] = useState<any>(null);
   const insets = useSafeAreaInsets();
+
+  const handleGenerateStarter = async () => {
+    if (!user) return;
+
+    toast.info(
+      'Inspirational Starter Outline 💡',
+      'Direct copying of AI-generated content for official submissions is not allowed. Use this profile-customized outline as motivation & structure to write in your own authentic voice.'
+    );
+
+    try {
+      const schObj = (scholarships || []).find(s => s.id === scholarshipId) || {
+        id: scholarshipId || 'general',
+        name: 'Scholarship Application',
+        organization: 'Target Institution',
+        country: (user.target_countries && user.target_countries[0]) || 'Target Country',
+        description: 'Academic program for high-achieving candidates.',
+      };
+
+      const draft = await generateMagicSOP(user, schObj as any);
+      if (draft) {
+        if (sopContent && sopContent.trim().length > 0) {
+          setSopContent(prev => prev + '\n\n' + draft);
+        } else {
+          setSopContent(draft);
+        }
+        toast.success('Starter Inserted! ✍️', 'Profile-customized SOP outline added to your draft.');
+      }
+    } catch (e: any) {
+      showError(e, 'Failed to Generate Starter');
+    }
+  };
 
   useEffect(() => { if (user) loadDocuments(user.id); }, [user?.id]);
 
@@ -272,24 +303,35 @@ export function ApplyScreen() {
               textAlignVertical="top"
             />
 
-            <Button 
-              title="✨ Get AI Feedback" 
-              variant="outline" 
-              onPress={async () => {
-                if (!sopContent || sopContent.length < 50) {
-                  toast.warning('Too short', 'Please write at least 50 characters to get meaningful feedback.');
-                  return;
-                }
-                const result = await useScholarshipStore.getState().reviewSOP(sopContent);
-                toast.info(`AI Score: ${result.score}/100`, result.feedback);
-              }}
-              loading={useScholarshipStore.getState().isReviewingSOP}
-              style={{ marginTop: Spacing.md }}
-            />
+            <View style={{ flexDirection: 'row', gap: Spacing.sm, marginTop: Spacing.md }}>
+              <Button 
+                title="🚀 AI Starter" 
+                variant="outline" 
+                fullWidth={false}
+                onPress={handleGenerateStarter}
+                loading={isGeneratingMagicSOP}
+                style={{ flex: 1 }}
+              />
+              <Button 
+                title="✨ Get AI Feedback" 
+                variant="outline" 
+                fullWidth={false}
+                onPress={async () => {
+                  if (!sopContent || sopContent.length < 50) {
+                    toast.warning('Too short', 'Please write at least 50 characters to get meaningful feedback.');
+                    return;
+                  }
+                  const result = await reviewSOP(sopContent, scholarshipId, user?.id);
+                  toast.info(`AI Score: ${result.score}/100`, result.feedback);
+                }}
+                loading={isReviewingSOP}
+                style={{ flex: 1 }}
+              />
+            </View>
             
             <View style={applyStyles.aiTip}>
-              <Text style={applyStyles.aiTipTitle}>💡 Pro Tip</Text>
-              <Text style={applyStyles.aiTipText}>Consultants recommend focusing on your "Why" — why this program, why this country, and why now?</Text>
+              <Text style={applyStyles.aiTipTitle}>💡 Pro Tip & Policy</Text>
+              <Text style={applyStyles.aiTipText}>AI starters provide motivation and structure based on your profile info. Direct copying is not allowed for final submissions — personalize it in your authentic voice!</Text>
             </View>
           </View>
         )}

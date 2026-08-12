@@ -30,7 +30,7 @@ interface ScholarshipState {
       suggested_revision?: string;
     }[];
   }>;
-  generateMagicSOP: (student: any, scholarship: Scholarship) => Promise<string>;
+  generateMagicSOP: (student: any, scholarship?: Partial<Scholarship> | null) => Promise<string>;
   
   // Persistence
   toggleSaveScholarship: (id: string) => void;

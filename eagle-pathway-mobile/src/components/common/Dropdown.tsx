@@ -14,8 +14,11 @@ export interface DropdownOption {
 interface DropdownProps {
   label?: string;
   options: DropdownOption[];
-  selectedValue: string;
-  onValueChange: (value: string) => void;
+  selectedValue?: string;
+  onValueChange?: (value: string) => void;
+  isMultiSelect?: boolean;
+  selectedValues?: string[];
+  onMultiValueChange?: (values: string[]) => void;
   placeholder?: string;
   searchable?: boolean;
   style?: ViewStyle;
@@ -27,6 +30,9 @@ export const Dropdown: React.FC<DropdownProps> = ({
   options,
   selectedValue,
   onValueChange,
+  isMultiSelect = false,
+  selectedValues = [],
+  onMultiValueChange,
   placeholder = 'Select...',
   searchable = false,
   style,
@@ -35,7 +41,27 @@ export const Dropdown: React.FC<DropdownProps> = ({
   const [modalVisible, setModalVisible] = useState(false);
   const [searchText, setSearchText] = useState('');
 
-  const selectedOption = options.find(opt => opt.value === selectedValue);
+  const selectedOption = !isMultiSelect ? options.find(opt => opt.value === selectedValue) : null;
+  const multiSelectedOptions = isMultiSelect ? options.filter(opt => selectedValues.includes(opt.value)) : [];
+
+  const triggerLabel = isMultiSelect
+    ? multiSelectedOptions.length === 0
+      ? placeholder
+      : multiSelectedOptions.length === 1
+      ? `${multiSelectedOptions[0].icon ? multiSelectedOptions[0].icon + ' ' : ''}${multiSelectedOptions[0].label}`
+      : `${multiSelectedOptions.length} Selected (${multiSelectedOptions.map(o => o.label).join(', ')})`
+    : selectedOption
+    ? `${selectedOption.icon ? selectedOption.icon + ' ' : ''}${selectedOption.label}`
+    : placeholder;
+
+  const toggleMultiSelect = (val: string) => {
+    if (!onMultiValueChange) return;
+    if (selectedValues.includes(val)) {
+      onMultiValueChange(selectedValues.filter(v => v !== val));
+    } else {
+      onMultiValueChange([...selectedValues, val]);
+    }
+  };
 
   const filteredOptions = searchable
     ? options.filter(opt =>
@@ -58,8 +84,14 @@ export const Dropdown: React.FC<DropdownProps> = ({
         }}
         activeOpacity={0.7}
       >
-        <Text style={[styles.triggerText, !selectedOption && { color: Colors.textSecondary }]}>
-          {selectedOption ? `${selectedOption.icon ? selectedOption.icon + ' ' : ''}${selectedOption.label}` : placeholder}
+        <Text
+          style={[
+            styles.triggerText,
+            ((!isMultiSelect && !selectedOption) || (isMultiSelect && multiSelectedOptions.length === 0)) && { color: Colors.textSecondary }
+          ]}
+          numberOfLines={1}
+        >
+          {triggerLabel}
         </Text>
         <Text style={styles.arrow}>▼</Text>
       </TouchableOpacity>
@@ -74,7 +106,7 @@ export const Dropdown: React.FC<DropdownProps> = ({
         <SafeAreaView style={styles.modalContainer}>
           <View style={styles.modalHeader}>
             <TouchableOpacity onPress={() => setModalVisible(false)} style={styles.closeBtn}>
-              <Text style={styles.closeBtnText}>✕ Close</Text>
+              <Text style={styles.closeBtnText}>{isMultiSelect ? '✓ Done' : '✕ Close'}</Text>
             </TouchableOpacity>
             <Text style={styles.modalTitle}>{label || 'Select Option'}</Text>
             <View style={{ width: 60 }} />
@@ -97,28 +129,38 @@ export const Dropdown: React.FC<DropdownProps> = ({
             data={filteredOptions}
             keyExtractor={item => item.value}
             contentContainerStyle={styles.list}
-            renderItem={({ item }) => (
-              <TouchableOpacity
-                style={[
-                  styles.optionItem,
-                  item.value === selectedValue && styles.optionItemActive
-                ]}
-                onPress={() => {
-                  onValueChange(item.value);
-                  setModalVisible(false);
-                }}
-              >
-                <Text style={[
-                  styles.optionText,
-                  item.value === selectedValue && styles.optionTextActive
-                ]}>
-                  {item.icon ? `${item.icon}  ` : ''}{item.label}
-                </Text>
-                {item.value === selectedValue && (
-                  <Text style={styles.checkIcon}>✓</Text>
-                )}
-              </TouchableOpacity>
-            )}
+            renderItem={({ item }) => {
+              const isSelected = isMultiSelect
+                ? selectedValues.includes(item.value)
+                : item.value === selectedValue;
+
+              return (
+                <TouchableOpacity
+                  style={[
+                    styles.optionItem,
+                    isSelected && styles.optionItemActive
+                  ]}
+                  onPress={() => {
+                    if (isMultiSelect) {
+                      toggleMultiSelect(item.value);
+                    } else {
+                      if (onValueChange) onValueChange(item.value);
+                      setModalVisible(false);
+                    }
+                  }}
+                >
+                  <Text style={[
+                    styles.optionText,
+                    isSelected && styles.optionTextActive
+                  ]}>
+                    {item.icon ? `${item.icon}  ` : ''}{item.label}
+                  </Text>
+                  {isSelected && (
+                    <Text style={styles.checkIcon}>✓</Text>
+                  )}
+                </TouchableOpacity>
+              );
+            }}
           />
         </SafeAreaView>
       </Modal>

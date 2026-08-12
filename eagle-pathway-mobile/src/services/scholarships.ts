@@ -467,12 +467,12 @@ export const scholarshipsService = {
       .slice(0, 10);
   },
 
-  async generateMagicSOP(student: User, scholarship: Scholarship): Promise<string> {
+  async generateMagicSOP(student: User, scholarship?: Partial<Scholarship> | null): Promise<string> {
     try {
       const remoteDraft = await requestSOPAI<{ draft: string }>({
         action: 'draft',
         student,
-        scholarship,
+        scholarship: scholarship as Scholarship,
       });
 
       if (remoteDraft?.draft) return remoteDraft.draft;
@@ -480,24 +480,50 @@ export const scholarshipsService = {
       console.warn('Remote SOP draft unavailable, using local fallback:', error);
     }
     
-    await new Promise(r => setTimeout(r, 900));
+    await new Promise(r => setTimeout(r, 800));
 
-    const interests = (student.interested_subjects || []).join(', ');
-    
-    return `Subject: Statement of Purpose for ${scholarship.name}
+    const name = student?.full_name || 'Applicant';
+    const gradeLevel = student?.grade_level || 'Undergraduate';
+    const gpaStr = student?.gpa ? `${student.gpa}${student.gpa_max ? `/${student.gpa_max}` : ''}` : '3.5';
+    const subjects = (student?.interested_subjects && student.interested_subjects.length > 0)
+      ? student.interested_subjects.join(', ')
+      : (student?.target_departments && student.target_departments.length > 0)
+      ? student.target_departments.join(', ')
+      : 'Academic Excellence & Innovation';
+    const targetDegree = student?.target_degree_level || 'Degree Program';
+    const targetCountry = (student?.target_countries && student.target_countries.length > 0)
+      ? student.target_countries.join(', ')
+      : scholarship?.country || 'International Studies';
 
-Dear Scholarship Committee,
+    const scholarshipTitle = scholarship?.name || 'Academic Scholarship Program';
+    const orgName = scholarship?.organization || 'Scholarship Committee';
+    const summary = student?.academic_summary 
+      ? `My academic highlights: "${student.academic_summary}".`
+      : `Throughout my academic journey, I have maintained high standards of academic rigor, curiosity, and proactive engagement.`;
 
-My name is ${student.full_name}, and I am writing to express my strong interest in the ${scholarship.name} offered by ${scholarship.organization}. As a student currently at the ${student.grade_level || 'undergraduate'} level with a cumulative GPA of ${student.gpa || '3.5'}, I have always aimed for academic excellence and community impact.
+    const goals = student?.career_goals
+      ? `My long-term ambition is: "${student.career_goals}".`
+      : `My long-term goal is to leverage my skills to create meaningful social and economic impact in my community.`;
 
-My passion for ${interests || 'academic growth'} aligns perfectly with the mission of this scholarship. ${student.academic_summary || 'I have a strong background in my chosen field and a clear vision for my future.'}
+    return `STATEMENT OF PURPOSE (INSPIRATIONAL STARTER OUTLINE)
 
-Specifically, ${scholarship.description.slice(0, 100)}... this opportunity in ${scholarship.country} represents a pivotal step for my career goals. I am confident that my background and dedication make me an ideal candidate for this prestigious award.
+1. INTRODUCTION & MOTIVATION
+My name is ${name}. As a ${gradeLevel} student (GPA: ${gpaStr}) aspiring to pursue a ${targetDegree} in ${subjects}, I am writing to express my strong commitment to applying for the ${scholarshipTitle} with ${orgName}.
 
-Thank you for your time and consideration.
+2. ACADEMIC BACKGROUND & QUALIFICATIONS
+${summary} My focus on ${subjects} has provided me with a strong foundation to excel in advanced studies.
+
+3. ALIGNMENT WITH SCHOLARSHIP VISION
+${scholarship?.description ? `The core mission—${scholarship.description.slice(0, 110)}...—directly aligns with my commitment to personal and professional development.` : `This opportunity represents a major stepping stone for my academic journey.`}
+
+4. FUTURE GOALS & COMMUNITY IMPACT
+${goals} Studying in ${targetCountry} will give me the global perspective and advanced skills needed to achieve this vision.
+
+5. CONCLUSION
+Thank you for reviewing my application. I look forward to contributing to the scholar community.
 
 Sincerely,
-${student.full_name}`;
+${name}`;
   },
 };
 

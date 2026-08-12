@@ -231,6 +231,7 @@ export const Card: React.FC<{ children: React.ReactNode; style?: ViewStyle; onPr
 export { StatusTimeline } from './StatusTimeline';
 export { Skeleton } from './Skeleton';
 export { Dropdown } from './Dropdown';
+export type { DropdownOption } from './Dropdown';
 export { ScaleBounce } from './ScaleBounce';
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
