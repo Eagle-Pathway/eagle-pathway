@@ -6,12 +6,22 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Colors, Typography, Spacing, Radius, CommonStyles } from '@/utils/theme';
-import { ProgressBar } from '@/components/common';
+import { ProgressBar, Dropdown, DropdownOption } from '@/components/common';
 import { KeyboardAwareScreen } from '@/components/KeyboardAwareScreen';
 import { useAuthStore } from '@/store/authStore';
 import { COUNTRIES, FIELDS_OF_STUDY, validateAcademicScore } from '@eagle-pathway/shared';
 
 export const ONBOARDED_KEY = '@eagle_onboarded';
+
+const ONBOARDING_COUNTRY_OPTIONS: DropdownOption[] = [
+  { label: 'Any Location / Open to All', value: 'Any Location', icon: '🌍' },
+  ...COUNTRIES.map(c => ({ label: c.name, value: c.name, icon: c.flag })),
+];
+
+const ONBOARDING_FIELD_OPTIONS: DropdownOption[] = FIELDS_OF_STUDY.map(f => ({
+  label: f === 'Any Field' ? 'Any Field' : f,
+  value: f,
+}));
 
 const LEVELS = [
   { key: 'highschool', label: 'High School / Grade 12' },
@@ -185,62 +195,28 @@ export function OnboardingScreen() {
           <View>
             <Text style={s.h1}>What interests you?</Text>
             <Text style={s.sub}>Pick your fields and preferred destinations.</Text>
-            <Text style={s.label}>Fields of study</Text>
-            <View style={s.chips}>
-              {FIELDS_OF_STUDY.map(f => {
-                const isSelected = interests.includes(f);
-                return (
-                  <TouchableOpacity 
-                    key={f} 
-                    style={[s.chip, isSelected && s.chipActive]} 
-                    onPress={() => toggleField(f)} 
-                    activeOpacity={0.8}
-                  >
-                    <Text style={[s.chipText, isSelected && s.chipTextActive]}>
-                      {f === 'Any Field' ? '💡 Any Field' : f}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
+            
+            <Dropdown
+              label="Fields of Study"
+              options={ONBOARDING_FIELD_OPTIONS}
+              isMultiSelect
+              selectedValues={interests}
+              onMultiValueChange={(vals: string[]) => setInterests(vals)}
+              placeholder="Select fields of study..."
+              searchable
+              style={{ marginBottom: Spacing.lg }}
+            />
 
-            <Text style={[s.label, { marginTop: Spacing.lg }]}>Preferred countries</Text>
-            <View style={s.chips}>
-              <TouchableOpacity 
-                style={[s.chip, countries.includes('Any Location') && s.chipActive]} 
-                onPress={() => toggleCountry('Any Location')} 
-                activeOpacity={0.8}
-              >
-                <Text style={[s.chipText, countries.includes('Any Location') && s.chipTextActive]}>
-                  🌍 Any Location / Open to All
-                </Text>
-              </TouchableOpacity>
-              {(showAllCountries ? COUNTRIES : COUNTRIES.slice(0, 10)).map(c => {
-                const isSelected = countries.includes(c.name);
-                return (
-                  <TouchableOpacity 
-                    key={c.name} 
-                    style={[s.chip, isSelected && s.chipActive]} 
-                    onPress={() => toggleCountry(c.name)} 
-                    activeOpacity={0.8}
-                  >
-                    <Text style={[s.chipText, isSelected && s.chipTextActive]}>
-                      {c.flag} {c.name}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-
-            <TouchableOpacity 
-              style={s.showMoreBtn} 
-              onPress={() => setShowAllCountries(!showAllCountries)}
-              activeOpacity={0.8}
-            >
-              <Text style={s.showMoreText}>
-                {showAllCountries ? '↑ Show Less' : `+ Show All Countries (${COUNTRIES.length})`}
-              </Text>
-            </TouchableOpacity>
+            <Dropdown
+              label="Preferred Countries"
+              options={ONBOARDING_COUNTRY_OPTIONS}
+              isMultiSelect
+              selectedValues={countries}
+              onMultiValueChange={(vals: string[]) => setCountries(vals)}
+              placeholder="Select target countries..."
+              searchable
+              style={{ marginBottom: Spacing.lg }}
+            />
           </View>
         )}
 
