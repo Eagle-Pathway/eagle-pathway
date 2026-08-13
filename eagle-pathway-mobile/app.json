@@ -60,8 +60,6 @@
     ],
     "scheme": "eaglepathway",
     "extra": {
-      "supabaseUrl": "YOUR_SUPABASE_URL",
-      "supabaseAnonKey": "YOUR_SUPABASE_ANON_KEY",
       "router": {},
       "eas": {
         "projectId": "e78c6e36-63e3-4e25-b7df-6323b8b28809"

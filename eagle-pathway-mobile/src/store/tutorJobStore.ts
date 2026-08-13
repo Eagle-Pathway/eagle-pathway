@@ -56,6 +56,9 @@ interface TutorJobState {
     existingGrade12Url?: string;
     existingTranscriptUrl?: string;
   }) => Promise<TutorJobApplication>;
+  // Aliases for compatibility
+  fetchJobs: () => Promise<void>;
+  fetchMyApplications: (userId?: string) => Promise<void>;
   clearSelectedJob: () => void;
 }
 
@@ -80,6 +83,10 @@ export const useTutorJobStore = create<TutorJobState>((set, get) => ({
     }
   },
 
+  fetchJobs: async () => {
+    return get().loadJobs();
+  },
+
   loadJobDetail: async (jobId) => {
     try {
       const job = await withTimeout(tutorJobsService.getJobById(jobId), 3500);
@@ -99,6 +106,11 @@ export const useTutorJobStore = create<TutorJobState>((set, get) => ({
     } finally {
       set({ loadingApplications: false });
     }
+  },
+
+  fetchMyApplications: async (userId?: string) => {
+    if (!userId) return;
+    return get().loadApplications(userId);
   },
 
   loadTutorApplication: async (tutorId) => {

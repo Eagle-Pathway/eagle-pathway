@@ -196,29 +196,33 @@ export default function TutorsPage() {
     if (!rejectApp || !rejectCategory) { showToast('error', 'Select a rejection reason'); return; }
     const reason = rejectCategory === 'Other (write reason)' ? rejectReason : rejectCategory;
     setActionLoading(rejectApp.id);
-    const { error } = await supabase
-      .from('tutor_applications')
-      .update({
-        status: 'rejected',
-        rejection_reason: reason,
-        rejection_reason_category: rejectCategory,
-        reviewed_at: new Date().toISOString(),
-        reviewed_by: (await supabase.auth.getUser()).data.user?.id,
-      })
-      .eq('id', rejectApp.id);
-    if (error) { showToast('error', 'Failed to reject'); setActionLoading(null); return; }
-    await supabase.from('notifications').insert({
-      user_id: rejectApp.tutor_id,
-      title: 'Tutor Application Update',
-      body: `Your tutor application was not approved. Reason: ${reason}`,
-      type: 'application_update',
-      is_read: false,
-    });
-    showToast('success', 'Application rejected');
-    setShowRejectModal(false);
-    setSelectedApp(null);
-    await fetchTutorApplications();
-    setActionLoading(null);
+    try {
+      const session = (await supabase.auth.getSession()).data.session;
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (session?.access_token) headers['Authorization'] = `Bearer ${session.access_token}`;
+
+      const res = await fetch('/api/tutor-approval', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          userId: rejectApp.tutor_id,
+          isVerified: false,
+          reason,
+        }),
+      });
+
+      const resData = await res.json();
+      if (!res.ok) throw new Error(resData.error || 'Failed to reject application');
+
+      showToast('success', 'Application rejected & notification sent');
+      setShowRejectModal(false);
+      setSelectedApp(null);
+      await Promise.all([fetchTutorApplications(), fetchTutors()]);
+    } catch (err: any) {
+      showToast('error', `Failed to reject: ${err.message}`);
+    } finally {
+      setActionLoading(null);
+    }
   }
 
   async function handleReReview(app: TutorApplication) {

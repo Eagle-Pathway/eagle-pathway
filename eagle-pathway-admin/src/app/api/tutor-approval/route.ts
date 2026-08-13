@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { sendTutorApprovalEmail, sendTutorRejectionEmail } from '@/lib/resend';
 
 function getAdminSupabase() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -11,7 +12,7 @@ function getAdminSupabase() {
 
 export async function POST(request: Request) {
   try {
-    const { userId, isVerified, userUpdates } = await request.json();
+    const { userId, isVerified, userUpdates, reason } = await request.json();
 
     if (!userId) {
       return NextResponse.json({ error: 'Missing userId parameter' }, { status: 400 });
@@ -66,9 +67,17 @@ export async function POST(request: Request) {
       auth: { autoRefreshToken: false, persistSession: false },
     });
 
+    const updatePayload: Record<string, any> = {
+      status: isVerified ? 'approved' : 'rejected',
+      reviewed_at: new Date().toISOString(),
+    };
+    if (!isVerified && reason) {
+      updatePayload.rejection_reason = reason;
+    }
+
     await serviceClient
       .from('tutor_applications')
-      .update({ status: isVerified ? 'approved' : 'rejected' })
+      .update(updatePayload)
       .eq('tutor_id', userId);
 
     const finalUserUpdates = {
@@ -92,7 +101,7 @@ export async function POST(request: Request) {
       : {
           user_id: userId,
           title: 'Verification Status Revoked ⚠️',
-          body: 'Your tutor verification status has been revoked by an administrator. You can no longer apply for open jobs. Please contact support or resubmit your profile.',
+          body: reason ? `Your tutor verification was not approved. Reason: ${reason}` : 'Your tutor verification status has been revoked by an administrator. You can no longer apply for open jobs.',
           type: 'application_update',
           is_read: false,
         };
@@ -101,6 +110,32 @@ export async function POST(request: Request) {
       await serviceClient.from('notifications').insert(notif);
     } catch {
       // Non-critical notification error
+    }
+
+    // Dispatch Resend Email Notification
+    try {
+      const { data: userProfile } = await serviceClient
+        .from('users')
+        .select('email, full_name')
+        .eq('id', userId)
+        .single();
+
+      if (userProfile?.email) {
+        if (isVerified) {
+          await sendTutorApprovalEmail({
+            to: userProfile.email,
+            fullName: userProfile.full_name || 'Tutor',
+          });
+        } else {
+          await sendTutorRejectionEmail({
+            to: userProfile.email,
+            fullName: userProfile.full_name || 'Applicant',
+            reason,
+          });
+        }
+      }
+    } catch (emailErr) {
+      console.error('[TutorApproval] Non-fatal email dispatch error:', emailErr);
     }
 
     return NextResponse.json({ success: true, isVerified });
