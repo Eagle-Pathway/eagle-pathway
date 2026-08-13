@@ -1,5 +1,6 @@
-import React, { useCallback, useMemo, useRef, useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import {
+  Modal,
   View,
   Text,
   TextInput,
@@ -7,8 +8,10 @@ import {
   FlatList,
   StyleSheet,
   Pressable,
+  KeyboardAvoidingView,
+  Platform,
+  DimensionValue,
 } from 'react-native';
-import BottomSheet, { BottomSheetView, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
 
 export interface PickerOption {
   label: string;
@@ -45,10 +48,8 @@ export default function PickerSheet({
   selectedValues = [],
   onMultiSelect,
 }: PickerSheetProps) {
-  const bottomSheetRef = useRef<BottomSheet>(null);
   const [search, setSearch] = useState('');
   const [localMultiSelected, setLocalMultiSelected] = useState<string[]>(selectedValues);
-  const snapPoints = useMemo(() => [snapPoint], [snapPoint]);
 
   useEffect(() => {
     if (isMultiSelect) {
@@ -65,19 +66,6 @@ export default function PickerSheet({
           o.value.toLowerCase().includes(search.toLowerCase())
         ),
     [options, search]
-  );
-
-  const renderBackdrop = useCallback(
-    (props: any) => (
-      <BottomSheetBackdrop
-        {...props}
-        disappearsOnIndex={-1}
-        appearsOnIndex={0}
-        opacity={0.5}
-        onPress={onClose}
-      />
-    ),
-    [onClose]
   );
 
   const handleSingleSelect = (option: PickerOption) => {
@@ -104,105 +92,144 @@ export default function PickerSheet({
 
   if (!isOpen) return null;
 
+  const sheetHeight: DimensionValue = (snapPoint as DimensionValue) || '70%';
+
   return (
-    <BottomSheet
-      ref={bottomSheetRef}
-      index={0}
-      snapPoints={snapPoints}
-      onClose={onClose}
-      enablePanDownToClose
-      backdropComponent={renderBackdrop}
-      handleIndicatorStyle={styles.handle}
-      backgroundStyle={styles.background}
+    <Modal
+      visible={isOpen}
+      transparent
+      animationType="slide"
+      onRequestClose={onClose}
+      statusBarTranslucent
     >
-      <BottomSheetView style={styles.container}>
-        {/* Header */}
-        <View style={styles.header}>
-          <Text style={styles.title}>{title}</Text>
-          <TouchableOpacity
-            onPress={isMultiSelect ? handleDoneMultiSelect : onClose}
-            style={styles.closeBtn}
-          >
-            <Text style={isMultiSelect ? styles.doneText : styles.closeText}>
-              {isMultiSelect ? 'Done ✓' : '✕'}
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Search */}
-        {searchable && (
-          <View style={styles.searchContainer}>
-            <TextInput
-              style={styles.searchInput}
-              placeholder="Search..."
-              placeholderTextColor="#9ca3af"
-              value={search}
-              onChangeText={setSearch}
-              autoCorrect={false}
-            />
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        style={styles.modalOverlay}
+      >
+        <Pressable style={styles.backdrop} onPress={onClose} />
+        <View style={[styles.sheetContainer, { height: sheetHeight }]}>
+          {/* Drag Handle Indicator */}
+          <View style={styles.handleContainer}>
+            <View style={styles.handle} />
           </View>
-        )}
 
-        {/* Options list */}
-        <FlatList
-          data={filtered}
-          keyExtractor={(item) => item.value}
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}
-          renderItem={({ item }) => {
-            const isSelected = isMultiSelect
-              ? localMultiSelected.includes(item.value)
-              : item.value === selected;
+          {/* Header */}
+          <View style={styles.header}>
+            <Text style={styles.title}>{title}</Text>
+            <TouchableOpacity
+              onPress={isMultiSelect ? handleDoneMultiSelect : onClose}
+              style={styles.closeBtn}
+              activeOpacity={0.7}
+            >
+              <Text style={isMultiSelect ? styles.doneText : styles.closeText}>
+                {isMultiSelect ? 'Done ✓' : '✕'}
+              </Text>
+            </TouchableOpacity>
+          </View>
 
-            return (
-              <Pressable
-                style={[styles.option, isSelected && styles.optionSelected]}
-                onPress={() => (isMultiSelect ? toggleMultiItem(item) : handleSingleSelect(item))}
-              >
-                <View style={styles.optionLeft}>
-                  {(item.emoji || item.icon) ? (
-                    <Text style={styles.emoji}>{item.emoji || item.icon}</Text>
-                  ) : null}
-                  <View>
-                    <Text style={[styles.optionLabel, isSelected && styles.optionLabelSelected]}>
-                      {item.label}
-                    </Text>
-                    {item.subtitle ? (
-                      <Text style={styles.optionSubtitle}>{item.subtitle}</Text>
-                    ) : null}
-                  </View>
-                </View>
-                {isSelected && <Text style={styles.checkmark}>✓</Text>}
-              </Pressable>
-            );
-          }}
-          ListEmptyComponent={
-            <View style={styles.empty}>
-              <Text style={styles.emptyText}>No results for "{search}"</Text>
+          {/* Search */}
+          {searchable && (
+            <View style={styles.searchContainer}>
+              <TextInput
+                style={styles.searchInput}
+                placeholder="Search..."
+                placeholderTextColor="#9ca3af"
+                value={search}
+                onChangeText={setSearch}
+                autoCorrect={false}
+              />
             </View>
-          }
-        />
-      </BottomSheetView>
-    </BottomSheet>
+          )}
+
+          {/* Options list */}
+          <FlatList
+            data={filtered}
+            keyExtractor={(item) => item.value}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={styles.listContent}
+            renderItem={({ item }) => {
+              const isSelected = isMultiSelect
+                ? localMultiSelected.includes(item.value)
+                : item.value === selected;
+
+              return (
+                <Pressable
+                  style={[styles.option, isSelected && styles.optionSelected]}
+                  onPress={() => (isMultiSelect ? toggleMultiItem(item) : handleSingleSelect(item))}
+                >
+                  <View style={styles.optionLeft}>
+                    {(item.emoji || item.icon) ? (
+                      <Text style={styles.emoji}>{item.emoji || item.icon}</Text>
+                    ) : null}
+                    <View style={{ flex: 1 }}>
+                      <Text style={[styles.optionLabel, isSelected && styles.optionLabelSelected]}>
+                        {item.label}
+                      </Text>
+                      {item.subtitle ? (
+                        <Text style={styles.optionSubtitle}>{item.subtitle}</Text>
+                      ) : null}
+                    </View>
+                  </View>
+                  {isSelected && <Text style={styles.checkmark}>✓</Text>}
+                </Pressable>
+              );
+            }}
+            ListEmptyComponent={
+              <View style={styles.empty}>
+                <Text style={styles.emptyText}>No results for "{search}"</Text>
+              </View>
+            }
+          />
+        </View>
+      </KeyboardAvoidingView>
+    </Modal>
   );
 }
 
 const styles = StyleSheet.create({
-  background: { backgroundColor: '#ffffff', borderTopLeftRadius: 20, borderTopRightRadius: 20 },
-  handle: { backgroundColor: '#e5e7eb', width: 40 },
-  container: { flex: 1, paddingBottom: 24 },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(15, 23, 42, 0.55)',
+    justifyContent: 'flex-end',
+  },
+  backdrop: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  sheetContainer: {
+    backgroundColor: '#ffffff',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    width: '100%',
+    maxHeight: '85%',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 12,
+    elevation: 20,
+  },
+  handleContainer: {
+    alignItems: 'center',
+    paddingVertical: 10,
+  },
+  handle: {
+    backgroundColor: '#e5e7eb',
+    width: 36,
+    height: 5,
+    borderRadius: 3,
+  },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 20,
-    paddingVertical: 14,
+    paddingBottom: 14,
     borderBottomWidth: 1,
     borderBottomColor: '#f3f4f6',
   },
   title: { fontSize: 16, fontWeight: '700', color: '#111827' },
   closeBtn: { padding: 4 },
-  closeText: { fontSize: 16, color: '#6b7280' },
+  closeText: { fontSize: 18, color: '#6b7280', fontWeight: '600' },
   doneText: { fontSize: 15, color: '#1e3a8a', fontWeight: '700' },
   searchContainer: { paddingHorizontal: 16, paddingVertical: 10 },
   searchInput: {
@@ -212,6 +239,9 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     fontSize: 14,
     color: '#111827',
+  },
+  listContent: {
+    paddingBottom: 30,
   },
   option: {
     flexDirection: 'row',

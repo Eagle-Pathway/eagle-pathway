@@ -312,7 +312,7 @@ function NewRequestForm({
       <View style={styles.inputWrap}>
         <Text style={styles.inputLabel}>Amount *</Text>
         <View style={{ flexDirection: 'row', gap: Spacing.sm, alignItems: 'center' }}>
-          <View style={{ width: 100 }}>
+          <View style={{ width: 110 }}>
             <Dropdown
               options={CURRENCY_OPTIONS}
               selectedValue={fromCurrency}

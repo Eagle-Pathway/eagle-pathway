@@ -63,7 +63,7 @@ export const Dropdown: React.FC<DropdownProps> = ({
   return (
     <View style={[styles.container, style]}>
       <PickerField
-        label={label || ''}
+        label={label}
         value={displayValue}
         placeholder={placeholder}
         emoji={displayEmoji}
