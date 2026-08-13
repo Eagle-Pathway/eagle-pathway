@@ -12,6 +12,8 @@ import { User, Application, Scholarship, Booking, StudentTask } from '@/types';
 import { getFlagEmoji } from '@eagle-pathway/shared';
 import { useScholarshipStore } from '@/store/scholarshipStore';
 
+import { HomeActiveSessionBanner } from '@/components/tutors/HomeActiveSessionBanner';
+
 interface StudentHomeProps {
   user: User;
   firstName: string;
@@ -222,6 +224,9 @@ export const StudentHome: React.FC<StudentHomeProps> = ({
             ))}
           </View>
         </View>
+
+        {/* Live Active Session & Scheduled Today Banner */}
+        <HomeActiveSessionBanner />
 
         {assignedConsultant && (
           <TouchableOpacity 

@@ -12,6 +12,8 @@ import { Colors, Typography, Spacing, Radius, CommonStyles } from '@/utils/theme
 import { Avatar, Skeleton } from '@/components/common';
 import { User, Booking, Tutor, PayoutRequest, BookingStatus } from '@/types';
 
+import { HomeActiveSessionBanner } from '@/components/tutors/HomeActiveSessionBanner';
+
 interface TutorHomeProps {
   user: User;
   firstName: string;
@@ -235,6 +237,9 @@ export const TutorHome: React.FC<TutorHomeProps> = ({
         </View>
 
         {/* Tutor Jobs Board Banner */}
+        {/* Live Active Session & Scheduled Today Banner */}
+        <HomeActiveSessionBanner />
+
         <TouchableOpacity
           style={styles.jobsBanner}
           onPress={() => router.push('/(tabs)/tutor-jobs')}
