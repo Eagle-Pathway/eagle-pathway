@@ -8,6 +8,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { router, useLocalSearchParams } from 'expo-router';
 import { Colors, Typography, Spacing, Radius, CommonStyles } from '@/utils/theme';
 import { Button } from '@/components/common';
+import { KeyboardAwareScreen } from '@/components/KeyboardAwareScreen';
 import { scholarshipsService } from '@/services/scholarships';
 import { paymentsService } from '@/services/payments';
 import { useAuthStore } from '@/store/authStore';
@@ -208,7 +209,7 @@ export function ApplyScreen() {
         ))}
       </View>
 
-      <ScrollView contentContainerStyle={{ paddingBottom: 120 }}>
+      <KeyboardAwareScreen extraScrollHeight={140} contentContainerStyle={{ paddingBottom: 160 }}>
         {step === 1 && (
           <View style={{ padding: Spacing.xl }}>
             <Text style={CommonStyles.sectionTitle}>Verification: Personal Info</Text>
@@ -409,7 +410,7 @@ export function ApplyScreen() {
             </View>
           </View>
         )}
-      </ScrollView>
+      </KeyboardAwareScreen>
 
       <View style={[applyStyles.bottomBar, { paddingBottom: Math.max(insets.bottom, Spacing.lg) }]}>
         <Button title={step === 1 ? 'Cancel' : '← Back'} variant="secondary" onPress={() => step > 1 ? setStep(s => s - 1) : (router.canGoBack() ? router.back() : router.replace('/(tabs)/home'))} style={{ flex: 0.5 }} fullWidth={false} />

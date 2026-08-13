@@ -14,7 +14,7 @@ export function KeyboardAwareScreen({
   children,
   style,
   contentContainerStyle,
-  extraScrollHeight = 80,
+  extraScrollHeight = 120,
 }: Props) {
   const insets = useSafeAreaInsets();
 
@@ -22,11 +22,13 @@ export function KeyboardAwareScreen({
     <KeyboardAwareScrollView
       style={[styles.container, style]}
       contentContainerStyle={[
-        { paddingBottom: insets.bottom + 20 },
+        { paddingBottom: insets.bottom + 40 },
         contentContainerStyle,
       ]}
       enableOnAndroid={true}
+      enableAutomaticScroll={true}
       extraScrollHeight={extraScrollHeight}
+      extraHeight={140}
       keyboardShouldPersistTaps="handled"
       showsVerticalScrollIndicator={false}
       bounces={false}

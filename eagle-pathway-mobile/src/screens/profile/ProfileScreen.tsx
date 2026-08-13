@@ -3,6 +3,7 @@ import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
   ActivityIndicator, TextInput,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { toast } from '@/utils/toast';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -103,22 +104,29 @@ export function ProfileScreen() {
     }
   };
 
-  const MENU_ITEMS = [
+  const MENU_ITEMS: Array<{
+    iconName: keyof typeof Ionicons.glyphMap;
+    label: string;
+    badge: string | null;
+    bgColor: string;
+    iconColor: string;
+    route: string;
+  }> = [
     ...(role === 'tutor'
       ? [
-          { icon: '💼', label: 'Tutor Jobs', badge: openJobsCount > 0 ? `${openJobsCount} open` : null, color: Colors.orangeLight, route: '/tutor-jobs' },
-          { icon: '📋', label: 'My Applications', badge: null, color: Colors.greenLight, route: '/my-applications' },
+          { iconName: 'briefcase-outline' as const, label: 'Tutor Jobs', badge: openJobsCount > 0 ? `${openJobsCount} open` : null, bgColor: '#FFF7ED', iconColor: Colors.orange, route: '/tutor-jobs' },
+          { iconName: 'document-text-outline' as const, label: 'My Applications', badge: null, bgColor: '#F0FDF4', iconColor: Colors.green, route: '/my-applications' },
         ]
       : []),
-    { icon: '📊', label: 'My Progress', badge: null, color: Colors.blueLight, route: '/progress' },
-    { icon: '🎓', label: 'Scholarship Apps', badge: `${applications.filter(a => !['accepted','rejected'].includes(a.status)).length} Active`, color: Colors.goldLight, route: '/tracker' },
-    { icon: '📁', label: 'Documents', badge: documents.filter(d => d.status !== 'approved').length > 0 ? 'Action needed' : null, color: Colors.greenLight, route: '/documents' },
-    { icon: '✉️', label: 'Recommendation Letters', badge: null, color: Colors.blueLight, route: '/recommendations' },
-    { icon: '🏆', label: 'Success Stories', badge: null, color: Colors.goldLight, route: '/success-stories' },
-    { icon: '📚', label: 'Resources', badge: null, color: Colors.blueLight, route: '/resources' },
-    { icon: '📅', label: 'My Bookings', badge: null, color: Colors.grayLight, route: '/(tabs)/bookings' },
-    { icon: '🔔', label: 'Notifications', badge: unreadCount > 0 ? `${unreadCount} New` : null, color: Colors.blueLight, route: '/notifications' },
-    { icon: '⚙️', label: 'Settings', badge: null, color: Colors.grayLight, route: '/settings' },
+    { iconName: 'bar-chart-outline' as const, label: 'My Progress', badge: null, bgColor: '#EFF6FF', iconColor: Colors.blue, route: '/progress' },
+    { iconName: 'school-outline' as const, label: 'Scholarship Apps', badge: `${applications.filter(a => !['accepted','rejected'].includes(a.status)).length} Active`, bgColor: '#FEFCE8', iconColor: Colors.goldDark, route: '/tracker' },
+    { iconName: 'folder-open-outline' as const, label: 'Documents', badge: documents.filter(d => d.status !== 'approved').length > 0 ? 'Action needed' : null, bgColor: '#F0FDF4', iconColor: Colors.green, route: '/documents' },
+    { iconName: 'mail-outline' as const, label: 'Recommendation Letters', badge: null, bgColor: '#EFF6FF', iconColor: Colors.blue, route: '/recommendations' },
+    { iconName: 'trophy-outline' as const, label: 'Success Stories', badge: null, bgColor: '#FEFCE8', iconColor: Colors.goldDark, route: '/success-stories' },
+    { iconName: 'book-outline' as const, label: 'Resources', badge: null, bgColor: '#EFF6FF', iconColor: Colors.blue, route: '/resources' },
+    { iconName: 'calendar-outline' as const, label: 'My Bookings', badge: null, bgColor: '#F3F4F6', iconColor: Colors.textSecondary, route: '/(tabs)/bookings' },
+    { iconName: 'notifications-outline' as const, label: 'Notifications', badge: unreadCount > 0 ? `${unreadCount} New` : null, bgColor: '#EFF6FF', iconColor: Colors.blue, route: '/notifications' },
+    { iconName: 'settings-outline' as const, label: 'Settings', badge: null, bgColor: '#F3F4F6', iconColor: Colors.textSecondary, route: '/settings' },
   ];
 
   return (
@@ -137,7 +145,7 @@ export function ProfileScreen() {
             {uploading ? (
               <ActivityIndicator size="small" color={Colors.white} />
             ) : (
-              <Text style={{ fontSize: 12 }}>✏️</Text>
+              <Ionicons name="pencil" size={12} color={Colors.white} />
             )}
           </View>
         </TouchableOpacity>
@@ -166,7 +174,7 @@ export function ProfileScreen() {
           <View style={profStyles.referralCard}>
             <View style={profStyles.referralContent}>
               <View style={profStyles.referralIcon}>
-                <Text style={{ fontSize: 24 }}>{role === 'student' ? '👨‍👩‍👧' : '🎓'}</Text>
+                <Ionicons name={role === 'student' ? 'people-outline' : 'school-outline'} size={22} color={Colors.goldDark} />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={profStyles.referralTitle}>
@@ -233,7 +241,9 @@ export function ProfileScreen() {
               onPress={() => item.route ? router.push(item.route as any) : null}
               activeOpacity={0.7}
             >
-              <View style={[profStyles.menuIcon, { backgroundColor: item.color }]}><Text style={{ fontSize: 16 }}>{item.icon}</Text></View>
+              <View style={[profStyles.menuIcon, { backgroundColor: item.bgColor }]}>
+                <Ionicons name={item.iconName} size={18} color={item.iconColor} />
+              </View>
               <Text style={profStyles.menuLabel}>{item.label}</Text>
               {item.badge && (
                 <View style={[profStyles.menuBadge, {
@@ -256,7 +266,7 @@ export function ProfileScreen() {
           activeOpacity={0.8}
         >
           <View style={[profStyles.menuIcon, { backgroundColor: '#FEE2E2' }]}>
-            <Text style={{ fontSize: 16 }}>🚪</Text>
+            <Ionicons name="log-out-outline" size={18} color={Colors.red} />
           </View>
           <Text style={[profStyles.menuLabel, { color: Colors.red, fontWeight: 'bold' }]}>Sign Out</Text>
         </TouchableOpacity>

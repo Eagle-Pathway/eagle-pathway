@@ -64,15 +64,21 @@ const COUNTRY_DROPDOWN_OPTIONS: DropdownOption[] = [
   ...COUNTRIES.map(c => ({ label: c.name, value: c.name, icon: c.flag })),
 ];
 
-const FIELDS_OF_STUDY_OPTIONS: DropdownOption[] = FIELDS_OF_STUDY.map(s => ({
-  label: s.charAt(0).toUpperCase() + s.slice(1),
-  value: s,
-}));
+const FIELDS_OF_STUDY_OPTIONS: DropdownOption[] = [
+  ...FIELDS_OF_STUDY.map(s => ({
+    label: s.charAt(0).toUpperCase() + s.slice(1),
+    value: s,
+  })),
+  { label: 'Other', value: 'other' },
+];
 
-const DEPARTMENT_DROPDOWN_OPTIONS: DropdownOption[] = DEPARTMENTS.map(d => ({
-  label: d,
-  value: d,
-}));
+const DEPARTMENT_DROPDOWN_OPTIONS: DropdownOption[] = [
+  ...DEPARTMENTS.map(d => ({
+    label: d,
+    value: d,
+  })),
+  { label: 'Other', value: 'other' },
+];
 
 const TUTOR_SUBJECTS = [
   'Math', 'Physics', 'Chemistry', 'Biology', 'English', 'Amharic',
@@ -156,6 +162,8 @@ export function EditProfileScreen() {
     preferred_tutor_gender: user?.preferred_tutor_gender || 'No Preference',
     preferred_session_format: user?.preferred_session_format || 'In-Person (Home Tutoring)',
     is_current_student: false,
+    custom_field_of_study: '',
+    custom_department: '',
   });
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
@@ -256,14 +264,17 @@ export function EditProfileScreen() {
         updates.academic_summary = formData.academic_summary;
       } else {
         // Student role
-        updates.interested_subjects = formData.interested_subjects;
+        const finalSubjects = formData.interested_subjects.map(s => (s === 'other' && formData.custom_field_of_study?.trim() ? formData.custom_field_of_study.trim() : s));
+        const finalDepartments = formData.target_departments.map(d => (d === 'other' && formData.custom_department?.trim() ? formData.custom_department.trim() : d));
+
+        updates.interested_subjects = finalSubjects;
         updates.academic_summary = formData.academic_summary;
         updates.has_ielts = formData.has_ielts;
         updates.is_english_medium = formData.is_english_medium;
         updates.target_degree_level = formData.target_degree_level;
         updates.target_countries = formData.target_countries;
         updates.has_extracurriculars = formData.has_extracurriculars;
-        updates.target_departments = formData.target_departments;
+        updates.target_departments = finalDepartments;
         updates.grade_level = formData.grade_level;
         const parsedGpa = formData.gpa ? parseFloat(formData.gpa.toString()) : NaN;
         const parsedGpaMax = formData.gpa_max ? parseFloat(formData.gpa_max.toString()) : NaN;
@@ -380,6 +391,18 @@ export function EditProfileScreen() {
           searchable
           style={{ marginBottom: Spacing.md }}
         />
+        {formData.interested_subjects.includes('other') && (
+          <View style={{ marginTop: -Spacing.xs, marginBottom: Spacing.md }}>
+            <Text style={editProfStyles.fieldLabel}>Specify Custom Field of Study *</Text>
+            <TextInput
+              style={editProfStyles.input}
+              value={formData.custom_field_of_study || ''}
+              onChangeText={t => setFormData(f => ({ ...f, custom_field_of_study: t }))}
+              placeholder="e.g. Mechatronics Engineering..."
+              placeholderTextColor={Colors.textSecondary}
+            />
+          </View>
+        )}
 
         <Dropdown
           label="Target Departments *"
@@ -391,6 +414,18 @@ export function EditProfileScreen() {
           searchable
           style={{ marginBottom: Spacing.md }}
         />
+        {formData.target_departments.includes('other') && (
+          <View style={{ marginTop: -Spacing.xs, marginBottom: Spacing.md }}>
+            <Text style={editProfStyles.fieldLabel}>Specify Custom Department *</Text>
+            <TextInput
+              style={editProfStyles.input}
+              value={formData.custom_department || ''}
+              onChangeText={t => setFormData(f => ({ ...f, custom_department: t }))}
+              placeholder="e.g. Biomedical Science..."
+              placeholderTextColor={Colors.textSecondary}
+            />
+          </View>
+        )}
       </Section>
 
       <Section title="✨ About You">

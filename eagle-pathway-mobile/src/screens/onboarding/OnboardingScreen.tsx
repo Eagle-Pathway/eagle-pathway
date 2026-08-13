@@ -18,10 +18,13 @@ const ONBOARDING_COUNTRY_OPTIONS: DropdownOption[] = [
   ...COUNTRIES.map(c => ({ label: c.name, value: c.name, icon: c.flag })),
 ];
 
-const ONBOARDING_FIELD_OPTIONS: DropdownOption[] = FIELDS_OF_STUDY.map(f => ({
-  label: f === 'Any Field' ? 'Any Field' : f,
-  value: f,
-}));
+const ONBOARDING_FIELD_OPTIONS: DropdownOption[] = [
+  ...FIELDS_OF_STUDY.map(f => ({
+    label: f === 'Any Field' ? 'Any Field' : f,
+    value: f,
+  })),
+  { label: 'Other', value: 'other' },
+];
 
 const LEVELS = [
   { key: 'highschool', label: 'High School / Grade 12' },
