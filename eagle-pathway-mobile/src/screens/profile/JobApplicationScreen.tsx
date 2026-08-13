@@ -5,7 +5,7 @@ import {
 } from 'react-native';
 import { toast } from '@/utils/toast';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { router, useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { Colors, Typography, Spacing, Radius, CommonStyles } from '@/utils/theme';
 import { Button, ProgressBar, Card } from '@/components/common';
 import { KeyboardAwareScreen } from '@/components/KeyboardAwareScreen';
@@ -44,6 +44,15 @@ export function JobApplicationScreen() {
   const [profileIncomplete, setProfileIncomplete] = useState(false);
   const [showProfileGate, setShowProfileGate] = useState(false);
   const insets = useSafeAreaInsets();
+
+  useFocusEffect(
+    React.useCallback(() => {
+      if (user) {
+        useAuthStore.getState().loadProfile().catch(console.error);
+        loadTutorApplication(user.id);
+      }
+    }, [user?.id])
+  );
 
   useEffect(() => {
     if (user) {

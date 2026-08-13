@@ -50,9 +50,14 @@ export function TutorJobDetailScreen() {
     return () => { isMounted = false; };
   }, [jobId, user?.id]);
 
-  useEffect(() => {
-    if (user) loadTutorApplication(user.id);
-  }, [user?.id]);
+  useFocusEffect(
+    useCallback(() => {
+      if (user) {
+        useAuthStore.getState().loadProfile().catch(console.error);
+        loadTutorApplication(user.id);
+      }
+    }, [user?.id])
+  );
 
   if (loading) return (
     <SafeAreaView style={CommonStyles.screenBg} edges={['top', 'bottom']}>
