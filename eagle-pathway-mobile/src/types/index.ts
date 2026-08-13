@@ -104,6 +104,44 @@ export interface Booking {
   student?: User;
 }
 
+export interface TutorAgreement {
+  id: string;
+  booking_id?: string;
+  tutor_id: string;
+  student_id: string;
+  responsibilities: string;
+  tutor_signed: boolean;
+  tutor_signed_at?: string;
+  parent_signed: boolean;
+  parent_signed_at?: string;
+  status: 'pending' | 'active' | 'terminated';
+  created_at: string;
+  updated_at: string;
+}
+
+export interface TutorSessionLog {
+  id: string;
+  booking_id?: string;
+  tutor_id: string;
+  student_id: string;
+  start_time: string;
+  end_time?: string;
+  tutor_start_confirmed: boolean;
+  student_start_confirmed: boolean;
+  student_start_confirmed_at?: string;
+  tutor_end_confirmed: boolean;
+  tutor_end_confirmed_at?: string;
+  student_end_confirmed: boolean;
+  student_end_confirmed_at?: string;
+  duration_minutes: number;
+  hourly_rate: number;
+  total_calculated_amount: number;
+  status: 'active' | 'completed' | 'disputed' | 'cancelled';
+  notes?: string;
+  created_at: string;
+  updated_at: string;
+}
+
 // ─── SCHOLARSHIP ─────────────────────────────────────────────────────────────
 export type DegreeLevel = 'undergraduate' | 'masters' | 'phd' | 'all';
 export type FundingType = 'fully_funded' | 'partial' | 'stipend_only';

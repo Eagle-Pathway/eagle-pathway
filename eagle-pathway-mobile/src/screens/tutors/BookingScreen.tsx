@@ -12,6 +12,7 @@ import { Colors, Typography, Spacing, Radius, CommonStyles } from '@/utils/theme
 import { Button, Avatar } from '@/components/common';
 import { KeyboardAwareScreen } from '@/components/KeyboardAwareScreen';
 import { tutorsService } from '@/services/tutors';
+import { tutorSessionsService } from '@/services/tutorSessions';
 import { useAuthStore } from '@/store/authStore';
 import { useBookingStore } from '@/store/bookingStore';
 import { Tutor } from '@/types';
@@ -67,10 +68,12 @@ export default function BookingScreen() {
     setLoading(true);
     try {
       const bookingsToCreate = isRecurring ? 4 : 1;
+      let firstBookingId: string | undefined;
+
       for (let i = 0; i < bookingsToCreate; i++) {
         const date = new Date(selectedDate);
         date.setDate(date.getDate() + (i * 7));
-        await tutorsService.createBooking({
+        const created = await tutorsService.createBooking({
           studentId: user.id,
           tutorId: tutor.id,
           subject: tutor.subjects?.[0] || 'General Tutoring',
@@ -83,7 +86,17 @@ export default function BookingScreen() {
           platformFee: Math.round(tutor.hourly_rate * durationHours * PLATFORM_FEE_RATE),
           studentName: user.full_name,
         });
+        if (i === 0) firstBookingId = created.id;
       }
+
+      // Create Responsibility Agreement
+      await tutorSessionsService.createAgreement({
+        bookingId: firstBookingId,
+        tutorId: tutor.id,
+        studentId: user.id,
+        signedByParent: true,
+      }).catch(console.error);
+
       await loadBookings(user.id);
       const msg = isRecurring ? `Weekly sessions for the next ${bookingsToCreate} weeks are booked.` : `Your session with ${tutor.user?.full_name} is confirmed.`;
       toast.success('Booking Confirmed! 🎉', msg);

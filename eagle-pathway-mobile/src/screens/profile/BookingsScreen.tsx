@@ -13,6 +13,10 @@ import { ListSkeleton } from '@/components/LoadingSkeleton';
 import { useAuthStore } from '@/store/authStore';
 import { showError } from '@/utils/errorHandler';
 import { useBookingStore } from '@/store/bookingStore';
+import { useTutorSessionStore } from '@/store/tutorSessionStore';
+import { SessionHoursLedger } from '@/components/tutors/SessionHoursLedger';
+import { ActiveSessionTracker } from '@/components/tutors/ActiveSessionTracker';
+import { TutorContractModal } from '@/components/tutors/TutorContractModal';
 import { supabase } from '@/services/supabase';
 import { withTimeout } from '@/utils/asyncUtils';
 import { getUserRole } from '@/utils/role';
@@ -21,8 +25,13 @@ export function BookingsScreen({ hideHeader = false }: { hideHeader?: boolean })
   const insets = useSafeAreaInsets();
   const { user } = useAuthStore();
   const { bookings, loadBookings, loadTutorBookings, updateBookingStatus, cancelBooking } = useBookingStore();
+  const { activeSession, metrics, loadActiveSession, loadMetrics, startSession, signAgreement, loadAgreement, agreement } = useTutorSessionStore();
+  
   const [activeTab, setActiveTab] = useState<'upcoming' | 'past' | 'cancelled'>('upcoming');
   const [loading, setLoading] = useState(true);
+  const [contractModalVisible, setContractModalVisible] = useState(false);
+  const [selectedBookingForContract, setSelectedBookingForContract] = useState<any>(null);
+
   const [ratingBookingId, setRatingBookingId] = useState<string | null>(null);
   const [rating, setRating] = useState(0);
   const [ratingComment, setRatingComment] = useState('');
@@ -36,15 +45,48 @@ export function BookingsScreen({ hideHeader = false }: { hideHeader?: boolean })
     setLoading(true);
     setError(false);
     try {
-      await withTimeout(isTutor ? loadTutorBookings(user.id) : loadBookings(user.id), 3500);
+      await withTimeout(Promise.all([
+        isTutor ? loadTutorBookings(user.id) : loadBookings(user.id),
+        loadActiveSession(user.id, isTutor),
+        loadMetrics(user.id, isTutor),
+      ]), 3500);
     } catch {
       setError(true);
     } finally {
       setLoading(false);
     }
-  }, [user?.id, isTutor, loadBookings, loadTutorBookings]);
+  }, [user?.id, isTutor, loadBookings, loadTutorBookings, loadActiveSession, loadMetrics]);
 
   useEffect(() => { load(); }, [user?.id, isTutor]);
+
+  const handleStartLiveSession = async (b: any) => {
+    if (!user) return;
+    try {
+      const tutorHourlyRate = b.tutor?.hourly_rate || 250;
+      await startSession({
+        bookingId: b.id,
+        tutorId: b.tutor_id,
+        studentId: b.student_id,
+        hourlyRate: tutorHourlyRate,
+      });
+      toast.success('Session Started! ⏱️', 'Timer is running. Student has been notified to confirm start.');
+      loadActiveSession(user.id, isTutor);
+    } catch (e: any) {
+      showError(e, 'Could Not Start Session');
+    }
+  };
+
+  const handleOpenContract = async (b: any) => {
+    setSelectedBookingForContract(b);
+    if (b.id) await loadAgreement(b.id);
+    setContractModalVisible(true);
+  };
+
+  const handleSignContract = async () => {
+    if (agreement?.id) {
+      await signAgreement(agreement.id, isTutor ? 'tutor' : 'parent');
+    }
+  };
 
   const handleMarkCompleted = async (bookingId: string) => {
     await updateBookingStatus(bookingId, 'completed');
@@ -87,6 +129,25 @@ export function BookingsScreen({ hideHeader = false }: { hideHeader?: boolean })
           <Text style={bkgStyles.title}>{isTutor ? 'My Sessions' : 'My Bookings'}</Text>
         </View>
       )}
+
+      {/* Accumulated Hours & Billing Ledger Widget */}
+      <SessionHoursLedger metrics={metrics} isTutor={isTutor} />
+
+      {/* Active Session Timer Widget */}
+      {activeSession && user && (
+        <View style={{ paddingHorizontal: Spacing.xl, marginTop: Spacing.sm }}>
+          <ActiveSessionTracker
+            session={activeSession}
+            userId={user.id}
+            isTutor={isTutor}
+            onSessionUpdated={() => {
+              loadActiveSession(user.id, isTutor);
+              loadMetrics(user.id, isTutor);
+            }}
+          />
+        </View>
+      )}
+
       <View style={bkgStyles.tabs}>
         {(['upcoming', 'past', 'cancelled'] as const).map(tab => (
           <TouchableOpacity key={tab} style={[bkgStyles.tab, activeTab === tab && bkgStyles.tabActive]} onPress={() => setActiveTab(tab)} activeOpacity={0.8}>
@@ -133,7 +194,16 @@ export function BookingsScreen({ hideHeader = false }: { hideHeader?: boolean })
                   <Text style={bkgStyles.detail}>🕐 {b.duration_hours}h</Text>
                   <Text style={bkgStyles.detail}>{b.session_type === 'online' ? '🌐 Zoom' : '🏠 In-Person'}</Text>
                 </View>
-                
+
+                {/* Contract Button */}
+                <TouchableOpacity
+                  style={bkgStyles.btnContract}
+                  onPress={() => handleOpenContract(b)}
+                  activeOpacity={0.8}
+                >
+                  <Text style={bkgStyles.btnContractText}>📄 Responsibility Contract</Text>
+                </TouchableOpacity>
+
                 {activeTab === 'upcoming' && (
                   <View style={bkgStyles.actions}>
                     {!isTutor ? (
@@ -152,9 +222,16 @@ export function BookingsScreen({ hideHeader = false }: { hideHeader?: boolean })
                             <Text style={bkgStyles.btnJoinText}>Accept Request</Text>
                           </TouchableOpacity>
                         ) : (
-                          <TouchableOpacity style={bkgStyles.btnJoin} onPress={() => handleMarkCompleted(b.id)} activeOpacity={0.85}>
-                            <Text style={bkgStyles.btnJoinText}>Mark Completed ⭐</Text>
-                          </TouchableOpacity>
+                          <>
+                            {!activeSession ? (
+                              <TouchableOpacity style={[bkgStyles.btnJoin, { backgroundColor: Colors.green }]} onPress={() => handleStartLiveSession(b)} activeOpacity={0.85}>
+                                <Text style={bkgStyles.btnJoinText}>⏱️ Start Clock-In</Text>
+                              </TouchableOpacity>
+                            ) : null}
+                            <TouchableOpacity style={bkgStyles.btnJoin} onPress={() => handleMarkCompleted(b.id)} activeOpacity={0.85}>
+                              <Text style={bkgStyles.btnJoinText}>Mark Completed ⭐</Text>
+                            </TouchableOpacity>
+                          </>
                         )}
                         <TouchableOpacity style={bkgStyles.btnCancel} onPress={() => updateBookingStatus(b.id, 'cancelled')} activeOpacity={0.85}>
                           <Text style={bkgStyles.btnCancelText}>Decline/Cancel</Text>
@@ -181,6 +258,17 @@ export function BookingsScreen({ hideHeader = false }: { hideHeader?: boolean })
           initialNumToRender={8} maxToRenderPerBatch={8} windowSize={5} removeClippedSubviews={true}
         />
       )}
+
+      {/* Contract Modal */}
+      <TutorContractModal
+        visible={contractModalVisible}
+        onClose={() => setContractModalVisible(false)}
+        onSign={handleSignContract}
+        roleName={isTutor ? 'Tutor' : 'Parent / Student'}
+        isSigned={isTutor ? !!agreement?.tutor_signed : !!agreement?.parent_signed}
+        tutorName={selectedBookingForContract?.tutor?.user?.full_name || 'Tutor'}
+        studentName={selectedBookingForContract?.student?.full_name || user?.full_name || 'Student'}
+      />
       {/* Rating Modal */}
       {ratingBookingId && (
         <View style={bkgStyles.modalOverlay}>
@@ -235,6 +323,21 @@ const bkgStyles = StyleSheet.create({
   details: { flexDirection: 'row', gap: Spacing.md, flexWrap: 'wrap', marginBottom: Spacing.md },
   detail: { fontSize: Typography.sm, color: Colors.textSecondary },
   actions: { flexDirection: 'row', gap: Spacing.sm },
+  btnContract: {
+    backgroundColor: '#F1F5F9',
+    borderRadius: Radius.md,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    alignItems: 'center',
+    marginBottom: Spacing.sm,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  btnContractText: {
+    fontSize: Typography.xs,
+    fontWeight: Typography.semibold,
+    color: Colors.blue,
+  },
   btnJoin: { flex: 1, backgroundColor: Colors.blue, borderRadius: 10, padding: 10, alignItems: 'center' },
   btnJoinText: { color: Colors.white, fontWeight: Typography.semibold, fontSize: Typography.base },
   btnCancel: { flex: 1, backgroundColor: Colors.redLight, borderRadius: 10, padding: 10, alignItems: 'center' },
