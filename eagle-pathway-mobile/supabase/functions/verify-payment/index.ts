@@ -13,6 +13,7 @@ const CORS_HEADERS = {
 
 // Registered Official Eagle Pathway Account Constants
 const EAGLE_PATHWAY_NAME = 'Genene Tise Mekonen';
+const EAGLE_PATHWAY_CBE_SHORT_NAME = 'Genene Tise';
 const EAGLE_PATHWAY_CBE_ACCOUNT = '1000272681353';
 const EAGLE_PATHWAY_ACCOUNT_SUFFIX = '1353';
 const EAGLE_PATHWAY_TELEBIRR_NAME = 'Genene';
@@ -250,6 +251,8 @@ serve(async (req) => {
     // Check if bank record confirms SUCCESS, amount >= required, and recipient matches
     const isAmountValid = bankRecord.amount === 0 || bankRecord.amount >= expectedAmount; // If amount parser extracted 0 due to HTML obfuscation, fall to manual review if status is SUCCESS
     const isRecipientValid = bankRecord.recipientName.includes(EAGLE_PATHWAY_NAME) || 
+                             bankRecord.recipientName.includes(EAGLE_PATHWAY_CBE_SHORT_NAME) ||
+                             bankRecord.recipientName.includes(EAGLE_PATHWAY_TELEBIRR_NAME) ||
                              bankRecord.recipientAccount.endsWith(EAGLE_PATHWAY_ACCOUNT_SUFFIX) ||
                              bankRecord.recipientName === 'UNKNOWN';
 
