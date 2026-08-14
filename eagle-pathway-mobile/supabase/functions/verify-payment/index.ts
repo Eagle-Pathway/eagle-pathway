@@ -1,3 +1,4 @@
+// @ts-nocheck
 // Supabase Edge Function: verify-payment
 // Secure, Server-Side Bank & Telecom Verification Engine for Telebirr & CBE
 // Deno TypeScript Runtime
@@ -11,10 +12,11 @@ const CORS_HEADERS = {
 };
 
 // Registered Official Eagle Pathway Account Constants
-const EAGLE_PATHWAY_NAME = 'EAGLE PATHWAY';
-const EAGLE_PATHWAY_CBE_ACCOUNT = '1000472681353';
+const EAGLE_PATHWAY_NAME = 'Genene Tise Mekonen';
+const EAGLE_PATHWAY_CBE_ACCOUNT = '1000272681353';
 const EAGLE_PATHWAY_ACCOUNT_SUFFIX = '1353';
-const EAGLE_PATHWAY_TELEBIRR_ACCOUNT = '0911000000';
+const EAGLE_PATHWAY_TELEBIRR_NAME = 'Genene';
+const EAGLE_PATHWAY_TELEBIRR_ACCOUNT = '0932508910';
 
 // Regex Rules for Live Ethiopian Bank / Telecom Receipts
 const NEW_CBE_URL_REGEX = /^https?:\/\/mbreciept\.cbe\.com\.et\/(v2-[A-Za-z0-9-]+|[A-Za-z0-9-]+)$/i;
@@ -84,7 +86,8 @@ async function fetchCBEOfficialReceipt(txnOrUrl: string): Promise<BankRecord> {
     const parsedAmount = amountMatch ? parseFloat(amountMatch[1].replace(/,/g, '')) : 0;
 
     // Extract beneficiary name or account
-    const hasRecipientMatch = htmlText.toUpperCase().includes('EAGLE') || htmlText.includes(EAGLE_PATHWAY_CBE_ACCOUNT) || htmlText.includes(EAGLE_PATHWAY_ACCOUNT_SUFFIX);
+    const upperText = htmlText.toUpperCase();
+    const hasRecipientMatch = upperText.includes('GENENE') || upperText.includes('MEKONEN') || upperText.includes('EAGLE') || htmlText.includes(EAGLE_PATHWAY_CBE_ACCOUNT) || htmlText.includes(EAGLE_PATHWAY_ACCOUNT_SUFFIX);
 
     return {
       status: isSuccess ? 'SUCCESS' : 'NOT_FOUND',
@@ -125,6 +128,7 @@ async function fetchTelebirrOfficialReceipt(txnOrUrl: string): Promise<BankRecor
     }
 
     const htmlText = await resp.text();
+    const upperText = htmlText.toUpperCase();
 
     const isSuccess = htmlText.includes('Transaction Details') || htmlText.includes('telebirr') || htmlText.includes('Successful') || resp.url.includes('ethiotelecom.et');
     
@@ -132,12 +136,12 @@ async function fetchTelebirrOfficialReceipt(txnOrUrl: string): Promise<BankRecor
     const amountMatch = htmlText.match(/(?:ETB|Birr)\s*([\d,]+(?:\.\d{2})?)/i) || htmlText.match(/([\d,]+(?:\.\d{2})?)\s*(?:ETB|Birr)/i);
     const parsedAmount = amountMatch ? parseFloat(amountMatch[1].replace(/,/g, '')) : 0;
 
-    const hasRecipientMatch = htmlText.toUpperCase().includes('EAGLE') || htmlText.includes(EAGLE_PATHWAY_TELEBIRR_ACCOUNT);
+    const hasRecipientMatch = upperText.includes('GENENE') || upperText.includes('EAGLE') || htmlText.includes(EAGLE_PATHWAY_TELEBIRR_ACCOUNT);
 
     return {
       status: isSuccess ? 'SUCCESS' : 'NOT_FOUND',
       amount: parsedAmount > 0 ? parsedAmount : 0,
-      recipientName: hasRecipientMatch ? EAGLE_PATHWAY_NAME : 'UNKNOWN',
+      recipientName: hasRecipientMatch ? EAGLE_PATHWAY_TELEBIRR_NAME : 'UNKNOWN',
       recipientAccount: EAGLE_PATHWAY_TELEBIRR_ACCOUNT,
       rawResponse: { url: targetUrl, contentLength: htmlText.length },
     };
