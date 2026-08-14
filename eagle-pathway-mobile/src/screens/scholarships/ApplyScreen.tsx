@@ -16,6 +16,7 @@ import { useScholarshipStore } from '@/store/scholarshipStore';
 import { useDocumentStore } from '@/store/documentStore';
 import { Ionicons } from '@expo/vector-icons';
 import { PACKAGE_PRICING, formatEtb } from '@/constants/packages';
+import { PAYMENT_ACCOUNTS } from '@/constants/paymentAccounts';
 import type { PackageTier, DocumentType } from '@/types';
 import { showError } from '@/utils/errorHandler';
 
@@ -373,6 +374,47 @@ export function ApplyScreen() {
 
               {(selectedPaymentMethod === 'Telebirr' || selectedPaymentMethod === 'CBE Birr / Bank Transfer') && (
                 <View style={{ marginTop: Spacing.lg }}>
+                  {/* Payment Account Details Box */}
+                  <View style={{
+                    backgroundColor: Colors.blueLight,
+                    borderRadius: Radius.xl,
+                    padding: Spacing.lg,
+                    marginBottom: Spacing.lg,
+                    borderWidth: 1,
+                    borderColor: '#bfdbfe',
+                  }}>
+                    <Text style={{ fontSize: Typography.base, fontWeight: Typography.bold, color: Colors.blue, marginBottom: Spacing.sm }}>
+                      Pay to Official {selectedPaymentMethod.includes('Telebirr') ? 'Telebirr Account' : 'CBE Account'}
+                    </Text>
+
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: Spacing.xs }}>
+                      <Text style={{ fontSize: 13, color: Colors.textSecondary }}>Account Holder</Text>
+                      <Text style={{ fontSize: 13, fontWeight: 'bold', color: Colors.text }}>
+                        {selectedPaymentMethod.includes('Telebirr') ? PAYMENT_ACCOUNTS.telebirr.name : PAYMENT_ACCOUNTS.cbe.name}
+                      </Text>
+                    </View>
+
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.xs }}>
+                      <Text style={{ fontSize: 13, color: Colors.textSecondary }}>
+                        {selectedPaymentMethod.includes('Telebirr') ? 'Telebirr Phone' : 'CBE Account No.'}
+                      </Text>
+                      <Text style={{ fontSize: 15, fontWeight: 'bold', color: Colors.blue }}>
+                        {selectedPaymentMethod.includes('Telebirr') ? PAYMENT_ACCOUNTS.telebirr.accountNumber : PAYMENT_ACCOUNTS.cbe.accountNumber}
+                      </Text>
+                    </View>
+
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: Spacing.sm }}>
+                      <Text style={{ fontSize: 13, color: Colors.textSecondary }}>Exact Amount Due</Text>
+                      <Text style={{ fontSize: 16, fontWeight: 'bold', color: Colors.blue }}>
+                        ETB {packageTier ? formatEtb(PACKAGE_PRICING[packageTier].etb) : '0'}
+                      </Text>
+                    </View>
+
+                    <Text style={{ fontSize: 11, color: Colors.textSecondary, fontStyle: 'italic', marginTop: 4 }}>
+                      💡 {selectedPaymentMethod.includes('Telebirr') ? PAYMENT_ACCOUNTS.telebirr.instruction : PAYMENT_ACCOUNTS.cbe.instruction}
+                    </Text>
+                  </View>
+
                   <Text style={{ fontSize: 14, fontWeight: 'bold', marginBottom: Spacing.xs }}>Upload Receipt Screenshot * (Required)</Text>
                   <Button 
                     title={receiptAsset ? 'Screenshot Attached ✓' : 'Upload Receipt Screenshot *'} 

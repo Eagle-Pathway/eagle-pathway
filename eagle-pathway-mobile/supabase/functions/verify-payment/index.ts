@@ -171,9 +171,33 @@ serve(async (req) => {
       );
     }
 
-    // 1. Strict Syntax Regex Validation
-    let isValidFormat = false;
     let cleanTxnId = transaction_id.trim();
+    const isScreenshotOnly = cleanTxnId.toUpperCase().startsWith('SCREENSHOT');
+
+    // 1. Screenshot-only Submission Handling (when Ref ID field is left blank)
+    if (isScreenshotOnly) {
+      if (payment_id) {
+        await supabase
+          .from('payments')
+          .update({
+            status: 'pending',
+            verification_status: 'manual_review',
+            verified_at: null,
+          })
+          .eq('id', payment_id);
+      }
+
+      return new Response(
+        JSON.stringify({
+          status: 'manual_review',
+          reason: 'Receipt screenshot uploaded successfully. Queued for fast admin verification.',
+        }),
+        { status: 200, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // 2. Strict Syntax Regex Validation
+    let isValidFormat = false;
 
     if (method === 'cbe') {
       isValidFormat = CBE_TXN_REGEX.test(cleanTxnId) || 
@@ -182,7 +206,8 @@ serve(async (req) => {
                       /^[A-Z0-9.]{8,24}$/i.test(cleanTxnId);
     } else if (method === 'telebirr') {
       isValidFormat = TELEBIRR_REF_REGEX.test(cleanTxnId) || 
-                      TELEBIRR_URL_REGEX.test(cleanTxnId);
+                      TELEBIRR_URL_REGEX.test(cleanTxnId) ||
+                      /^[A-Z0-9]{8,16}$/i.test(cleanTxnId);
     }
 
     if (!isValidFormat) {
