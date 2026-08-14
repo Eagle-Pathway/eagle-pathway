@@ -12,32 +12,37 @@ export const paymentsService = {
     method: 'telebirr' | 'cbe';
     amount: number;
     transactionId: string;
-    fileUri: string;
-    fileName: string;
+    fileUri?: string;
+    fileName?: string;
   }) {
-    // 1. Upload the receipt screenshot to the 'receipts' bucket
-    const fileExt = params.fileName.split('.').pop();
-    const filePath = `${params.userId}/${Date.now()}.${fileExt}`;
-    
-    // Read file as base64
-    const base64 = await FileSystem.readAsStringAsync(params.fileUri, { encoding: 'base64' });
-    
-    const { error: uploadError } = await supabase.storage
-      .from('receipts')
-      .upload(filePath, decode(base64), {
-        contentType: `image/${fileExt === 'png' ? 'png' : 'jpeg'}`,
-        upsert: true
-      });
+    let filePath: string | null = null;
+    let signedUrl: string | null = null;
 
-    if (uploadError) throw new Error('Failed to upload receipt image. ' + uploadError.message);
+    // 1. Upload screenshot if user attached an image asset
+    if (params.fileUri && params.fileName) {
+      const fileExt = params.fileName.split('.').pop() || 'png';
+      filePath = `${params.userId}/${Date.now()}.${fileExt}`;
+      
+      const base64 = await FileSystem.readAsStringAsync(params.fileUri, { encoding: 'base64' });
+      
+      const { error: uploadError } = await supabase.storage
+        .from('receipts')
+        .upload(filePath, decode(base64), {
+          contentType: `image/${fileExt === 'png' ? 'png' : 'jpeg'}`,
+          upsert: true
+        });
 
-    const { data: signedData, error: signedError } = await supabase.storage
-      .from('receipts')
-      .createSignedUrl(filePath, SIGNED_URL_TTL_SECONDS);
+      if (uploadError) throw new Error('Failed to upload receipt image. ' + uploadError.message);
 
-    if (signedError) throw new Error('Failed to secure receipt preview. ' + signedError.message);
+      const { data: signedData, error: signedError } = await supabase.storage
+        .from('receipts')
+        .createSignedUrl(filePath, SIGNED_URL_TTL_SECONDS);
 
-    // 2. Insert the payment record
+      if (signedError) throw new Error('Failed to secure receipt preview. ' + signedError.message);
+      signedUrl = signedData.signedUrl;
+    }
+
+    // 2. Insert the payment record into Supabase PostgreSQL
     const { data: paymentRecord, error } = await supabase
       .from('payments')
       .insert({
@@ -48,7 +53,7 @@ export const paymentsService = {
         amount: params.amount,
         transaction_id: params.transactionId,
         receipt_path: filePath,
-        receipt_url: signedData.signedUrl,
+        receipt_url: signedUrl,
         status: 'pending',
         verification_status: 'pending_verification'
       })

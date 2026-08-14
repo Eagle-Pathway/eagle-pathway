@@ -30,6 +30,9 @@ export function ApplyScreen() {
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('');
   const [transactionId, setTransactionId] = useState('');
   const [receiptAsset, setReceiptAsset] = useState<any>(null);
+  const [isVerifyingPayment, setIsVerifyingPayment] = useState(false);
+  const [verificationError, setVerificationError] = useState<string | null>(null);
+  const [verificationOutcome, setVerificationOutcome] = useState<any>(null);
   const insets = useSafeAreaInsets();
 
   const handleGenerateStarter = async () => {
@@ -100,55 +103,19 @@ export function ApplyScreen() {
   };
 
   const handleSubmit = async () => {
-    if (loading) return; // guard against double-submit -> duplicate applications
+    if (loading) return;
     if (!user || !scholarshipId || !packageTier) return;
-    if (!selectedPaymentMethod) {
-      toast.warning('Missing Info', 'Please select a payment method before submitting your application.');
-      return;
-    }
-    if (!transactionId || !receiptAsset) {
-      toast.warning('Missing Info', 'Please provide the transaction ID and upload the receipt screenshot for manual verification.');
-      return;
-    }
     setLoading(true);
 
-    // 1. Create the application.
-    let app;
     try {
-      app = await createApplication(user.id, scholarshipId, packageTier, sopContent);
+      await createApplication(user.id, scholarshipId, packageTier, sopContent);
+      setLoading(false);
+      toast.success('Application Submitted! 🎉', 'Your consultant has been notified and will reach out shortly.');
+      router.push('/tracker');
     } catch (e: any) {
       setLoading(false);
       showError(e, 'Failed to Create Application');
-      return;
     }
-
-    // 2. Submit the payment receipt. If THIS fails, the application already
-    // exists — tell the user so they retry payment instead of re-submitting
-    // (which would create a duplicate application).
-    try {
-      await paymentsService.submitPaymentReceipt({
-        userId: user.id,
-        referenceId: app.id,
-        paymentType: 'scholarship_package',
-        method: selectedPaymentMethod.includes('Telebirr') ? 'telebirr' : 'cbe',
-        amount: PACKAGE_PRICING[packageTier].etb,
-        transactionId,
-        fileUri: receiptAsset.uri,
-        fileName: receiptAsset.name,
-      });
-    } catch (e: any) {
-      setLoading(false);
-      toast.error(
-        'Application created — payment not recorded',
-        "Your application was created, but we couldn't upload your payment receipt. Open the tracker and retry the payment so a consultant can verify it."
-      );
-      router.push('/tracker');
-      return;
-    }
-
-    setLoading(false);
-    toast.success('Application Started! 🎉', 'Your consultant has been notified and will reach out shortly.');
-    router.push('/tracker');
   };
 
   const requiredDocs = ['Degree Certificate', 'Official Transcript', 'Passport Copy', 'IELTS Certificate', 'CV / Resume', 'Reference Letter 1', 'Reference Letter 2'];
@@ -158,9 +125,7 @@ export function ApplyScreen() {
     (['degree_certificate', 'transcript', 'passport', 'ielts_certificate', 'cv'] as DocumentType[])
       .every(t => documents.some(d => d.document_type === t)) && refLetterCount >= 2;
 
-  // Continue advances steps, but warns (without hard-blocking) if required docs
-  // are missing on the Docs step — previously you could submit with zero docs.
-  const handleContinue = () => {
+  const handleContinue = async () => {
     if (step === 2 && !allDocsUploaded) {
       toast.warning('Documents incomplete', 'Some required documents are still missing. You can add them now, or continue and upload them later.');
       setStep(s => s + 1);
@@ -172,14 +137,50 @@ export function ApplyScreen() {
         toast.warning('Payment Method Required', 'Please select a payment method before continuing.');
         return;
       }
-      if (!transactionId.trim()) {
-        toast.warning('Transaction ID Required', 'Please enter your payment transaction ID before continuing.');
-        return;
-      }
       if (!receiptAsset) {
         toast.warning('Receipt Screenshot Required', 'Please upload a screenshot of your payment receipt before continuing.');
         return;
       }
+
+      // Execute instant Bank verification right on Step 4
+      if (!user || !packageTier) return;
+      setIsVerifyingPayment(true);
+      setVerificationError(null);
+
+      try {
+        const res = await paymentsService.submitPaymentReceipt({
+          userId: user.id,
+          paymentType: 'scholarship_package',
+          method: selectedPaymentMethod.includes('Telebirr') ? 'telebirr' : 'cbe',
+          amount: PACKAGE_PRICING[packageTier].etb,
+          transactionId: transactionId.trim() || `SCREENSHOT-${Date.now()}`,
+          fileUri: receiptAsset?.uri,
+          fileName: receiptAsset?.name,
+        });
+
+        setIsVerifyingPayment(false);
+
+        if (res.verification.status === 'rejected') {
+          setVerificationError(res.verification.reason);
+          toast.error('Verification Failed ❌', res.verification.reason);
+          return;
+        }
+
+        setVerificationOutcome(res.verification);
+        if (res.verification.status === 'verified') {
+          toast.success('Payment Verified! ✅', 'Bank record confirmed 100%. Advancing to final step.');
+        } else {
+          toast.info('Payment Submitted ⏳', 'Receipt uploaded successfully. Queued for fast admin check.');
+        }
+
+        setStep(5);
+      } catch (e: any) {
+        setIsVerifyingPayment(false);
+        const msg = e.message || 'Payment verification failed.';
+        setVerificationError(msg);
+        toast.error('Verification Error', msg);
+      }
+      return;
     }
 
     setStep(s => s + 1);
@@ -372,27 +373,40 @@ export function ApplyScreen() {
 
               {(selectedPaymentMethod === 'Telebirr' || selectedPaymentMethod === 'CBE Birr / Bank Transfer') && (
                 <View style={{ marginTop: Spacing.lg }}>
-                  <Text style={{ fontSize: 14, fontWeight: 'bold', marginBottom: Spacing.xs }}>Transaction Ref / Link * (Required)</Text>
-                  <TextInput 
-                    value={transactionId}
-                    onChangeText={setTransactionId}
-                    placeholder={selectedPaymentMethod === 'Telebirr' ? 'e.g. DHE0RRRPZO or receipt URL' : 'e.g. FT26222VM9M4 or receipt URL'}
-                    style={{ borderWidth: 1, borderColor: Colors.border, borderRadius: Radius.md, padding: Spacing.md, marginBottom: Spacing.md, backgroundColor: Colors.white }}
-                  />
+                  <Text style={{ fontSize: 14, fontWeight: 'bold', marginBottom: Spacing.xs }}>Upload Receipt Screenshot * (Required)</Text>
                   <Button 
-                    title={receiptAsset ? 'Receipt Attached ✓' : 'Upload Screenshot (Optional)'} 
-                    variant="outline"
+                    title={receiptAsset ? 'Screenshot Attached ✓' : 'Upload Receipt Screenshot *'} 
+                    variant={receiptAsset ? 'primary' : 'outline'}
                     onPress={async () => {
                       const result = await scholarshipsService.pickDocument();
                       if (!result.canceled && result.assets?.[0]) {
                         setReceiptAsset(result.assets[0]);
                       }
                     }} 
+                    style={{ marginBottom: Spacing.md }}
                   />
+
+                  <Text style={{ fontSize: 14, fontWeight: 'bold', marginBottom: Spacing.xs }}>Transaction Ref / Link (Optional)</Text>
+                  <TextInput 
+                    value={transactionId}
+                    onChangeText={setTransactionId}
+                    placeholder={selectedPaymentMethod === 'Telebirr' ? 'e.g. DHE0RRRPZO or leave blank' : 'e.g. FT26222VM9M4 or leave blank'}
+                    style={{ borderWidth: 1, borderColor: Colors.border, borderRadius: Radius.md, padding: Spacing.md, marginBottom: Spacing.md, backgroundColor: Colors.white }}
+                  />
+
+                  {verificationError && (
+                    <View style={{ marginTop: Spacing.xs, marginBottom: Spacing.md, padding: Spacing.md, backgroundColor: '#fef2f2', borderRadius: Radius.md, borderWidth: 1, borderColor: '#fca5a5', flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                      <Ionicons name="alert-circle-outline" size={20} color={Colors.red} />
+                      <Text style={{ fontSize: 12, color: Colors.red, flex: 1, fontWeight: '500' }}>
+                        {verificationError}
+                      </Text>
+                    </View>
+                  )}
+
                   <View style={applyStyles.paymentInfo}>
                     <Ionicons name="shield-checkmark-outline" size={16} color={Colors.blue} style={{ marginRight: 6 }} />
                     <Text style={{ fontSize: 12, color: Colors.textSecondary, flex: 1 }}>
-                      Bank Source of Truth Verification: Your transaction will be validated directly against official {selectedPaymentMethod} records.
+                      Bank Source of Truth Verification: Your receipt will be validated directly against official {selectedPaymentMethod} records when you tap Verify.
                     </Text>
                   </View>
                 </View>
@@ -413,6 +427,7 @@ export function ApplyScreen() {
               <Text>• Scholarship: {scholarshipId?.split('-')[0]}</Text>
               <Text>• Package: {packageTier}</Text>
               <Text>• Documents: {documents.length} / {requiredDocs.length}</Text>
+              <Text>• Payment Status: {verificationOutcome?.status === 'verified' ? 'Verified ✅' : 'Submitted (Pending Review) ⏳'}</Text>
             </View>
           </View>
         )}
@@ -420,7 +435,14 @@ export function ApplyScreen() {
 
       <View style={[applyStyles.bottomBar, { paddingBottom: Math.max(insets.bottom, Spacing.lg) }]}>
         <Button title={step === 1 ? 'Cancel' : '← Back'} variant="secondary" onPress={() => step > 1 ? setStep(s => s - 1) : (router.canGoBack() ? router.back() : router.replace('/(tabs)/home'))} style={{ flex: 0.5 }} fullWidth={false} />
-        <Button title={step === 5 ? 'Confirm & Submit' : 'Continue →'} variant="primary" onPress={step < 5 ? handleContinue : handleSubmit} loading={loading} style={{ flex: 1 }} fullWidth={false} />
+        <Button 
+          title={step === 4 ? (isVerifyingPayment ? 'Verifying with Bank...' : 'Verify Payment & Continue →') : step === 5 ? 'Confirm & Submit' : 'Continue →'} 
+          variant="primary" 
+          onPress={step < 5 ? handleContinue : handleSubmit} 
+          loading={loading || isVerifyingPayment} 
+          style={{ flex: 1 }} 
+          fullWidth={false} 
+        />
       </View>
     </SafeAreaView>
   );
