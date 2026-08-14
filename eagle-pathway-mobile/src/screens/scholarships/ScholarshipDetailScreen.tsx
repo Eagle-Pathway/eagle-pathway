@@ -16,6 +16,7 @@ import { useAuthStore } from '@/store/authStore';
 import { analyzeEligibility } from '@/utils/eligibility';
 import { showError } from '@/utils/errorHandler';
 import type { Scholarship } from '@/types';
+import { Ionicons } from '@expo/vector-icons';
 import { getFlagEmoji } from '@eagle-pathway/shared';
 
 // Helper to render text with clickable links
@@ -228,7 +229,8 @@ export function ScholarshipDetailScreen() {
                 style={sdStyles.linkButton} 
                 onPress={() => Linking.openURL(scholarship.website_url!).catch(() => showError('Could not open this link.', 'Notice'))}
               >
-                <Text style={sdStyles.linkButtonText}>🌐 Open Official Link</Text>
+                <Ionicons name="globe-outline" size={18} color={Colors.white} style={{ marginRight: 6 }} />
+                <Text style={sdStyles.linkButtonText}>Open Official Link</Text>
               </ScaleBounce>
               <Text style={sdStyles.linkSubtext}>Visit the university's portal for raw details and official forms.</Text>
             </View>
@@ -247,7 +249,9 @@ export function ScholarshipDetailScreen() {
             <Text style={sdStyles.sectionTitle}>Requirements</Text>
             {scholarship.requirements.map((r, i) => (
               <View key={i} style={sdStyles.reqItem}>
-                <View style={sdStyles.checkBox}><Text style={{ fontSize: 10, color: Colors.green }}>✓</Text></View>
+                <View style={sdStyles.checkBox}>
+                  <Ionicons name="checkmark" size={12} color={Colors.green} />
+                </View>
                 <Text style={sdStyles.reqText}>{renderLinkedText(r)}</Text>
               </View>
             ))}
@@ -269,33 +273,36 @@ export function ScholarshipDetailScreen() {
               elevation: 3,
             }
           ]}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 8 }}>
-              <Text style={{ fontSize: 24 }}>✨</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+              <Ionicons name="sparkles" size={20} color={Colors.gold} />
               <Text style={[sdStyles.sectionTitle, { color: Colors.gold, marginBottom: 0 }]}>Eagle AI Assistant</Text>
             </View>
             <Text style={[sdStyles.bodyText, { color: 'rgba(255,255,255,0.8)', fontSize: 13, marginBottom: 16 }]}>
               Stop struggling with your essay. We'll use your academic profile to draft a winning Statement of Purpose for this scholarship in seconds.
             </Text>
             <ScaleBounce
-              style={{ backgroundColor: Colors.gold, padding: 14, borderRadius: 12, alignItems: 'center' }}
+              style={{ backgroundColor: Colors.gold, padding: 14, borderRadius: 12, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 6 }}
               onPress={() => router.push({ pathname: '/scholarship/magic-draft', params: { scholarshipId: scholarship.id } })}
             >
-              <Text style={{ color: Colors.blueDark, fontWeight: 'bold', fontSize: 15 }}>Generate Magic Draft ✨</Text>
+              <Ionicons name="sparkles-outline" size={18} color={Colors.blueDark} />
+              <Text style={{ color: Colors.blueDark, fontWeight: 'bold', fontSize: 15 }}>Generate Magic Draft</Text>
             </ScaleBounce>
             <ScaleBounce
-              style={{ backgroundColor: 'rgba(255,255,255,0.12)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.2)', padding: 14, borderRadius: 12, alignItems: 'center', marginTop: 10 }}
+              style={{ backgroundColor: 'rgba(255,255,255,0.12)', borderWidth: 1, borderColor: 'rgba(255,255,255,0.2)', padding: 14, borderRadius: 12, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 6, marginTop: 10 }}
               onPress={() => router.push({ pathname: '/scholarship/interview', params: { scholarshipId: scholarship.id } })}
             >
-              <Text style={{ color: Colors.white, fontWeight: 'bold', fontSize: 15 }}>Practice Interview 🎤</Text>
+              <Ionicons name="mic-outline" size={18} color={Colors.white} />
+              <Text style={{ color: Colors.white, fontWeight: 'bold', fontSize: 15 }}>Practice Interview</Text>
             </ScaleBounce>
           </View>
 
           <View style={[sdStyles.section, { borderBottomWidth: 0 }]}>
             <ScaleBounce
-              style={sdStyles.storiesBtn}
+              style={[sdStyles.storiesBtn, { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 }]}
               onPress={() => router.push({ pathname: '/success-stories', params: { scholarshipName: scholarship.name } })}
             >
-              <Text style={sdStyles.storiesBtnText}>🏆 Read success stories</Text>
+              <Ionicons name="trophy-outline" size={18} color={Colors.blue} />
+              <Text style={sdStyles.storiesBtnText}>Read success stories</Text>
             </ScaleBounce>
             <Text style={sdStyles.linkSubtext}>See how past Eagle Pathway students won this scholarship.</Text>
           </View>

@@ -3,6 +3,7 @@ import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, 
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { format } from 'date-fns';
+import { Ionicons } from '@expo/vector-icons';
 import { Colors, Typography, Spacing, Radius, CommonStyles } from '@/utils/theme';
 import { EmptyState, ErrorState, Avatar, Skeleton } from '@/components/common';
 import { useParentStore } from '@/store/parentStore';
@@ -85,15 +86,23 @@ export default function ChildrenSessionsScreen() {
                     </Text>
                   </View>
                 </View>
-                <Text style={styles.detail}>📅 {format(new Date(b.session_date), 'MMM d, yyyy')} · {b.session_time}</Text>
-                <Text style={styles.detail}>🕐 {b.duration_hours}h · ETB {b.total_amount}</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 6 }}>
+                  <Ionicons name="calendar-outline" size={14} color={Colors.textSecondary} />
+                  <Text style={styles.detail}>{format(new Date(b.session_date), 'MMM d, yyyy')} · {b.session_time}</Text>
+                </View>
+
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 2 }}>
+                  <Ionicons name="time-outline" size={14} color={Colors.textSecondary} />
+                  <Text style={styles.detail}>{b.duration_hours}h · ETB {b.total_amount}</Text>
+                </View>
 
                 <TouchableOpacity
                   style={styles.payBtn}
                   onPress={() => router.push({ pathname: '/packages', params: { amount: b.total_amount, type: 'tutor_booking' } })}
                   activeOpacity={0.85}
                 >
-                  <Text style={styles.payBtnText}>💳 Pay Session (ETB {b.total_amount})</Text>
+                  <Ionicons name="card-outline" size={16} color={Colors.white} style={{ marginRight: 6 }} />
+                  <Text style={styles.payBtnText}>Pay Session (ETB {b.total_amount})</Text>
                 </TouchableOpacity>
               </View>
             );
@@ -131,7 +140,9 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.blue,
     borderRadius: Radius.md,
     paddingVertical: 10,
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
   },
   payBtnText: {
     color: Colors.white,

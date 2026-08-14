@@ -14,6 +14,7 @@ import { paymentsService } from '@/services/payments';
 import { useAuthStore } from '@/store/authStore';
 import { useScholarshipStore } from '@/store/scholarshipStore';
 import { useDocumentStore } from '@/store/documentStore';
+import { Ionicons } from '@expo/vector-icons';
 import { PACKAGE_PRICING, formatEtb } from '@/constants/packages';
 import type { PackageTier, DocumentType } from '@/types';
 import { showError } from '@/utils/errorHandler';
@@ -237,10 +238,11 @@ export function ApplyScreen() {
             </View>
 
             <TouchableOpacity 
-              style={{ marginTop: Spacing.lg, alignSelf: 'center' }}
+              style={{ marginTop: Spacing.lg, alignSelf: 'center', flexDirection: 'row', alignItems: 'center', gap: 6 }}
               onPress={() => router.push('/(tabs)/profile')}
             >
-              <Text style={{ color: Colors.blue, fontWeight: 'bold' }}>✏️ Edit Profile Info</Text>
+              <Ionicons name="pencil-outline" size={16} color={Colors.blue} />
+              <Text style={{ color: Colors.blue, fontWeight: 'bold' }}>Edit Profile Info</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -248,7 +250,7 @@ export function ApplyScreen() {
         {step === 2 && (
           <>
             <View style={applyStyles.successBanner}>
-              <Text style={{ color: Colors.green, fontSize: 16 }}>✓</Text>
+              <Ionicons name="checkmark-circle" size={18} color={Colors.green} />
               <Text style={applyStyles.successText}>Personal info collected — step 1 complete!</Text>
             </View>
             <Text style={CommonStyles.sectionTitle}>Upload Your Documents</Text>
@@ -273,15 +275,15 @@ export function ApplyScreen() {
               return (
                 <TouchableOpacity key={doc} style={[applyStyles.docRow, !uploaded && applyStyles.docRowMissing]} onPress={() => !uploaded && handlePickAndUpload(doc)} activeOpacity={0.8}>
                   <View style={[applyStyles.docIcon, { backgroundColor: uploaded ? Colors.blueLight : Colors.orangeLight }]}>
-                    <Text style={{ fontSize: 16 }}>{uploaded ? '📄' : '📎'}</Text>
+                    <Ionicons name={uploaded ? "document-text-outline" : "attach-outline"} size={18} color={uploaded ? Colors.blue : Colors.orange} />
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={[applyStyles.docName, !uploaded && { color: Colors.orange }]}>{doc}</Text>
                     <Text style={[applyStyles.docMeta, !uploaded && { color: Colors.orange }]}>{uploaded ? 'Uploaded ✓' : 'Tap to upload — Required'}</Text>
                   </View>
                   {uploaded
-                    ? <View style={applyStyles.checkCircle}><Text style={{ fontSize: 10, color: Colors.green }}>✓</Text></View>
-                    : <View style={applyStyles.crossCircle}><Text style={{ fontSize: 10, color: Colors.orange }}>!</Text></View>}
+                    ? <View style={applyStyles.checkCircle}><Ionicons name="checkmark" size={12} color={Colors.green} /></View>
+                    : <View style={applyStyles.crossCircle}><Ionicons name="alert" size={12} color={Colors.orange} /></View>}
                 </TouchableOpacity>
               );
             })}
@@ -306,7 +308,7 @@ export function ApplyScreen() {
 
             <View style={{ flexDirection: 'row', gap: Spacing.sm, marginTop: Spacing.md }}>
               <Button 
-                title="🚀 AI Starter" 
+                title="AI Starter" 
                 variant="outline" 
                 fullWidth={false}
                 onPress={handleGenerateStarter}
@@ -314,7 +316,7 @@ export function ApplyScreen() {
                 style={{ flex: 1 }}
               />
               <Button 
-                title="✨ Get AI Feedback" 
+                title="Get AI Feedback" 
                 variant="outline" 
                 fullWidth={false}
                 onPress={async () => {
@@ -331,7 +333,10 @@ export function ApplyScreen() {
             </View>
             
             <View style={applyStyles.aiTip}>
-              <Text style={applyStyles.aiTipTitle}>💡 Pro Tip & Policy</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                <Ionicons name="bulb-outline" size={16} color={Colors.goldDark} />
+                <Text style={applyStyles.aiTipTitle}>Pro Tip & Policy</Text>
+              </View>
               <Text style={applyStyles.aiTipText}>AI starters provide motivation and structure based on your profile info. Direct copying is not allowed for final submissions — personalize it in your authentic voice!</Text>
             </View>
           </View>

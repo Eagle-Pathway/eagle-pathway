@@ -13,6 +13,7 @@ import { useAuthStore } from '@/store/authStore';
 import { showError } from '@/utils/errorHandler';
 import { useDocumentStore } from '@/store/documentStore';
 import { scholarshipsService } from '@/services/scholarships';
+import { Ionicons } from '@expo/vector-icons';
 import type { DocumentType, Document } from '@/types';
 
 import { withTimeout } from '@/utils/asyncUtils';
@@ -58,10 +59,10 @@ export function DocumentsScreen() {
   
   const hasDoc = (type: DocumentType) => (documents || []).some(d => d.document_type === type);
 
-  const DOC_EMOJIS: Record<string, string> = {
-    degree_certificate: '🎓', transcript: '📋', passport: '🪪',
-    cv: '📝', ielts_certificate: '📄', reference_letter: '✉️', 
-    sop: '✍️', other: '📁',
+  const DOC_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
+    degree_certificate: 'school-outline', transcript: 'clipboard-outline', passport: 'card-outline',
+    cv: 'document-text-outline', ielts_certificate: 'ribbon-outline', reference_letter: 'mail-outline', 
+    sop: 'create-outline', other: 'folder-outline',
   };
 
   const docOfType = (type: DocumentType) => (documents || []).find(d => d.document_type === type);
@@ -110,7 +111,7 @@ export function DocumentsScreen() {
     <SafeAreaView style={CommonStyles.screenBg} edges={['top', 'bottom']}>
       <View style={docStyles.header}>
         <TouchableOpacity style={docStyles.backBtn} onPress={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)/home'))} activeOpacity={0.8} accessibilityRole="button" accessibilityLabel="Go back">
-          <Text style={{ fontSize: 20, color: Colors.text }}>←</Text>
+          <Ionicons name="arrow-back" size={20} color={Colors.text} />
         </TouchableOpacity>
         <Text style={docStyles.title}>Document Vault</Text>
         <TouchableOpacity style={docStyles.mainUpload} onPress={() => handleUploadType('other')} activeOpacity={0.8}>
@@ -156,7 +157,11 @@ export function DocumentsScreen() {
                     else handleUploadType(item.type);
                   }}
                 >
-                  <Text style={docStyles.checkIcon}>{isUploading ? '⏳' : uploaded ? '✅' : '⬆️'}</Text>
+                  <Ionicons 
+                    name={isUploading ? 'time-outline' : uploaded ? 'checkmark-circle' : 'cloud-upload-outline'} 
+                    size={18} 
+                    color={uploaded ? Colors.green : Colors.blue} 
+                  />
                   <Text style={[docStyles.checkLabel, uploaded && docStyles.checkLabelActive]}>{item.label}</Text>
                 </TouchableOpacity>
               );
@@ -195,7 +200,7 @@ export function DocumentsScreen() {
           <ErrorState subtitle="We couldn't load your documents. Check your connection and retry." onRetry={load} />
         ) : filteredDocs.length === 0 ? (
           <View style={docStyles.empty}>
-            <Text style={{ fontSize: 40, marginBottom: 10 }}>📂</Text>
+            <Ionicons name="folder-open-outline" size={48} color={Colors.textSecondary} style={{ marginBottom: 10 }} />
             <Text style={docStyles.emptyTitle}>No {selectedCategory} documents</Text>
             <Text style={docStyles.emptySub}>Upload your files to keep your applications ready.</Text>
           </View>
@@ -210,7 +215,11 @@ export function DocumentsScreen() {
                 onLongPress={() => confirmDelete(doc)}
               >
                 <View style={[docStyles.docIcon, { backgroundColor: doc.status === 'approved' ? Colors.greenLight : doc.status === 'rejected' ? Colors.redLight : Colors.blueLight }]}>
-                  <Text style={{ fontSize: 18 }}>{DOC_EMOJIS[doc.document_type] || '📄'}</Text>
+                  <Ionicons 
+                    name={DOC_ICONS[doc.document_type] || 'document-text-outline'} 
+                    size={22} 
+                    color={doc.status === 'approved' ? Colors.green : doc.status === 'rejected' ? Colors.red : Colors.blue} 
+                  />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={docStyles.docName} numberOfLines={1}>{doc.file_name}</Text>
