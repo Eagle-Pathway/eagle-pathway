@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
-import { DollarSign, TrendingUp, Wallet, Loader2, Banknote } from 'lucide-react';
+import { DollarSign, TrendingUp, Wallet, Loader2, Banknote, Eye, CheckCircle, XCircle, ExternalLink, ShieldCheck, Filter } from 'lucide-react';
 import { TableSkeleton } from '@/components/ui/TableSkeleton';
 
 interface TutorFinancials {
@@ -21,6 +21,8 @@ export default function FinancePage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [activeTab, setActiveTab] = useState<'balances' | 'transactions' | 'receipts' | 'payouts'>('balances');
+  const [receiptFilter, setReceiptFilter] = useState<'all' | 'manual_review' | 'verified' | 'rejected'>('all');
+  const [selectedReceiptModal, setSelectedReceiptModal] = useState<any | null>(null);
   const [payments, setPayments] = useState<any[]>([]);
   const [payoutRequests, setPayoutRequests] = useState<any[]>([]);
   const [notification, setNotification] = useState<{type: 'error' | 'success' | 'info'; message: string} | null>(null);
@@ -86,31 +88,45 @@ export default function FinancePage() {
 
   const handleVerifyReceipt = async (paymentId: string, status: 'approved' | 'rejected') => {
     const { data: authData } = await supabase.auth.getUser();
+    const verificationStatus = status === 'approved' ? 'verified' : 'rejected';
+
     const { error } = await supabase
       .from('payments')
       .update({
-        status,
-        admin_notes: status === 'rejected' ? 'Invalid receipt. Please try again.' : null,
+        status: status === 'approved' ? 'completed' : 'failed',
+        verification_status: verificationStatus,
+        verified_at: new Date().toISOString(),
+        admin_notes: status === 'rejected' ? 'Invalid or unverified receipt. Please check details and try again.' : 'Manually verified and approved by admin.',
         reviewed_by: authData.user?.id || null,
         reviewed_at: new Date().toISOString(),
       })
       .eq('id', paymentId);
     
     if (!error) {
-      setPayments(prev => prev.map(p => p.id === paymentId ? { ...p, status } : p));
-      // Let the student know their receipt was reviewed (best-effort).
+      setPayments(prev => prev.map(p => p.id === paymentId ? { 
+        ...p, 
+        status: status === 'approved' ? 'completed' : 'failed',
+        verification_status: verificationStatus 
+      } : p));
+      
+      if (selectedReceiptModal?.id === paymentId) {
+        setSelectedReceiptModal(null);
+      }
+
+      // Notify the student
       const payment = payments.find(p => p.id === paymentId);
       if (payment?.user_id) {
         await supabase.from('notifications').insert({
           user_id: payment.user_id,
           type: 'application_update',
-          title: status === 'approved' ? 'Payment approved ✅' : 'Payment needs attention',
+          title: status === 'approved' ? 'Payment Verified 100% ✅' : 'Payment Verification Issue ⚠️',
           body: status === 'approved'
-            ? 'Your payment was verified — your package is now active.'
-            : "We couldn't verify your payment receipt. Please re-submit a valid one.",
+            ? 'Your bank payment receipt has been verified by the admin team. Your package is now 100% active!'
+            : "Your payment receipt could not be verified with the bank. Please check your transaction details and re-submit.",
         });
       }
-      showNotification('success', `Receipt ${status}.`);
+      showNotification('success', `Payment receipt marked as ${verificationStatus}.`);
+      fetchData();
       return;
     }
 
@@ -391,46 +407,213 @@ export default function FinancePage() {
 
       {activeTab === 'receipts' && (
         <div className="bg-white rounded-2xl shadow-sm border overflow-hidden">
-          <div className="p-4 border-b font-bold">Manual Payments</div>
+          {/* Receipts Filter Bar */}
+          <div className="p-4 border-b flex flex-wrap justify-between items-center gap-4 bg-gray-50/50">
+            <div>
+              <h2 className="font-bold text-gray-900 text-lg">Payment Receipts & Verification Queue</h2>
+              <p className="text-xs text-gray-500">Inspect bank screenshots, review transaction telemetry, and approve/reject payments.</p>
+            </div>
+            
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setReceiptFilter('all')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${receiptFilter === 'all' ? 'bg-gray-900 text-white' : 'bg-white border text-gray-600 hover:bg-gray-50'}`}
+              >
+                All ({payments.length})
+              </button>
+              <button
+                onClick={() => setReceiptFilter('manual_review')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-1 ${receiptFilter === 'manual_review' ? 'bg-amber-600 text-white' : 'bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100'}`}
+              >
+                Pending Review ⏳ ({payments.filter(p => p.verification_status === 'manual_review' || p.status === 'pending').length})
+              </button>
+              <button
+                onClick={() => setReceiptFilter('verified')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-1 ${receiptFilter === 'verified' ? 'bg-green-600 text-white' : 'bg-green-50 text-green-700 border border-green-200 hover:bg-green-100'}`}
+              >
+                Verified 100% ✅ ({payments.filter(p => p.verification_status === 'verified' || p.status === 'completed' || p.status === 'approved').length})
+              </button>
+              <button
+                onClick={() => setReceiptFilter('rejected')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition flex items-center gap-1 ${receiptFilter === 'rejected' ? 'bg-red-600 text-white' : 'bg-red-50 text-red-700 border border-red-200 hover:bg-red-100'}`}
+              >
+                Rejected ❌ ({payments.filter(p => p.verification_status === 'rejected' || p.status === 'failed').length})
+              </button>
+            </div>
+          </div>
+
           <table className="w-full">
-            <thead className="bg-gray-50">
+            <thead className="bg-gray-50 border-b">
               <tr>
-                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">Date</th>
-                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">Student</th>
-                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">Amount</th>
-                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">Status</th>
-                <th className="px-4 py-2"></th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Date & Provider</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Student</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Transaction Ref ID</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Amount</th>
+                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Verification Status</th>
+                <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Screenshot</th>
+                <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y">
+            <tbody className="divide-y divide-gray-100">
               {loading ? (
-                <TableSkeleton cols={5} rows={5} avatarCol={false} />
+                <TableSkeleton cols={7} rows={5} avatarCol={false} />
               ) : payments.length === 0 ? (
-                <tr><td colSpan={5} className="px-6 py-10 text-center text-sm text-gray-500">No payments found.</td></tr>
-              ) : payments.map((p) => (
-                <tr key={p.id}>
-                  <td className="px-4 py-3">
-                    <div>{new Date(p.created_at).toLocaleDateString()}</div>
-                    <div className="text-xs text-gray-500">{p.method}</div>
-                  </td>
-                  <td className="px-4 py-3 font-medium">{p.user?.full_name}</td>
-                  <td className="px-4 py-3 font-bold">{p.amount?.toLocaleString()} ETB</td>
-                  <td className="px-4 py-3">
-                    {p.status === 'pending' ? (
-                      <div className="flex gap-1">
-                        <button onClick={() => handleVerifyReceipt(p.id, 'rejected')} className="px-2 py-1 bg-red-50 text-red-600 text-xs rounded">Reject</button>
-                        <button onClick={() => handleVerifyReceipt(p.id, 'approved')} className="px-2 py-1 bg-green-50 text-green-700 text-xs rounded">Approve</button>
-                      </div>
-                    ) : (
-                      <span className={`px-2 py-1 text-xs rounded-full ${p.status === 'approved' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                        {p.status}
-                      </span>
-                    )}
-                  </td>
-                </tr>
-              ))}
+                <tr><td colSpan={7} className="px-6 py-12 text-center text-sm text-gray-500">No payment receipts found.</td></tr>
+              ) : payments
+                .filter(p => {
+                  if (receiptFilter === 'manual_review') return p.verification_status === 'manual_review' || p.status === 'pending';
+                  if (receiptFilter === 'verified') return p.verification_status === 'verified' || p.status === 'completed' || p.status === 'approved';
+                  if (receiptFilter === 'rejected') return p.verification_status === 'rejected' || p.status === 'failed';
+                  return true;
+                })
+                .map((p) => {
+                  const isVerified = p.verification_status === 'verified' || p.status === 'completed' || p.status === 'approved';
+                  const isRejected = p.verification_status === 'rejected' || p.status === 'failed';
+                  const isPending = !isVerified && !isRejected;
+
+                  return (
+                    <tr key={p.id} className="hover:bg-gray-50/80 transition">
+                      <td className="px-4 py-3">
+                        <div className="text-sm font-semibold text-gray-900">{new Date(p.created_at).toLocaleDateString()}</div>
+                        <div className="text-xs text-gray-500 uppercase font-medium mt-0.5">{p.method}</div>
+                      </td>
+
+                      <td className="px-4 py-3">
+                        <div className="text-sm font-semibold text-gray-900">{p.user?.full_name || 'Student'}</div>
+                        <div className="text-xs text-gray-500">{p.user?.phone || 'N/A'}</div>
+                      </td>
+
+                      <td className="px-4 py-3">
+                        <span className="font-mono text-xs bg-gray-100 text-gray-800 px-2 py-1 rounded border border-gray-200 font-bold">
+                          {p.transaction_id || 'N/A'}
+                        </span>
+                      </td>
+
+                      <td className="px-4 py-3 text-sm font-bold text-gray-900">
+                        {p.amount?.toLocaleString()} ETB
+                      </td>
+
+                      <td className="px-4 py-3">
+                        {isVerified ? (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-bold rounded-full bg-green-100 text-green-800 border border-green-200">
+                            <ShieldCheck className="w-3.5 h-3.5" /> Verified 100%
+                          </span>
+                        ) : isRejected ? (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-bold rounded-full bg-red-100 text-red-800 border border-red-200">
+                            <XCircle className="w-3.5 h-3.5" /> Rejected
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-bold rounded-full bg-amber-100 text-amber-800 border border-amber-200">
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" /> Pending Review
+                          </span>
+                        )}
+                      </td>
+
+                      <td className="px-4 py-3 text-center">
+                        {p.receipt_url ? (
+                          <button
+                            onClick={() => setSelectedReceiptModal(p)}
+                            className="inline-flex items-center gap-1 px-2.5 py-1 bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200 text-xs font-bold rounded-lg transition"
+                          >
+                            <Eye className="w-3.5 h-3.5" /> View Receipt
+                          </button>
+                        ) : (
+                          <span className="text-xs text-gray-400 font-italic">No Image</span>
+                        )}
+                      </td>
+
+                      <td className="px-4 py-3 text-right">
+                        <div className="flex gap-1.5 justify-end">
+                          <button
+                            onClick={() => handleVerifyReceipt(p.id, 'approved')}
+                            disabled={isVerified}
+                            className="px-2.5 py-1 bg-green-600 hover:bg-green-700 text-white text-xs font-bold rounded-lg disabled:opacity-40 transition"
+                          >
+                            Approve
+                          </button>
+                          <button
+                            onClick={() => handleVerifyReceipt(p.id, 'rejected')}
+                            disabled={isRejected}
+                            className="px-2.5 py-1 bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 text-xs font-bold rounded-lg disabled:opacity-40 transition"
+                          >
+                            Reject
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {/* Lightbox Receipt Image Modal */}
+      {selectedReceiptModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="fixed inset-0 bg-black/70 backdrop-blur-sm" onClick={() => setSelectedReceiptModal(null)} />
+          <div className="relative z-10 w-full max-w-2xl bg-white rounded-2xl p-6 shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
+            <div className="flex justify-between items-center mb-4 border-b pb-3">
+              <div>
+                <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                  <ShieldCheck className="w-5 h-5 text-blue-600" />
+                  Receipt Verification Preview
+                </h3>
+                <p className="text-xs text-gray-500">Student: {selectedReceiptModal.user?.full_name} ({selectedReceiptModal.user?.phone})</p>
+              </div>
+              <button 
+                onClick={() => setSelectedReceiptModal(null)}
+                className="text-gray-400 hover:text-gray-600 font-bold text-xl px-2"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto space-y-4">
+              <div className="bg-gray-900 rounded-xl p-2 flex justify-center items-center max-h-[450px]">
+                {selectedReceiptModal.receipt_url ? (
+                  <img
+                    src={selectedReceiptModal.receipt_url}
+                    alt="Receipt Screenshot"
+                    className="max-h-[420px] object-contain rounded-lg shadow-md"
+                  />
+                ) : (
+                  <div className="text-gray-400 py-12 text-sm">No receipt image attached.</div>
+                )}
+              </div>
+
+              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-xs space-y-2">
+                <div className="font-bold text-blue-900 text-sm mb-1">Receipt Telemetry Data</div>
+                <div className="grid grid-cols-2 gap-2 text-gray-700">
+                  <div><span className="font-semibold">Provider:</span> {selectedReceiptModal.method}</div>
+                  <div><span className="font-semibold">Transaction Ref:</span> <span className="font-mono bg-white px-1 py-0.5 rounded border">{selectedReceiptModal.transaction_id}</span></div>
+                  <div><span className="font-semibold">Amount:</span> {selectedReceiptModal.amount?.toLocaleString()} ETB</div>
+                  <div><span className="font-semibold">Verification Status:</span> {selectedReceiptModal.verification_status || selectedReceiptModal.status}</div>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex gap-3 mt-4 pt-3 border-t">
+              <button
+                onClick={() => setSelectedReceiptModal(null)}
+                className="px-4 py-2 border rounded-xl text-sm font-semibold text-gray-700 hover:bg-gray-50"
+              >
+                Close
+              </button>
+              <button
+                onClick={() => handleVerifyReceipt(selectedReceiptModal.id, 'rejected')}
+                className="flex-1 px-4 py-2 bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 text-sm font-bold rounded-xl"
+              >
+                Reject Receipt ❌
+              </button>
+              <button
+                onClick={() => handleVerifyReceipt(selectedReceiptModal.id, 'approved')}
+                className="flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-bold rounded-xl shadow-sm"
+              >
+                Approve & Verify ✅
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
