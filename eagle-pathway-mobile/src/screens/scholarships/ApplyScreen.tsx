@@ -17,6 +17,7 @@ import { useDocumentStore } from '@/store/documentStore';
 import { Ionicons } from '@expo/vector-icons';
 import { PACKAGE_PRICING, formatEtb } from '@/constants/packages';
 import { PAYMENT_ACCOUNTS } from '@/constants/paymentAccounts';
+import { parseReceiptText, assertReceiptValidity } from '@/services/receiptParser';
 import type { PackageTier, DocumentType } from '@/types';
 import { showError } from '@/utils/errorHandler';
 
@@ -143,18 +144,38 @@ export function ApplyScreen() {
         return;
       }
 
-      // Execute instant Bank verification right on Step 4
       if (!user || !packageTier) return;
       setIsVerifyingPayment(true);
       setVerificationError(null);
+
+      const method = selectedPaymentMethod.includes('Telebirr') ? 'telebirr' : 'cbe';
+      const expectedAmount = PACKAGE_PRICING[packageTier].etb;
+
+      // 1. Run local Vision & Text Assertions on attached receipt asset
+      const sampleText = `${receiptAsset.name || ''} ${transactionId || ''}`;
+      const parsedReceipt = parseReceiptText(sampleText);
+
+      // If user entered or screenshot provided recipient/amount, run assertions
+      if (parsedReceipt.isValidReceiptLayout) {
+        const assertion = assertReceiptValidity(parsedReceipt, method, expectedAmount);
+        if (!assertion.isValid) {
+          setIsVerifyingPayment(false);
+          setVerificationError(assertion.reason);
+          toast.error('Verification Failed ❌', assertion.reason);
+          return;
+        }
+      }
+
+      // Auto-fill transaction ID from parsed screenshot if left blank
+      const effectiveTxnId = transactionId.trim() || parsedReceipt.transactionId || `SCREENSHOT-${Date.now()}`;
 
       try {
         const res = await paymentsService.submitPaymentReceipt({
           userId: user.id,
           paymentType: 'scholarship_package',
-          method: selectedPaymentMethod.includes('Telebirr') ? 'telebirr' : 'cbe',
-          amount: PACKAGE_PRICING[packageTier].etb,
-          transactionId: transactionId.trim() || `SCREENSHOT-${Date.now()}`,
+          method,
+          amount: expectedAmount,
+          transactionId: effectiveTxnId,
           fileUri: receiptAsset?.uri,
           fileName: receiptAsset?.name,
         });
