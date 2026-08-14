@@ -9,6 +9,7 @@ import { useLocalSearchParams, router } from 'expo-router';
 import { Colors, Typography, Spacing, Radius, CommonStyles } from '@/utils/theme';
 import { useScholarshipStore } from '@/store/scholarshipStore';
 import { useAuthStore } from '@/store/authStore';
+import { Ionicons } from '@expo/vector-icons';
 import { Button } from '@/components/common';
 import { KeyboardAwareScreen } from '@/components/KeyboardAwareScreen';
 
@@ -97,7 +98,7 @@ export default function SOPEditorScreen() {
                 <ActivityIndicator size="small" color={Colors.white} />
               ) : (
                 <>
-                  <Text style={{ fontSize: 16 }}>✨</Text>
+                  <Ionicons name="sparkles" size={16} color={Colors.white} />
                   <Text style={styles.aiBtnText}>AI Review</Text>
                 </>
               )}
@@ -116,7 +117,10 @@ export default function SOPEditorScreen() {
         </View>
         
         <View style={styles.tipsBox}>
-          <Text style={styles.tipsTitle}>💡 Eagle Advice</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+            <Ionicons name="bulb-outline" size={16} color={Colors.goldDark} />
+            <Text style={styles.tipsTitle}>Eagle Advice</Text>
+          </View>
           <Text style={styles.tipsText}>
             Focus on your "Why". Explain how this specific scholarship connects your past achievements to your future goals in Ethiopia.
           </Text>
@@ -128,9 +132,12 @@ export default function SOPEditorScreen() {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>✨ Eagle AI Audit</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                <Ionicons name="sparkles" size={18} color={Colors.gold} />
+                <Text style={styles.modalTitle}>Eagle AI Audit</Text>
+              </View>
               <TouchableOpacity onPress={() => setShowAiModal(false)}>
-                <Text style={{ fontSize: 24, color: Colors.textSecondary }}>✕</Text>
+                <Ionicons name="close" size={20} color={Colors.textSecondary} />
               </TouchableOpacity>
             </View>
 

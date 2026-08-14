@@ -278,7 +278,7 @@ export function TrackerScreen({ hideHeader = false }: { hideHeader?: boolean }) 
                     <Ionicons name="chatbubble-outline" size={13} color={Colors.blue} />
                   </View>
                 )}
-                {app.status === 'accepted' && <Pill label="ACCEPTED! 🎉" variant="green" />}
+                {app.status === 'accepted' && <Pill label="ACCEPTED" variant="green" />}
               </View>
 
               <View style={trackerStyles.statusSection}>
@@ -290,7 +290,10 @@ export function TrackerScreen({ hideHeader = false }: { hideHeader?: boolean }) 
               </View>
               <View style={trackerStyles.footerRow}>
                 <Text style={trackerStyles.footerTxt}>Last update: {new Date(app.updated_at).toLocaleDateString()}</Text>
-                <Text style={[trackerStyles.footerTxt, { color: Colors.blue, fontWeight: 'bold' }]}>View Details ›</Text>
+                <View style={trackerStyles.viewDetailBtn}>
+                  <Text style={trackerStyles.viewDetailBtnText}>View Details</Text>
+                  <Ionicons name="chevron-forward" size={12} color={Colors.white} />
+                </View>
               </View>
             </ScaleBounce>
           ))}
@@ -355,4 +358,18 @@ const trackerStyles = StyleSheet.create({
   aiActionSub: { fontSize: 11, color: Colors.textSecondary, marginTop: 2 },
   aiActionBtn: { backgroundColor: Colors.blue, paddingHorizontal: 16, paddingVertical: 10, borderRadius: Radius.lg },
   aiActionBtnText: { color: Colors.white, fontWeight: Typography.bold, fontSize: 13 },
+  viewDetailBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: Colors.blue,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: Radius.md,
+  },
+  viewDetailBtnText: {
+    color: Colors.white,
+    fontWeight: Typography.bold,
+    fontSize: 11,
+  },
 });
