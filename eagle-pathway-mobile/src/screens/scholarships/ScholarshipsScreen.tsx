@@ -13,6 +13,7 @@ import { Scholarship } from '@/types';
 import { format } from 'date-fns';
 import { Ionicons } from '@expo/vector-icons';
 import { getFlagEmoji } from '@eagle-pathway/shared';
+import { daysUntil, deadlineLabel } from '@/utils/deadlines';
 
 const DEGREE_FILTERS = ['All', 'Undergraduate', 'Masters', 'PhD', 'Fully Funded'];
 
@@ -191,6 +192,8 @@ export default function ScholarshipsScreen({ hideBack = false }: { hideBack?: bo
 
 export function ScholarshipCard({ scholarship: s, isSaved, onSave }: { scholarship: Scholarship; isSaved: boolean; onSave: () => void }) {
   const freshness = freshnessTone(s.source_status);
+  const daysLeft = s.deadline ? daysUntil(s.deadline) : NaN;
+  const isUrgent = !Number.isNaN(daysLeft) && daysLeft >= 0 && daysLeft <= 14;
 
   return (
     <ScaleBounce
@@ -244,10 +247,10 @@ export function ScholarshipCard({ scholarship: s, isSaved, onSave }: { scholarsh
         <View style={styles.cardFooter}>
           <View style={styles.metaRow}>
             {s.deadline && (
-              <View style={[styles.metaPill, { backgroundColor: Colors.redLight }]}>
-                <Ionicons name="time-outline" size={12} color={Colors.red} style={{ marginRight: 4 }} />
-                <Text style={[styles.metaText, { color: Colors.red }]}>
-                  {format(new Date(s.deadline), 'MMM d')}
+              <View style={[styles.metaPill, { backgroundColor: isUrgent ? Colors.redLight : '#FEF3C7' }]}>
+                <Ionicons name={isUrgent ? "flame" : "time-outline"} size={12} color={isUrgent ? Colors.red : '#D97706'} style={{ marginRight: 4 }} />
+                <Text style={[styles.metaText, { color: isUrgent ? Colors.red : '#D97706', fontWeight: 'bold' }]}>
+                  {!Number.isNaN(daysLeft) && daysLeft >= 0 ? deadlineLabel(daysLeft) : format(new Date(s.deadline), 'MMM d')}
                 </Text>
               </View>
             )}

@@ -87,6 +87,14 @@ export default function ChildrenSessionsScreen() {
                 </View>
                 <Text style={styles.detail}>📅 {format(new Date(b.session_date), 'MMM d, yyyy')} · {b.session_time}</Text>
                 <Text style={styles.detail}>🕐 {b.duration_hours}h · ETB {b.total_amount}</Text>
+
+                <TouchableOpacity
+                  style={styles.payBtn}
+                  onPress={() => router.push({ pathname: '/packages', params: { amount: b.total_amount, type: 'tutor_booking' } })}
+                  activeOpacity={0.85}
+                >
+                  <Text style={styles.payBtnText}>💳 Pay Session (ETB {b.total_amount})</Text>
+                </TouchableOpacity>
               </View>
             );
           }}
@@ -118,4 +126,16 @@ const styles = StyleSheet.create({
   statusPill: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
   statusText: { fontSize: Typography.sm, fontWeight: Typography.semibold },
   detail: { fontSize: Typography.sm, color: Colors.textSecondary, marginTop: 4 },
+  payBtn: {
+    marginTop: Spacing.md,
+    backgroundColor: Colors.blue,
+    borderRadius: Radius.md,
+    paddingVertical: 10,
+    alignItems: 'center',
+  },
+  payBtnText: {
+    color: Colors.white,
+    fontWeight: Typography.bold,
+    fontSize: Typography.xs,
+  },
 });
