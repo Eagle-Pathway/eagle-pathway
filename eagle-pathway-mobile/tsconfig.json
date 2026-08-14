@@ -15,5 +15,6 @@
       "@eagle-pathway/shared": ["../packages/eagle-shared/src/index"],
       "@eagle-pathway/shared/*": ["../packages/eagle-shared/src/*"]
     }
-  }
+  },
+  "exclude": ["node_modules", "dist", "supabase/functions"]
 }

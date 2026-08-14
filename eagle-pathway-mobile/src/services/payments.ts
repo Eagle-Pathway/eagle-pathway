@@ -37,8 +37,8 @@ export const paymentsService = {
 
     if (signedError) throw new Error('Failed to secure receipt preview. ' + signedError.message);
 
-    // 2. Insert the pending payment record
-    const { data, error } = await supabase
+    // 2. Insert the payment record
+    const { data: paymentRecord, error } = await supabase
       .from('payments')
       .insert({
         user_id: params.userId,
@@ -49,15 +49,51 @@ export const paymentsService = {
         transaction_id: params.transactionId,
         receipt_path: filePath,
         receipt_url: signedData.signedUrl,
-        status: 'pending'
+        status: 'pending',
+        verification_status: 'pending_verification'
       })
       .select()
       .single();
 
     if (error) {
+      if (error.message.includes('unique_provider_reference') || error.code === '23505') {
+        throw new Error('This transaction reference ID has already been redeemed on Eagle Pathway.');
+      }
       throw new Error(`Failed to submit payment record. ${error.message}`);
     }
+
+    // 3. Invoke Server-Side Supabase Edge Function to Verify against Bank Source of Truth
+    try {
+      const { data: verificationResult, error: funcError } = await supabase.functions.invoke('verify-payment', {
+        body: {
+          payment_id: paymentRecord.id,
+          user_id: params.userId,
+          method: params.method,
+          transaction_id: params.transactionId,
+          amount: params.amount,
+        }
+      });
+
+      if (!funcError && verificationResult) {
+        return {
+          payment: paymentRecord,
+          verification: verificationResult as {
+            status: 'verified' | 'manual_review' | 'rejected';
+            reason: string;
+            bankRecord?: any;
+          }
+        };
+      }
+    } catch (e) {
+      console.warn('Edge function verification call fallback:', e);
+    }
     
-    return data;
+    return {
+      payment: paymentRecord,
+      verification: {
+        status: 'manual_review' as const,
+        reason: 'Receipt submitted successfully. Queued for fast admin verification.'
+      }
+    };
   }
 };

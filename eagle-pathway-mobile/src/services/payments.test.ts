@@ -5,6 +5,7 @@ const { mockSupabase, mockReadAsString } = vi.hoisted(() => ({
   mockSupabase: {
     from: vi.fn(),
     storage: { from: vi.fn() },
+    functions: { invoke: vi.fn() },
   },
   mockReadAsString: vi.fn(),
 }));
@@ -47,7 +48,7 @@ function mockStorage({
 function mockPaymentsInsert({
   data = { id: 'pay-1' },
   error = null,
-}: { data?: { id: string } | null; error?: { message: string } | null } = {}) {
+}: { data?: { id: string } | null; error?: { message: string; code?: string } | null } = {}) {
   const insert = vi.fn().mockReturnValue({
     select: vi.fn().mockReturnValue({
       single: vi.fn().mockResolvedValue({ data, error }),
@@ -61,6 +62,10 @@ describe('paymentsService.submitPaymentReceipt', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockReadAsString.mockResolvedValue('BASE64DATA');
+    (mockSupabase.functions.invoke as ReturnType<typeof vi.fn>).mockResolvedValue({
+      data: { status: 'verified', reason: 'Verified with bank' },
+      error: null,
+    });
   });
 
   it('uploads the receipt, signs it, and inserts a pending payment record', async () => {
@@ -69,7 +74,8 @@ describe('paymentsService.submitPaymentReceipt', () => {
 
     const result = await paymentsService.submitPaymentReceipt(BASE_PARAMS);
 
-    expect(result).toEqual({ id: 'pay-1' });
+    expect(result.payment).toEqual({ id: 'pay-1' });
+    expect(result.verification.status).toBe('verified');
     expect(upload).toHaveBeenCalledWith(
       expect.stringContaining('user-1/'),
       'decoded:BASE64DATA',
@@ -110,10 +116,10 @@ describe('paymentsService.submitPaymentReceipt', () => {
 
   it('throws when the payment record insert fails', async () => {
     mockStorage();
-    mockPaymentsInsert({ data: null, error: { message: 'duplicate txn' } });
+    mockPaymentsInsert({ data: null, error: { message: 'duplicate txn', code: '23505' } });
 
     await expect(paymentsService.submitPaymentReceipt(BASE_PARAMS)).rejects.toThrow(
-      /Failed to submit payment record/,
+      /This transaction reference ID has already been redeemed/,
     );
   });
 });

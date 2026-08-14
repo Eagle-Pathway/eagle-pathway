@@ -359,12 +359,12 @@ export function ApplyScreen() {
 
               <Text style={applyStyles.paymentLabel}>Select Payment Method</Text>
               {[
-                { name: 'Telebirr', icon: '📱', disabled: false },
-                { name: 'Chapa (Card/Transfer)', icon: '💳', disabled: true },
-                { name: 'CBE Birr / Bank Transfer', icon: '🏦', disabled: false },
+                { name: 'Telebirr', icon: 'phone-portrait-outline', disabled: false },
+                { name: 'Chapa (Card/Transfer)', icon: 'card-outline', disabled: true },
+                { name: 'CBE Birr / Bank Transfer', icon: 'business-outline', disabled: false },
               ].map(pm => (
                 <TouchableOpacity key={pm.name} style={[applyStyles.methodRow, pm.disabled && { opacity: 0.45 }]} activeOpacity={0.8} disabled={pm.disabled} onPress={() => setSelectedPaymentMethod(pm.name)}>
-                  <Text style={{ fontSize: 18 }}>{pm.icon}</Text>
+                  <Ionicons name={pm.icon as any} size={20} color={Colors.blue} />
                   <Text style={applyStyles.methodName}>{pm.name}{pm.disabled ? '  ·  Coming soon' : ''}</Text>
                   {!pm.disabled && <View style={[applyStyles.radio, selectedPaymentMethod === pm.name && { borderColor: Colors.blue, borderWidth: 5 }]} />}
                 </TouchableOpacity>
@@ -372,15 +372,15 @@ export function ApplyScreen() {
 
               {(selectedPaymentMethod === 'Telebirr' || selectedPaymentMethod === 'CBE Birr / Bank Transfer') && (
                 <View style={{ marginTop: Spacing.lg }}>
-                  <Text style={{ fontSize: 14, fontWeight: 'bold', marginBottom: Spacing.xs }}>Transaction ID * (Required)</Text>
+                  <Text style={{ fontSize: 14, fontWeight: 'bold', marginBottom: Spacing.xs }}>Transaction Ref / Link * (Required)</Text>
                   <TextInput 
                     value={transactionId}
                     onChangeText={setTransactionId}
-                    placeholder="e.g. 7A8B9C0D"
-                    style={{ borderWidth: 1, borderColor: Colors.border, borderRadius: Radius.md, padding: Spacing.md, marginBottom: Spacing.md }}
+                    placeholder={selectedPaymentMethod === 'Telebirr' ? 'e.g. DHE0RRRPZO or receipt URL' : 'e.g. FT26222VM9M4 or receipt URL'}
+                    style={{ borderWidth: 1, borderColor: Colors.border, borderRadius: Radius.md, padding: Spacing.md, marginBottom: Spacing.md, backgroundColor: Colors.white }}
                   />
                   <Button 
-                    title={receiptAsset ? 'Receipt Attached ✅' : 'Upload Screenshot (Required)'} 
+                    title={receiptAsset ? 'Receipt Attached ✓' : 'Upload Screenshot (Optional)'} 
                     variant="outline"
                     onPress={async () => {
                       const result = await scholarshipsService.pickDocument();
@@ -390,8 +390,9 @@ export function ApplyScreen() {
                     }} 
                   />
                   <View style={applyStyles.paymentInfo}>
-                    <Text style={{ fontSize: 12, color: Colors.textSecondary }}>
-                      💡 A consultant will manually verify this receipt within 2 hours. Your package will then be activated!
+                    <Ionicons name="shield-checkmark-outline" size={16} color={Colors.blue} style={{ marginRight: 6 }} />
+                    <Text style={{ fontSize: 12, color: Colors.textSecondary, flex: 1 }}>
+                      Bank Source of Truth Verification: Your transaction will be validated directly against official {selectedPaymentMethod} records.
                     </Text>
                   </View>
                 </View>
