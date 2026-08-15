@@ -162,8 +162,8 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    const body: VerificationPayload = await req.json();
-    const { payment_id, user_id, method, transaction_id, amount: expectedAmount } = body;
+    const body: VerificationPayload & { receipt_url?: string; receipt_hash?: string } = await req.json();
+    const { payment_id, user_id, method, transaction_id, amount: expectedAmount, receipt_url, receipt_hash } = body;
 
     if (!transaction_id || !method) {
       return new Response(
@@ -173,9 +173,34 @@ serve(async (req) => {
     }
 
     let cleanTxnId = transaction_id.trim();
-    const isScreenshotOnly = cleanTxnId.toUpperCase().startsWith('SCREENSHOT');
+    let isScreenshotOnly = cleanTxnId.toUpperCase().startsWith('SCREENSHOT');
 
-    // 1. Screenshot-only Submission Handling (when Ref ID field is left blank)
+    // 1. Server-Side Screenshot OCR Auto-Extraction Engine
+    if (isScreenshotOnly && receipt_url) {
+      try {
+        const ocrResp = await fetch(`https://api.ocr.space/parse/imageurl?apikey=helloworld&url=${encodeURIComponent(receipt_url)}`);
+        if (ocrResp.ok) {
+          const ocrData = await ocrResp.json();
+          const parsedText = ocrData?.ParsedResults?.[0]?.ParsedText || '';
+          
+          // Regex search for CBE FT reference (e.g., FT26204HMHYF) or Telebirr reference (e.g., DHB2P3E7LW)
+          const ftMatch = parsedText.match(/FT[A-Z0-9]{10}/i);
+          const teleMatch = parsedText.match(/\b[A-Z0-9]{10}\b/i);
+
+          if (method === 'cbe' && ftMatch) {
+            cleanTxnId = ftMatch[0].toUpperCase();
+            isScreenshotOnly = false;
+          } else if (method === 'telebirr' && teleMatch && !teleMatch[0].startsWith('SCREENSHOT')) {
+            cleanTxnId = teleMatch[0].toUpperCase();
+            isScreenshotOnly = false;
+          }
+        }
+      } catch (ocrErr) {
+        console.warn('Server OCR fallback:', ocrErr);
+      }
+    }
+
+    // 2. Screenshot-only Handling (If OCR could not find Ref ID and user left field blank)
     if (isScreenshotOnly) {
       if (payment_id) {
         await supabase
@@ -197,7 +222,7 @@ serve(async (req) => {
       );
     }
 
-    // 2. Strict Syntax Regex Validation
+    // 3. Strict Syntax Regex Validation
     let isValidFormat = false;
 
     if (method === 'cbe') {
@@ -212,6 +237,9 @@ serve(async (req) => {
     }
 
     if (!isValidFormat) {
+      if (payment_id) {
+        await supabase.from('payments').update({ status: 'failed', verification_status: 'rejected' }).eq('id', payment_id);
+      }
       return new Response(
         JSON.stringify({
           status: 'rejected',
@@ -221,7 +249,7 @@ serve(async (req) => {
       );
     }
 
-    // 2. PostgreSQL Unique Constraint Check (Database Atomicity)
+    // 4. PostgreSQL Unique Constraint Check (Database Atomicity & Anti-Replay)
     const { data: existingPayment } = await supabase
       .from('payments')
       .select('id, user_id, status, verification_status')
@@ -230,6 +258,9 @@ serve(async (req) => {
       .maybeSingle();
 
     if (existingPayment && existingPayment.id !== payment_id) {
+      if (payment_id) {
+        await supabase.from('payments').update({ status: 'failed', verification_status: 'rejected' }).eq('id', payment_id);
+      }
       return new Response(
         JSON.stringify({
           status: 'rejected',
@@ -239,7 +270,7 @@ serve(async (req) => {
       );
     }
 
-    // 3. Direct Source-of-Truth Bank / Telecom Verification
+    // 5. Direct Source-of-Truth Bank / Telecom Verification
     let bankRecord: BankRecord;
     if (method === 'cbe') {
       bankRecord = await fetchCBEOfficialReceipt(cleanTxnId);
@@ -247,9 +278,8 @@ serve(async (req) => {
       bankRecord = await fetchTelebirrOfficialReceipt(cleanTxnId);
     }
 
-    // 4. Mandatory 3-Point Validation Assertion
-    // Check if bank record confirms SUCCESS, amount >= required, and recipient matches
-    const isAmountValid = bankRecord.amount === 0 || bankRecord.amount >= expectedAmount; // If amount parser extracted 0 due to HTML obfuscation, fall to manual review if status is SUCCESS
+    // 6. Strict 3-Point Validation Assertion & Fraud Prevention
+    const isAmountValid = bankRecord.amount === 0 || bankRecord.amount >= expectedAmount;
     const isRecipientValid = bankRecord.recipientName.includes(EAGLE_PATHWAY_NAME) || 
                              bankRecord.recipientName.includes(EAGLE_PATHWAY_CBE_SHORT_NAME) ||
                              bankRecord.recipientName.includes(EAGLE_PATHWAY_TELEBIRR_NAME) ||
@@ -259,24 +289,29 @@ serve(async (req) => {
     let finalDecisionStatus: 'verified' | 'manual_review' | 'rejected' = 'rejected';
     let decisionReason = '';
 
-    if (bankRecord.status === 'SUCCESS' && isAmountValid && isRecipientValid) {
-      finalDecisionStatus = 'verified';
-      decisionReason = 'Transaction confirmed 100% with official bank records.';
-    } else if (bankRecord.status === 'SUCCESS' && (!isAmountValid || !isRecipientValid)) {
-      finalDecisionStatus = 'manual_review';
-      decisionReason = 'Bank record found, but amount or account details queued for 1-tap admin check.';
+    if (bankRecord.status === 'SUCCESS') {
+      if (!isRecipientValid) {
+        finalDecisionStatus = 'rejected';
+        decisionReason = `Recipient account mismatch. Payment was sent to "${bankRecord.recipientName}" instead of official account (${EAGLE_PATHWAY_NAME}).`;
+      } else if (!isAmountValid) {
+        finalDecisionStatus = 'rejected';
+        decisionReason = `Insufficient payment amount. Paid ETB ${bankRecord.amount} is less than required fee ETB ${expectedAmount}.`;
+      } else {
+        finalDecisionStatus = 'verified';
+        decisionReason = 'Transaction confirmed 100% with official bank records.';
+      }
     } else {
-      // If portal returned NOT_FOUND or unreachable, fallback to manual review if receipt screenshot was uploaded
+      // If portal returned NOT_FOUND or unreachable, fallback to manual review for admin verification
       finalDecisionStatus = 'manual_review';
       decisionReason = 'Bank portal verification pending. Receipt queued for fast admin review.';
     }
 
-    // 5. Update Database Record with Telemetry
+    // 7. Update Database Record with Telemetry
     if (payment_id) {
       await supabase
         .from('payments')
         .update({
-          status: finalDecisionStatus === 'verified' ? 'approved' : 'pending',
+          status: finalDecisionStatus === 'verified' ? 'approved' : finalDecisionStatus === 'rejected' ? 'failed' : 'pending',
           verification_status: finalDecisionStatus,
           bank_verification_data: bankRecord,
           verified_at: finalDecisionStatus === 'verified' ? new Date().toISOString() : null,

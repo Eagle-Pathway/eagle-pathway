@@ -4,6 +4,31 @@ import { decode } from 'base64-arraybuffer';
 
 const SIGNED_URL_TTL_SECONDS = 60 * 60 * 24 * 7;
 
+/**
+ * Computes a SHA-256 fingerprint hash of string/image content to prevent duplicate receipt re-uploading
+ */
+async function computeImageHash(str: string): Promise<string> {
+  try {
+    if (typeof crypto !== 'undefined' && crypto.subtle) {
+      const encoder = new TextEncoder();
+      const data = encoder.encode(str);
+      const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+  } catch (e) {
+    console.warn('crypto.subtle fallback:', e);
+  }
+  
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    const char = str.charCodeAt(i);
+    hash = (hash << 5) - hash + char;
+    hash |= 0;
+  }
+  return `sha256_${Math.abs(hash)}_${str.length}`;
+}
+
 export const paymentsService = {
   async submitPaymentReceipt(params: {
     userId: string;
@@ -17,14 +42,16 @@ export const paymentsService = {
   }) {
     let filePath: string | null = null;
     let signedUrl: string | null = null;
+    let receiptHash: string | null = null;
 
-    // 1. Upload screenshot if user attached an image asset
+    // 1. Upload screenshot if user attached an image asset & compute image fingerprint
     if (params.fileUri && params.fileName) {
       const fileExt = params.fileName.split('.').pop() || 'png';
       filePath = `${params.userId}/${Date.now()}.${fileExt}`;
       
       const base64 = await FileSystem.readAsStringAsync(params.fileUri, { encoding: 'base64' });
-      
+      receiptHash = await computeImageHash(base64);
+
       const { error: uploadError } = await supabase.storage
         .from('receipts')
         .upload(filePath, decode(base64), {
@@ -42,7 +69,7 @@ export const paymentsService = {
       signedUrl = signedData.signedUrl;
     }
 
-    // 2. Insert the payment record into Supabase PostgreSQL
+    // 2. Insert the payment record into Supabase PostgreSQL (Enforcing Reference & Image Hash Uniqueness)
     const { data: paymentRecord, error } = await supabase
       .from('payments')
       .insert({
@@ -54,6 +81,7 @@ export const paymentsService = {
         transaction_id: params.transactionId,
         receipt_path: filePath,
         receipt_url: signedUrl,
+        receipt_hash: receiptHash,
         status: 'pending',
         verification_status: 'pending_verification'
       })
@@ -61,6 +89,9 @@ export const paymentsService = {
       .single();
 
     if (error) {
+      if (error.message.includes('idx_payments_receipt_hash')) {
+        throw new Error('This exact receipt screenshot has already been submitted on Eagle Pathway. Please do not submit duplicate receipts.');
+      }
       if (error.message.includes('unique_provider_reference') || error.code === '23505') {
         throw new Error('This transaction reference ID has already been redeemed on Eagle Pathway.');
       }
@@ -76,6 +107,8 @@ export const paymentsService = {
           method: params.method,
           transaction_id: params.transactionId,
           amount: params.amount,
+          receipt_url: signedUrl,
+          receipt_hash: receiptHash,
         }
       });
 
