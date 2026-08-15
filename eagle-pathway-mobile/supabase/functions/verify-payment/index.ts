@@ -47,6 +47,7 @@ interface BankRecord {
 /**
  * Direct Verification query against CBE Official Receipt Portals
  * Handles both new mbreciept.cbe.com.et (v2- tokens) and legacy apps.cbe.com.et:100 PDF links
+ * Circuit Breaker: Enforces strict 6-second timeout before falling back to manual review
  */
 async function fetchCBEOfficialReceipt(txnOrUrl: string): Promise<BankRecord> {
   let fetchUrl = '';
@@ -64,14 +65,19 @@ async function fetchCBEOfficialReceipt(txnOrUrl: string): Promise<BankRecord> {
     fetchUrl = `https://apps.cbe.com.et:100/?id=${extractedTxnId}${EAGLE_PATHWAY_ACCOUNT_SUFFIX}`;
   }
 
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 6000);
+
   try {
     const resp = await fetch(fetchUrl, {
       method: 'GET',
+      signal: controller.signal,
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) EaglePathwayServer/1.0',
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
       },
     });
+    clearTimeout(timeoutId);
 
     if (!resp.ok) {
       return { status: 'NOT_FOUND', amount: 0, recipientName: '', recipientAccount: '' };
@@ -97,14 +103,16 @@ async function fetchCBEOfficialReceipt(txnOrUrl: string): Promise<BankRecord> {
       recipientAccount: EAGLE_PATHWAY_CBE_ACCOUNT,
       rawResponse: { url: fetchUrl, contentLength: htmlText.length },
     };
-  } catch (error) {
-    console.error('CBE fetch error:', error);
+  } catch (error: any) {
+    clearTimeout(timeoutId);
+    console.error('CBE fetch circuit break:', error?.name === 'AbortError' ? '6s Timeout Exceeded' : error?.message);
     return { status: 'NOT_FOUND', amount: 0, recipientName: '', recipientAccount: '' };
   }
 }
 
 /**
  * Direct Verification query against Telebirr Official Verification Portal (transactioninfo.ethiotelecom.et)
+ * Circuit Breaker: Enforces strict 6-second timeout before falling back to manual review
  */
 async function fetchTelebirrOfficialReceipt(txnOrUrl: string): Promise<BankRecord> {
   let txnId = txnOrUrl.trim();
@@ -114,15 +122,19 @@ async function fetchTelebirrOfficialReceipt(txnOrUrl: string): Promise<BankRecor
   }
 
   const targetUrl = `https://transactioninfo.ethiotelecom.et/receipt/${txnId}`;
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 6000);
 
   try {
     const resp = await fetch(targetUrl, {
       method: 'GET',
+      signal: controller.signal,
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) EaglePathwayServer/1.0',
         'Accept': 'text/html,application/json,*/*',
       },
     });
+    clearTimeout(timeoutId);
 
     if (!resp.ok) {
       return { status: 'NOT_FOUND', amount: 0, recipientName: '', recipientAccount: '' };
@@ -146,8 +158,9 @@ async function fetchTelebirrOfficialReceipt(txnOrUrl: string): Promise<BankRecor
       recipientAccount: EAGLE_PATHWAY_TELEBIRR_ACCOUNT,
       rawResponse: { url: targetUrl, contentLength: htmlText.length },
     };
-  } catch (error) {
-    console.error('Telebirr fetch error:', error);
+  } catch (error: any) {
+    clearTimeout(timeoutId);
+    console.error('Telebirr fetch circuit break:', error?.name === 'AbortError' ? '6s Timeout Exceeded' : error?.message);
     return { status: 'NOT_FOUND', amount: 0, recipientName: '', recipientAccount: '' };
   }
 }
@@ -183,7 +196,48 @@ serve(async (req) => {
           const ocrData = await ocrResp.json();
           const parsedText = ocrData?.ParsedResults?.[0]?.ParsedText || '';
           
-          // Regex search for CBE FT reference (e.g., FT26204HMHYF) or Telebirr reference (e.g., DHB2P3E7LW)
+          // A. Check if OCR extracted a recipient name that does NOT match official account
+          const toMatch = parsedText.match(/Transaction To:\s*([^\n\r]+)/i) || 
+                          parsedText.match(/Recipient Name[:\s]*([^\n\r]+)/i) ||
+                          parsedText.match(/\bfor\s+([A-Za-z\s]+?)\s+ETB/i);
+          if (toMatch) {
+            const extractedRecipient = toMatch[1].trim();
+            const upperRecipient = extractedRecipient.toUpperCase();
+            const isRecipientValid = upperRecipient.includes('GENENE') || upperRecipient.includes('EAGLE') || upperRecipient.includes('1353');
+            
+            if (!isRecipientValid) {
+              if (payment_id) {
+                await supabase.from('payments').update({ status: 'failed', verification_status: 'rejected' }).eq('id', payment_id);
+              }
+              return new Response(
+                JSON.stringify({
+                  status: 'rejected',
+                  reason: `Recipient mismatch. Receipt screenshot shows payment sent to "${extractedRecipient}". Expected official account "Genene" / "Genene Tise" (ETB-1353).`,
+                }),
+                { status: 200, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } }
+              );
+            }
+          }
+
+          // B. Check if OCR extracted an amount less than required package fee
+          const amtMatch = parsedText.match(/ETB\s*([0-9,.]+)/i) || parsedText.match(/-?\s*([0-9,.]+)\s*\(ETB\)/i);
+          if (amtMatch) {
+            const parsedAmt = parseFloat(amtMatch[1].replace(/,/g, ''));
+            if (parsedAmt > 0 && parsedAmt < expectedAmount) {
+              if (payment_id) {
+                await supabase.from('payments').update({ status: 'failed', verification_status: 'rejected' }).eq('id', payment_id);
+              }
+              return new Response(
+                JSON.stringify({
+                  status: 'rejected',
+                  reason: `Insufficient payment amount. Receipt screenshot shows ETB ${parsedAmt.toLocaleString()} (Expected ETB ${expectedAmount.toLocaleString()} for this package).`,
+                }),
+                { status: 200, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } }
+              );
+            }
+          }
+
+          // C. Regex search for CBE FT reference (e.g., FT26204HMHYF) or Telebirr reference (e.g., DHB2P3E7LW)
           const ftMatch = parsedText.match(/FT[A-Z0-9]{10}/i);
           const teleMatch = parsedText.match(/\b[A-Z0-9]{10}\b/i);
 

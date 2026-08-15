@@ -531,36 +531,60 @@ export function ApplyScreen() {
       {/* 2. Verification Results Outcome Modal */}
       <Modal visible={showVerificationModal} transparent animationType="slide">
         <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'flex-end' }}>
-          <View style={{ backgroundColor: Colors.white, borderTopLeftRadius: Radius['2xl'], borderTopRightRadius: Radius['2xl'], padding: Spacing.xl, maxHeight: '85%' }}>
+          <View style={{ 
+            backgroundColor: Colors.white, 
+            borderTopLeftRadius: Radius['2xl'], 
+            borderTopRightRadius: Radius['2xl'], 
+            padding: Spacing.xl, 
+            paddingBottom: Math.max(insets.bottom + 28, Spacing.xl),
+            maxHeight: '90%' 
+          }}>
             
             {/* Header Status Badge */}
             <View style={{ alignItems: 'center', marginBottom: Spacing.lg }}>
-              <View style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: verificationOutcome?.status === 'verified' ? '#dcfce7' : '#fef3c7', alignItems: 'center', justifyContent: 'center', marginBottom: Spacing.md }}>
+              <View style={{ 
+                width: 64, 
+                height: 64, 
+                borderRadius: 32, 
+                backgroundColor: verificationOutcome?.status === 'verified' ? '#dcfce7' : verificationOutcome?.status === 'rejected' ? '#fee2e2' : '#fef3c7', 
+                alignItems: 'center', 
+                justifyContent: 'center', 
+                marginBottom: Spacing.md 
+              }}>
                 <Ionicons 
-                  name={verificationOutcome?.status === 'verified' ? 'checkmark-circle-outline' : 'time-outline'} 
+                  name={verificationOutcome?.status === 'verified' ? 'checkmark-circle-outline' : verificationOutcome?.status === 'rejected' ? 'close-circle-outline' : 'time-outline'} 
                   size={40} 
-                  color={verificationOutcome?.status === 'verified' ? '#166534' : '#92400e'} 
+                  color={verificationOutcome?.status === 'verified' ? '#166534' : verificationOutcome?.status === 'rejected' ? '#991b1b' : '#92400e'} 
                 />
               </View>
               <Text style={{ fontSize: Typography['2xl'], fontWeight: Typography.bold, color: Colors.text, textAlign: 'center' }}>
-                {verificationOutcome?.status === 'verified' ? 'Payment Verified 100% ✅' : 'Payment Submitted ⏳'}
+                {verificationOutcome?.status === 'verified' ? 'Payment Verified 100% ✅' : verificationOutcome?.status === 'rejected' ? 'Verification Rejected ❌' : 'Payment Submitted ⏳'}
               </Text>
               <Text style={{ fontSize: Typography.sm, color: Colors.textSecondary, textAlign: 'center', marginTop: 4 }}>
-                {verificationOutcome?.status === 'verified' ? 'Bank record confirmed. Ready for instant consultation.' : 'Receipt recorded. Queued for 1-tap admin check.'}
+                {verificationOutcome?.status === 'verified' 
+                  ? 'Bank record confirmed. Ready for instant consultation.' 
+                  : verificationOutcome?.status === 'rejected'
+                  ? 'Receipt details do not match official account requirements.'
+                  : 'Receipt recorded. Queued for 1-tap admin check.'}
               </Text>
             </View>
 
             {/* Verification Breakdown Card */}
             <View style={{ 
-              backgroundColor: verificationOutcome?.status === 'verified' ? Colors.blueLight : '#fffbeb', 
+              backgroundColor: verificationOutcome?.status === 'verified' ? Colors.blueLight : verificationOutcome?.status === 'rejected' ? '#fef2f2' : '#fffbeb', 
               borderRadius: Radius.xl, 
               padding: Spacing.lg, 
               marginBottom: Spacing.xl, 
               borderWidth: 1, 
-              borderColor: verificationOutcome?.status === 'verified' ? '#bfdbfe' : '#fde68a' 
+              borderColor: verificationOutcome?.status === 'verified' ? '#bfdbfe' : verificationOutcome?.status === 'rejected' ? '#fca5a5' : '#fde68a' 
             }}>
-              <Text style={{ fontSize: Typography.sm, fontWeight: Typography.bold, color: verificationOutcome?.status === 'verified' ? Colors.blue : '#92400e', marginBottom: Spacing.md }}>
-                {verificationOutcome?.status === 'verified' ? 'BANK VERIFICATION BREAKDOWN & TELEMETRY' : 'RECEIPT SUBMISSION BREAKDOWN & STATUS'}
+              <Text style={{ 
+                fontSize: Typography.sm, 
+                fontWeight: Typography.bold, 
+                color: verificationOutcome?.status === 'verified' ? Colors.blue : verificationOutcome?.status === 'rejected' ? '#991b1b' : '#92400e', 
+                marginBottom: Spacing.md 
+              }}>
+                {verificationOutcome?.status === 'verified' ? 'BANK VERIFICATION BREAKDOWN' : verificationOutcome?.status === 'rejected' ? 'REJECTION AUDIT REASON' : 'RECEIPT SUBMISSION BREAKDOWN & STATUS'}
               </Text>
 
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: Spacing.sm }}>
@@ -579,9 +603,9 @@ export function ApplyScreen() {
 
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: Spacing.sm }}>
                 <Text style={{ fontSize: 13, color: Colors.textSecondary }}>Beneficiary Account</Text>
-                <Text style={{ fontSize: 13, fontWeight: 'bold', color: verificationOutcome?.status === 'verified' ? Colors.green : Colors.text }}>
+                <Text style={{ fontSize: 13, fontWeight: 'bold', color: verificationOutcome?.status === 'verified' ? Colors.green : verificationOutcome?.status === 'rejected' ? '#991b1b' : Colors.text }}>
                   {verificationOutcome?.method === 'telebirr' ? PAYMENT_ACCOUNTS.telebirr.name : PAYMENT_ACCOUNTS.cbe.name} 
-                  {verificationOutcome?.status === 'verified' ? ' (Bank Confirmed ✅)' : ' (Pending Admin Check ⏳)'}
+                  {verificationOutcome?.status === 'verified' ? ' (Confirmed ✅)' : verificationOutcome?.status === 'rejected' ? ' (Mismatch ❌)' : ' (Pending Admin Check ⏳)'}
                 </Text>
               </View>
 
@@ -589,29 +613,46 @@ export function ApplyScreen() {
                 <Text style={{ fontSize: 13, color: Colors.textSecondary }}>
                   {verificationOutcome?.status === 'verified' ? 'Verified Amount' : 'Package Fee Due'}
                 </Text>
-                <Text style={{ fontSize: 14, fontWeight: 'bold', color: verificationOutcome?.status === 'verified' ? Colors.blue : '#b45309' }}>
+                <Text style={{ fontSize: 14, fontWeight: 'bold', color: verificationOutcome?.status === 'verified' ? Colors.blue : verificationOutcome?.status === 'rejected' ? '#991b1b' : '#b45309' }}>
                   ETB {verificationOutcome?.expectedAmount ? formatEtb(verificationOutcome.expectedAmount) : '0'} 
-                  {verificationOutcome?.status === 'verified' ? ' (Bank Confirmed ✅)' : ' (Pending Admin Check ⏳)'}
+                  {verificationOutcome?.status === 'verified' ? ' (Confirmed ✅)' : verificationOutcome?.status === 'rejected' ? ' (Mismatch ❌)' : ' (Pending Admin Check ⏳)'}
                 </Text>
               </View>
 
-              <View style={{ borderTopWidth: 1, borderTopColor: verificationOutcome?.status === 'verified' ? '#bfdbfe' : '#fde68a', paddingTop: Spacing.sm, marginTop: Spacing.xs }}>
-                <Text style={{ fontSize: 12, color: Colors.textSecondary, fontStyle: 'italic' }}>
-                  {verificationOutcome?.status === 'verified' 
+              <View style={{ 
+                borderTopWidth: 1, 
+                borderTopColor: verificationOutcome?.status === 'verified' ? '#bfdbfe' : verificationOutcome?.status === 'rejected' ? '#fca5a5' : '#fde68a', 
+                paddingTop: Spacing.sm, 
+                marginTop: Spacing.xs 
+              }}>
+                <Text style={{ fontSize: 12, color: verificationOutcome?.status === 'rejected' ? '#991b1b' : Colors.textSecondary, fontStyle: 'italic', fontWeight: verificationOutcome?.status === 'rejected' ? '600' : 'normal' }}>
+                  {verificationOutcome?.reason || (verificationOutcome?.status === 'verified' 
                     ? 'Transaction confirmed 100% with official bank records.' 
-                    : 'Receipt image uploaded. Queued for fast admin verification (Admin will inspect paid amount on your receipt image).'}
+                    : 'Receipt image uploaded. Queued for fast admin verification.')}
                 </Text>
               </View>
             </View>
 
-            <Button 
-              title="Continue to Final Step →" 
-              variant="primary" 
-              onPress={() => {
-                setShowVerificationModal(false);
-                setStep(5);
-              }} 
-            />
+            {verificationOutcome?.status === 'rejected' ? (
+              <Button 
+                title="Fix / Re-upload Receipt 🔄" 
+                variant="primary" 
+                style={{ backgroundColor: '#991b1b' }}
+                onPress={() => {
+                  setShowVerificationModal(false);
+                  setReceiptAsset(null);
+                }} 
+              />
+            ) : (
+              <Button 
+                title="Continue to Final Step →" 
+                variant="primary" 
+                onPress={() => {
+                  setShowVerificationModal(false);
+                  setStep(5);
+                }} 
+              />
+            )}
 
           </View>
         </View>
