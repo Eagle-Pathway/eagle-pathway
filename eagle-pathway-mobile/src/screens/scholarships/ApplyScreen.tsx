@@ -551,9 +551,16 @@ export function ApplyScreen() {
             </View>
 
             {/* Verification Breakdown Card */}
-            <View style={{ backgroundColor: Colors.blueLight, borderRadius: Radius.xl, padding: Spacing.lg, marginBottom: Spacing.xl, borderWidth: 1, borderColor: '#bfdbfe' }}>
-              <Text style={{ fontSize: Typography.sm, fontWeight: Typography.bold, color: Colors.blue, marginBottom: Spacing.md }}>
-                VERIFICATION BREAKDOWN & TELEMETRY
+            <View style={{ 
+              backgroundColor: verificationOutcome?.status === 'verified' ? Colors.blueLight : '#fffbeb', 
+              borderRadius: Radius.xl, 
+              padding: Spacing.lg, 
+              marginBottom: Spacing.xl, 
+              borderWidth: 1, 
+              borderColor: verificationOutcome?.status === 'verified' ? '#bfdbfe' : '#fde68a' 
+            }}>
+              <Text style={{ fontSize: Typography.sm, fontWeight: Typography.bold, color: verificationOutcome?.status === 'verified' ? Colors.blue : '#92400e', marginBottom: Spacing.md }}>
+                {verificationOutcome?.status === 'verified' ? 'BANK VERIFICATION BREAKDOWN & TELEMETRY' : 'RECEIPT SUBMISSION BREAKDOWN & STATUS'}
               </Text>
 
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: Spacing.sm }}>
@@ -572,21 +579,27 @@ export function ApplyScreen() {
 
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: Spacing.sm }}>
                 <Text style={{ fontSize: 13, color: Colors.textSecondary }}>Beneficiary Account</Text>
-                <Text style={{ fontSize: 13, fontWeight: 'bold', color: Colors.text }}>
-                  {verificationOutcome?.method === 'telebirr' ? PAYMENT_ACCOUNTS.telebirr.name : PAYMENT_ACCOUNTS.cbe.name} (Matched ✅)
+                <Text style={{ fontSize: 13, fontWeight: 'bold', color: verificationOutcome?.status === 'verified' ? Colors.green : Colors.text }}>
+                  {verificationOutcome?.method === 'telebirr' ? PAYMENT_ACCOUNTS.telebirr.name : PAYMENT_ACCOUNTS.cbe.name} 
+                  {verificationOutcome?.status === 'verified' ? ' (Bank Confirmed ✅)' : ' (Pending Admin Check ⏳)'}
                 </Text>
               </View>
 
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: Spacing.sm }}>
-                <Text style={{ fontSize: 13, color: Colors.textSecondary }}>Verified Amount</Text>
-                <Text style={{ fontSize: 14, fontWeight: 'bold', color: Colors.blue }}>
-                  ETB {verificationOutcome?.expectedAmount ? formatEtb(verificationOutcome.expectedAmount) : '0'} (Matched ✅)
+                <Text style={{ fontSize: 13, color: Colors.textSecondary }}>
+                  {verificationOutcome?.status === 'verified' ? 'Verified Amount' : 'Package Fee Due'}
+                </Text>
+                <Text style={{ fontSize: 14, fontWeight: 'bold', color: verificationOutcome?.status === 'verified' ? Colors.blue : '#b45309' }}>
+                  ETB {verificationOutcome?.expectedAmount ? formatEtb(verificationOutcome.expectedAmount) : '0'} 
+                  {verificationOutcome?.status === 'verified' ? ' (Bank Confirmed ✅)' : ' (Pending Admin Check ⏳)'}
                 </Text>
               </View>
 
-              <View style={{ borderTopWidth: 1, borderTopColor: '#bfdbfe', paddingTop: Spacing.sm, marginTop: Spacing.xs }}>
+              <View style={{ borderTopWidth: 1, borderTopColor: verificationOutcome?.status === 'verified' ? '#bfdbfe' : '#fde68a', paddingTop: Spacing.sm, marginTop: Spacing.xs }}>
                 <Text style={{ fontSize: 12, color: Colors.textSecondary, fontStyle: 'italic' }}>
-                  {verificationOutcome?.reason}
+                  {verificationOutcome?.status === 'verified' 
+                    ? 'Transaction confirmed 100% with official bank records.' 
+                    : 'Receipt image uploaded. Queued for fast admin verification (Admin will inspect paid amount on your receipt image).'}
                 </Text>
               </View>
             </View>
