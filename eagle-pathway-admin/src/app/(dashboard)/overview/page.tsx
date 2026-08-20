@@ -464,7 +464,7 @@ export default function OverviewPage() {
                      <span className="text-xs font-bold text-gray-400 uppercase">AI Engine</span>
                      <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
                   </div>
-                  <p className="text-sm font-bold text-gray-900">Groq (Llama 3.3)</p>
+                  <p className="text-sm font-bold text-gray-900">Groq (AI Engine)</p>
                   <p className="text-[10px] text-gray-500 font-medium">SOP Review API Active</p>
                </div>
                <div className="p-4 rounded-xl border border-gray-100 bg-gray-50/50">
