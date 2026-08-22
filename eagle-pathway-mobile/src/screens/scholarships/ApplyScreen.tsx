@@ -21,6 +21,7 @@ import { PAYMENT_ACCOUNTS } from '@/constants/paymentAccounts';
 import { parseReceiptText, assertReceiptValidity } from '@/services/receiptParser';
 import type { PackageTier, DocumentType } from '@/types';
 import { showError, getErrorMessage } from '@/utils/errorHandler';
+import { draftStore } from '@/services/draftStore';
 
 export function ApplyScreen() {
   const { scholarshipId, packageTier } = useLocalSearchParams<{ scholarshipId: string; packageTier: PackageTier }>();
@@ -72,6 +73,32 @@ export function ApplyScreen() {
   };
 
   useEffect(() => { if (user) loadDocuments(user.id); }, [user?.id]);
+
+  useEffect(() => {
+    if (scholarshipId) {
+      draftStore.getApplicationDraft(scholarshipId).then(draft => {
+        if (draft) {
+          if (draft.sopContent) setSopContent(draft.sopContent);
+          if (draft.transactionId) setTransactionId(draft.transactionId);
+          if (draft.selectedPaymentMethod) setSelectedPaymentMethod(draft.selectedPaymentMethod);
+        }
+      });
+    }
+  }, [scholarshipId]);
+
+  useEffect(() => {
+    if (scholarshipId && (sopContent || transactionId || selectedPaymentMethod)) {
+      const timer = setTimeout(() => {
+        draftStore.saveApplicationDraft(scholarshipId, {
+          sopContent,
+          transactionId,
+          selectedPaymentMethod,
+          packageTier,
+        });
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [scholarshipId, sopContent, transactionId, selectedPaymentMethod, packageTier]);
 
   const STEPS = ['Info', 'Docs', 'SOP', 'Pay', 'Final'];
 
@@ -197,6 +224,11 @@ export function ApplyScreen() {
           setVerificationError(res.verification.reason);
           toast.error('Verification Failed ❌', res.verification.reason);
           return;
+        }
+
+        // Clear local draft upon submission
+        if (scholarshipId) {
+          draftStore.clearApplicationDraft(scholarshipId);
         }
 
         // Save outcome and open explicit verification results modal
