@@ -387,11 +387,10 @@ $$;
 -- INCREMENT SOP DRAFT RPC
 CREATE OR REPLACE FUNCTION public.increment_sop_draft(
   p_application_id UUID
-) RETURNS INT AS $$
+) RETURNS VOID AS $$
 DECLARE
   v_student_id UUID;
   v_consultant_id UUID;
-  v_new_num INT;
 BEGIN
   SELECT student_id INTO v_student_id FROM public.applications WHERE id = p_application_id;
 
@@ -401,10 +400,7 @@ BEGIN
 
   UPDATE public.applications
   SET sop_draft_number = COALESCE(sop_draft_number, 0) + 1
-  WHERE id = p_application_id
-  RETURNING sop_draft_number INTO v_new_num;
-
-  RETURN v_new_num;
+  WHERE id = p_application_id;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
