@@ -85,6 +85,42 @@ export default function FinancePage() {
 
   useEffect(() => {
     fetchData();
+
+    const paymentsChannel = supabase
+      .channel('admin-payments-realtime')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'payments' },
+        async (payload) => {
+          if (payload.eventType === 'INSERT') {
+            const { data: newPayment } = await supabase
+              .from('payments')
+              .select('*, user:users(full_name, phone)')
+              .eq('id', payload.new.id)
+              .single();
+            if (newPayment) {
+              const signed = await signReceiptUrl(newPayment);
+              setPayments(prev => [signed, ...prev.filter(p => p.id !== signed.id)]);
+              showNotification('info', `New payment receipt received from ${signed.user?.full_name || 'student'}! 💵`);
+            }
+          } else if (payload.eventType === 'UPDATE') {
+            const { data: updatedPayment } = await supabase
+              .from('payments')
+              .select('*, user:users(full_name, phone)')
+              .eq('id', payload.new.id)
+              .single();
+            if (updatedPayment) {
+              const signed = await signReceiptUrl(updatedPayment);
+              setPayments(prev => prev.map(p => p.id === signed.id ? signed : p));
+            }
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(paymentsChannel);
+    };
   }, []);
 
   const handleVerifyReceipt = async (paymentId: string, status: 'approved' | 'rejected') => {
