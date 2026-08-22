@@ -20,7 +20,7 @@ import { PACKAGE_PRICING, formatEtb } from '@/constants/packages';
 import { PAYMENT_ACCOUNTS } from '@/constants/paymentAccounts';
 import { parseReceiptText, assertReceiptValidity } from '@/services/receiptParser';
 import type { PackageTier, DocumentType } from '@/types';
-import { showError } from '@/utils/errorHandler';
+import { showError, getErrorMessage } from '@/utils/errorHandler';
 
 export function ApplyScreen() {
   const { scholarshipId, packageTier } = useLocalSearchParams<{ scholarshipId: string; packageTier: PackageTier }>();
@@ -210,9 +210,9 @@ export function ApplyScreen() {
         setShowVerificationModal(true);
       } catch (e: any) {
         setIsVerifyingPayment(false);
-        const msg = e.message || 'Payment verification failed.';
+        const msg = getErrorMessage(e);
         setVerificationError(msg);
-        toast.error('Verification Error', msg);
+        showError(e, 'Verification Error');
       }
       return;
     }
