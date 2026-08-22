@@ -57,7 +57,8 @@ export default function LoginPage() {
 
         setSession(data.session);
         setUser({ id: data.user.id, email: data.user.email, role: 'admin' });
-        router.push('/');
+        router.refresh();
+        router.push('/overview');
       }
     } catch (err: any) {
       setError(err.message || 'Failed to sign in');

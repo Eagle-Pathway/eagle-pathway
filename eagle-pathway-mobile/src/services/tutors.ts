@@ -161,4 +161,58 @@ export const tutorsService = {
       .eq('user_id', userId);
     if (error) throw error;
   },
+
+  /**
+   * Atomic slot reservation engine. Prevents double-booking race conditions.
+   */
+  async createBookingAtomic(params: {
+    tutorId: string;
+    studentId: string;
+    sessionTime: string;
+    subject?: string;
+    hourlyRate?: number;
+  }): Promise<{ success: boolean; bookingId?: string; message: string }> {
+    const { data, error } = await supabase.rpc('reserve_tutor_slot', {
+      p_tutor_id: params.tutorId,
+      p_student_id: params.studentId,
+      p_session_time: params.sessionTime,
+      p_subject: params.subject || 'General Tutoring',
+      p_hourly_rate: params.hourlyRate || 400,
+    });
+
+    if (error) {
+      console.warn('reserve_tutor_slot RPC fallback:', error.message);
+      const { data: insertData, error: insertError } = await supabase
+        .from('bookings')
+        .insert({
+          tutor_id: params.tutorId,
+          student_id: params.studentId,
+          session_time: params.sessionTime,
+          subject: params.subject || 'General Tutoring',
+          amount: params.hourlyRate || 400,
+          status: 'confirmed',
+        })
+        .select('id')
+        .single();
+
+      if (insertError) {
+        if (insertError.code === '23505') {
+          return {
+            success: false,
+            message: 'This time slot has already been reserved by another student. Please choose another time.',
+          };
+        }
+        throw insertError;
+      }
+
+      return { success: true, bookingId: insertData?.id, message: 'Session successfully booked.' };
+    }
+
+    const res = data as { success: boolean; booking_id?: string; message: string; code?: string };
+    return {
+      success: res.success,
+      bookingId: res.booking_id,
+      message: res.message,
+    };
+  },
 };
