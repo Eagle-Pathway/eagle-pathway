@@ -15,6 +15,7 @@ import { useAuthStore } from '@/store/authStore';
 import { useScholarshipStore } from '@/store/scholarshipStore';
 import { useDocumentStore } from '@/store/documentStore';
 import { Ionicons } from '@expo/vector-icons';
+import * as Clipboard from 'expo-clipboard';
 import { PACKAGE_PRICING, formatEtb } from '@/constants/packages';
 import { PAYMENT_ACCOUNTS } from '@/constants/paymentAccounts';
 import { parseReceiptText, assertReceiptValidity } from '@/services/receiptParser';
@@ -415,9 +416,23 @@ export function ApplyScreen() {
                     borderWidth: 1,
                     borderColor: '#bfdbfe',
                   }}>
-                    <Text style={{ fontSize: Typography.base, fontWeight: Typography.bold, color: Colors.blue, marginBottom: Spacing.sm }}>
-                      Pay to Official {selectedPaymentMethod.includes('Telebirr') ? 'Telebirr Account' : 'CBE Account'}
-                    </Text>
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.sm }}>
+                      <Text style={{ fontSize: Typography.base, fontWeight: Typography.bold, color: Colors.blue }}>
+                        Pay to Official {selectedPaymentMethod.includes('Telebirr') ? 'Telebirr Account' : 'CBE Account'}
+                      </Text>
+                      <TouchableOpacity
+                        onPress={async () => {
+                          const acc = selectedPaymentMethod.includes('Telebirr') ? PAYMENT_ACCOUNTS.telebirr.accountNumber : PAYMENT_ACCOUNTS.cbe.accountNumber;
+                          await Clipboard.setStringAsync(acc);
+                          toast.success('Copied to Clipboard! 📋', `Copied "${acc}". Paste it in your payment app.`);
+                        }}
+                        style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: Colors.white, paddingHorizontal: 10, paddingVertical: 5, borderRadius: Radius.md, borderWidth: 1, borderColor: '#bfdbfe' }}
+                        activeOpacity={0.7}
+                      >
+                        <Ionicons name="copy-outline" size={14} color={Colors.blue} />
+                        <Text style={{ fontSize: 12, fontWeight: 'bold', color: Colors.blue }}>Copy Account</Text>
+                      </TouchableOpacity>
+                    </View>
 
                     <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: Spacing.xs }}>
                       <Text style={{ fontSize: 13, color: Colors.textSecondary }}>Account Holder</Text>
@@ -461,12 +476,30 @@ export function ApplyScreen() {
                   />
 
                   <Text style={{ fontSize: 14, fontWeight: 'bold', marginBottom: Spacing.xs }}>Transaction Ref / Link (Optional)</Text>
-                  <TextInput 
-                    value={transactionId}
-                    onChangeText={setTransactionId}
-                    placeholder={selectedPaymentMethod === 'Telebirr' ? 'e.g. DHE0RRRPZO or leave blank' : 'e.g. FT26222VM9M4 or leave blank'}
-                    style={{ borderWidth: 1, borderColor: Colors.border, borderRadius: Radius.md, padding: Spacing.md, marginBottom: Spacing.md, backgroundColor: Colors.white }}
-                  />
+                  <View style={{ flexDirection: 'row', gap: Spacing.sm, alignItems: 'center', marginBottom: Spacing.md }}>
+                    <TextInput 
+                      value={transactionId}
+                      onChangeText={setTransactionId}
+                      placeholder={selectedPaymentMethod === 'Telebirr' ? 'e.g. DHE0RRRPZO or leave blank' : 'e.g. FT26222VM9M4 or leave blank'}
+                      style={{ flex: 1, borderWidth: 1, borderColor: Colors.border, borderRadius: Radius.md, padding: Spacing.md, backgroundColor: Colors.white }}
+                    />
+                    <TouchableOpacity 
+                      onPress={async () => {
+                        const clipText = await Clipboard.getStringAsync();
+                        if (clipText && clipText.trim().length > 0) {
+                          setTransactionId(clipText.trim());
+                          toast.success('Ref ID Pasted! 📋', `Pasted "${clipText.trim()}" from clipboard.`);
+                        } else {
+                          toast.warning('Clipboard Empty', 'No text found in clipboard to paste.');
+                        }
+                      }}
+                      style={{ backgroundColor: Colors.blueLight, borderWidth: 1, borderColor: '#bfdbfe', borderRadius: Radius.md, paddingHorizontal: Spacing.md, paddingVertical: 12, flexDirection: 'row', alignItems: 'center', gap: 4 }}
+                      activeOpacity={0.7}
+                    >
+                      <Ionicons name="clipboard-outline" size={16} color={Colors.blue} />
+                      <Text style={{ fontSize: 13, fontWeight: 'bold', color: Colors.blue }}>Paste</Text>
+                    </TouchableOpacity>
+                  </View>
 
                   {verificationError && (
                     <View style={{ marginTop: Spacing.xs, marginBottom: Spacing.md, padding: Spacing.md, backgroundColor: '#fef2f2', borderRadius: Radius.md, borderWidth: 1, borderColor: '#fca5a5', flexDirection: 'row', alignItems: 'center', gap: 8 }}>

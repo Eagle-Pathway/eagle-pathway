@@ -22,6 +22,7 @@ export default function FinancePage() {
   const [search, setSearch] = useState('');
   const [activeTab, setActiveTab] = useState<'balances' | 'transactions' | 'receipts' | 'payouts'>('balances');
   const [receiptFilter, setReceiptFilter] = useState<'all' | 'manual_review' | 'verified' | 'rejected'>('all');
+  const [providerFilter, setProviderFilter] = useState<'all' | 'telebirr' | 'cbe'>('all');
   const [selectedReceiptModal, setSelectedReceiptModal] = useState<any | null>(null);
   const [payments, setPayments] = useState<any[]>([]);
   const [payoutRequests, setPayoutRequests] = useState<any[]>([]);
@@ -414,7 +415,30 @@ export default function FinancePage() {
               <p className="text-xs text-gray-500">Inspect bank screenshots, review transaction telemetry, and approve/reject payments.</p>
             </div>
             
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
+              {/* Provider Filter */}
+              <div className="flex items-center bg-gray-100 p-1 rounded-lg mr-2 border border-gray-200">
+                <button
+                  onClick={() => setProviderFilter('all')}
+                  className={`px-2.5 py-1 rounded-md text-xs font-semibold transition ${providerFilter === 'all' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-600 hover:text-gray-900'}`}
+                >
+                  All Banks
+                </button>
+                <button
+                  onClick={() => setProviderFilter('telebirr')}
+                  className={`px-2.5 py-1 rounded-md text-xs font-semibold transition ${providerFilter === 'telebirr' ? 'bg-blue-600 text-white shadow-sm' : 'text-gray-600 hover:text-gray-900'}`}
+                >
+                  Telebirr
+                </button>
+                <button
+                  onClick={() => setProviderFilter('cbe')}
+                  className={`px-2.5 py-1 rounded-md text-xs font-semibold transition ${providerFilter === 'cbe' ? 'bg-purple-600 text-white shadow-sm' : 'text-gray-600 hover:text-gray-900'}`}
+                >
+                  CBE / Bank
+                </button>
+              </div>
+
+              {/* Status Filter */}
               <button
                 onClick={() => setReceiptFilter('all')}
                 className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${receiptFilter === 'all' ? 'bg-gray-900 text-white' : 'bg-white border text-gray-600 hover:bg-gray-50'}`}
@@ -461,10 +485,18 @@ export default function FinancePage() {
                 <tr><td colSpan={7} className="px-6 py-12 text-center text-sm text-gray-500">No payment receipts found.</td></tr>
               ) : payments
                 .filter(p => {
-                  if (receiptFilter === 'manual_review') return p.verification_status === 'manual_review' || p.status === 'pending';
-                  if (receiptFilter === 'verified') return p.verification_status === 'verified' || p.status === 'completed' || p.status === 'approved';
-                  if (receiptFilter === 'rejected') return p.verification_status === 'rejected' || p.status === 'failed';
-                  return true;
+                  const matchesStatus = 
+                    receiptFilter === 'all' ? true :
+                    receiptFilter === 'manual_review' ? (p.verification_status === 'manual_review' || p.status === 'pending') :
+                    receiptFilter === 'verified' ? (p.verification_status === 'verified' || p.status === 'completed' || p.status === 'approved') :
+                    (p.verification_status === 'rejected' || p.status === 'failed');
+
+                  const matchesProvider = 
+                    providerFilter === 'all' ? true :
+                    providerFilter === 'telebirr' ? (p.method?.toLowerCase().includes('telebirr')) :
+                    (p.method?.toLowerCase().includes('cbe') || p.method?.toLowerCase().includes('bank'));
+
+                  return matchesStatus && matchesProvider;
                 })
                 .map((p) => {
                   const isVerified = p.verification_status === 'verified' || p.status === 'completed' || p.status === 'approved';
