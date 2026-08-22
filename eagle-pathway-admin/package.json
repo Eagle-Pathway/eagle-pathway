@@ -13,6 +13,7 @@
   },
   "dependencies": {
     "@eagle-pathway/shared": "file:../packages/eagle-shared",
+    "@supabase/ssr": "^0.12.4",
     "@supabase/supabase-js": "^2.100.0",
     "@types/pg": "^8.20.3",
     "lucide-react": "^1.6.0",
