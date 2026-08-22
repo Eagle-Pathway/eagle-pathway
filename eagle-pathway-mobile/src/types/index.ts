@@ -1,5 +1,9 @@
-// ─── USER ────────────────────────────────────────────────────────────────────
-export type UserRole = 'student' | 'parent' | 'tutor' | 'admin';
+// ─── USER & DOMAIN TYPES ──────────────────────────────────────────────────
+export type UserRole = 'student' | 'parent' | 'tutor' | 'admin' | 'archived';
+
+export type PaymentStatus = 'pending' | 'completed' | 'failed' | 'refunded';
+
+export type VerificationStatus = 'pending_verification' | 'verified' | 'manual_review' | 'rejected';
 
 export interface User {
   id: string;
