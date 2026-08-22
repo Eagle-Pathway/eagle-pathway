@@ -18,7 +18,7 @@ import { join } from 'path';
  * proof that the policies actually behave correctly, see `rls-live.test.ts`.
  */
 
-const SCHEMA_PATH = join(__dirname, '..', '..', 'supabase', 'migrations', 'supabase_schema.sql');
+const SCHEMA_PATH = join(__dirname, '..', '..', 'supabase', 'migrations', '00000000000000_master_schema.sql');
 const schema = readFileSync(SCHEMA_PATH, 'utf8');
 
 // Tables that legitimately have no RLS / no per-user scoping.
@@ -27,7 +27,7 @@ const EXEMPT_FROM_RLS = new Set(['schema_versions']);
 
 // Tables that are intentionally world-readable to authenticated users. Their
 // SELECT policy is `USING (true)` by design (public catalog data, not PII).
-const PUBLIC_READABLE = new Set(['scholarships', 'tutors', 'tutor_reviews']);
+const PUBLIC_READABLE = new Set(['scholarships', 'tutors', 'tutor_reviews', 'resources', 'success_stories']);
 
 interface Policy {
   name: string;
