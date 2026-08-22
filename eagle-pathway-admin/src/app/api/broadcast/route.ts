@@ -1,28 +1,22 @@
-import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-import { requireAuthenticatedUser } from '../sop-review/route';
+import { NextRequest, NextResponse } from 'next/server';
+import { verifyAdminRequest, getStrictAdminClient } from '@/lib/adminAuthGuard';
 
 const EXPO_PUSH_API = 'https://exp.host/--/api/v2/push/send';
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
     // 1. Authenticate Admin
-    await requireAuthenticatedUser(req);
+    const authResult = await verifyAdminRequest(req);
+    if (!authResult.authorized) {
+      return authResult.errorResponse!;
+    }
     
     const { title, body, audience, type } = await req.json();
     if (!title || !body || !audience || !type) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-    if (!supabaseUrl || !supabaseServiceKey) {
-      return NextResponse.json({ error: 'Supabase configuration missing' }, { status: 500 });
-    }
-
-    const supabase = createClient(supabaseUrl, supabaseServiceKey, {
-      auth: { persistSession: false, autoRefreshToken: false },
-    });
+    const supabase = getStrictAdminClient();
 
     // 2. Get target users and their push tokens
     let query = supabase.from('users').select('id, push_tokens(token)');

@@ -1,24 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
-
-function getAdminClient() {
-  if (!supabaseUrl || !serviceRoleKey) {
-    throw new Error('Supabase credentials missing on server.');
-  }
-  return createClient(supabaseUrl, serviceRoleKey, {
-    auth: { autoRefreshToken: false, persistSession: false },
-  });
-}
+import { verifyAdminRequest, getStrictAdminClient } from '@/lib/adminAuthGuard';
 
 export async function POST(req: NextRequest) {
   try {
+    const authResult = await verifyAdminRequest(req);
+    if (!authResult.authorized) {
+      return authResult.errorResponse!;
+    }
+
     const body = await req.json();
     const { action, userId, newPassword, title, message } = body;
 
-    const supabaseAdmin = getAdminClient();
+    const supabaseAdmin = getStrictAdminClient();
 
     // 0. GET ALL USERS WITH LIVE SUSPENSION & ARCHIVED STATUS
     if (action === 'get_all_users') {

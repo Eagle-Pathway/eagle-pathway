@@ -1,28 +1,22 @@
-import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-import { requireAuthenticatedUser } from '../sop-review/route';
+import { NextRequest, NextResponse } from 'next/server';
+import { verifyAdminRequest, getStrictAdminClient } from '@/lib/adminAuthGuard';
 
 const EXPO_PUSH_API = 'https://exp.host/--/api/v2/push/send';
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
-    const user = await requireAuthenticatedUser(req);
+    const authResult = await verifyAdminRequest(req);
+    if (!authResult.authorized) {
+      return authResult.errorResponse!;
+    }
+
     const bodyJson = await req.json();
     const targetJobId = bodyJson.job_post_id || bodyJson.jobId;
     if (!targetJobId) {
       return NextResponse.json({ error: 'job_post_id is required' }, { status: 400 });
     }
 
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-    if (!supabaseUrl || !supabaseAnonKey) {
-      return NextResponse.json({ error: 'Supabase configuration missing' }, { status: 500 });
-    }
-
-    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || supabaseAnonKey;
-    const supabase = createClient(supabaseUrl, serviceRoleKey, {
-      auth: { persistSession: false, autoRefreshToken: false },
-    });
+    const supabase = getStrictAdminClient();
 
     // 1. Get the job post
     const { data: job, error: jobError } = await supabase

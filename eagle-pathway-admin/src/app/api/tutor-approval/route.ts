@@ -1,38 +1,21 @@
-import { NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
+import { NextRequest, NextResponse } from 'next/server';
+import { verifyAdminRequest, getStrictAdminClient } from '@/lib/adminAuthGuard';
 import { sendTutorApprovalEmail, sendTutorRejectionEmail } from '@/lib/resend';
 
-function getAdminSupabase() {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-  return createClient(supabaseUrl, serviceRoleKey, {
-    auth: { autoRefreshToken: false, persistSession: false },
-  });
-}
-
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
+    const authResult = await verifyAdminRequest(request);
+    if (!authResult.authorized) {
+      return authResult.errorResponse!;
+    }
+
     const { userId, isVerified, userUpdates, reason } = await request.json();
 
     if (!userId) {
       return NextResponse.json({ error: 'Missing userId parameter' }, { status: 400 });
     }
 
-    const authHeader = request.headers.get('Authorization');
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-    const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || anonKey;
-
-    const userToken = authHeader?.startsWith('Bearer ') ? authHeader.replace('Bearer ', '') : null;
-
-    const adminSupabase = userToken
-      ? createClient(supabaseUrl, anonKey, {
-          global: { headers: { Authorization: `Bearer ${userToken}` } },
-          auth: { autoRefreshToken: false, persistSession: false },
-        })
-      : createClient(supabaseUrl, serviceRoleKey, {
-          auth: { autoRefreshToken: false, persistSession: false },
-        });
+    const adminSupabase = getStrictAdminClient();
 
     let { error: upsertErr } = await adminSupabase
       .from('tutors')
@@ -45,27 +28,10 @@ export async function POST(request: Request) {
         { onConflict: 'user_id' }
       );
 
-    if (upsertErr && userToken) {
-      const fallbackClient = createClient(supabaseUrl, serviceRoleKey, {
-        auth: { autoRefreshToken: false, persistSession: false },
-      });
-      const res = await fallbackClient
-        .from('tutors')
-        .upsert(
-          { user_id: userId, is_verified: isVerified, hourly_rate: 400 },
-          { onConflict: 'user_id' }
-        );
-      upsertErr = res.error;
-    }
-
     if (upsertErr) {
       console.error('Tutor approval API upsert error:', upsertErr);
       return NextResponse.json({ error: upsertErr.message }, { status: 500 });
     }
-
-    const serviceClient = createClient(supabaseUrl, serviceRoleKey, {
-      auth: { autoRefreshToken: false, persistSession: false },
-    });
 
     const updatePayload: Record<string, any> = {
       status: isVerified ? 'approved' : 'rejected',
@@ -75,7 +41,7 @@ export async function POST(request: Request) {
       updatePayload.rejection_reason = reason;
     }
 
-    await serviceClient
+    await adminSupabase
       .from('tutor_applications')
       .update(updatePayload)
       .eq('tutor_id', userId);
@@ -85,7 +51,7 @@ export async function POST(request: Request) {
       is_verified: isVerified,
     };
 
-    await serviceClient
+    await adminSupabase
       .from('users')
       .update(finalUserUpdates)
       .eq('id', userId);
@@ -107,14 +73,14 @@ export async function POST(request: Request) {
         };
 
     try {
-      await serviceClient.from('notifications').insert(notif);
+      await adminSupabase.from('notifications').insert(notif);
     } catch {
       // Non-critical notification error
     }
 
     // Dispatch Resend Email Notification
     try {
-      const { data: userProfile } = await serviceClient
+      const { data: userProfile } = await adminSupabase
         .from('users')
         .select('email, full_name')
         .eq('id', userId)
