@@ -525,6 +525,25 @@ Thank you for reviewing my application. I look forward to contributing to the sc
 Sincerely,
 ${name}`;
   },
+
+  /**
+   * Unified query to fetch user application history.
+   */
+  async getUserApplications(userId: string): Promise<Application[]> {
+    const { data, error } = await supabase
+      .from('applications')
+      .select('*, scholarship:scholarships(*), documents(*)')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching user applications:', error.message);
+      return [];
+    }
+
+    const applications = data as Application[];
+    return Promise.all(applications.map(withSignedApplicationDocuments));
+  },
 };
 
 
