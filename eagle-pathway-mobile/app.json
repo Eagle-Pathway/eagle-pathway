@@ -56,7 +56,8 @@
           }
         }
       ],
-      "./plugins/with-cmake-args"
+      "./plugins/with-cmake-args",
+      "expo-web-browser"
     ],
     "scheme": "eaglepathway",
     "extra": {

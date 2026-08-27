@@ -21,7 +21,7 @@ export default function LoginScreen() {
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(true);
   const passwordRef = useRef<TextInput>(null);
-  const { signIn, isLoading, setLoading } = useAuthStore();
+  const { signIn, signInWithGoogle, isLoading, setLoading } = useAuthStore();
 
   useEffect(() => {
     AsyncStorage.getItem(SAVED_LOGIN_INFO_KEY).then(data => {
@@ -131,7 +131,45 @@ export default function LoginScreen() {
         </View>
 
         <Button title="Sign In" onPress={handleLogin} loading={isLoading} />
-        
+
+        <View style={{ flexDirection: 'row', alignItems: 'center', marginVertical: Spacing.xl }}>
+          <View style={{ flex: 1, height: 1, backgroundColor: Colors.border }} />
+          <Text style={{ marginHorizontal: Spacing.md, fontSize: 12, color: Colors.textSecondary, fontWeight: Typography.medium }}>OR</Text>
+          <View style={{ flex: 1, height: 1, backgroundColor: Colors.border }} />
+        </View>
+
+        <TouchableOpacity
+          style={{
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: 10,
+            borderWidth: 1.5,
+            borderColor: Colors.border,
+            borderRadius: Radius.lg,
+            paddingVertical: 14,
+            backgroundColor: Colors.white,
+          }}
+          onPress={async () => {
+            try {
+              await signInWithGoogle();
+              router.replace('/(tabs)/home');
+            } catch (e: any) {
+              if (e?.message !== 'Google sign-in was cancelled or closed.') {
+                showError(e, 'Google Sign-In Failed');
+              }
+            } finally {
+              setLoading(false);
+            }
+          }}
+          activeOpacity={0.8}
+        >
+          <Ionicons name="logo-google" size={20} color="#4285F4" />
+          <Text style={{ fontSize: Typography.base, fontWeight: Typography.semibold, color: Colors.text }}>
+            Continue with Google
+          </Text>
+        </TouchableOpacity>
+
         <TouchableOpacity 
           style={{ marginTop: Spacing.xl, paddingVertical: Spacing.sm, width: '100%', alignItems: 'center' }} 
           onPress={() => router.push('/(auth)/signup')}

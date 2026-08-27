@@ -8,6 +8,8 @@ import { withTimeout } from '../utils/asyncUtils';
 const BYPASS_PHONE_VERIFY =
   __DEV__ && process.env.EXPO_PUBLIC_BYPASS_PHONE_VERIFY === 'true';
 
+import { googleAuthService } from '../services/googleAuthService';
+
 interface AuthState {
   user: User | null;
   session: any | null;
@@ -23,6 +25,7 @@ interface AuthState {
   signUp: (email: string, password: string, fullName: string, phone: string, role: UserRole, attribution?: SignupAttribution) => Promise<void>;
   verifySignup: (email: string, token: string) => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
+  signInWithGoogle: () => Promise<void>;
   loadProfile: () => Promise<void>;
   updateProfile: (updates: Partial<User>) => Promise<void>;
   uploadAvatar: (fileUri: string, fileName: string) => Promise<void>;
@@ -171,6 +174,19 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         notificationsService.requestPermission().then(granted => {
           if (granted) notificationsService.registerPushToken(userId);
         }).catch(e => console.error('Push registration skipped:', e));
+      }
+    } finally {
+      set({ isLoading: false });
+    }
+  },
+
+  signInWithGoogle: async () => {
+    set({ isLoading: true });
+    try {
+      const res = await googleAuthService.signInWithGoogle();
+      if (res.session) {
+        set({ session: res.session });
+        await get().loadProfile();
       }
     } finally {
       set({ isLoading: false });

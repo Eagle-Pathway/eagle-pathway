@@ -57,7 +57,7 @@ export default function SignupScreen() {
   const [code, setCode] = useState('');
   const [resending, setResending] = useState(false);
   const [resendCooldown, setResendCooldown] = useState(verifyEmail ? RESEND_COOLDOWN_SECONDS : 0);
-  const { signUp, verifySignup, isLoading, setLoading } = useAuthStore();
+  const { signUp, verifySignup, signInWithGoogle, isLoading, setLoading } = useAuthStore();
 
   // Tick down the resend cooldown so users can't hammer the (rate-limited) email sender.
   useEffect(() => {
@@ -313,11 +313,43 @@ export default function SignupScreen() {
 
             <Button title="Create Account" onPress={handleContinue} loading={isLoading} style={{ marginTop: Spacing.sm }} />
 
-            <View style={styles.dividerRow}>
-              <View style={styles.dividerLine} />
-              <Text style={styles.dividerText}>or</Text>
-              <View style={styles.dividerLine} />
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginVertical: Spacing.md }}>
+              <View style={{ flex: 1, height: 1, backgroundColor: Colors.border }} />
+              <Text style={{ marginHorizontal: Spacing.md, fontSize: 12, color: Colors.textSecondary, fontWeight: Typography.medium }}>OR</Text>
+              <View style={{ flex: 1, height: 1, backgroundColor: Colors.border }} />
             </View>
+
+            <TouchableOpacity
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 10,
+                borderWidth: 1.5,
+                borderColor: Colors.border,
+                borderRadius: Radius.lg,
+                paddingVertical: 14,
+                backgroundColor: Colors.white,
+              }}
+              onPress={async () => {
+                try {
+                  await signInWithGoogle();
+                  router.replace('/(tabs)/home');
+                } catch (e: any) {
+                  if (e?.message !== 'Google sign-in was cancelled or closed.') {
+                    showError(e, 'Google Sign-Up Failed');
+                  }
+                } finally {
+                  setLoading(false);
+                }
+              }}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="logo-google" size={20} color="#4285F4" />
+              <Text style={{ fontSize: Typography.base, fontWeight: Typography.semibold, color: Colors.text }}>
+                Continue with Google
+              </Text>
+            </TouchableOpacity>
 
             <TouchableOpacity style={styles.loginLink} onPress={() => router.push('/(auth)/login')} activeOpacity={0.7}>
               <Text 
