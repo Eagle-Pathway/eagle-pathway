@@ -17,14 +17,23 @@ export default function AuthCallbackScreen() {
 
     async function handleAuth() {
       try {
-        // 1. Check for error in query params
+        // 1. Check for explicit error in query params from Google
         if (params.error || params.error_description) {
-          const desc = params.error_description || params.error || 'Authentication was declined or failed.';
+          const desc = params.error_description || params.error || 'Authentication was declined.';
           if (isMounted) setErrorMessage(desc);
           return;
         }
 
-        // 2. Extract code from local params or initial deep link URL
+        // 2. Check if a session already exists
+        const { data: activeSession } = await supabase.auth.getSession();
+        if (activeSession?.session) {
+          setSession(activeSession.session);
+          await loadProfile();
+          router.replace('/(tabs)/home');
+          return;
+        }
+
+        // 3. Extract code or tokens from local params or initial URL
         let code = params.code;
         let accessToken: string | null = null;
         let refreshToken: string | null = null;
@@ -46,50 +55,49 @@ export default function AuthCallbackScreen() {
           }
         }
 
-        // 3. Exchange code for session if PKCE code is present
+        // 4. Try exchanging code if PKCE code is present
         if (code) {
-          const { data, error } = await supabase.auth.exchangeCodeForSession(code);
-          if (error) throw error;
-          if (data.session) {
-            setSession(data.session);
-            await loadProfile();
-            router.replace('/(tabs)/home');
-            return;
+          try {
+            const { data } = await supabase.auth.exchangeCodeForSession(code);
+            if (data?.session) {
+              setSession(data.session);
+              await loadProfile();
+              router.replace('/(tabs)/home');
+              return;
+            }
+          } catch (codeErr) {
+            console.log('[AuthCallback] Code exchange handled by background session handler:', codeErr);
           }
         }
 
-        // 4. Set session directly if access tokens were in URL hash
+        // 5. Try setting session directly if hash tokens are present
         if (accessToken && refreshToken) {
-          const { data, error } = await supabase.auth.setSession({
-            access_token: accessToken,
-            refresh_token: refreshToken,
-          });
-          if (error) throw error;
-          if (data.session) {
-            setSession(data.session);
+          try {
+            const { data } = await supabase.auth.setSession({
+              access_token: accessToken,
+              refresh_token: refreshToken,
+            });
+            if (data?.session) {
+              setSession(data.session);
+              await loadProfile();
+              router.replace('/(tabs)/home');
+              return;
+            }
+          } catch (tokenErr) {
+            console.log('[AuthCallback] Token set session handled by background session handler:', tokenErr);
+          }
+        }
+
+        // 6. Graceful polling for session completion (handles concurrent browser exchanges)
+        for (let attempt = 0; attempt < 6; attempt++) {
+          await new Promise((r) => setTimeout(r, 500));
+          const { data: pollSession } = await supabase.auth.getSession();
+          if (pollSession?.session) {
+            setSession(pollSession.session);
             await loadProfile();
             router.replace('/(tabs)/home');
             return;
           }
-        }
-
-        // 5. Check if Supabase client already received session from browser handler
-        const { data: sessionData } = await supabase.auth.getSession();
-        if (sessionData?.session) {
-          setSession(sessionData.session);
-          await loadProfile();
-          router.replace('/(tabs)/home');
-          return;
-        }
-
-        // 6. Grace period before showing error
-        await new Promise((resolve) => setTimeout(resolve, 1500));
-        const { data: retrySession } = await supabase.auth.getSession();
-        if (retrySession?.session) {
-          setSession(retrySession.session);
-          await loadProfile();
-          router.replace('/(tabs)/home');
-          return;
         }
 
         if (isMounted) {
@@ -97,8 +105,15 @@ export default function AuthCallbackScreen() {
         }
       } catch (err: any) {
         console.error('[AuthCallbackScreen] Error during callback handling:', err);
+        const { data: fallbackSession } = await supabase.auth.getSession();
+        if (fallbackSession?.session) {
+          setSession(fallbackSession.session);
+          await loadProfile();
+          router.replace('/(tabs)/home');
+          return;
+        }
         if (isMounted) {
-          setErrorMessage(err.message || 'An unexpected error occurred during Google sign-in.');
+          setErrorMessage(err?.message || 'An unexpected error occurred during Google sign-in.');
         }
       }
     }
