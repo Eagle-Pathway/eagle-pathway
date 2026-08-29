@@ -29,31 +29,37 @@ export const googleAuthService = {
       throw new Error('Google sign-in was cancelled or closed.');
     }
 
-    // Extract access_token and refresh_token from redirect hash/query parameters
+    // Extract parameters from both query string and hash fragment
     const url = res.url;
-    const params = new URLSearchParams(
-      url.includes('#') ? url.split('#')[1] : url.split('?')[1] || ''
-    );
+    const queryPart = url.includes('?') ? url.split('?')[1].split('#')[0] : '';
+    const hashPart = url.includes('#') ? url.split('#')[1] : '';
+    const searchParams = new URLSearchParams(queryPart ? `${queryPart}&${hashPart}` : hashPart);
 
-    const accessToken = params.get('access_token');
-    const refreshToken = params.get('refresh_token');
+    const code = searchParams.get('code');
+    const accessToken = searchParams.get('access_token');
+    const refreshToken = searchParams.get('refresh_token');
 
-    if (!accessToken || !refreshToken) {
-      throw new Error('Could not retrieve session tokens from Google authentication response.');
+    if (code) {
+      const { data: exchangeData, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+      if (exchangeError) throw exchangeError;
+      return {
+        session: exchangeData.session,
+        user: exchangeData.user,
+      };
     }
 
-    const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
-      access_token: accessToken,
-      refresh_token: refreshToken,
-    });
-
-    if (sessionError) {
-      throw sessionError;
+    if (accessToken && refreshToken) {
+      const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
+        access_token: accessToken,
+        refresh_token: refreshToken,
+      });
+      if (sessionError) throw sessionError;
+      return {
+        session: sessionData.session,
+        user: sessionData.user,
+      };
     }
 
-    return {
-      session: sessionData.session,
-      user: sessionData.user,
-    };
+    throw new Error('Could not retrieve authentication session from Google response.');
   },
 };
