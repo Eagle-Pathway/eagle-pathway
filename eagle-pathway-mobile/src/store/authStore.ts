@@ -220,34 +220,54 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const profile = await authService.getProfile(session.user.id);
       set({ user: profile, isAuthenticated: true });
     } catch {
-      // Profile missing - try to create from metadata
-      const metadata = session.user.user_metadata;
-      if (metadata) {
-        try {
-          const profile = await authService.createProfile(
-            session.user.id,
-            metadata.full_name || 'User',
-            // Fall back to the auth user's phone (set for phone-auth signups)
-            // before an empty string — '' collides on users.phone UNIQUE.
-            metadata.phone || session.user.phone || '',
-            metadata.role || 'student',
-            session.user.email || '',
-            {
-              referral_code: metadata.referral_code,
-              signup_source: metadata.signup_source,
-              utm_source: metadata.utm_source,
-              utm_medium: metadata.utm_medium,
-              utm_campaign: metadata.utm_campaign,
-              utm_content: metadata.utm_content,
-              first_landing_url: metadata.first_landing_url,
-            }
-          );
-          set({ user: profile, isAuthenticated: true });
-        } catch {
-          set({ isAuthenticated: false });
-        }
-      } else {
-        set({ isAuthenticated: false });
+      // Profile missing in public.users - create profile from session metadata
+      const u = session.user;
+      const metadata = u.user_metadata || {};
+      const fullName = metadata.full_name || metadata.name || u.email?.split('@')[0] || 'Eagle User';
+      const email = u.email || '';
+      const role = (metadata.role as UserRole) || 'student';
+
+      try {
+        const profile = await authService.createProfile(
+          u.id,
+          fullName,
+          metadata.phone || u.phone || '',
+          role,
+          email,
+          {
+            referral_code: metadata.referral_code,
+            signup_source: metadata.signup_source || 'google_oauth',
+            utm_source: metadata.utm_source,
+            utm_medium: metadata.utm_medium,
+            utm_campaign: metadata.utm_campaign,
+            utm_content: metadata.utm_content,
+            first_landing_url: metadata.first_landing_url,
+          }
+        );
+        const finalUser: User = profile || {
+          id: u.id,
+          email,
+          full_name: fullName,
+          phone: '',
+          role,
+          roles: [role],
+          active_role: role,
+          created_at: new Date().toISOString(),
+        };
+        set({ user: finalUser, isAuthenticated: true });
+      } catch (createErr) {
+        console.error('[loadProfile] createProfile failed, using session fallback user:', createErr);
+        const fallbackUser: User = {
+          id: u.id,
+          email,
+          full_name: fullName,
+          phone: '',
+          role,
+          roles: [role],
+          active_role: role,
+          created_at: new Date().toISOString(),
+        };
+        set({ user: fallbackUser, isAuthenticated: true });
       }
     } finally {
       set({ isLoading: false });
