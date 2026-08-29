@@ -5,14 +5,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Typography, Spacing, Radius } from '@/utils/theme';
-import { useAuthStore } from '@/store/authStore';
-import { showError } from '@/utils/errorHandler';
 
 const { height } = Dimensions.get('window');
 
 export default function SplashScreen() {
-  const { signInWithGoogle, setLoading } = useAuthStore();
-
   return (
     <View style={styles.container}>
       <SafeAreaView style={styles.safe}>
@@ -45,28 +41,8 @@ export default function SplashScreen() {
 
         {/* Actions */}
         <View style={styles.actions}>
-          <TouchableOpacity
-            style={styles.btnGoogle}
-            onPress={async () => {
-              try {
-                await signInWithGoogle();
-                router.replace('/(tabs)/home');
-              } catch (e: any) {
-                if (e?.message !== 'Google sign-in was cancelled or closed.') {
-                  showError(e, 'Google Sign-In Failed');
-                }
-              } finally {
-                setLoading(false);
-              }
-            }}
-            activeOpacity={0.9}
-          >
-            <Ionicons name="logo-google" size={20} color="#4285F4" />
-            <Text style={styles.btnGoogleText}>Continue with Google</Text>
-          </TouchableOpacity>
-
           <TouchableOpacity style={styles.btnPrimary} onPress={() => router.push('/(auth)/signup')} activeOpacity={0.9}>
-            <Text style={styles.btnPrimaryText}>Create Account</Text>
+            <Text style={styles.btnPrimaryText}>Get Started</Text>
           </TouchableOpacity>
           <TouchableOpacity style={styles.btnSecondary} onPress={() => router.push('/(auth)/login')} activeOpacity={0.9}>
             <Text style={styles.btnSecondaryText}>I Already Have an Account</Text>
@@ -134,34 +110,13 @@ const styles = StyleSheet.create({
   statLbl: { fontSize: Typography.xs, color: 'rgba(255,255,255,0.85)', marginTop: 2, textAlign: 'center' },
   statDivider: { width: 1, backgroundColor: 'rgba(255,255,255,0.15)', marginHorizontal: 2 },
   actions: { padding: Spacing['2xl'], gap: Spacing.md },
-  btnGoogle: {
+  btnPrimary: {
     backgroundColor: Colors.white,
     borderRadius: Radius.xl,
     paddingVertical: 15,
-    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
   },
-  btnGoogleText: {
-    color: '#1f2937',
-    fontWeight: Typography.bold,
-    fontSize: Typography.lg,
-  },
-  btnPrimary: {
-    backgroundColor: 'rgba(255,255,255,0.18)',
-    borderRadius: Radius.xl,
-    paddingVertical: 14,
-    alignItems: 'center',
-    borderWidth: 1.5,
-    borderColor: 'rgba(255,255,255,0.3)',
-  },
-  btnPrimaryText: { color: Colors.white, fontWeight: Typography.bold, fontSize: Typography.lg },
+  btnPrimaryText: { color: Colors.blue, fontWeight: Typography.bold, fontSize: Typography.xl },
   btnSecondary: {
     backgroundColor: 'rgba(255,255,255,0.12)',
     borderRadius: Radius.xl,
