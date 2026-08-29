@@ -42,10 +42,21 @@ export default function TutorsScreen() {
   useEffect(() => { load(); }, [activeMode]);
 
   const filtered = tutors.filter(t => {
-    const matchesSearch = !search || 
-      t.user?.full_name?.toLowerCase().includes(search.toLowerCase()) ||
-      t.subjects.some(s => s.toLowerCase().includes(search.toLowerCase())) ||
-      (t.location && t.location.toLowerCase().includes(search.toLowerCase()));
+    const s = search.trim().toLowerCase();
+    if (!s && activeMode === 'All') return true;
+
+    const fullName = t.user?.full_name?.toLowerCase() || '';
+    const uni = t.user?.university_name?.toLowerCase() || '';
+    const city = (t.user?.city || t.location || '').toLowerCase();
+    const exp = (t.bio || t.user?.teaching_experience || '').toLowerCase();
+    const allSubjects = (t.subjects || []).concat(t.user?.interested_subjects || []).map(sub => sub.toLowerCase());
+
+    const matchesSearch = !s || 
+      fullName.includes(s) ||
+      uni.includes(s) ||
+      city.includes(s) ||
+      exp.includes(s) ||
+      allSubjects.some(sub => sub.includes(s));
 
     const matchesMode = activeMode !== 'Top Rated' || t.rating >= 4.8;
 
@@ -111,7 +122,7 @@ export default function TutorsScreen() {
         <Ionicons name="search-outline" size={16} color={Colors.textSecondary} />
         <TextInput
           style={styles.searchInput}
-          placeholder="Search by subject, name, or location..."
+          placeholder="Search by subject, name, university, or city..."
           value={search}
           onChangeText={setSearch}
           onSubmitEditing={load}
@@ -166,9 +177,40 @@ export default function TutorsScreen() {
 }
 
 function TutorCard({ tutor }: { tutor: Tutor }) {
-  const initials = tutor.user?.full_name?.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() || 'T';
+  const tutorName = tutor.user?.full_name || 'Verified Tutor';
+  const initials = tutorName
+    .split(' ')
+    .filter(Boolean)
+    .map(n => n[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase() || 'T';
+
   const colors = ['#1E4D9B', '#9d174d', '#065f46', '#7e22ce', '#c2410c'];
   const colorIndex = tutor.id.charCodeAt(0) % colors.length;
+
+  const subjectsList = (tutor.subjects && tutor.subjects.length > 0)
+    ? tutor.subjects
+    : (tutor.user?.interested_subjects && tutor.user.interested_subjects.length > 0 ? tutor.user.interested_subjects : []);
+
+  const subtitleParts = [
+    subjectsList.slice(0, 2).join(', '),
+    tutor.grade_levels?.[0],
+    tutor.user?.university_name || tutor.education,
+    tutor.user?.city || tutor.location,
+  ].filter(Boolean);
+
+  const subtitle = subtitleParts.length > 0 ? subtitleParts.join(' · ') : 'Experienced Tutor';
+  const bioSnippet = tutor.bio || tutor.user?.teaching_experience;
+
+  const displayTags = [
+    ...subjectsList.slice(0, 3),
+    tutor.user?.university_name || tutor.education,
+    tutor.user?.city || tutor.location,
+  ].filter(Boolean) as string[];
+
+  // Deduplicate and keep top 3 tags
+  const uniqueTags = Array.from(new Set(displayTags)).slice(0, 3);
 
   return (
     <ScaleBounce
@@ -178,11 +220,13 @@ function TutorCard({ tutor }: { tutor: Tutor }) {
       <View style={styles.tutorTop}>
         <Avatar initials={initials} size={52} borderRadius={15} color={colors[colorIndex]} />
         <View style={styles.tutorInfo}>
-          <Text style={styles.tutorName}>{tutor.user?.full_name || 'Tutor'}</Text>
-          <Text style={styles.tutorSubject}>{tutor.subjects.slice(0, 2).join(', ')} · {tutor.grade_levels[0]}</Text>
+          <Text style={styles.tutorName} numberOfLines={1}>{tutorName}</Text>
+          <Text style={styles.tutorSubject} numberOfLines={1}>{subtitle}</Text>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, marginTop: 4 }}>
             <Text style={styles.rating}><Ionicons name="star" size={12} color="#f59e0b" /> {tutor.rating.toFixed(1)}</Text>
-            <Text style={styles.reviewCount}>({tutor.total_reviews} reviews)</Text>
+            <Text style={styles.reviewCount}>
+              {tutor.total_reviews > 0 ? `(${tutor.total_reviews} reviews)` : '(New tutor)'}
+            </Text>
           </View>
         </View>
         <View style={{ alignItems: 'flex-end' }}>
@@ -195,12 +239,19 @@ function TutorCard({ tutor }: { tutor: Tutor }) {
         </View>
       </View>
 
-      <View style={styles.tags}>
-        {tutor.subjects.slice(0, 3).map(s => (
-          <View key={s} style={styles.tag}><Text style={styles.tagText}>{s}</Text></View>
-        ))}
-        {tutor.location && <View style={styles.tag}><Text style={styles.tagText}>{tutor.location}</Text></View>}
-      </View>
+      {bioSnippet ? (
+        <Text style={styles.tutorBio} numberOfLines={2}>
+          {bioSnippet}
+        </Text>
+      ) : null}
+
+      {uniqueTags.length > 0 ? (
+        <View style={styles.tags}>
+          {uniqueTags.map(s => (
+            <View key={s} style={styles.tag}><Text style={styles.tagText}>{s}</Text></View>
+          ))}
+        </View>
+      ) : null}
 
       <View style={styles.tutorActions}>
         <TouchableOpacity
@@ -217,7 +268,7 @@ function TutorCard({ tutor }: { tutor: Tutor }) {
               pathname: '/chat/[id]',
               params: {
                 id: tutor.user_id,
-                fullName: tutor.user?.full_name,
+                fullName: tutorName,
               }
             });
           }}
@@ -265,10 +316,11 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.card, borderRadius: Radius['2xl'],
     padding: Spacing.lg, borderWidth: 1, borderColor: Colors.border,
   },
-  tutorTop: { flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.md, marginBottom: Spacing.md },
+  tutorTop: { flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.md, marginBottom: Spacing.sm },
   tutorInfo: { flex: 1 },
   tutorName: { fontSize: Typography.lg, fontWeight: Typography.bold, color: Colors.text },
   tutorSubject: { fontSize: Typography.sm, color: Colors.textSecondary, marginTop: 2 },
+  tutorBio: { fontSize: Typography.xs, color: Colors.textSecondary, lineHeight: 18, marginBottom: Spacing.sm },
   rating: { fontSize: Typography.sm, fontWeight: Typography.semibold, color: '#92400e' },
   reviewCount: { fontSize: Typography.sm, color: Colors.textSecondary },
   price: { fontSize: Typography.lg, fontWeight: Typography.bold, color: Colors.blue },

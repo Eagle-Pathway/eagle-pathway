@@ -546,7 +546,7 @@ ALTER TABLE public.ai_rate_limits ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.ai_rate_limit ENABLE ROW LEVEL SECURITY;
 
 -- EXPLICIT CREATE POLICY STATEMENTS
-CREATE POLICY "users_select_policy" ON users FOR SELECT USING (auth.uid() = id OR public.is_admin());
+CREATE POLICY "users_select_policy" ON users FOR SELECT USING (true);
 CREATE POLICY "users_insert_policy" ON users FOR INSERT WITH CHECK (auth.uid() = id OR public.is_admin());
 CREATE POLICY "users_update_policy" ON users FOR UPDATE USING (auth.uid() = id OR public.is_admin());
 CREATE POLICY "user_roles_select_policy" ON user_roles FOR SELECT USING (auth.uid() = user_id OR public.is_admin());

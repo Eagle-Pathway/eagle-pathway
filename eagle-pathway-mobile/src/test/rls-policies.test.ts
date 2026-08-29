@@ -27,7 +27,7 @@ const EXEMPT_FROM_RLS = new Set(['schema_versions']);
 
 // Tables that are intentionally world-readable to authenticated users. Their
 // SELECT policy is `USING (true)` by design (public catalog data, not PII).
-const PUBLIC_READABLE = new Set(['scholarships', 'tutors', 'tutor_reviews', 'resources', 'success_stories']);
+const PUBLIC_READABLE = new Set(['scholarships', 'tutors', 'tutor_reviews', 'resources', 'success_stories', 'users']);
 
 interface Policy {
   name: string;

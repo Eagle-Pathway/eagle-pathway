@@ -98,8 +98,26 @@ export default function TutorProfileScreen() {
 
   if (!tutor) return null;
 
-  const initials = tutor.user?.full_name?.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() || 'T';
+  const tutorName = tutor.user?.full_name || 'Verified Tutor';
+  const initials = tutorName
+    .split(' ')
+    .filter(Boolean)
+    .map(n => n[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase() || 'T';
+
   const insets = useSafeAreaInsets();
+
+  const subjectsList = (tutor.subjects && tutor.subjects.length > 0)
+    ? tutor.subjects
+    : (tutor.user?.interested_subjects && tutor.user.interested_subjects.length > 0 ? tutor.user.interested_subjects : ['Academic Tutoring']);
+
+  const heroTitle = `${subjectsList.slice(0, 2).join(' & ')} Tutor · ${tutor.total_sessions || 0}+ Sessions`;
+  const location = tutor.user?.city || tutor.user?.living_address || tutor.location || 'Addis Ababa, Ethiopia';
+  const education = tutor.user?.university_name || tutor.education || 'University Graduate';
+  const displayBio = tutor.bio || tutor.user?.teaching_experience || 'Experienced and verified tutor on Eagle Pathway.';
+  const allGrades = (tutor.grade_levels && tutor.grade_levels.length > 0) ? tutor.grade_levels : ['Primary', 'High School', 'University'];
 
   return (
     <SafeAreaView style={[CommonStyles.flex1, { backgroundColor: Colors.blueDark }]} edges={['top', 'bottom']}>
@@ -132,14 +150,14 @@ export default function TutorProfileScreen() {
           </View>
         </View>
         <Avatar initials={initials} size={80} borderRadius={24} color={Colors.gold} style={styles.heroAvatar} />
-        <Text style={styles.heroName}>{tutor.user?.full_name}</Text>
-        <Text style={styles.heroTitle}>{tutor.subjects.slice(0,2).join(' & ')} Tutor · {tutor.total_sessions}+ Sessions</Text>
+        <Text style={styles.heroName}>{tutorName}</Text>
+        <Text style={styles.heroTitle}>{heroTitle}</Text>
         <View style={styles.heroStats}>
           {[
             { num: tutor.rating.toFixed(1), lbl: 'Rating' },
-            { num: tutor.total_reviews, lbl: 'Reviews' },
-            { num: tutor.total_sessions, lbl: 'Sessions' },
-            { num: `${tutor.response_rate}%`, lbl: 'Response' },
+            { num: tutor.total_reviews > 0 ? tutor.total_reviews : 'New', lbl: 'Reviews' },
+            { num: tutor.total_sessions || 0, lbl: 'Sessions' },
+            { num: `${tutor.response_rate || 100}%`, lbl: 'Response' },
           ].map(s => (
             <View key={s.lbl} style={styles.heroStat}>
               <Text style={styles.heroStatNum}>{s.num}</Text>
@@ -164,7 +182,7 @@ export default function TutorProfileScreen() {
                 placeholderTextColor={Colors.textSecondary}
               />
             ) : (
-              <Text style={styles.bioText}>{tutor.bio}</Text>
+              <Text style={styles.bioText}>{displayBio}</Text>
             )}
           </View>
         </View>
@@ -172,8 +190,8 @@ export default function TutorProfileScreen() {
         {/* Info rows */}
         <View style={CommonStyles.card}>
           {[
-            { icon: 'location-outline', label: 'Location', value: tutor.location || 'Addis Ababa' },
-            { icon: 'school-outline', label: 'Education', value: tutor.education },
+            { icon: 'location-outline', label: 'Location', value: location },
+            { icon: 'school-outline', label: 'Education / University', value: education },
             { icon: 'cash-outline', label: 'Rate', value: isEditing ? (
               <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                 <Text style={{ color: Colors.text, marginRight: 4 }}>ETB</Text>
@@ -204,8 +222,8 @@ export default function TutorProfileScreen() {
           <View style={{ padding: Spacing.lg }}>
             <Text style={styles.cardSectionTitle}>Subjects & Levels</Text>
             <View style={{ flexDirection: 'row', gap: Spacing.sm, flexWrap: 'wrap', marginTop: Spacing.sm }}>
-              {tutor.subjects.map(s => <Pill key={s} label={s} variant="blue" />)}
-              {tutor.grade_levels.map(g => <Pill key={g} label={g} variant="green" />)}
+              {subjectsList.map(s => <Pill key={s} label={s} variant="blue" />)}
+              {allGrades.map(g => <Pill key={g} label={g} variant="green" />)}
             </View>
           </View>
         </View>
