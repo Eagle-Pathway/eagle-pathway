@@ -271,6 +271,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       }
     } finally {
       set({ isLoading: false });
+
+      // Automatically register / refresh push token for existing signed-in users on app open
+      const currentUserId = session?.user?.id;
+      if (currentUserId) {
+        notificationsService.requestPermission().then(granted => {
+          if (granted) notificationsService.registerPushToken(currentUserId);
+        }).catch(() => {});
+      }
     }
   },
 

@@ -13,6 +13,13 @@ Notifications.setNotificationHandler({
   }),
 });
 
+import Constants from 'expo-constants';
+
+const EAS_PROJECT_ID =
+  Constants.expoConfig?.extra?.eas?.projectId ||
+  Constants.easConfig?.projectId ||
+  'e78c6e36-63e3-4e25-b7df-6323b8b28809';
+
 export const notificationsService = {
   async requestPermission(): Promise<boolean> {
     const { status: existingStatus } = await Notifications.getPermissionsAsync();
@@ -38,15 +45,19 @@ export const notificationsService = {
   },
 
   async registerPushToken(userId: string): Promise<void> {
-    if (Platform.OS === 'web') return;
+    if (Platform.OS === 'web' || !userId) return;
     
     try {
-      const token = await Notifications.getExpoPushTokenAsync();
-      await supabase
-        .from('push_tokens')
-        .upsert({ user_id: userId, token: token.data });
+      const token = await Notifications.getExpoPushTokenAsync({
+        projectId: EAS_PROJECT_ID,
+      });
+      if (token?.data) {
+        await supabase
+          .from('push_tokens')
+          .upsert({ user_id: userId, token: token.data }, { onConflict: 'token' });
+      }
     } catch (e) {
-      console.log('Push token registration failed:', e);
+      console.warn('[Notifications] Push token registration warning:', e);
     }
   },
 

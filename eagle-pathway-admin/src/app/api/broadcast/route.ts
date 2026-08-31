@@ -20,8 +20,8 @@ export async function POST(req: NextRequest) {
 
     const supabase = getStrictAdminClient();
 
-    // 2. Get target users and their push tokens
-    let query = supabase.from('users').select('id, push_tokens(token)');
+    // 2. Get target users
+    let query = supabase.from('users').select('id');
     if (audience !== 'all') {
       query = query.eq('role', audience);
     }
@@ -55,19 +55,20 @@ export async function POST(req: NextRequest) {
       if (insertError) console.error('Failed to insert in-app notifications:', insertError);
     }
 
-    // 5. Gather push tokens
-    const tokens: string[] = [];
-    users.forEach(u => {
-      // @ts-ignore (PostgREST returns an array for one-to-many relationships)
-      if (u.push_tokens && Array.isArray(u.push_tokens)) {
-        // @ts-ignore
-        u.push_tokens.forEach(pt => {
-          if (pt.token && (pt.token.startsWith('ExponentPushToken') || pt.token.startsWith('ExpoPushToken'))) {
-            tokens.push(pt.token);
-          }
-        });
-      }
-    });
+    // 5. Gather push tokens directly from push_tokens table for target users
+    const userIds = users.map(u => u.id);
+    const { data: pushRows } = await supabase
+      .from('push_tokens')
+      .select('token, user_id')
+      .in('user_id', userIds);
+
+    const tokens: string[] = Array.from(
+      new Set(
+        (pushRows || [])
+          .map(r => r.token?.trim())
+          .filter(t => t && (t.startsWith('ExponentPushToken') || t.startsWith('ExpoPushToken')))
+      )
+    );
 
     // 6. Send Expo push notifications
     if (tokens.length > 0) {
