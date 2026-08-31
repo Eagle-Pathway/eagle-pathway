@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabase';
+import { supabase, getAuthHeaders } from '@/lib/supabase';
 import { roleOf } from '@/lib/role';
 import { Search, Mail, Phone, MapPin, MoreVertical, Download, ChevronLeft, ChevronRight, Filter, MessageSquare, Eye, Shield, Trash2, RotateCcw, Send } from 'lucide-react';
 import { exportToCSV } from '@/utils/export';
@@ -51,9 +51,10 @@ export default function UsersPage() {
   async function fetchUsers() {
     setLoading(true);
     try {
+      const headers = await getAuthHeaders();
       const res = await fetch('/api/admin/users/action', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({ action: 'get_all_users' }),
       });
       const json = await res.json();
@@ -91,12 +92,13 @@ export default function UsersPage() {
     if (!ok) return;
 
     setBulkActionLoading(true);
+    const headers = await getAuthHeaders();
     const userIdsArr = Array.from(selectedUserIds);
     const results = await Promise.all(
       userIdsArr.map((userId) =>
         fetch('/api/admin/users/action', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers,
           body: JSON.stringify({ action: 'suspend', userId }),
         }).then((res) => res.ok).catch(() => false)
       )
@@ -118,12 +120,13 @@ export default function UsersPage() {
     if (!ok) return;
 
     setBulkActionLoading(true);
+    const headers = await getAuthHeaders();
     const userIdsArr = Array.from(selectedUserIds);
     const results = await Promise.all(
       userIdsArr.map((userId) =>
         fetch('/api/admin/users/action', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers,
           body: JSON.stringify({ action: 'unsuspend', userId }),
         }).then((res) => res.ok).catch(() => false)
       )
@@ -140,12 +143,13 @@ export default function UsersPage() {
     if (!bulkNotifyTitle.trim() || !bulkNotifyMessage.trim() || selectedUserIds.size === 0) return;
 
     setBulkActionLoading(true);
+    const headers = await getAuthHeaders();
     const userIdsArr = Array.from(selectedUserIds);
     const results = await Promise.all(
       userIdsArr.map((userId) =>
         fetch('/api/admin/users/action', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers,
           body: JSON.stringify({
             action: 'send_notification',
             userId,
@@ -184,9 +188,10 @@ export default function UsersPage() {
     if (!ok) return;
 
     try {
+      const headers = await getAuthHeaders();
       const res = await fetch('/api/admin/users/action', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({ action, userId: user.id }),
       });
       const json = await res.json();
@@ -208,9 +213,10 @@ export default function UsersPage() {
     if (!ok) return;
 
     try {
+      const headers = await getAuthHeaders();
       const res = await fetch('/api/admin/users/action', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({ action: 'delete', userId: user.id }),
       });
       const json = await res.json();
@@ -232,9 +238,10 @@ export default function UsersPage() {
     if (!ok) return;
 
     try {
+      const headers = await getAuthHeaders();
       const res = await fetch('/api/admin/users/action', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({ action: 'restore', userId: user.id }),
       });
       const json = await res.json();
@@ -256,9 +263,10 @@ export default function UsersPage() {
     if (!ok) return;
 
     try {
+      const headers = await getAuthHeaders();
       const res = await fetch('/api/admin/users/action', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({ action: 'purge', userId: user.id }),
       });
       const json = await res.json();

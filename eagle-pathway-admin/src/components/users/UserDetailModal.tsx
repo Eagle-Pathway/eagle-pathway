@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { X, Mail, Phone, MapPin, Calendar, Shield, Award, BookOpen, Send, Lock, AlertTriangle } from 'lucide-react';
 import { useToast } from '@/components/ui/Feedback';
+import { getAuthHeaders } from '@/lib/supabase';
 
 interface UserDetailModalProps {
   userId: string;
@@ -28,9 +29,10 @@ export function UserDetailModal({ userId, onClose, onRefresh }: UserDetailModalP
   async function fetchDetails() {
     setLoading(true);
     try {
+      const headers = await getAuthHeaders();
       const res = await fetch('/api/admin/users/action', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({ action: 'get_details', userId }),
       });
       const json = await res.json();
@@ -52,9 +54,10 @@ export function UserDetailModal({ userId, onClose, onRefresh }: UserDetailModalP
     const action = isSuspended ? 'unsuspend' : 'suspend';
     setActionLoading(true);
     try {
+      const headers = await getAuthHeaders();
       const res = await fetch('/api/admin/users/action', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({ action, userId }),
       });
       const json = await res.json();
@@ -74,9 +77,10 @@ export function UserDetailModal({ userId, onClose, onRefresh }: UserDetailModalP
     if (!notifTitle.trim() || !notifMessage.trim()) return;
     setActionLoading(true);
     try {
+      const headers = await getAuthHeaders();
       const res = await fetch('/api/admin/users/action', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({
           action: 'send_notification',
           userId,
@@ -100,9 +104,10 @@ export function UserDetailModal({ userId, onClose, onRefresh }: UserDetailModalP
   const handleResetPassword = async () => {
     setActionLoading(true);
     try {
+      const headers = await getAuthHeaders();
       const res = await fetch('/api/admin/users/action', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({
           action: 'reset_password',
           userId,
