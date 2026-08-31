@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   X, 
   ZoomIn, 
@@ -11,8 +11,10 @@ import {
   FileText, 
   User, 
   Calendar,
-  AlertCircle
+  AlertCircle,
+  Loader2
 } from 'lucide-react';
+import { getFreshSignedUrl } from '@/lib/storageHelper';
 
 export interface PreviewableDocument {
   id: string;
@@ -43,6 +45,24 @@ export function DocumentPreviewModal({ document, onClose, onUpdateStatus }: Docu
   const [showRejectForm, setShowRejectForm] = useState(false);
   const [rejectReason, setRejectReason] = useState('');
   const [actionLoading, setActionLoading] = useState(false);
+  const [resolvedUrl, setResolvedUrl] = useState<string>(document?.file_url || '');
+  const [loadingUrl, setLoadingUrl] = useState<boolean>(true);
+
+  useEffect(() => {
+    let isMounted = true;
+    async function resolveLiveUrl() {
+      if (!document) return;
+      setLoadingUrl(true);
+      const raw = document.file_path || document.file_url;
+      const fresh = await getFreshSignedUrl(raw, 'documents');
+      if (isMounted) {
+        setResolvedUrl(fresh || document.file_url);
+        setLoadingUrl(false);
+      }
+    }
+    resolveLiveUrl();
+    return () => { isMounted = false; };
+  }, [document]);
 
   if (!document) return null;
 
@@ -154,7 +174,7 @@ export function DocumentPreviewModal({ document, onClose, onUpdateStatus }: Docu
               </>
             )}
             <a
-              href={document.file_url}
+              href={resolvedUrl || document.file_url}
               download={document.file_name}
               target="_blank"
               rel="noopener noreferrer"
@@ -174,9 +194,14 @@ export function DocumentPreviewModal({ document, onClose, onUpdateStatus }: Docu
 
         {/* Document Viewer Body */}
         <div className="flex-1 bg-slate-900/90 relative overflow-auto flex items-center justify-center p-4">
-          {isPdf ? (
+          {loadingUrl ? (
+            <div className="flex flex-col items-center justify-center text-white space-y-3">
+              <Loader2 className="w-8 h-8 animate-spin text-brand-gold" />
+              <p className="text-xs text-gray-300">Decrypting and loading document...</p>
+            </div>
+          ) : isPdf ? (
             <iframe
-              src={`${document.file_url}#toolbar=1`}
+              src={`${resolvedUrl}#toolbar=1`}
               className="w-full h-full rounded-lg border-0 bg-white shadow-lg"
               title={document.file_name}
             />
@@ -189,7 +214,7 @@ export function DocumentPreviewModal({ document, onClose, onUpdateStatus }: Docu
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src={document.file_url}
+                src={resolvedUrl || document.file_url}
                 alt={document.file_name}
                 className="max-h-[70vh] max-w-[85vw] object-contain rounded shadow-2xl bg-white select-none pointer-events-none"
               />

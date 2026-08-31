@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { exportToCSV } from '@/utils/export';
 import { DocumentPreviewModal, PreviewableDocument } from '@/components/documents/DocumentPreviewModal';
+import { getFreshSignedUrl } from '@/lib/storageHelper';
 
 interface UserDocument extends PreviewableDocument {
   id: string;
@@ -66,16 +67,12 @@ export default function DocumentsPage() {
   const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
 
   const signDocumentUrl = async (document: UserDocument): Promise<UserDocument> => {
-    const path = document.file_path || (!document.file_url?.startsWith('http') ? document.file_url : null);
-    if (!path) return document;
-
-    const { data } = await supabase.storage
-      .from('documents')
-      .createSignedUrl(path, 60 * 60 * 24 * 7);
-
-    return data?.signedUrl
-      ? { ...document, file_path: path, file_url: data.signedUrl }
-      : document;
+    const rawPath = document.file_path || document.file_url;
+    const signedUrl = await getFreshSignedUrl(rawPath, 'documents');
+    return {
+      ...document,
+      file_url: signedUrl || document.file_url,
+    };
   };
 
   async function fetchDocuments() {
