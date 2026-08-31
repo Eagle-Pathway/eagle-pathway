@@ -66,12 +66,30 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: dbErr.message || 'User not found' }, { status: 404 });
       }
 
-      // Fetch user activity counts
-      const [{ count: appsCount }, { count: bookingsCount }, { count: sopsCount }] = await Promise.all([
+      // Fetch user activity counts and documents
+      const [
+        { count: appsCount },
+        { count: bookingsCount },
+        { count: sopsCount },
+        { data: rawDocuments },
+      ] = await Promise.all([
         supabaseAdmin.from('applications').select('id', { count: 'exact', head: true }).eq('user_id', userId),
         supabaseAdmin.from('bookings').select('id', { count: 'exact', head: true }).eq('student_id', userId),
         supabaseAdmin.from('sop_reviews').select('id', { count: 'exact', head: true }).eq('user_id', userId),
+        supabaseAdmin.from('documents').select('*').eq('user_id', userId).order('uploaded_at', { ascending: false }),
       ]);
+
+      // Sign document URLs
+      const signedDocs = await Promise.all(
+        (rawDocuments || []).map(async (doc: any) => {
+          const path = doc.file_path || (!doc.file_url?.startsWith('http') ? doc.file_url : null);
+          if (!path) return doc;
+          const { data } = await supabaseAdmin.storage
+            .from('documents')
+            .createSignedUrl(path, 60 * 60 * 24 * 7);
+          return data?.signedUrl ? { ...doc, file_url: data.signedUrl, file_path: path } : doc;
+        })
+      );
 
       const isBanned = !!(authUser?.user?.banned_until && new Date(authUser.user.banned_until) > new Date());
       const isDeleted = !!(authUser?.user?.user_metadata?.is_deleted || dbUser.role === 'archived');
@@ -91,6 +109,7 @@ export async function POST(req: NextRequest) {
           bookings: bookingsCount || 0,
           sop_reviews: sopsCount || 0,
         },
+        documents: signedDocs,
       });
     }
 

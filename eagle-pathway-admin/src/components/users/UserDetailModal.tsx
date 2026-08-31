@@ -2,7 +2,8 @@
 import { useState, useEffect } from 'react';
 import { X, Mail, Phone, MapPin, Calendar, Shield, Award, BookOpen, Send, Lock, AlertTriangle } from 'lucide-react';
 import { useToast } from '@/components/ui/Feedback';
-import { getAuthHeaders } from '@/lib/supabase';
+import { supabase, getAuthHeaders } from '@/lib/supabase';
+import { DocumentPreviewModal, PreviewableDocument } from '@/components/documents/DocumentPreviewModal';
 
 interface UserDetailModalProps {
   userId: string;
@@ -15,6 +16,7 @@ export function UserDetailModal({ userId, onClose, onRefresh }: UserDetailModalP
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
+  const [selectedDoc, setSelectedDoc] = useState<PreviewableDocument | null>(null);
   
   // Notification form state
   const [showNotifyForm, setShowNotifyForm] = useState(false);
@@ -44,6 +46,21 @@ export function UserDetailModal({ userId, onClose, onRefresh }: UserDetailModalP
       setLoading(false);
     }
   }
+
+  const handleUpdateDocStatus = async (id: string, status: 'approved' | 'rejected', notes?: string) => {
+    const { error } = await supabase
+      .from('documents')
+      .update({ status, reviewer_notes: status === 'rejected' ? notes || null : null })
+      .eq('id', id);
+
+    if (!error) {
+      toast('success', status === 'approved' ? 'Document approved!' : 'Document rejected.');
+      fetchDetails();
+      onRefresh();
+    } else {
+      toast('error', 'Failed to update document status.');
+    }
+  };
 
   useEffect(() => {
     fetchDetails();
@@ -253,6 +270,58 @@ export function UserDetailModal({ userId, onClose, onRefresh }: UserDetailModalP
                 </div>
               </div>
 
+              {/* Uploaded Documents & Credentials Vault */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider">
+                    Uploaded Documents & Credentials ({data?.documents?.length || 0})
+                  </h4>
+                </div>
+
+                {(!data?.documents || data.documents.length === 0) ? (
+                  <div className="p-4 rounded-xl border border-dashed border-gray-200 bg-gray-50/50 text-center text-xs text-gray-400">
+                    No documents uploaded by this user yet.
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {data.documents.map((doc: any) => (
+                      <div
+                        key={doc.id}
+                        onClick={() => setSelectedDoc(doc)}
+                        className="flex items-center justify-between p-3 rounded-xl border border-gray-100 hover:border-brand-blue/30 bg-white hover:bg-blue-50/20 transition-all cursor-pointer group"
+                      >
+                        <div className="flex items-center space-x-3 min-w-0 pr-2">
+                          <BookOpen className="w-4 h-4 text-brand-blue flex-shrink-0 group-hover:scale-110 transition-transform" />
+                          <div className="min-w-0">
+                            <p className="text-xs font-bold text-gray-900 truncate">
+                              {doc.file_name}
+                            </p>
+                            <p className="text-[10px] text-gray-400 uppercase font-semibold">
+                              {(doc.document_type || 'Document').replace(/_/g, ' ')} · Uploaded {new Date(doc.uploaded_at).toLocaleDateString()}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center space-x-2 flex-shrink-0">
+                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold capitalize ${
+                            doc.status === 'approved' 
+                              ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' 
+                              : doc.status === 'rejected'
+                              ? 'bg-rose-50 text-rose-700 border border-rose-200'
+                              : 'bg-amber-50 text-amber-700 border border-amber-200'
+                          }`}>
+                            {doc.status}
+                          </span>
+                          <span className="text-xs font-bold text-brand-blue group-hover:underline">
+                            Inspect
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
               {/* Administrative Actions */}
               <div className="pt-2 border-t border-gray-100 space-y-3">
                 <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider">Admin Quick Actions</h4>
@@ -354,6 +423,14 @@ export function UserDetailModal({ userId, onClose, onRefresh }: UserDetailModalP
           )}
         </div>
       </div>
+
+      {selectedDoc && (
+        <DocumentPreviewModal
+          document={selectedDoc}
+          onClose={() => setSelectedDoc(null)}
+          onUpdateStatus={handleUpdateDocStatus}
+        />
+      )}
     </div>
   );
 }
