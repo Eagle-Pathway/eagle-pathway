@@ -31,32 +31,47 @@ export default function Sidebar() {
   const { user } = useAuthStore();
 
   const [unreadCount, setUnreadCount] = useState(0);
+  const [pendingFinanceCount, setPendingFinanceCount] = useState(0);
+  const [pendingTutorCount, setPendingTutorCount] = useState(0);
+  const [pendingDocCount, setPendingDocCount] = useState(0);
 
-  async function fetchUnreadCount() {
+  async function fetchOperationalCounts() {
     if (!user) return;
-    const { count, error } = await supabase
-      .from('messages')
-      .select('*', { count: 'exact', head: true })
-      .eq('recipient_id', user.id)
-      .eq('is_read', false);
-    
-    if (!error) setUnreadCount(count || 0);
+    try {
+      const [
+        { count: msgCount },
+        { count: financeCount },
+        { count: tutorCount },
+        { count: docCount },
+      ] = await Promise.all([
+        supabase.from('messages').select('*', { count: 'exact', head: true }).eq('recipient_id', user.id).eq('is_read', false),
+        supabase.from('payments').select('*', { count: 'exact', head: true }).in('verification_status', ['manual_review', 'pending_verification']),
+        supabase.from('tutor_applications').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
+        supabase.from('documents').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
+      ]);
+
+      setUnreadCount(msgCount || 0);
+      setPendingFinanceCount(financeCount || 0);
+      setPendingTutorCount(tutorCount || 0);
+      setPendingDocCount(docCount || 0);
+    } catch (e) {
+      console.warn('Sidebar operational counts fetch fallback:', e);
+    }
   }
 
   useEffect(() => {
     if (user) {
-      fetchUnreadCount();
+      fetchOperationalCounts();
       
       const channel = supabase
-        .channel('sidebar-chat-count')
-        .on(
-          'postgres_changes',
-          { event: '*', schema: 'public', table: 'messages', filter: `recipient_id=eq.${user.id}` },
-          () => fetchUnreadCount()
-        )
+        .channel('sidebar-ops-counts')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, () => fetchOperationalCounts())
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'payments' }, () => fetchOperationalCounts())
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'tutor_applications' }, () => fetchOperationalCounts())
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'documents' }, () => fetchOperationalCounts())
         .subscribe();
 
-      const handleChatRead = () => fetchUnreadCount();
+      const handleChatRead = () => fetchOperationalCounts();
       window.addEventListener('chat_read_event', handleChatRead);
 
       return () => {
@@ -69,9 +84,9 @@ export default function Sidebar() {
   const navigation = [
     { name: 'Overview', href: '/overview', icon: LayoutDashboard },
     { name: 'Users', href: '/users', icon: Users },
-    { name: 'Tutor Approvals', href: '/tutors', icon: UserCheck },
+    { name: 'Tutor Approvals', href: '/tutors', icon: UserCheck, badge: pendingTutorCount, badgeColor: 'bg-amber-500' },
     { name: 'Tutor Jobs', href: '/tutor-jobs', icon: ClipboardList },
-    { name: 'Documents', href: '/documents', icon: FileText },
+    { name: 'Documents', href: '/documents', icon: FileText, badge: pendingDocCount, badgeColor: 'bg-blue-500' },
     { name: 'Applications', href: '/applications', icon: Briefcase },
     { name: 'Scholarships', href: '/scholarships', icon: GraduationCap },
     { name: 'Success Stories', href: '/success-stories', icon: Award },
@@ -79,8 +94,8 @@ export default function Sidebar() {
     { name: 'Bookings', href: '/bookings', icon: Calendar },
     { name: 'Service Requests', href: '/services', icon: Globe },
     { name: 'Notifications', href: '/notifications', icon: Bell },
-    { name: 'Chat', href: '/chat', icon: MessageSquare, badge: unreadCount },
-    { name: 'Finance', href: '/finance', icon: DollarSign },
+    { name: 'Chat', href: '/chat', icon: MessageSquare, badge: unreadCount, badgeColor: 'bg-red-500' },
+    { name: 'Finance', href: '/finance', icon: DollarSign, badge: pendingFinanceCount, badgeColor: 'bg-emerald-600' },
     { name: 'Settings', href: '/settings', icon: Settings2 },
   ];
 
@@ -141,7 +156,7 @@ export default function Sidebar() {
               {!isCollapsed && <span className="flex-1 truncate animate-in slide-in-from-left-2 duration-300">{item.name}</span>}
               
               {item.badge && item.badge > 0 ? (
-                <span className={`${isCollapsed ? 'absolute top-1 right-1' : 'ml-2'} px-2 py-0.5 bg-red-500 text-white text-[10px] font-bold rounded-full animate-pulse`}>
+                <span className={`${isCollapsed ? 'absolute top-1 right-1' : 'ml-2'} px-2 py-0.5 ${item.badgeColor || 'bg-red-500'} text-white text-[10px] font-bold rounded-full animate-pulse shadow-sm`}>
                   {item.badge}
                 </span>
               ) : null}

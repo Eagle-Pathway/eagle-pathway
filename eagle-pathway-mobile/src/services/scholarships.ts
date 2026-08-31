@@ -3,7 +3,9 @@ import { Scholarship, Application, PackageTier, Document, DocumentType, User } f
 import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system/legacy';
 import { decode } from 'base64-arraybuffer';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
+const SCHOLARSHIPS_CACHE_KEY = 'eagle_scholarships_offline_cache_v1';
 const SIGNED_URL_TTL_SECONDS = 60 * 60 * 24 * 7;
 const SOP_AI_API_URL = process.env.EXPO_PUBLIC_EAGLE_AI_API_URL;
 
@@ -71,40 +73,71 @@ export const scholarshipsService = {
   }): Promise<Scholarship[]> {
     const searchTerm = filters?.search?.trim();
 
-    if (searchTerm && typeof supabase.rpc === 'function') {
-      const { data, error } = await supabase.rpc('search_scholarships', {
-        p_query: searchTerm,
-        p_limit: 50,
-      });
+    try {
+      if (searchTerm && typeof supabase.rpc === 'function') {
+        const { data, error } = await supabase.rpc('search_scholarships', {
+          p_query: searchTerm,
+          p_limit: 50,
+        });
 
-      if (!error && data) return data as Scholarship[];
-      console.warn('Scholarship search RPC unavailable, falling back to basic search:', error?.message);
-    }
-
-    let query = supabase
-      .from('scholarships')
-      .select('*')
-      .eq('is_active', true);
-
-    if (searchTerm) {
-      const search = `%${searchTerm}%`;
-      if (typeof query.or === 'function') {
-        query = query.or(
-          [
-            `name.ilike.${search}`,
-            `organization.ilike.${search}`,
-            `country.ilike.${search}`,
-            `description.ilike.${search}`,
-          ].join(','),
-        );
-      } else {
-        query = query.ilike('name', search);
+        if (!error && data) return data as Scholarship[];
+        console.warn('Scholarship search RPC unavailable, falling back to basic search:', error?.message);
       }
-    }
 
-    const { data, error } = await query.order('created_at', { ascending: false });
-    if (error) throw error;
-    return data as Scholarship[];
+      let query = supabase
+        .from('scholarships')
+        .select('*')
+        .eq('is_active', true);
+
+      if (searchTerm) {
+        const search = `%${searchTerm}%`;
+        if (typeof query.or === 'function') {
+          query = query.or(
+            [
+              `name.ilike.${search}`,
+              `organization.ilike.${search}`,
+              `country.ilike.${search}`,
+              `description.ilike.${search}`,
+            ].join(','),
+          );
+        } else {
+          query = query.ilike('name', search);
+        }
+      }
+
+      const { data, error } = await query.order('created_at', { ascending: false });
+      if (error) throw error;
+
+      // Save to local offline cache if this was a general list fetch (no search filter)
+      if (!searchTerm && data && Array.isArray(data)) {
+        AsyncStorage.setItem(SCHOLARSHIPS_CACHE_KEY, JSON.stringify(data)).catch(() => {});
+      }
+
+      return data as Scholarship[];
+    } catch (networkError: any) {
+      // Offline fallback: Attempt to serve from local AsyncStorage cache
+      try {
+        const cachedRaw = await AsyncStorage.getItem(SCHOLARSHIPS_CACHE_KEY);
+        if (cachedRaw) {
+          const cached = JSON.parse(cachedRaw) as Scholarship[];
+          if (Array.isArray(cached) && cached.length > 0) {
+            if (searchTerm) {
+              const lower = searchTerm.toLowerCase();
+              return cached.filter(
+                (s) =>
+                  s.name?.toLowerCase().includes(lower) ||
+                  s.organization?.toLowerCase().includes(lower) ||
+                  s.country?.toLowerCase().includes(lower)
+              );
+            }
+            return cached;
+          }
+        }
+      } catch (cacheErr) {
+        console.warn('[ScholarshipsService] Cache fallback error:', cacheErr);
+      }
+      throw networkError;
+    }
   },
 
   async getOpenScholarshipsCount(): Promise<number> {

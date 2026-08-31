@@ -11,10 +11,12 @@ export async function POST(req: NextRequest) {
       return authResult.errorResponse!;
     }
     
-    const { title, body, audience, type } = await req.json();
+    const { title, body, audience, type, url, targetUrl } = await req.json();
     if (!title || !body || !audience || !type) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
+
+    const deepLinkUrl = targetUrl || url || '/notifications';
 
     const supabase = getStrictAdminClient();
 
@@ -74,7 +76,7 @@ export async function POST(req: NextRequest) {
         sound: 'default',
         title,
         body,
-        data: { url: '/notifications' },
+        data: { url: deepLinkUrl },
       }));
 
       // Expo Push API recommends chunking by 100
