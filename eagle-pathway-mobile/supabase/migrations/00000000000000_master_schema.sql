@@ -546,26 +546,70 @@ ALTER TABLE public.ai_rate_limits ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.ai_rate_limit ENABLE ROW LEVEL SECURITY;
 
 -- EXPLICIT CREATE POLICY STATEMENTS
-CREATE POLICY "users_select_policy" ON users FOR SELECT USING (true);
+
+-- 1. USERS
+CREATE POLICY "users_select_policy" ON users FOR SELECT USING (
+  auth.uid() = id 
+  OR public.is_admin() 
+  OR role = 'tutor' 
+  OR EXISTS (SELECT 1 FROM public.tutors WHERE user_id = users.id AND is_verified = TRUE)
+);
 CREATE POLICY "users_insert_policy" ON users FOR INSERT WITH CHECK (auth.uid() = id OR public.is_admin());
 CREATE POLICY "users_update_policy" ON users FOR UPDATE USING (auth.uid() = id OR public.is_admin());
 CREATE POLICY "user_roles_select_policy" ON user_roles FOR SELECT USING (auth.uid() = user_id OR public.is_admin());
+
+-- 2. SCHOLARSHIPS & PUBLIC CONTENT
 CREATE POLICY "scholarships_select_policy" ON scholarships FOR SELECT USING (true);
+CREATE POLICY "resources_select_policy" ON resources FOR SELECT USING (true);
+CREATE POLICY "success_stories_select_policy" ON success_stories FOR SELECT USING (true);
+
+-- 3. APPLICATIONS
 CREATE POLICY "applications_select_policy" ON applications FOR SELECT USING (auth.uid() = student_id OR public.is_admin());
+CREATE POLICY "applications_insert_policy" ON applications FOR INSERT WITH CHECK (auth.uid() = student_id OR public.is_admin());
+CREATE POLICY "applications_update_policy" ON applications FOR UPDATE USING (auth.uid() = student_id OR public.is_admin());
+
+-- 4. DOCUMENTS
 CREATE POLICY "documents_select_policy" ON documents FOR SELECT USING (auth.uid() = user_id OR public.is_admin());
+CREATE POLICY "documents_insert_policy" ON documents FOR INSERT WITH CHECK (auth.uid() = user_id OR public.is_admin());
+CREATE POLICY "documents_update_policy" ON documents FOR UPDATE USING (auth.uid() = user_id OR public.is_admin());
+CREATE POLICY "documents_delete_policy" ON documents FOR DELETE USING (auth.uid() = user_id OR public.is_admin());
+
+-- 5. PAYMENTS
 CREATE POLICY "payments_select_policy" ON payments FOR SELECT USING (auth.uid() = user_id OR public.is_admin());
+CREATE POLICY "payments_insert_policy" ON payments FOR INSERT WITH CHECK (auth.uid() = user_id OR public.is_admin());
+
+-- 6. TUTORS & BOOKINGS
 CREATE POLICY "tutors_select_policy" ON tutors FOR SELECT USING (true);
 CREATE POLICY "tutor_reviews_select_policy" ON tutor_reviews FOR SELECT USING (true);
 CREATE POLICY "tutor_applications_select_policy" ON tutor_applications FOR SELECT USING (auth.uid() = tutor_id OR public.is_admin());
-CREATE POLICY "tutor_job_posts_select_policy" ON tutor_job_posts FOR SELECT USING (public.is_admin());
-CREATE POLICY "bookings_select_policy" ON bookings FOR SELECT USING (auth.uid() = student_id OR public.is_admin());
+CREATE POLICY "tutor_job_posts_select_policy" ON tutor_job_posts FOR SELECT USING (
+  public.is_admin() 
+  OR EXISTS (SELECT 1 FROM public.users WHERE id = auth.uid() AND role = 'tutor')
+  OR EXISTS (SELECT 1 FROM public.tutors WHERE user_id = auth.uid() AND is_verified = TRUE)
+);
+CREATE POLICY "bookings_select_policy" ON bookings FOR SELECT USING (
+  auth.uid() = student_id 
+  OR auth.uid() IN (SELECT user_id FROM public.tutors WHERE id = tutor_id) 
+  OR public.is_admin()
+);
+CREATE POLICY "bookings_insert_policy" ON bookings FOR INSERT WITH CHECK (auth.uid() = student_id OR public.is_admin());
+CREATE POLICY "bookings_update_policy" ON bookings FOR UPDATE USING (
+  auth.uid() = student_id 
+  OR auth.uid() IN (SELECT user_id FROM public.tutors WHERE id = tutor_id)
+  OR public.is_admin()
+);
 CREATE POLICY "tutor_payouts_select_policy" ON tutor_payouts FOR SELECT USING (auth.uid() = tutor_id OR public.is_admin());
+
+-- 7. NOTIFICATIONS & PUSH TOKENS
 CREATE POLICY "notifications_select_policy" ON notifications FOR SELECT USING (auth.uid() = user_id OR public.is_admin());
+CREATE POLICY "notifications_update_policy" ON notifications FOR UPDATE USING (auth.uid() = user_id OR public.is_admin());
 CREATE POLICY "push_tokens_select_policy" ON push_tokens FOR SELECT USING (auth.uid() = user_id OR public.is_admin());
-CREATE POLICY "resources_select_policy" ON resources FOR SELECT USING (true);
+CREATE POLICY "push_tokens_insert_policy" ON push_tokens FOR INSERT WITH CHECK (auth.uid() = user_id OR public.is_admin());
+CREATE POLICY "push_tokens_delete_policy" ON push_tokens FOR DELETE USING (auth.uid() = user_id OR public.is_admin());
+
+-- 8. SYSTEM & ERRORS
 CREATE POLICY "client_errors_select_policy" ON client_errors FOR SELECT USING (auth.uid() = user_id OR public.is_admin());
 CREATE POLICY "recommendation_requests_select_policy" ON recommendation_requests FOR SELECT USING (auth.uid() = user_id OR public.is_admin());
-CREATE POLICY "success_stories_select_policy" ON success_stories FOR SELECT USING (true);
 CREATE POLICY "ai_rate_limits_select_policy" ON ai_rate_limits FOR SELECT USING (public.is_admin());
 CREATE POLICY "ai_rate_limit_select_policy" ON ai_rate_limit FOR SELECT USING (public.is_admin());
 

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { requireAuthenticatedUser } from '../sop-review/route';
 import { enforceRateLimit, rateLimitHeaders } from '../../../lib/rateLimit';
+import { getCorsHeaders } from '../../../lib/cors';
 
 // Chat is more interactive than SOP generation, so it gets a higher cap.
 const ASSISTANT_RATE_LIMIT = Number(process.env.AI_ASSISTANT_RATE_LIMIT ?? 30);
@@ -61,6 +62,7 @@ export function sanitizeAssistantMessages(input: unknown): AssistantMessage[] {
 }
 
 export async function POST(req: Request) {
+  const corsHeaders = getCorsHeaders(req);
   try {
     const user = await requireAuthenticatedUser(req);
 
@@ -72,7 +74,7 @@ export async function POST(req: Request) {
           status: 429,
           headers: {
             'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': '*',
+            ...corsHeaders,
             ...rateLimitHeaders(rate),
           },
         },
@@ -116,7 +118,7 @@ export async function POST(req: Request) {
       const data = await response.json();
       return NextResponse.json(data.choices[0].message, {
         headers: {
-          'Access-Control-Allow-Origin': '*',
+          ...corsHeaders,
         }
       });
     }
@@ -127,9 +129,7 @@ export async function POST(req: Request) {
         'Content-Type': 'text/event-stream',
         'Cache-Control': 'no-cache',
         'Connection': 'keep-alive',
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        ...corsHeaders,
       },
     });
   } catch (error: any) {
@@ -144,19 +144,15 @@ export async function POST(req: Request) {
       status,
       headers: {
         'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*',
+        ...corsHeaders,
       },
     });
   }
 }
 
-export async function OPTIONS() {
+export async function OPTIONS(req: Request) {
   return new Response(null, {
     status: 204,
-    headers: {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-    },
+    headers: getCorsHeaders(req),
   });
 }

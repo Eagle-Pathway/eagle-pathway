@@ -24,16 +24,13 @@ Be encouraging, specific, and realistic. Return ONLY valid JSON, no prose outsid
 For questions use: {"questions": string[]}.
 For feedback use: {"score": number (0-100), "feedback": string, "tips": string[]}.`;
 
-const CORS_HEADERS = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-};
+import { getCorsHeaders } from '../../../lib/cors';
 
-function json(data: unknown, init?: ResponseInit) {
+function json(data: unknown, init?: ResponseInit, req?: Request) {
+  const corsHeaders = getCorsHeaders(req);
   return NextResponse.json(data, {
     ...init,
-    headers: { ...CORS_HEADERS, ...(init?.headers || {}) },
+    headers: { ...corsHeaders, ...(init?.headers || {}) },
   });
 }
 
@@ -125,6 +122,6 @@ export async function POST(req: Request) {
   }
 }
 
-export async function OPTIONS() {
-  return new Response(null, { status: 204, headers: CORS_HEADERS });
+export async function OPTIONS(req: Request) {
+  return new Response(null, { status: 204, headers: getCorsHeaders(req) });
 }

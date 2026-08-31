@@ -175,8 +175,44 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
+    const authHeader = req.headers.get('Authorization') || req.headers.get('authorization');
+    const token = authHeader?.replace(/^Bearer\s+/i, '');
+
+    if (!token) {
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized: Missing authentication token.' }),
+        { status: 401, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const { data: authData, error: authErr } = await supabase.auth.getUser(token);
+    if (authErr || !authData?.user) {
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized: Invalid or expired session.' }),
+        { status: 401, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const callerId = authData.user.id;
+
     const body: VerificationPayload & { receipt_url?: string; receipt_hash?: string } = await req.json();
     const { payment_id, user_id, method, transaction_id, amount: expectedAmount, receipt_url, receipt_hash } = body;
+
+    // Caller must match user_id or be an admin
+    if (user_id && user_id !== callerId) {
+      const { data: userRecord } = await supabase
+        .from('users')
+        .select('role')
+        .eq('id', callerId)
+        .maybeSingle();
+
+      if (userRecord?.role !== 'admin') {
+        return new Response(
+          JSON.stringify({ error: 'Forbidden: You cannot verify payment for another user.' }),
+          { status: 403, headers: { ...CORS_HEADERS, 'Content-Type': 'application/json' } }
+        );
+      }
+    }
 
     if (!transaction_id || !method) {
       return new Response(
@@ -191,7 +227,8 @@ serve(async (req) => {
     // 1. Server-Side Screenshot OCR Auto-Extraction Engine
     if (isScreenshotOnly && receipt_url) {
       try {
-        const ocrResp = await fetch(`https://api.ocr.space/parse/imageurl?apikey=helloworld&url=${encodeURIComponent(receipt_url)}`);
+        const ocrApiKey = Deno.env.get('OCR_SPACE_API_KEY') || 'helloworld';
+        const ocrResp = await fetch(`https://api.ocr.space/parse/imageurl?apikey=${ocrApiKey}&url=${encodeURIComponent(receipt_url)}`);
         if (ocrResp.ok) {
           const ocrData = await ocrResp.json();
           const parsedText = ocrData?.ParsedResults?.[0]?.ParsedText || '';
