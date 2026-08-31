@@ -41,18 +41,26 @@ export default function Sidebar() {
       const [
         { count: msgCount },
         { count: financeCount },
-        { count: tutorCount },
+        { data: tutorUsers },
+        { data: verifiedTutors },
         { count: docCount },
       ] = await Promise.all([
         supabase.from('messages').select('*', { count: 'exact', head: true }).eq('recipient_id', user.id).eq('is_read', false),
         supabase.from('payments').select('*', { count: 'exact', head: true }).in('verification_status', ['manual_review', 'pending_verification']),
-        supabase.from('tutor_applications').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
+        supabase.from('users').select('id, role, active_role, roles'),
+        supabase.from('tutors').select('user_id').eq('is_verified', true),
         supabase.from('documents').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
       ]);
 
+      const verifiedSet = new Set((verifiedTutors || []).map((t: any) => t.user_id));
+      const pendingTutorTotal = (tutorUsers || []).filter((u: any) => 
+        (u.role === 'tutor' || u.active_role === 'tutor' || (Array.isArray(u.roles) && u.roles.includes('tutor'))) &&
+        !verifiedSet.has(u.id)
+      ).length;
+
       setUnreadCount(msgCount || 0);
       setPendingFinanceCount(financeCount || 0);
-      setPendingTutorCount(tutorCount || 0);
+      setPendingTutorCount(pendingTutorTotal);
       setPendingDocCount(docCount || 0);
     } catch (e) {
       console.warn('Sidebar operational counts fetch fallback:', e);

@@ -104,18 +104,28 @@ export default function OverviewPage() {
           summaryRes,
           recentUsersRes,
           recentAppsRes,
+          tutorUsersRes,
+          verifiedTutorsRes,
         ] = await Promise.all([
           supabase.rpc('get_dashboard_summary'),
           supabase.from('users').select('created_at').gte('created_at', isoStart),
           supabase.from('applications').select('created_at').gte('created_at', isoStart),
+          supabase.from('users').select('id, role, active_role, roles'),
+          supabase.from('tutors').select('user_id').eq('is_verified', true),
         ]);
 
         if (summaryRes.error) throw summaryRes.error;
         const summary = summaryRes.data || {};
 
+        const verifiedSet = new Set((verifiedTutorsRes.data || []).map((t: any) => t.user_id));
+        const pendingTutorTotal = (tutorUsersRes.data || []).filter((u: any) => 
+          (u.role === 'tutor' || u.active_role === 'tutor' || (Array.isArray(u.roles) && u.roles.includes('tutor'))) &&
+          !verifiedSet.has(u.id)
+        ).length;
+
         setCounts({
           users: Number(summary.total_users) || 0,
-          tutorsPending: Number(summary.tutors_pending) || 0,
+          tutorsPending: pendingTutorTotal,
           activeScholarships: Number(summary.active_scholarships) || 0,
           bookings: Number(summary.bookings) || 0,
           applicationsPending: Number(summary.applications_pending) || 0,
