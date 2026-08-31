@@ -1,8 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+function getServiceRoleKey(): string | undefined {
+  return (
+    process.env.SUPABASE_SERVICE_ROLE_KEY ||
+    process.env.SUPABASE_SERVICE_KEY ||
+    process.env.SUPABASE_SERVICE_ROLE ||
+    process.env.SUPABASE_SECRET_KEY
+  );
+}
 
 export interface AdminAuthResult {
   authorized: boolean;
@@ -15,6 +21,9 @@ export interface AdminAuthResult {
  * Ensures caller possesses a valid Supabase JWT token AND holds an active 'admin' role.
  */
 export async function verifyAdminRequest(req: NextRequest): Promise<AdminAuthResult> {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+  const serviceRoleKey = getServiceRoleKey();
+
   if (!supabaseUrl) {
     return {
       authorized: false,
@@ -31,7 +40,7 @@ export async function verifyAdminRequest(req: NextRequest): Promise<AdminAuthRes
       authorized: false,
       userId: null,
       errorResponse: NextResponse.json(
-        { error: 'Server Configuration Error: SUPABASE_SERVICE_ROLE_KEY is missing on server.' },
+        { error: 'Server Configuration Error: SUPABASE_SERVICE_ROLE_KEY is missing in Vercel environment variables.' },
         { status: 500 }
       ),
     };
@@ -117,8 +126,11 @@ export async function verifyAdminRequest(req: NextRequest): Promise<AdminAuthRes
  * Throws an explicit error if credentials are missing.
  */
 export function getStrictAdminClient() {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+  const serviceRoleKey = getServiceRoleKey();
+
   if (!supabaseUrl || !serviceRoleKey) {
-    throw new Error('Server Configuration Error: Missing SUPABASE_SERVICE_ROLE_KEY or NEXT_PUBLIC_SUPABASE_URL.');
+    throw new Error('Server Configuration Error: Missing SUPABASE_SERVICE_ROLE_KEY or NEXT_PUBLIC_SUPABASE_URL in Vercel environment variables.');
   }
   return createClient(supabaseUrl, serviceRoleKey, {
     auth: { autoRefreshToken: false, persistSession: false },
