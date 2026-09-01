@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/supabase';
+import { supabase, getAuthHeaders } from '@/lib/supabase';
 
 /**
  * Extracts the clean storage bucket path from a relative path or a full signed/public Supabase URL.
@@ -38,24 +38,36 @@ export function extractStoragePath(rawPathOrUrl: string | null | undefined, buck
 }
 
 /**
- * Generates a fresh signed URL with a safe 1-hour TTL.
+ * Generates a fresh signed URL using the admin service-role signing endpoint.
  */
 export async function getFreshSignedUrl(rawPathOrUrl: string | null | undefined, bucket = 'documents'): Promise<string> {
   if (!rawPathOrUrl) return '';
 
   const path = extractStoragePath(rawPathOrUrl, bucket);
-  if (path) {
-    try {
-      const { data, error } = await supabase.storage
-        .from(bucket)
-        .createSignedUrl(path, 3600); // 1 hour safe TTL
+  if (!path) return rawPathOrUrl;
 
-      if (!error && data?.signedUrl) {
-        return data.signedUrl;
-      }
-    } catch (e) {
-      console.warn('[StorageHelper] createSignedUrl warning:', e);
+  try {
+    const headers = await getAuthHeaders();
+    const res = await fetch('/api/admin/documents/sign', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ path, bucket }),
+    });
+
+    if (res.ok) {
+      const json = await res.json();
+      if (json.signedUrl) return json.signedUrl;
     }
+  } catch (e) {
+    console.warn('[StorageHelper] Server sign fallback:', e);
+  }
+
+  // Fallback: direct client createSignedUrl
+  try {
+    const { data } = await supabase.storage.from(bucket).createSignedUrl(path, 3600);
+    if (data?.signedUrl) return data.signedUrl;
+  } catch {
+    // fallback
   }
 
   return rawPathOrUrl;

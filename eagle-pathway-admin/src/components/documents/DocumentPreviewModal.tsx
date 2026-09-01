@@ -47,12 +47,14 @@ export function DocumentPreviewModal({ document, onClose, onUpdateStatus }: Docu
   const [actionLoading, setActionLoading] = useState(false);
   const [resolvedUrl, setResolvedUrl] = useState<string>(document?.file_url || '');
   const [loadingUrl, setLoadingUrl] = useState<boolean>(true);
+  const [imageError, setImageError] = useState<boolean>(false);
 
   useEffect(() => {
     let isMounted = true;
     async function resolveLiveUrl() {
       if (!document) return;
       setLoadingUrl(true);
+      setImageError(false);
       const raw = document.file_path || document.file_url;
       const fresh = await getFreshSignedUrl(raw, 'documents');
       if (isMounted) {
@@ -205,6 +207,25 @@ export function DocumentPreviewModal({ document, onClose, onUpdateStatus }: Docu
               className="w-full h-full rounded-lg border-0 bg-white shadow-lg"
               title={document.file_name}
             />
+          ) : imageError ? (
+            <div className="flex flex-col items-center justify-center text-center p-8 bg-slate-800/80 rounded-2xl max-w-md text-white border border-slate-700 space-y-4">
+              <AlertCircle className="w-12 h-12 text-amber-400" />
+              <div>
+                <h4 className="text-base font-bold">Image Preview Unavailable</h4>
+                <p className="text-xs text-gray-300 mt-1">
+                  This image format (such as mobile raw camera format) cannot be displayed directly inline. You can open or download the original file below.
+                </p>
+              </div>
+              <a
+                href={resolvedUrl || document.file_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center px-4 py-2 bg-brand-blue text-white rounded-xl text-xs font-bold shadow-md hover:bg-blue-700 transition-colors"
+              >
+                <Download className="w-4 h-4 mr-1.5" />
+                Open / Download Original File
+              </a>
+            </div>
           ) : (
             <div 
               className="transition-transform duration-200 ease-out flex items-center justify-center"
@@ -216,6 +237,7 @@ export function DocumentPreviewModal({ document, onClose, onUpdateStatus }: Docu
               <img
                 src={resolvedUrl || document.file_url}
                 alt={document.file_name}
+                onError={() => setImageError(true)}
                 className="max-h-[70vh] max-w-[85vw] object-contain rounded shadow-2xl bg-white select-none pointer-events-none"
               />
             </div>
