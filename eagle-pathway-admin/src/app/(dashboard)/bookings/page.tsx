@@ -28,10 +28,11 @@ interface Booking {
   id: string;
   student_id: string;
   tutor_id: string;
-  session_time: string;
+  session_time?: string;
   session_date?: string;
   subject?: string;
-  amount: number;
+  amount?: number;
+  total_amount?: number;
   platform_fee?: number;
   duration_hours?: number;
   session_type?: string;
@@ -51,6 +52,68 @@ interface Booking {
     email: string;
     phone?: string;
   };
+}
+
+function formatSessionDateTime(sessionDate?: string, sessionTime?: string, createdAt?: string) {
+  // If we have session_date (e.g. "2026-09-02")
+  if (sessionDate) {
+    let dateStr = sessionDate;
+    try {
+      if (sessionDate.includes('T')) {
+        const d = new Date(sessionDate);
+        if (!isNaN(d.getTime())) {
+          dateStr = d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+        }
+      } else {
+        const parts = sessionDate.split('-');
+        if (parts.length === 3) {
+          const d = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+          if (!isNaN(d.getTime())) {
+            dateStr = d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+          }
+        }
+      }
+    } catch {
+      dateStr = sessionDate;
+    }
+
+    let timeStr = sessionTime || '';
+    if (sessionTime && sessionTime.includes('T')) {
+      const d = new Date(sessionTime);
+      if (!isNaN(d.getTime())) {
+        timeStr = d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+      }
+    }
+
+    return { dateStr, timeStr };
+  }
+
+  // If we only have session_time
+  if (sessionTime) {
+    if (sessionTime.includes('T')) {
+      const d = new Date(sessionTime);
+      if (!isNaN(d.getTime())) {
+        return {
+          dateStr: d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }),
+          timeStr: d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' }),
+        };
+      }
+    }
+    return { dateStr: 'Date TBD', timeStr: sessionTime };
+  }
+
+  // Fallback to createdAt
+  if (createdAt) {
+    const d = new Date(createdAt);
+    if (!isNaN(d.getTime())) {
+      return {
+        dateStr: d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }),
+        timeStr: d.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' }),
+      };
+    }
+  }
+
+  return { dateStr: 'Date TBD', timeStr: '' };
 }
 
 export default function BookingsPage() {
@@ -73,11 +136,9 @@ export default function BookingsPage() {
       if (error) throw error;
 
       if (bData && bData.length > 0) {
-        // Collect student IDs and tutor IDs
         const studentIds = Array.from(new Set(bData.map((b: any) => b.student_id).filter(Boolean)));
         const tutorRowIds = Array.from(new Set(bData.map((b: any) => b.tutor_id).filter(Boolean)));
 
-        // Fetch users (students and potential direct tutors) and tutor records
         const [{ data: usersData }, { data: tutorsData }] = await Promise.all([
           supabase.from('users').select('id, full_name, email, phone').in('id', Array.from(new Set([...studentIds, ...tutorRowIds]))),
           supabase.from('tutors').select('id, user_id, user:users(id, full_name, email, phone)').in('id', tutorRowIds),
@@ -89,7 +150,6 @@ export default function BookingsPage() {
         const enriched = bData.map((b: any) => {
           const student = userMap.get(b.student_id);
           
-          // Tutor resolution: Check tutors table first, then fallback to direct user mapping
           const tutorRow: any = tutorMap.get(b.tutor_id);
           const tutorUser = tutorRow?.user 
             ? (Array.isArray(tutorRow.user) ? tutorRow.user[0] : tutorRow.user)
@@ -193,7 +253,7 @@ export default function BookingsPage() {
     const completed = bookings.filter(b => b.status === 'completed').length;
     const totalVolume = bookings
       .filter(b => b.status === 'confirmed' || b.status === 'completed')
-      .reduce((sum, b) => sum + (Number(b.amount) || 0), 0);
+      .reduce((sum, b) => sum + (Number(b.total_amount ?? b.amount) || 0), 0);
     return { total, confirmed, pending, completed, totalVolume };
   }, [bookings]);
 
@@ -222,18 +282,22 @@ export default function BookingsPage() {
 
         <button 
           onClick={() => exportToCSV(
-            filtered.map(b => ({
-              ID: b.id,
-              Date: b.session_time || b.session_date,
-              Subject: b.subject || 'General Tutoring',
-              Student: b.student?.full_name,
-              StudentEmail: b.student?.email,
-              Tutor: b.tutor?.full_name,
-              TutorEmail: b.tutor?.email,
-              Amount: b.amount,
-              DurationHours: b.duration_hours,
-              Status: b.status,
-            })), 
+            filtered.map(b => {
+              const { dateStr, timeStr } = formatSessionDateTime(b.session_date, b.session_time, b.created_at);
+              return {
+                ID: b.id,
+                Date: dateStr,
+                Time: timeStr,
+                Subject: b.subject || 'General Tutoring',
+                Student: b.student?.full_name,
+                StudentEmail: b.student?.email,
+                Tutor: b.tutor?.full_name,
+                TutorEmail: b.tutor?.email,
+                Amount: Number(b.total_amount ?? b.amount ?? 0),
+                DurationHours: b.duration_hours,
+                Status: b.status,
+              };
+            }), 
             'bookings_export'
           )}
           className="flex items-center px-4 py-2 bg-white text-gray-700 border border-gray-200 rounded-xl shadow-sm hover:bg-gray-50 transition-colors text-sm font-semibold whitespace-nowrap"
@@ -334,9 +398,8 @@ export default function BookingsPage() {
                 </tr>
               ) : (
                 paginatedBookings.map((booking) => {
-                  const rawDate = booking.session_time || booking.session_date || booking.created_at;
-                  const dateStr = rawDate ? new Date(rawDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : 'Date TBD';
-                  const timeStr = rawDate ? new Date(rawDate).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' }) : '';
+                  const { dateStr, timeStr } = formatSessionDateTime(booking.session_date, booking.session_time, booking.created_at);
+                  const price = Number(booking.total_amount ?? booking.amount ?? 0);
 
                   return (
                     <tr key={booking.id} className="hover:bg-gray-50/60 transition-colors">
@@ -398,7 +461,7 @@ export default function BookingsPage() {
                       {/* Price / Fee */}
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm font-bold text-gray-900">
-                          {booking.amount ? `${Number(booking.amount).toLocaleString()} ETB` : 'Free'}
+                          {price > 0 ? `${price.toLocaleString()} ETB` : '400 ETB'}
                         </div>
                         {booking.session_type && (
                           <div className="text-[11px] text-gray-400 capitalize flex items-center mt-0.5">
@@ -479,97 +542,108 @@ export default function BookingsPage() {
       </div>
 
       {/* Booking Inspection Detail Modal */}
-      {selectedBooking && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden border border-gray-100 animate-in zoom-in-95 duration-200">
-            {/* Modal Header */}
-            <div className="p-6 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
-              <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 rounded-2xl bg-brand-blue/10 flex items-center justify-center text-brand-blue">
-                  <BookOpen className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="text-base font-bold text-gray-900">Session Details</h3>
-                  <p className="text-xs text-gray-400">ID: {selectedBooking.id}</p>
-                </div>
-              </div>
-              <button
-                onClick={() => setSelectedBooking(null)}
-                className="p-2 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-full transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
+      {selectedBooking && (() => {
+        const { dateStr, timeStr } = formatSessionDateTime(selectedBooking.session_date, selectedBooking.session_time, selectedBooking.created_at);
+        const price = Number(selectedBooking.total_amount ?? selectedBooking.amount ?? 0);
 
-            {/* Modal Body */}
-            <div className="p-6 space-y-4">
-              <div className="flex items-center justify-between p-3 rounded-2xl bg-blue-50/50 border border-blue-100">
-                <div>
-                  <span className="text-[11px] font-bold text-brand-blue uppercase tracking-wider block">Subject</span>
-                  <span className="text-sm font-bold text-gray-900">{selectedBooking.subject || 'General Tutoring'}</span>
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200">
+            <div className="bg-white rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden border border-gray-100 animate-in zoom-in-95 duration-200">
+              {/* Modal Header */}
+              <div className="p-6 border-b border-gray-100 flex items-center justify-between bg-gray-50/50">
+                <div className="flex items-center space-x-3">
+                  <div className="w-10 h-10 rounded-2xl bg-brand-blue/10 flex items-center justify-center text-brand-blue">
+                    <BookOpen className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-bold text-gray-900">Session Details</h3>
+                    <p className="text-xs text-gray-400">ID: {selectedBooking.id}</p>
+                  </div>
                 </div>
-                <div className="text-right">
-                  <span className="text-[11px] font-bold text-brand-blue uppercase tracking-wider block">Session Price</span>
-                  <span className="text-sm font-bold text-emerald-600">{Number(selectedBooking.amount || 0).toLocaleString()} ETB</span>
-                </div>
-              </div>
-
-              {/* Student Card */}
-              <div className="p-4 rounded-2xl border border-gray-100 space-y-1">
-                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Student</span>
-                <p className="text-sm font-bold text-gray-900">{selectedBooking.student?.full_name}</p>
-                <p className="text-xs text-gray-500">{selectedBooking.student?.email} {selectedBooking.student?.phone && `· ${selectedBooking.student.phone}`}</p>
-              </div>
-
-              {/* Tutor Card */}
-              <div className="p-4 rounded-2xl border border-gray-100 space-y-1">
-                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Assigned Tutor</span>
-                <p className="text-sm font-bold text-gray-900">{selectedBooking.tutor?.full_name || 'Unassigned'}</p>
-                <p className="text-xs text-gray-500">{selectedBooking.tutor?.email} {selectedBooking.tutor?.phone && `· ${selectedBooking.tutor.phone}`}</p>
-              </div>
-
-              {/* Session Meta */}
-              <div className="grid grid-cols-2 gap-3 text-xs">
-                <div className="p-3 rounded-xl bg-gray-50 border border-gray-100">
-                  <span className="text-gray-400 block font-medium">Session Type</span>
-                  <span className="font-bold text-gray-800 capitalize">{selectedBooking.session_type || 'Online'}</span>
-                </div>
-                <div className="p-3 rounded-xl bg-gray-50 border border-gray-100">
-                  <span className="text-gray-400 block font-medium">Duration</span>
-                  <span className="font-bold text-gray-800">{selectedBooking.duration_hours || 1} Hour(s)</span>
-                </div>
-              </div>
-
-              {/* Notes */}
-              {selectedBooking.notes && (
-                <div className="p-3 rounded-xl bg-gray-50 border border-gray-100 text-xs">
-                  <span className="text-gray-400 block font-medium mb-1">Student Notes</span>
-                  <p className="text-gray-700 italic">&ldquo;{selectedBooking.notes}&rdquo;</p>
-                </div>
-              )}
-            </div>
-
-            {/* Modal Footer */}
-            <div className="p-4 bg-gray-50/50 border-t border-gray-100 flex items-center justify-between">
-              <span className="text-xs text-gray-400">Current Status:</span>
-              <div className="flex items-center space-x-2">
                 <button
-                  onClick={() => handleStatusChange(selectedBooking, 'cancelled')}
-                  className="px-3 py-1.5 text-xs font-bold text-rose-600 bg-rose-50 hover:bg-rose-100 rounded-xl transition-colors"
+                  onClick={() => setSelectedBooking(null)}
+                  className="p-2 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-full transition-colors"
                 >
-                  Cancel & Refund
+                  <X className="w-5 h-5" />
                 </button>
-                <button
-                  onClick={() => handleStatusChange(selectedBooking, 'confirmed')}
-                  className="px-4 py-1.5 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl shadow-sm transition-colors"
-                >
-                  Confirm Session
-                </button>
+              </div>
+
+              {/* Modal Body */}
+              <div className="p-6 space-y-4">
+                <div className="flex items-center justify-between p-3 rounded-2xl bg-blue-50/50 border border-blue-100">
+                  <div>
+                    <span className="text-[11px] font-bold text-brand-blue uppercase tracking-wider block">Subject</span>
+                    <span className="text-sm font-bold text-gray-900">{selectedBooking.subject || 'General Tutoring'}</span>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-[11px] font-bold text-brand-blue uppercase tracking-wider block">Session Price</span>
+                    <span className="text-sm font-bold text-emerald-600">{price > 0 ? `${price.toLocaleString()} ETB` : '400 ETB'}</span>
+                  </div>
+                </div>
+
+                {/* Date & Time */}
+                <div className="p-4 rounded-2xl border border-gray-100 space-y-1 bg-gray-50/40">
+                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Scheduled Date & Time</span>
+                  <p className="text-sm font-bold text-gray-900">{dateStr} {timeStr && `· ${timeStr}`}</p>
+                </div>
+
+                {/* Student Card */}
+                <div className="p-4 rounded-2xl border border-gray-100 space-y-1">
+                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Student</span>
+                  <p className="text-sm font-bold text-gray-900">{selectedBooking.student?.full_name}</p>
+                  <p className="text-xs text-gray-500">{selectedBooking.student?.email} {selectedBooking.student?.phone && `· ${selectedBooking.student.phone}`}</p>
+                </div>
+
+                {/* Tutor Card */}
+                <div className="p-4 rounded-2xl border border-gray-100 space-y-1">
+                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block">Assigned Tutor</span>
+                  <p className="text-sm font-bold text-gray-900">{selectedBooking.tutor?.full_name || 'Unassigned'}</p>
+                  <p className="text-xs text-gray-500">{selectedBooking.tutor?.email} {selectedBooking.tutor?.phone && `· ${selectedBooking.tutor.phone}`}</p>
+                </div>
+
+                {/* Session Meta */}
+                <div className="grid grid-cols-2 gap-3 text-xs">
+                  <div className="p-3 rounded-xl bg-gray-50 border border-gray-100">
+                    <span className="text-gray-400 block font-medium">Session Type</span>
+                    <span className="font-bold text-gray-800 capitalize">{selectedBooking.session_type || 'Online'}</span>
+                  </div>
+                  <div className="p-3 rounded-xl bg-gray-50 border border-gray-100">
+                    <span className="text-gray-400 block font-medium">Duration</span>
+                    <span className="font-bold text-gray-800">{selectedBooking.duration_hours || 1.5} Hour(s)</span>
+                  </div>
+                </div>
+
+                {/* Notes */}
+                {selectedBooking.notes && (
+                  <div className="p-3 rounded-xl bg-gray-50 border border-gray-100 text-xs">
+                    <span className="text-gray-400 block font-medium mb-1">Student Notes</span>
+                    <p className="text-gray-700 italic">&ldquo;{selectedBooking.notes}&rdquo;</p>
+                  </div>
+                )}
+              </div>
+
+              {/* Modal Footer */}
+              <div className="p-4 bg-gray-50/50 border-t border-gray-100 flex items-center justify-between">
+                <span className="text-xs text-gray-400">Current Status:</span>
+                <div className="flex items-center space-x-2">
+                  <button
+                    onClick={() => handleStatusChange(selectedBooking, 'cancelled')}
+                    className="px-3 py-1.5 text-xs font-bold text-rose-600 bg-rose-50 hover:bg-rose-100 rounded-xl transition-colors"
+                  >
+                    Cancel & Refund
+                  </button>
+                  <button
+                    onClick={() => handleStatusChange(selectedBooking, 'confirmed')}
+                    className="px-4 py-1.5 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl shadow-sm transition-colors"
+                  >
+                    Confirm Session
+                  </button>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
     </div>
   );
 }
