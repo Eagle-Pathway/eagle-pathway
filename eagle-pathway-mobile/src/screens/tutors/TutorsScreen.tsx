@@ -114,7 +114,18 @@ export default function TutorsScreen() {
     <SafeAreaView style={CommonStyles.screenBg} edges={['top', 'bottom']}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.title}>Find a Tutor</Text>
+        <View>
+          <Text style={styles.title}>Find a Tutor</Text>
+          <Text style={{ fontSize: Typography.xs, color: Colors.textSecondary, marginTop: 2 }}>Browse verified tutors or request a custom match</Text>
+        </View>
+        <TouchableOpacity
+          onPress={() => router.push('/request-tutor' as any)}
+          style={styles.requestBtn}
+          activeOpacity={0.8}
+        >
+          <Ionicons name="sparkles" size={14} color={Colors.white} style={{ marginRight: 4 }} />
+          <Text style={styles.requestBtnText}>Request Tutor</Text>
+        </TouchableOpacity>
       </View>
 
       {/* Search */}
@@ -288,6 +299,24 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.card, borderBottomWidth: 1, borderBottomColor: Colors.border,
   },
   title: { fontSize: Typography['3xl'], fontWeight: Typography.bold, color: Colors.text },
+  requestBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.blue,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: 8,
+    borderRadius: Radius.full,
+    shadowColor: Colors.blue,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  requestBtnText: {
+    color: Colors.white,
+    fontWeight: '700',
+    fontSize: Typography.xs,
+  },
   filterBtn: { width: 36, height: 36, backgroundColor: Colors.grayLight, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
   filterIcon: { fontSize: 16 },
   searchBar: {

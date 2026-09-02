@@ -262,9 +262,9 @@ export default function TutorProfileScreen() {
           <Ionicons name="chatbubble-outline" size={20} color={Colors.white} />
         </TouchableOpacity>
         <Button
-          title="Check Availability"
+          title="Direct Request"
           variant="outline"
-          onPress={() => router.push({ pathname: '/booking', params: { tutorId: tutor.id } })}
+          onPress={() => router.push({ pathname: '/request-tutor', params: { tutorId: tutor.id } } as any)}
           style={{ flex: 1 }}
           fullWidth={false}
         />
