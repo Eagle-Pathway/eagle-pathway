@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect, useMemo } from 'react';
-import { supabase } from '@/lib/supabase';
+import { supabase, getAuthHeaders } from '@/lib/supabase';
 import { useToast } from '@/components/ui/Feedback';
 import { 
   Search, 
@@ -17,7 +17,11 @@ import {
   List,
   User,
   ShieldCheck,
-  AlertCircle
+  AlertCircle,
+  Cloud,
+  Trash2,
+  ExternalLink,
+  Loader2
 } from 'lucide-react';
 import { exportToCSV } from '@/utils/export';
 import { DocumentPreviewModal, PreviewableDocument } from '@/components/documents/DocumentPreviewModal';
@@ -30,6 +34,8 @@ interface UserDocument extends PreviewableDocument {
   file_name: string;
   file_path?: string | null;
   file_url: string;
+  cloud_url?: string | null;
+  text_content?: string | null;
   status: 'pending' | 'approved' | 'rejected';
   uploaded_at: string;
   reviewer_notes?: string | null;
@@ -59,14 +65,15 @@ export default function DocumentsPage() {
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [viewMode, setViewMode] = useState<'dossiers' | 'table'>('dossiers');
+  const [purging, setPurging] = useState(false);
   
   // In-app Document Viewer Modal state
   const [previewDoc, setPreviewDoc] = useState<UserDocument | null>(null);
 
-  // Selected Student for Dossier Focus View
-  const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
-
   const signDocumentUrl = async (document: UserDocument): Promise<UserDocument> => {
+    if (document.cloud_url || document.file_path === 'cloud_link' || document.text_content) {
+      return document;
+    }
     const rawPath = document.file_path || document.file_url;
     const signedUrl = await getFreshSignedUrl(rawPath, 'documents');
     return {
@@ -124,6 +131,32 @@ export default function DocumentsPage() {
     }
   };
 
+  const handlePurgeStorage = async () => {
+    if (!window.confirm('⚠️ WARNING: This will permanently delete all raw binary files from Supabase Storage to reclaim 100% of storage space. Document metadata, Google Drive links, and text dossiers will remain intact. Proceed?')) {
+      return;
+    }
+
+    setPurging(true);
+    try {
+      const headers = await getAuthHeaders();
+      const res = await fetch('/api/admin/storage/purge', {
+        method: 'POST',
+        headers,
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        toast('success', data.message || 'Storage purged successfully! Usage is now 0 MB.');
+        fetchDocuments();
+      } else {
+        toast('error', data.error || 'Failed to purge storage.');
+      }
+    } catch {
+      toast('error', 'Network error while purging storage.');
+    } finally {
+      setPurging(false);
+    }
+  };
+
   const filtered = useMemo(() => {
     return documents.filter(doc => {
       const matchesSearch = 
@@ -170,7 +203,6 @@ export default function DocumentsPage() {
     });
 
     return Array.from(map.values()).sort((a, b) => {
-      // Prioritize dossiers with pending documents first
       if (b.pendingCount !== a.pendingCount) {
         return b.pendingCount - a.pendingCount;
       }
@@ -181,7 +213,6 @@ export default function DocumentsPage() {
   // Pagination for table view
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
-  const totalPages = Math.ceil(filtered.length / itemsPerPage);
   
   const paginatedDocs = filtered.slice(
     (currentPage - 1) * itemsPerPage,
@@ -203,41 +234,57 @@ export default function DocumentsPage() {
     }
   };
 
-  const selectedDossier = dossiers.find(d => d.userId === selectedStudentId);
-
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Document Verification</h1>
-          <p className="mt-1 text-sm text-gray-500">Review, verify, and inspect student credential dossiers</p>
+          <div className="flex items-center space-x-3">
+            <h1 className="text-3xl font-bold text-gray-900">Document Verification</h1>
+            <span className="px-3 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200 text-xs font-bold rounded-full flex items-center">
+              <Cloud className="w-3.5 h-3.5 mr-1" />
+              Zero-Storage Mode
+            </span>
+          </div>
+          <p className="mt-1 text-sm text-gray-500">Review, verify, and inspect student credential dossiers and Google Drive links</p>
         </div>
 
-        {/* View Toggle */}
-        <div className="flex items-center p-1 bg-gray-100/80 rounded-xl border border-gray-200">
+        {/* View Toggle & Purge Storage Actions */}
+        <div className="flex items-center gap-2">
           <button
-            onClick={() => setViewMode('dossiers')}
-            className={`flex items-center px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
-              viewMode === 'dossiers'
-                ? 'bg-white text-brand-blue shadow-sm'
-                : 'text-gray-600 hover:text-gray-900'
-            }`}
+            onClick={handlePurgeStorage}
+            disabled={purging}
+            className="flex items-center px-3.5 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-xl text-xs font-bold transition-all shadow-sm disabled:opacity-50"
+            title="Clean all binary files from Supabase storage"
           >
-            <LayoutGrid className="w-4 h-4 mr-1.5" />
-            Student Dossiers ({dossiers.length})
+            {purging ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5 mr-1.5" />}
+            Purge Storage Bucket
           </button>
-          <button
-            onClick={() => setViewMode('table')}
-            className={`flex items-center px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
-              viewMode === 'table'
-                ? 'bg-white text-brand-blue shadow-sm'
-                : 'text-gray-600 hover:text-gray-900'
-            }`}
-          >
-            <List className="w-4 h-4 mr-1.5" />
-            All Files ({filtered.length})
-          </button>
+
+          <div className="flex items-center p-1 bg-gray-100/80 rounded-xl border border-gray-200">
+            <button
+              onClick={() => setViewMode('dossiers')}
+              className={`flex items-center px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                viewMode === 'dossiers'
+                  ? 'bg-white text-brand-blue shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              <LayoutGrid className="w-4 h-4 mr-1.5" />
+              Student Dossiers ({dossiers.length})
+            </button>
+            <button
+              onClick={() => setViewMode('table')}
+              className={`flex items-center px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                viewMode === 'table'
+                  ? 'bg-white text-brand-blue shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              <List className="w-4 h-4 mr-1.5" />
+              All Files ({filtered.length})
+            </button>
+          </div>
         </div>
       </div>
 
@@ -328,40 +375,47 @@ export default function DocumentsPage() {
                 {/* Documents Summary Grid */}
                 <div className="mt-4 pt-3 border-t border-gray-100 space-y-2">
                   <div className="text-[11px] font-bold text-gray-400 uppercase tracking-wider mb-2 flex items-center justify-between">
-                    <span>Uploaded Credentials ({dossier.documents.length})</span>
+                    <span>Credentials ({dossier.documents.length})</span>
                     <span>Status</span>
                   </div>
 
-                  {dossier.documents.map((doc) => (
-                    <div
-                      key={doc.id}
-                      onClick={() => setPreviewDoc(doc)}
-                      className="flex items-center justify-between p-2.5 rounded-xl hover:bg-gray-50 border border-gray-100 cursor-pointer transition-colors group/item"
-                    >
-                      <div className="flex items-center space-x-2.5 min-w-0 pr-2">
-                        <FileText className="w-4 h-4 text-brand-blue flex-shrink-0 group-hover/item:scale-110 transition-transform" />
-                        <div className="min-w-0">
-                          <p className="text-xs font-semibold text-gray-800 truncate">
-                            {doc.file_name}
-                          </p>
-                          <p className="text-[10px] text-gray-400 uppercase font-medium">
-                            {doc.document_type.replace(/_/g, ' ')}
-                          </p>
+                  {dossier.documents.map((doc) => {
+                    const isCloud = Boolean(doc.cloud_url || doc.file_path === 'cloud_link');
+                    return (
+                      <div
+                        key={doc.id}
+                        onClick={() => setPreviewDoc(doc)}
+                        className="flex items-center justify-between p-2.5 rounded-xl hover:bg-gray-50 border border-gray-100 cursor-pointer transition-colors group/item"
+                      >
+                        <div className="flex items-center space-x-2.5 min-w-0 pr-2">
+                          {isCloud ? (
+                            <Cloud className="w-4 h-4 text-blue-500 flex-shrink-0 group-hover/item:scale-110 transition-transform" />
+                          ) : (
+                            <FileText className="w-4 h-4 text-brand-blue flex-shrink-0 group-hover/item:scale-110 transition-transform" />
+                          )}
+                          <div className="min-w-0">
+                            <p className="text-xs font-semibold text-gray-800 truncate">
+                              {doc.file_name || doc.document_type}
+                            </p>
+                            <p className="text-[10px] text-gray-400 uppercase font-medium">
+                              {isCloud ? 'Google Drive Link' : doc.document_type.replace(/_/g, ' ')}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center space-x-2 flex-shrink-0">
+                          {doc.status === 'approved' ? (
+                            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" title="Approved" />
+                          ) : doc.status === 'rejected' ? (
+                            <span className="w-2.5 h-2.5 rounded-full bg-rose-500" title="Rejected" />
+                          ) : (
+                            <span className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-ping" title="Pending Review" />
+                          )}
+                          <Eye className="w-3.5 h-3.5 text-gray-400 group-hover/item:text-brand-blue" />
                         </div>
                       </div>
-
-                      <div className="flex items-center space-x-2 flex-shrink-0">
-                        {doc.status === 'approved' ? (
-                          <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" title="Approved" />
-                        ) : doc.status === 'rejected' ? (
-                          <span className="w-2.5 h-2.5 rounded-full bg-rose-500" title="Rejected" />
-                        ) : (
-                          <span className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-ping" title="Pending Review" />
-                        )}
-                        <Eye className="w-3.5 h-3.5 text-gray-400 group-hover/item:text-brand-blue" />
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
 
@@ -389,102 +443,79 @@ export default function DocumentsPage() {
               <thead className="bg-gray-50/80">
                 <tr>
                   <th scope="col" className="px-6 py-3.5 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Student</th>
-                  <th scope="col" className="px-6 py-3.5 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Document Details</th>
+                  <th scope="col" className="px-6 py-3.5 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Credential Details</th>
                   <th scope="col" className="px-6 py-3.5 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Status</th>
-                  <th scope="col" className="px-6 py-3.5 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Uploaded At</th>
+                  <th scope="col" className="px-6 py-3.5 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Submitted</th>
                   <th scope="col" className="relative px-6 py-3.5 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Action</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-100">
-                {paginatedDocs.map((doc) => (
-                  <tr key={doc.id} className="hover:bg-gray-50/70 transition-colors">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <div className="h-9 w-9 bg-brand-blue/10 rounded-xl flex items-center justify-center text-brand-blue font-bold text-sm">
-                          {doc.user?.full_name?.charAt(0) || 'S'}
+                {paginatedDocs.map((doc) => {
+                  const isCloud = Boolean(doc.cloud_url || doc.file_path === 'cloud_link');
+                  return (
+                    <tr key={doc.id} className="hover:bg-gray-50/70 transition-colors">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center">
+                          <div className="h-9 w-9 bg-brand-blue/10 rounded-xl flex items-center justify-center text-brand-blue font-bold text-sm">
+                            {doc.user?.full_name?.charAt(0) || 'S'}
+                          </div>
+                          <div className="ml-3">
+                            <div className="text-sm font-bold text-gray-900">{doc.user?.full_name || 'Anonymous Student'}</div>
+                            <div className="text-xs text-gray-500">{doc.user?.email}</div>
+                          </div>
                         </div>
-                        <div className="ml-3">
-                          <div className="text-sm font-bold text-gray-900">{doc.user?.full_name || 'Anonymous Student'}</div>
-                          <div className="text-xs text-gray-500">{doc.user?.email}</div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div 
+                          onClick={() => setPreviewDoc(doc)}
+                          className="flex items-center cursor-pointer group"
+                        >
+                          {isCloud ? (
+                            <Cloud className="w-4 h-4 text-blue-500 mr-2 group-hover:scale-110 transition-transform" />
+                          ) : (
+                            <FileText className="w-4 h-4 text-brand-blue mr-2 group-hover:scale-110 transition-transform" />
+                          )}
+                          <span className="text-sm font-semibold text-gray-900 group-hover:text-brand-blue transition-colors truncate max-w-[220px]">
+                            {doc.file_name || doc.document_type}
+                          </span>
                         </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div 
-                        onClick={() => setPreviewDoc(doc)}
-                        className="flex items-center cursor-pointer group"
-                      >
-                        <FileText className="w-4 h-4 text-brand-blue mr-2 group-hover:scale-110 transition-transform" />
-                        <span className="text-sm font-semibold text-gray-900 group-hover:text-brand-blue transition-colors truncate max-w-[220px]">
-                          {doc.file_name}
-                        </span>
-                      </div>
-                      <div className="text-[11px] text-gray-400 mt-0.5 uppercase tracking-wider font-semibold">
-                        {doc.document_type.replace(/_/g, ' ')}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {getStatusBadge(doc.status)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      <div className="flex items-center">
-                        <Clock className="w-3.5 h-3.5 mr-1.5 text-gray-400" />
-                        {new Date(doc.uploaded_at).toLocaleDateString()}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      <button 
-                        onClick={() => setPreviewDoc(doc)}
-                        className="inline-flex items-center px-3 py-1.5 bg-brand-blue/10 text-brand-blue hover:bg-brand-blue hover:text-white rounded-xl text-xs font-bold transition-all shadow-sm"
-                      >
-                        <Eye className="w-3.5 h-3.5 mr-1.5" />
-                        Inspect & Verify
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+                        <div className="text-[11px] text-gray-400 mt-0.5 uppercase tracking-wider font-semibold">
+                          {isCloud ? 'Google Drive Link' : doc.document_type.replace(/_/g, ' ')}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {getStatusBadge(doc.status)}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <div className="flex items-center">
+                          <Clock className="w-3.5 h-3.5 mr-1.5 text-gray-400" />
+                          {new Date(doc.uploaded_at).toLocaleDateString()}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <button 
+                          onClick={() => setPreviewDoc(doc)}
+                          className="inline-flex items-center px-3 py-1.5 bg-brand-blue/10 text-brand-blue hover:bg-brand-blue hover:text-white rounded-xl text-xs font-bold transition-all shadow-sm"
+                        >
+                          <Eye className="w-3.5 h-3.5 mr-1.5" />
+                          Inspect &amp; Verify
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
-          
-          {/* Table Pagination */}
-          {!loading && filtered.length > 0 && (
-            <div className="px-6 py-4 border-t border-gray-100 bg-gray-50/50 flex items-center justify-between">
-              <div className="text-sm text-gray-400">
-                 Showing <span className="font-medium text-gray-900">{(currentPage - 1) * itemsPerPage + 1}</span> to <span className="font-medium text-gray-900">{Math.min(currentPage * itemsPerPage, filtered.length)}</span> of <span className="font-medium text-gray-900">{filtered.length}</span>
-              </div>
-              <div className="flex items-center gap-2">
-                 <button 
-                   onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                   disabled={currentPage === 1}
-                   className="p-1.5 rounded-lg border border-gray-200 text-gray-400 hover:bg-white hover:text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                 >
-                   <ChevronLeft className="w-5 h-5" />
-                 </button>
-                 <span className="text-sm font-medium text-gray-700 bg-white border border-gray-200 px-3 py-1 rounded-lg shadow-sm">
-                   {currentPage} / {totalPages}
-                 </span>
-                 <button 
-                   onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                   disabled={currentPage === totalPages}
-                   className="p-1.5 rounded-lg border border-gray-200 text-gray-400 hover:bg-white hover:text-gray-900 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                 >
-                   <ChevronRight className="w-5 h-5" />
-                 </button>
-              </div>
-            </div>
-          )}
         </div>
       )}
 
-      {/* Dedicated In-App Document Previewer Modal */}
-      {previewDoc && (
-        <DocumentPreviewModal
-          document={previewDoc}
-          onClose={() => setPreviewDoc(null)}
-          onUpdateStatus={handleUpdateStatus}
-        />
-      )}
+      {/* In-app Document Preview Modal */}
+      <DocumentPreviewModal 
+        document={previewDoc} 
+        onClose={() => setPreviewDoc(null)} 
+        onUpdateStatus={handleUpdateStatus} 
+      />
     </div>
   );
 }

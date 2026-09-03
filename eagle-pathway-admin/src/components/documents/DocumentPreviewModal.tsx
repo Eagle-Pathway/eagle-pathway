@@ -12,7 +12,9 @@ import {
   User, 
   Calendar,
   AlertCircle,
-  Loader2
+  Loader2,
+  ExternalLink,
+  Cloud
 } from 'lucide-react';
 import { getFreshSignedUrl } from '@/lib/storageHelper';
 
@@ -23,6 +25,8 @@ export interface PreviewableDocument {
   file_name: string;
   file_path?: string | null;
   file_url: string;
+  cloud_url?: string | null;
+  text_content?: string | null;
   status: 'pending' | 'approved' | 'rejected';
   uploaded_at: string;
   reviewer_notes?: string | null;
@@ -49,12 +53,27 @@ export function DocumentPreviewModal({ document, onClose, onUpdateStatus }: Docu
   const [loadingUrl, setLoadingUrl] = useState<boolean>(true);
   const [imageError, setImageError] = useState<boolean>(false);
 
+  const isCloudLink = document?.cloud_url || 
+                      document?.file_path === 'cloud_link' || 
+                      document?.file_url?.includes('drive.google.com') ||
+                      document?.file_url?.includes('onedrive') ||
+                      document?.file_url?.includes('dropbox.com');
+
+  const hasTextContent = Boolean(document?.text_content);
+
   useEffect(() => {
     let isMounted = true;
     async function resolveLiveUrl() {
       if (!document) return;
       setLoadingUrl(true);
       setImageError(false);
+
+      if (isCloudLink || hasTextContent) {
+        setResolvedUrl(document.cloud_url || document.file_url);
+        setLoadingUrl(false);
+        return;
+      }
+
       const raw = document.file_path || document.file_url;
       const fresh = await getFreshSignedUrl(raw, 'documents');
       if (isMounted) {
@@ -64,7 +83,7 @@ export function DocumentPreviewModal({ document, onClose, onUpdateStatus }: Docu
     }
     resolveLiveUrl();
     return () => { isMounted = false; };
-  }, [document]);
+  }, [document, isCloudLink, hasTextContent]);
 
   if (!document) return null;
 
@@ -110,7 +129,7 @@ export function DocumentPreviewModal({ document, onClose, onUpdateStatus }: Docu
         <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between bg-white z-10">
           <div className="flex items-center space-x-3 min-w-0">
             <div className="w-10 h-10 rounded-xl bg-brand-blue/10 flex items-center justify-center text-brand-blue flex-shrink-0">
-              <FileText className="w-5 h-5" />
+              {isCloudLink ? <Cloud className="w-5 h-5" /> : <FileText className="w-5 h-5" />}
             </div>
             <div className="min-w-0">
               <div className="flex items-center space-x-2">
@@ -147,7 +166,7 @@ export function DocumentPreviewModal({ document, onClose, onUpdateStatus }: Docu
 
           {/* Controls & Close */}
           <div className="flex items-center space-x-2">
-            {!isPdf && (
+            {!isCloudLink && !hasTextContent && !isPdf && (
               <>
                 <button
                   onClick={handleZoomOut}
@@ -175,16 +194,19 @@ export function DocumentPreviewModal({ document, onClose, onUpdateStatus }: Docu
                 </button>
               </>
             )}
-            <a
-              href={resolvedUrl || document.file_url}
-              download={document.file_name}
-              target="_blank"
-              rel="noopener noreferrer"
-              title="Open / Download original"
-              className="p-2 text-gray-500 hover:text-brand-blue hover:bg-blue-50 rounded-lg transition-colors"
-            >
-              <Download className="w-4 h-4" />
-            </a>
+            
+            {(resolvedUrl || document.cloud_url) && (
+              <a
+                href={document.cloud_url || resolvedUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                title="Open Link in New Tab"
+                className="p-2 text-gray-500 hover:text-brand-blue hover:bg-blue-50 rounded-lg transition-colors"
+              >
+                <ExternalLink className="w-4 h-4" />
+              </a>
+            )}
+
             <button
               onClick={onClose}
               className="p-2 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors ml-2"
@@ -195,11 +217,47 @@ export function DocumentPreviewModal({ document, onClose, onUpdateStatus }: Docu
         </div>
 
         {/* Document Viewer Body */}
-        <div className="flex-1 bg-slate-900/90 relative overflow-auto flex items-center justify-center p-4">
+        <div className="flex-1 bg-slate-900/90 relative overflow-auto flex items-center justify-center p-6">
           {loadingUrl ? (
             <div className="flex flex-col items-center justify-center text-white space-y-3">
               <Loader2 className="w-8 h-8 animate-spin text-brand-gold" />
-              <p className="text-xs text-gray-300">Decrypting and loading document...</p>
+              <p className="text-xs text-gray-300">Loading document...</p>
+            </div>
+          ) : isCloudLink ? (
+            /* Cloud Link (Google Drive / OneDrive) Display Card */
+            <div className="flex flex-col items-center justify-center text-center p-8 bg-slate-800/90 rounded-2xl max-w-lg text-white border border-slate-700 space-y-5 shadow-2xl">
+              <div className="w-16 h-16 rounded-2xl bg-brand-blue/20 flex items-center justify-center text-blue-400">
+                <Cloud className="w-8 h-8" />
+              </div>
+              <div>
+                <h4 className="text-lg font-bold">Google Drive / Cloud Dossier</h4>
+                <p className="text-xs text-gray-300 mt-2 max-w-sm">
+                  This student provided their credentials via a direct cloud folder or file link. Click below to inspect their full documents on Google Drive in a secure new tab.
+                </p>
+                <div className="mt-4 p-3 bg-slate-900/80 rounded-xl text-xs font-mono text-blue-300 break-all max-w-md border border-slate-700">
+                  {document.cloud_url || resolvedUrl || document.file_url}
+                </div>
+              </div>
+              <a
+                href={document.cloud_url || resolvedUrl || document.file_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center px-6 py-3 bg-brand-blue text-white rounded-xl text-sm font-bold shadow-lg hover:bg-blue-600 transition-all hover:scale-105"
+              >
+                <ExternalLink className="w-4 h-4 mr-2" />
+                Open Google Drive Dossier ↗
+              </a>
+            </div>
+          ) : hasTextContent ? (
+            /* Structured Text Credential / SOP Viewer */
+            <div className="bg-white rounded-2xl p-8 max-w-2xl w-full text-gray-900 shadow-2xl overflow-y-auto max-h-[75vh]">
+              <h4 className="text-base font-bold text-gray-900 mb-4 pb-2 border-b border-gray-100 flex items-center">
+                <FileText className="w-5 h-5 mr-2 text-brand-blue" />
+                Student Credential &amp; Text Submission
+              </h4>
+              <div className="text-sm text-gray-800 leading-relaxed whitespace-pre-wrap font-sans bg-gray-50 p-4 rounded-xl border border-gray-200">
+                {document.text_content}
+              </div>
             </div>
           ) : isPdf ? (
             <iframe
@@ -213,7 +271,7 @@ export function DocumentPreviewModal({ document, onClose, onUpdateStatus }: Docu
               <div>
                 <h4 className="text-base font-bold">Image Preview Unavailable</h4>
                 <p className="text-xs text-gray-300 mt-1">
-                  This image format (such as mobile raw camera format) cannot be displayed directly inline. You can open or download the original file below.
+                  This image format cannot be displayed directly inline. You can open or download the original file below.
                 </p>
               </div>
               <a
@@ -223,7 +281,7 @@ export function DocumentPreviewModal({ document, onClose, onUpdateStatus }: Docu
                 className="inline-flex items-center px-4 py-2 bg-brand-blue text-white rounded-xl text-xs font-bold shadow-md hover:bg-blue-700 transition-colors"
               >
                 <Download className="w-4 h-4 mr-1.5" />
-                Open / Download Original File
+                Open Original File
               </a>
             </div>
           ) : (
@@ -263,7 +321,7 @@ export function DocumentPreviewModal({ document, onClose, onUpdateStatus }: Docu
                 <form onSubmit={handleReject} className="flex items-center space-x-2 w-full sm:w-auto">
                   <input
                     type="text"
-                    placeholder="Reason for rejection (e.g. Unclear scan)..."
+                    placeholder="Reason for rejection (e.g. Broken link, invalid GPA)..."
                     value={rejectReason}
                     onChange={(e) => setRejectReason(e.target.value)}
                     required

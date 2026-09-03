@@ -241,10 +241,12 @@ export interface Document {
   user_id: string;
   application_id?: string;
   document_type: DocumentType;
-  file_name: string;
+  file_name?: string;
   file_path?: string;
   file_url: string;
-  file_size: number;
+  cloud_url?: string;
+  text_content?: string;
+  file_size?: number;
   status: DocumentStatus;
   reviewer_notes?: string;
   uploaded_at: string;

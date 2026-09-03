@@ -25,8 +25,12 @@ interface SOPInlineComment {
 }
 
 async function withSignedDocumentUrl(document: Document): Promise<Document> {
+  if (!document.file_path || document.file_path === 'cloud_link') return document;
+  if (document.cloud_url || (document.file_url && document.file_url.startsWith('http') && !document.file_url.includes('/storage/v1/'))) {
+    return document;
+  }
   const path = document.file_path || (!document.file_url?.startsWith('http') ? document.file_url : undefined);
-  if (!path) return document;
+  if (!path || path === 'cloud_link') return document;
 
   const { data, error } = await supabase.storage
     .from('documents')
@@ -222,23 +226,67 @@ export const scholarshipsService = {
     userId: string;
     applicationId?: string;
     documentType: DocumentType;
-    fileUri: string;
-    fileName: string;
+    cloudUrl?: string;
+    textContent?: string;
+    fileUri?: string;
+    fileName?: string;
   }): Promise<Document> {
-    const filePath = `${params.userId}/${params.documentType}/${Date.now()}_${params.fileName}`;
-    const contentType = params.fileName.endsWith('.pdf') ? 'application/pdf' : 'image/jpeg';
+    // 1. Auto-cleanup previous document of this type for this user to prevent duplicates
+    if (params.documentType !== 'other') {
+      try {
+        const query = supabase.from('documents');
+        if (typeof query?.select === 'function') {
+          const { data: existingDocs } = await query
+            .select('id, file_path')
+            .eq('user_id', params.userId)
+            .eq('document_type', params.documentType);
+          
+          if (existingDocs && existingDocs.length > 0) {
+            for (const existing of existingDocs) {
+              if (existing.file_path && existing.file_path !== 'cloud_link') {
+                await supabase.storage.from('documents').remove([existing.file_path]).catch(() => {});
+              }
+              try {
+                await supabase.from('documents').delete().eq('id', existing.id);
+              } catch {}
+            }
+          }
+        }
+      } catch {}
+    }
 
-    // Read file as base64 (works with content:// URIs, unlike fetch + blob)
+    // 2. Pure Cloud Link / Text Mode (Zero Supabase Storage)
+    if (params.cloudUrl || params.textContent || !params.fileUri) {
+      const fileUrl = params.cloudUrl || '';
+      const { data, error } = await supabase
+        .from('documents')
+        .insert({
+          user_id: params.userId,
+          application_id: params.applicationId || null,
+          document_type: params.documentType,
+          file_name: params.fileName || (params.cloudUrl ? 'Google Drive Link' : 'Text Credential'),
+          file_path: 'cloud_link',
+          file_url: fileUrl,
+          cloud_url: params.cloudUrl || null,
+          text_content: params.textContent || null,
+          file_size: 0,
+          status: 'pending',
+        })
+        .select()
+        .single();
+      if (error) throw error;
+      return data as Document;
+    }
+
+    // 3. Fallback for binary file URI if provided
+    const filePath = `${params.userId}/${params.documentType}/${Date.now()}_${params.fileName || 'file'}`;
+    const contentType = params.fileName?.endsWith('.pdf') ? 'application/pdf' : 'image/jpeg';
     const base64 = await FileSystem.readAsStringAsync(params.fileUri, { encoding: FileSystem.EncodingType.Base64 });
     const fileBytes = decode(base64);
 
-    // Upload to Supabase Storage
     const { error: uploadError } = await supabase.storage
       .from('documents')
-      .upload(filePath, fileBytes, {
-        contentType,
-        upsert: false,
-      });
+      .upload(filePath, fileBytes, { contentType, upsert: false });
     if (uploadError) throw uploadError;
 
     const { data: signedData, error: signedError } = await supabase.storage
@@ -246,16 +294,16 @@ export const scholarshipsService = {
       .createSignedUrl(filePath, SIGNED_URL_TTL_SECONDS);
     if (signedError) throw signedError;
 
-    // Save document record
     const { data, error } = await supabase
       .from('documents')
       .insert({
         user_id: params.userId,
         application_id: params.applicationId || null,
         document_type: params.documentType,
-        file_name: params.fileName,
+        file_name: params.fileName || 'file',
         file_path: filePath,
         file_url: signedData.signedUrl,
+        cloud_url: signedData.signedUrl,
         file_size: Math.round(base64.length * 0.75),
         status: 'pending',
       })

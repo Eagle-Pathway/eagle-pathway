@@ -12,8 +12,10 @@ interface DocumentState {
     userId: string;
     applicationId?: string;
     documentType: DocumentType;
-    fileUri: string;
-    fileName: string;
+    cloudUrl?: string;
+    textContent?: string;
+    fileUri?: string;
+    fileName?: string;
   }) => Promise<Document>;
   deleteDocument: (doc: { id: string; file_path?: string | null }) => Promise<void>;
 }
