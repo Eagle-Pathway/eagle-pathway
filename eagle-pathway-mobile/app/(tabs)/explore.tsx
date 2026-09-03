@@ -8,39 +8,69 @@ import { useAuthStore } from '../../src/store/authStore';
 import { getUserRole } from '../../src/utils/role';
 import { TutorJobFeedScreen } from '../../src/screens/profile/TutorJobFeedScreen';
 
-type Tab = 'scholarships' | 'tutors';
+type StudentTab = 'scholarships' | 'tutors';
+type TutorTab = 'jobs' | 'scholarships';
 
 export default function ExploreScreen() {
   const { user } = useAuthStore();
   const isTutor = getUserRole(user).toLowerCase() === 'tutor';
-  const [activeTab, setActiveTab] = useState<Tab>('scholarships');
+  const [studentTab, setStudentTab] = useState<StudentTab>('scholarships');
+  const [tutorTab, setTutorTab] = useState<TutorTab>('jobs');
 
-  // For tutors this tab is labelled "Jobs" in the tab bar, so it must show
-  // the job feed — not the student scholarships/tutors discovery view.
   if (isTutor) {
-    return <TutorJobFeedScreen />;
+    return (
+      <View style={CommonStyles.flex1}>
+        {/* Tutor Top Segment: Jobs & Scholarships */}
+        <SafeAreaView style={styles.segmentWrap} edges={['top']}>
+          <View style={styles.segment}>
+            <TouchableOpacity
+              style={[styles.segBtn, tutorTab === 'jobs' && styles.segBtnActive]}
+              onPress={() => setTutorTab('jobs')}
+              activeOpacity={0.8}
+            >
+              <Text style={[styles.segText, tutorTab === 'jobs' && styles.segTextActive]}>
+                💼 Tutoring Jobs
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.segBtn, tutorTab === 'scholarships' && styles.segBtnActive]}
+              onPress={() => setTutorTab('scholarships')}
+              activeOpacity={0.8}
+            >
+              <Text style={[styles.segText, tutorTab === 'scholarships' && styles.segTextActive]}>
+                🎓 Scholarships
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </SafeAreaView>
+
+        <View style={CommonStyles.flex1}>
+          {tutorTab === 'jobs' ? <TutorJobFeedScreen /> : <ScholarshipsScreen hideBack />}
+        </View>
+      </View>
+    );
   }
 
   return (
     <View style={CommonStyles.flex1}>
-      {/* Segment switcher */}
+      {/* Student/Parent Segment switcher */}
       <SafeAreaView style={styles.segmentWrap} edges={['top']}>
         <View style={styles.segment}>
           <TouchableOpacity
-            style={[styles.segBtn, activeTab === 'scholarships' && styles.segBtnActive]}
-            onPress={() => setActiveTab('scholarships')}
+            style={[styles.segBtn, studentTab === 'scholarships' && styles.segBtnActive]}
+            onPress={() => setStudentTab('scholarships')}
             activeOpacity={0.8}
           >
-            <Text style={[styles.segText, activeTab === 'scholarships' && styles.segTextActive]}>
+            <Text style={[styles.segText, studentTab === 'scholarships' && styles.segTextActive]}>
               🎓 Scholarships
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.segBtn, activeTab === 'tutors' && styles.segBtnActive]}
-            onPress={() => setActiveTab('tutors')}
+            style={[styles.segBtn, studentTab === 'tutors' && styles.segBtnActive]}
+            onPress={() => setStudentTab('tutors')}
             activeOpacity={0.8}
           >
-            <Text style={[styles.segText, activeTab === 'tutors' && styles.segTextActive]}>
+            <Text style={[styles.segText, studentTab === 'tutors' && styles.segTextActive]}>
               👨‍🏫 Tutors
             </Text>
           </TouchableOpacity>
@@ -49,7 +79,7 @@ export default function ExploreScreen() {
 
       {/* Content */}
       <View style={CommonStyles.flex1}>
-        {activeTab === 'scholarships' ? <ScholarshipsScreen hideBack /> : <TutorsScreen />}
+        {studentTab === 'scholarships' ? <ScholarshipsScreen hideBack /> : <TutorsScreen />}
       </View>
     </View>
   );
@@ -69,19 +99,25 @@ const styles = StyleSheet.create({
   },
   segBtn: {
     flex: 1,
-    paddingVertical: 8,
+    paddingVertical: 9,
     alignItems: 'center',
     borderRadius: 10,
   },
   segBtnActive: {
     backgroundColor: Colors.white,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
   segText: {
     fontSize: Typography.sm,
     fontWeight: Typography.semibold,
-    color: 'rgba(255,255,255,0.7)',
+    color: 'rgba(255,255,255,0.75)',
   },
   segTextActive: {
     color: Colors.blueDark,
+    fontWeight: Typography.bold,
   },
 });

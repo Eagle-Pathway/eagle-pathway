@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
-import { 
-  View, Text, ScrollView, RefreshControl, TouchableOpacity, 
-  Modal, TextInput, ActivityIndicator, StyleSheet 
+import React, { useState, useEffect } from 'react';
+import {
+  View, Text, ScrollView, RefreshControl, TouchableOpacity,
+  Modal, TextInput, ActivityIndicator, StyleSheet
 } from 'react-native';
 import { toast } from '@/utils/toast';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -9,9 +9,10 @@ import { router } from 'expo-router';
 import { format } from 'date-fns';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Typography, Spacing, Radius, CommonStyles } from '@/utils/theme';
-import { Avatar, Skeleton } from '@/components/common';
-import { User, Booking, Tutor, PayoutRequest, BookingStatus } from '@/types';
-
+import { Avatar, Skeleton, ScaleBounce } from '@/components/common';
+import { User, Booking, Tutor, PayoutRequest, BookingStatus, Scholarship } from '@/types';
+import { getFlagEmoji } from '@eagle-pathway/shared';
+import { scholarshipsService } from '@/services/scholarships';
 import { HomeActiveSessionBanner } from '@/components/tutors/HomeActiveSessionBanner';
 
 interface TutorHomeProps {
@@ -38,6 +39,36 @@ interface TutorHomeProps {
   loading?: boolean;
 }
 
+const TUTOR_GUIDES = [
+  {
+    id: 'tutor-scholarship',
+    title: 'Graduate & Master’s Scholarship Guide',
+    sub: 'Full funding, GRE/IELTS waivers & university search',
+    tag: 'Scholarships',
+    color: '#2563EB',
+    bg: '#EFF6FF',
+    icon: 'ribbon-outline',
+  },
+  {
+    id: 'tutor-pedagogy',
+    title: 'Effective Tutoring & Student Retention',
+    sub: 'How to structure 1-on-1 sessions & set milestones',
+    tag: 'Teaching',
+    color: '#059669',
+    bg: '#ECFDF5',
+    icon: 'school-outline',
+  },
+  {
+    id: 'tutor-sop',
+    title: 'Motivation Letter & SOP Writing Guide',
+    sub: 'Winning personal statement templates for graduate school',
+    tag: 'Admissions',
+    color: '#D97706',
+    bg: '#FEF3C7',
+    icon: 'create-outline',
+  },
+];
+
 export const TutorHome: React.FC<TutorHomeProps> = ({
   firstName,
   greeting,
@@ -56,12 +87,19 @@ export const TutorHome: React.FC<TutorHomeProps> = ({
 }) => {
   const [isPayoutModalVisible, setIsPayoutModalVisible] = useState(false);
   const [updatingId, setUpdatingId] = useState<string | null>(null);
+  const [topScholarships, setTopScholarships] = useState<Scholarship[]>([]);
   const [payoutForm, setPayoutForm] = useState({
     amount: '',
     bankName: '',
     accountNumber: '',
     accountName: '',
   });
+
+  useEffect(() => {
+    scholarshipsService.getScholarships().then(data => {
+      setTopScholarships(data.slice(0, 6));
+    }).catch(() => { });
+  }, []);
 
   if (loading) {
     return (
@@ -82,26 +120,8 @@ export const TutorHome: React.FC<TutorHomeProps> = ({
             </View>
           </View>
 
-          {/* Skeleton Hero Balance */}
           <View style={styles.mainBalanceWrapper}>
             <Skeleton width="100%" height={150} borderRadius={Radius['2xl']} />
-          </View>
-
-          {/* Today's Sessions Skeleton */}
-          <View style={styles.sectionHeaderRow}>
-            <Skeleton width={140} height={20} />
-            <Skeleton width={80} height={16} />
-          </View>
-          <View style={{ paddingHorizontal: Spacing.xl, marginBottom: Spacing.md }}>
-            <Skeleton width="100%" height={80} borderRadius={Radius.xl} />
-          </View>
-
-          {/* Pending Requests Skeleton */}
-          <View style={styles.sectionHeaderRow}>
-            <Skeleton width={140} height={20} />
-          </View>
-          <View style={{ paddingHorizontal: Spacing.xl }}>
-            <Skeleton width="100%" height={100} borderRadius={Radius.xl} />
           </View>
         </ScrollView>
       </SafeAreaView>
@@ -111,8 +131,7 @@ export const TutorHome: React.FC<TutorHomeProps> = ({
   const todaySessions = (bookings || []).filter(b => b.status === 'confirmed');
   const pendingSessions = (bookings || []).filter(b => b.status === 'pending');
   const completedCount = (bookings || []).filter(b => b.status === 'completed').length;
-  
-  // Real Tutor Stats
+
   const realRating = tutorProfile?.rating ? tutorProfile.rating.toFixed(1) : (completedCount > 0 ? '5.0' : 'New');
   const realTotalSessions = tutorProfile?.total_sessions ?? completedCount;
   const realReviewsCount = tutorProfile?.total_reviews ?? 0;
@@ -155,8 +174,8 @@ export const TutorHome: React.FC<TutorHomeProps> = ({
 
   return (
     <SafeAreaView style={CommonStyles.screenBg} edges={['top', 'bottom']}>
-      <ScrollView 
-        contentContainerStyle={{ paddingBottom: 150 }} 
+      <ScrollView
+        contentContainerStyle={{ paddingBottom: 150 }}
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.white} />}
       >
@@ -164,13 +183,13 @@ export const TutorHome: React.FC<TutorHomeProps> = ({
         <View style={styles.heroHeader}>
           <View style={styles.heroTop}>
             <View style={{ flex: 1 }}>
-              <Text style={styles.greeting}>{greeting} 👋</Text>
+              <Text style={styles.greeting}>{greeting} 👨‍🏫</Text>
               <Text style={styles.userName}>{firstName}</Text>
             </View>
             <View style={styles.heroActions}>
-              <TouchableOpacity 
-                style={styles.notifBtn} 
-                onPress={() => router.push('/notifications')} 
+              <TouchableOpacity
+                style={styles.notifBtn}
+                onPress={() => router.push('/notifications')}
                 activeOpacity={0.8}
               >
                 <Ionicons name="notifications-outline" size={18} color={Colors.white} />
@@ -182,6 +201,33 @@ export const TutorHome: React.FC<TutorHomeProps> = ({
               </TouchableOpacity>
               <Avatar initials={initials} size={40} borderRadius={12} />
             </View>
+          </View>
+
+          {/* 4 Quick Action Cards in Hero */}
+          <View style={styles.quickCards}>
+            {[
+              { label: 'Job Board', sub: 'Student requests', icon: 'briefcase-outline' as const, route: '/(tabs)/explore' },
+              { label: 'Scholarships', sub: 'Master’s & PhD', icon: 'ribbon-outline' as const, route: '/(tabs)/scholarships' },
+              { label: 'Earnings', sub: 'Payouts & stats', icon: 'wallet-outline' as const, route: '/(tabs)/activity' },
+              { label: 'Resources', sub: 'Teaching guides', icon: 'library-outline' as const, route: '/resources' },
+            ].map(card => (
+              <TouchableOpacity
+                key={card.label}
+                style={styles.quickCard}
+                onPress={() => router.push(card.route as any)}
+                activeOpacity={0.8}
+              >
+                <View style={styles.quickCardIcon}>
+                  <Ionicons name={card.icon} size={16} color={Colors.white} />
+                </View>
+                <Text style={styles.quickCardLabel} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>
+                  {card.label}
+                </Text>
+                <Text style={styles.quickCardSub} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75}>
+                  {card.sub}
+                </Text>
+              </TouchableOpacity>
+            ))}
           </View>
         </View>
 
@@ -196,8 +242,8 @@ export const TutorHome: React.FC<TutorHomeProps> = ({
                   <Text style={styles.balanceAmount}>{availableBalance.toLocaleString()}</Text>
                 </View>
               </View>
-              <TouchableOpacity 
-                style={styles.withdrawBtn} 
+              <TouchableOpacity
+                style={styles.withdrawBtn}
                 onPress={() => setIsPayoutModalVisible(true)}
                 activeOpacity={0.8}
               >
@@ -236,13 +282,13 @@ export const TutorHome: React.FC<TutorHomeProps> = ({
           </View>
         </View>
 
-        {/* Tutor Jobs Board Banner */}
         {/* Live Active Session & Scheduled Today Banner */}
         <HomeActiveSessionBanner />
 
+        {/* Tutor Jobs Board Banner */}
         <TouchableOpacity
           style={styles.jobsBanner}
-          onPress={() => router.push('/(tabs)/tutor-jobs')}
+          onPress={() => router.push('/(tabs)/explore')}
           activeOpacity={0.88}
         >
           <View style={styles.jobsIconBg}>
@@ -252,10 +298,10 @@ export const TutorHome: React.FC<TutorHomeProps> = ({
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
               <Text style={styles.jobsBannerTitle}>Tutor Job Board</Text>
               <View style={styles.newBadge}>
-                <Text style={styles.newBadgeText}>JOBS</Text>
+                <Text style={styles.newBadgeText}>LIVE</Text>
               </View>
             </View>
-            <Text style={styles.jobsBannerSub}>Explore student tutoring requests & apply now</Text>
+            <Text style={styles.jobsBannerSub}>Explore student tutoring requests &amp; apply now</Text>
           </View>
           <Ionicons name="chevron-forward" size={18} color="rgba(255,255,255,0.7)" />
         </TouchableOpacity>
@@ -270,7 +316,7 @@ export const TutorHome: React.FC<TutorHomeProps> = ({
               </View>
             )}
           </View>
-          <TouchableOpacity 
+          <TouchableOpacity
             onPress={() => router.push('/(tabs)/bookings')}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
@@ -314,7 +360,7 @@ export const TutorHome: React.FC<TutorHomeProps> = ({
                   </View>
                 </View>
               </View>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.completeActionBtn}
                 onPress={() => handleUpdateStatus(b.id, 'completed' as any)}
                 disabled={updatingId === b.id}
@@ -375,10 +421,9 @@ export const TutorHome: React.FC<TutorHomeProps> = ({
                 </View>
               </View>
 
-              {/* Action Buttons styled compactly to avoid overlap */}
               <View style={styles.pendingActionRow}>
-                <TouchableOpacity 
-                  style={styles.acceptBtn} 
+                <TouchableOpacity
+                  style={styles.acceptBtn}
                   onPress={() => handleUpdateStatus(b.id, 'confirmed' as any)}
                   disabled={updatingId === b.id}
                   activeOpacity={0.8}
@@ -392,8 +437,8 @@ export const TutorHome: React.FC<TutorHomeProps> = ({
                     </>
                   )}
                 </TouchableOpacity>
-                <TouchableOpacity 
-                  style={styles.declineBtn} 
+                <TouchableOpacity
+                  style={styles.declineBtn}
                   onPress={() => handleUpdateStatus(b.id, 'cancelled' as any)}
                   disabled={updatingId === b.id}
                   activeOpacity={0.8}
@@ -406,9 +451,131 @@ export const TutorHome: React.FC<TutorHomeProps> = ({
           ))
         )}
 
+        {/* Global Scholarships for Tutors & Graduates */}
+        {topScholarships.length > 0 && (
+          <View style={{ marginTop: Spacing.xl }}>
+            <View style={styles.sectionHeaderRow}>
+              <View>
+                <Text style={styles.sectionTitleText}>Scholarships</Text>
+                <Text style={styles.sectionSubHeading}>Master’s, PhD &amp; Global Exchange Opportunities</Text>
+              </View>
+              <TouchableOpacity onPress={() => router.push('/(tabs)/scholarships')} activeOpacity={0.7}>
+                <Text style={styles.viewAllText}>See All ›</Text>
+              </TouchableOpacity>
+            </View>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.horizontalScroll}>
+              {topScholarships.map(s => {
+                const flag = getFlagEmoji(s.country_flag);
+                const isWord = /[a-zA-Z]/.test(flag);
+                const countryDisplay = isWord ? (s.country || 'Global') : `${flag} ${s.country || ''}`.trim();
+
+                return (
+                  <ScaleBounce
+                    key={s.id}
+                    style={styles.discoverCard}
+                    onPress={() => router.push({ pathname: '/scholarship-detail', params: { scholarshipId: s.id } })}
+                  >
+                    <View style={styles.discoverCardTop}>
+                      <View style={styles.countryPill}>
+                        <Ionicons name="globe-outline" size={12} color="#2563EB" />
+                        <Text style={styles.countryPillText} numberOfLines={1}>
+                          {countryDisplay || 'Global'}
+                        </Text>
+                      </View>
+                      <View style={styles.matchScoreBadge}>
+                        <Ionicons name="sparkles" size={10} color="#059669" />
+                        <Text style={styles.matchScoreText}>Graduate</Text>
+                      </View>
+                    </View>
+
+                    <View style={{ marginTop: 10, flex: 1, justifyContent: 'space-between' }}>
+                      <View>
+                        <Text style={styles.discoverName} numberOfLines={2}>{s.name}</Text>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 }}>
+                          <Ionicons name="business-outline" size={12} color="#64748B" />
+                          <Text style={styles.discoverOrg} numberOfLines={1}>{s.organization || 'University Fund'}</Text>
+                        </View>
+                      </View>
+
+                      <View style={styles.discoverFooter}>
+                        <View style={styles.tagFull}>
+                          <Text style={styles.tagFullText}>
+                            {s.funding_type === 'fully_funded' ? '✨ Full Fund' : 'Partial'}
+                          </Text>
+                        </View>
+                        {s.deadline && (
+                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 3 }}>
+                            <Ionicons name="calendar-outline" size={11} color="#64748B" />
+                            <Text style={{ fontSize: 11, color: '#64748B', fontWeight: Typography.medium }}>
+                              {format(new Date(s.deadline), 'MMM d')}
+                            </Text>
+                          </View>
+                        )}
+                      </View>
+                    </View>
+                  </ScaleBounce>
+                );
+              })}
+            </ScrollView>
+          </View>
+        )}
+
+        {/* Teaching & Academic Guides Section */}
+        <View style={{ marginTop: Spacing.xl }}>
+          <View style={styles.sectionHeaderRow}>
+            <View>
+              <Text style={styles.sectionTitleText}>Teaching &amp; Academic Guides</Text>
+              <Text style={styles.sectionSubHeading}>GRE prep, graduate SOPs &amp; tutoring best practices</Text>
+            </View>
+            <TouchableOpacity onPress={() => router.push('/resources')} activeOpacity={0.7}>
+              <Text style={styles.viewAllText}>Browse All ›</Text>
+            </TouchableOpacity>
+          </View>
+          <View style={styles.guidesContainer}>
+            {TUTOR_GUIDES.map(guide => (
+              <TouchableOpacity
+                key={guide.id}
+                style={styles.guideCard}
+                onPress={() => router.push('/resources')}
+                activeOpacity={0.82}
+              >
+                <View style={[styles.guideIconWrap, { backgroundColor: guide.bg }]}>
+                  <Ionicons name={guide.icon as any} size={22} color={guide.color} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <View style={styles.guideTagRow}>
+                    <Text style={[styles.guideTag, { color: guide.color }]}>{guide.tag}</Text>
+                  </View>
+                  <Text style={styles.guideTitle}>{guide.title}</Text>
+                  <Text style={styles.guideSub}>{guide.sub}</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={18} color="#CBD5E1" />
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+
+        {/* Eagle AI Tutor Assistant Launcher */}
+        <TouchableOpacity
+          style={styles.aiBanner}
+          onPress={() => router.push('/(tabs)/chat')}
+          activeOpacity={0.9}
+        >
+          <View style={styles.aiIconCircle}>
+            <Ionicons name="sparkles" size={24} color="#FFFFFF" />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.aiTitle}>Eagle AI Tutor Assistant</Text>
+            <Text style={styles.aiSub}>
+              Brainstorm lesson plans, generate practice problem sets, or draft graduate scholarship SOPs.
+            </Text>
+          </View>
+          <Ionicons name="arrow-forward-circle" size={28} color="#2563EB" />
+        </TouchableOpacity>
+
         {/* Recent Payouts Section */}
         {tutorPayouts.length > 0 && (
-          <>
+          <View style={{ marginTop: Spacing.xl }}>
             <View style={styles.sectionHeaderRow}>
               <Text style={styles.sectionTitleText}>Recent Payouts</Text>
             </View>
@@ -424,31 +591,31 @@ export const TutorHome: React.FC<TutorHomeProps> = ({
                   </Text>
                 </View>
                 <View style={[
-                  styles.statusBadge, 
-                  p.status === 'completed' ? styles.statusBadgeDone : 
-                  p.status === 'rejected' ? styles.statusBadgeErr : 
-                  styles.statusBadgePending
+                  styles.statusBadge,
+                  p.status === 'completed' ? styles.statusBadgeDone :
+                    p.status === 'rejected' ? styles.statusBadgeErr :
+                      styles.statusBadgePending
                 ]}>
                   <Text style={[
-                    styles.statusText, 
-                    p.status === 'completed' ? styles.statusTextDone : 
-                    p.status === 'rejected' ? styles.statusTextErr : 
-                    styles.statusTextPending
+                    styles.statusText,
+                    p.status === 'completed' ? styles.statusTextDone :
+                      p.status === 'rejected' ? styles.statusTextErr :
+                        styles.statusTextPending
                   ]}>
                     {p.status.toUpperCase()}
                   </Text>
                 </View>
               </View>
             ))}
-          </>
+          </View>
         )}
       </ScrollView>
 
       {/* Request Payout Modal */}
-      <Modal 
-        visible={isPayoutModalVisible} 
-        animationType="slide" 
-        transparent={true} 
+      <Modal
+        visible={isPayoutModalVisible}
+        animationType="slide"
+        transparent={true}
         onRequestClose={() => setIsPayoutModalVisible(false)}
       >
         <View style={styles.modalOverlay}>
@@ -469,42 +636,42 @@ export const TutorHome: React.FC<TutorHomeProps> = ({
             </View>
 
             <Text style={styles.modalLabel}>Withdrawal Amount (ETB)</Text>
-            <TextInput 
-              style={styles.modalInput} 
-              keyboardType="numeric" 
-              placeholder="e.g. 2000" 
-              value={payoutForm.amount} 
-              onChangeText={t => setPayoutForm(f => ({ ...f, amount: t }))} 
+            <TextInput
+              style={styles.modalInput}
+              keyboardType="numeric"
+              placeholder="e.g. 2000"
+              value={payoutForm.amount}
+              onChangeText={t => setPayoutForm(f => ({ ...f, amount: t }))}
             />
 
             <Text style={styles.modalLabel}>Bank Name</Text>
-            <TextInput 
-              style={styles.modalInput} 
-              placeholder="e.g. Commercial Bank of Ethiopia" 
-              value={payoutForm.bankName} 
-              onChangeText={t => setPayoutForm(f => ({ ...f, bankName: t }))} 
+            <TextInput
+              style={styles.modalInput}
+              placeholder="e.g. Commercial Bank of Ethiopia"
+              value={payoutForm.bankName}
+              onChangeText={t => setPayoutForm(f => ({ ...f, bankName: t }))}
             />
 
             <Text style={styles.modalLabel}>Account Holder Name</Text>
-            <TextInput 
-              style={styles.modalInput} 
-              placeholder="Name as it appears on account" 
-              value={payoutForm.accountName} 
-              onChangeText={t => setPayoutForm(f => ({ ...f, accountName: t }))} 
+            <TextInput
+              style={styles.modalInput}
+              placeholder="Name as it appears on account"
+              value={payoutForm.accountName}
+              onChangeText={t => setPayoutForm(f => ({ ...f, accountName: t }))}
             />
 
             <Text style={styles.modalLabel}>Account Number</Text>
-            <TextInput 
-              style={styles.modalInput} 
-              keyboardType="numeric" 
-              placeholder="Enter account number" 
-              value={payoutForm.accountNumber} 
-              onChangeText={t => setPayoutForm(f => ({ ...f, accountNumber: t }))} 
+            <TextInput
+              style={styles.modalInput}
+              keyboardType="numeric"
+              placeholder="Enter account number"
+              value={payoutForm.accountNumber}
+              onChangeText={t => setPayoutForm(f => ({ ...f, accountNumber: t }))}
             />
 
-            <TouchableOpacity 
-              style={[styles.submitBtn, isLoadingPayouts && { opacity: 0.7 }]} 
-              onPress={handlePayoutRequest} 
+            <TouchableOpacity
+              style={[styles.submitBtn, isLoadingPayouts && { opacity: 0.7 }]}
+              onPress={handlePayoutRequest}
               disabled={isLoadingPayouts}
               activeOpacity={0.8}
             >
@@ -528,54 +695,71 @@ const styles = StyleSheet.create({
     paddingTop: Spacing.lg,
     paddingBottom: Spacing['3xl'],
   },
-  heroTop: { 
-    flexDirection: 'row', 
-    justifyContent: 'space-between', 
-    alignItems: 'center', 
+  heroTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
-  greeting: { 
-    fontSize: Typography.xs, 
+  greeting: {
+    fontSize: Typography.xs,
     color: 'rgba(255,255,255,0.7)',
     fontWeight: Typography.medium,
   },
-  userName: { 
-    fontSize: Typography['2xl'], 
-    fontWeight: Typography.bold, 
-    color: Colors.white, 
-    marginTop: 2 
+  userName: {
+    fontSize: Typography['2xl'],
+    fontWeight: Typography.bold,
+    color: Colors.white,
+    marginTop: 2
   },
-  heroActions: { 
-    flexDirection: 'row', 
-    gap: Spacing.md, 
-    alignItems: 'center' 
+  heroActions: {
+    flexDirection: 'row',
+    gap: Spacing.md,
+    alignItems: 'center'
   },
-  notifBtn: { 
-    width: 38, 
-    height: 38, 
-    backgroundColor: 'rgba(255,255,255,0.14)', 
-    borderRadius: Radius.md, 
-    alignItems: 'center', 
+  notifBtn: {
+    width: 38,
+    height: 38,
+    backgroundColor: 'rgba(255,255,255,0.14)',
+    borderRadius: Radius.md,
+    alignItems: 'center',
     justifyContent: 'center',
   },
-  notifDot: { 
-    position: 'absolute', 
-    top: 4, 
-    right: 4, 
-    minWidth: 16, 
-    height: 16, 
-    borderRadius: 8, 
-    backgroundColor: Colors.gold, 
-    alignItems: 'center', 
-    justifyContent: 'center', 
-    borderWidth: 1.5, 
+  notifDot: {
+    position: 'absolute',
+    top: 4,
+    right: 4,
+    minWidth: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: Colors.gold,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1.5,
     borderColor: Colors.blueDark,
     paddingHorizontal: 2,
   },
-  notifCount: { 
-    fontSize: 9, 
-    color: Colors.white, 
-    fontWeight: Typography.bold 
+  notifCount: {
+    fontSize: 9,
+    color: Colors.white,
+    fontWeight: Typography.bold
   },
+  quickCards: {
+    flexDirection: 'row',
+    gap: Spacing.sm,
+    marginTop: Spacing.lg,
+  },
+  quickCard: {
+    flex: 1,
+    backgroundColor: 'rgba(255,255,255,0.12)',
+    borderRadius: Radius.xl,
+    padding: Spacing.sm,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+    alignItems: 'center',
+  },
+  quickCardIcon: { width: 32, height: 32, backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 8, alignItems: 'center', justifyContent: 'center', marginBottom: 6 },
+  quickCardLabel: { fontSize: 11, fontWeight: Typography.bold, color: Colors.white, textAlign: 'center' },
+  quickCardSub: { fontSize: 9, color: 'rgba(255,255,255,0.6)', marginTop: 2, textAlign: 'center' },
 
   // Main Balance Hero Card
   mainBalanceWrapper: {
@@ -587,8 +771,8 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.white,
     borderRadius: Radius['2xl'],
     padding: Spacing.lg,
-    borderWidth: 1,
-    borderColor: Colors.border,
+    borderWidth: 1.5,
+    borderColor: '#E2E8F0',
     shadowColor: Colors.blueDark,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.06,
@@ -599,12 +783,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
+    marginBottom: Spacing.xs,
   },
   balanceLabel: {
     fontSize: 10,
     fontWeight: Typography.bold,
     color: Colors.textSecondary,
-    letterSpacing: 0.8,
+    letterSpacing: 0.5,
   },
   amountRow: {
     flexDirection: 'row',
@@ -618,48 +803,41 @@ const styles = StyleSheet.create({
     color: Colors.blue,
   },
   balanceAmount: {
-    fontSize: Typography['3xl'],
+    fontSize: Typography['4xl'],
     fontWeight: Typography.bold,
     color: Colors.text,
   },
+  balanceNote: {
+    fontSize: Typography.xs,
+    color: Colors.textSecondary,
+    marginBottom: Spacing.md,
+  },
   withdrawBtn: {
     backgroundColor: Colors.gold,
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderRadius: Radius.md,
     flexDirection: 'row',
     alignItems: 'center',
-  },
-  withdrawBtnDisabled: {
-    backgroundColor: Colors.border,
-    opacity: 0.7,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: Radius.lg,
   },
   withdrawBtnText: {
     color: Colors.white,
     fontSize: Typography.xs,
     fontWeight: Typography.bold,
   },
-  balanceNote: {
-    fontSize: 10,
-    color: Colors.textSecondary,
-    marginTop: 4,
-    marginBottom: Spacing.md,
-  },
   statsChipContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.bg,
+    backgroundColor: '#F8FAFC',
     borderRadius: Radius.lg,
     paddingVertical: Spacing.sm,
-    paddingHorizontal: Spacing.xs,
+    paddingHorizontal: Spacing.md,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: '#E2E8F0',
   },
   statChip: {
     flex: 1,
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: 1,
   },
   statIconRow: {
     flexDirection: 'row',
@@ -667,14 +845,14 @@ const styles = StyleSheet.create({
     gap: 3,
   },
   statChipValue: {
-    fontSize: Typography.sm,
+    fontSize: Typography.base,
     fontWeight: Typography.bold,
     color: Colors.text,
   },
   statChipLabel: {
-    fontSize: 9,
+    fontSize: 10,
     color: Colors.textSecondary,
-    fontWeight: Typography.medium,
+    marginTop: 1,
   },
   statChipDivider: {
     width: 1,
@@ -682,104 +860,141 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.border,
   },
 
-  // Job Board Banner
+  // Jobs Banner
   jobsBanner: {
-    backgroundColor: Colors.blueDark,
     marginHorizontal: Spacing.xl,
     marginBottom: Spacing.lg,
+    backgroundColor: '#0D2051',
     borderRadius: Radius.xl,
     padding: Spacing.md,
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.md,
+    borderWidth: 1,
+    borderColor: 'rgba(201, 168, 76, 0.3)',
   },
   jobsIconBg: {
-    width: 38,
-    height: 38,
-    borderRadius: Radius.md,
+    width: 42,
+    height: 42,
+    borderRadius: 12,
     backgroundColor: Colors.white,
     alignItems: 'center',
     justifyContent: 'center',
   },
   jobsBannerTitle: {
-    fontSize: Typography.sm,
-    fontWeight: Typography.bold,
     color: Colors.white,
+    fontSize: Typography.base,
+    fontWeight: Typography.bold,
+  },
+  jobsBannerSub: {
+    color: 'rgba(255,255,255,0.7)',
+    fontSize: Typography.xs,
+    marginTop: 1,
   },
   newBadge: {
-    backgroundColor: Colors.gold,
-    paddingHorizontal: 4,
+    backgroundColor: '#2563EB',
+    paddingHorizontal: 6,
     paddingVertical: 1,
     borderRadius: 4,
   },
   newBadgeText: {
-    fontSize: 8,
-    fontWeight: Typography.bold,
     color: Colors.white,
-  },
-  jobsBannerSub: {
-    fontSize: 10,
-    color: 'rgba(255,255,255,0.75)',
-    marginTop: 1,
+    fontSize: 9,
+    fontWeight: Typography.bold,
   },
 
-  // Section Headers & Titles
+  // Section Headers
   sectionHeaderRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: Spacing.xl,
-    marginBottom: Spacing.sm,
-    marginTop: Spacing.sm,
+    marginBottom: Spacing.md,
   },
   sectionTitleWithBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.xs,
+    gap: 8,
   },
   sectionTitleText: {
-    fontSize: Typography.base,
+    fontSize: Typography.lg,
     fontWeight: Typography.bold,
-    color: Colors.text,
+    color: '#0F172A',
+  },
+  sectionSubHeading: {
+    fontSize: Typography.xs,
+    color: '#64748B',
+    marginTop: 2,
   },
   countBadge: {
     backgroundColor: Colors.blueLight,
-    paddingHorizontal: 6,
-    paddingVertical: 1,
+    paddingHorizontal: 7,
+    paddingVertical: 2,
     borderRadius: Radius.full,
   },
   countBadgeText: {
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: Typography.bold,
     color: Colors.blue,
   },
   viewAllText: {
-    fontSize: Typography.xs,
+    fontSize: Typography.sm,
+    fontWeight: Typography.bold,
     color: Colors.blue,
-    fontWeight: Typography.semibold,
   },
 
-  // Session Cards
-  sessionCard: {
+  // Empty Cards
+  emptyCard: {
+    marginHorizontal: Spacing.xl,
+    marginBottom: Spacing.md,
     backgroundColor: Colors.white,
+    borderRadius: Radius.xl,
+    padding: Spacing.lg,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  emptyIconCircle: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#F1F5F9',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: Spacing.sm,
+  },
+  emptyTitle: {
+    fontSize: Typography.sm,
+    fontWeight: Typography.bold,
+    color: '#0F172A',
+  },
+  emptySub: {
+    fontSize: Typography.xs,
+    color: '#64748B',
+    marginTop: 2,
+    textAlign: 'center',
+  },
+
+  // Sessions Card
+  sessionCard: {
     marginHorizontal: Spacing.xl,
     marginBottom: Spacing.sm,
+    backgroundColor: Colors.white,
+    borderRadius: Radius.xl,
     padding: Spacing.md,
-    borderRadius: Radius.lg,
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: Colors.border,
-    gap: Spacing.md,
+    borderColor: '#E2E8F0',
   },
   sessionDetails: {
     flex: 1,
-    justifyContent: 'center',
+    marginLeft: Spacing.md,
   },
   sessionName: {
     fontSize: Typography.sm,
     fontWeight: Typography.bold,
-    color: Colors.text,
+    color: '#0F172A',
   },
   sessionMetaRow: {
     flexDirection: 'row',
@@ -788,12 +1003,12 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   sessionSubject: {
-    fontSize: 11,
-    color: Colors.textSecondary,
+    fontSize: Typography.xs,
+    color: '#64748B',
   },
   bulletDot: {
+    color: Colors.border,
     fontSize: 10,
-    color: Colors.textSecondary,
   },
   timeTagInline: {
     flexDirection: 'row',
@@ -802,16 +1017,16 @@ const styles = StyleSheet.create({
   },
   timeTagText: {
     fontSize: 11,
-    fontWeight: Typography.semibold,
     color: Colors.blue,
+    fontWeight: Typography.medium,
   },
   completeActionBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 3,
+    backgroundColor: '#EFF6FF',
     paddingHorizontal: 10,
     paddingVertical: 6,
-    backgroundColor: Colors.blueLight,
     borderRadius: Radius.md,
   },
   completeActionText: {
@@ -820,15 +1035,15 @@ const styles = StyleSheet.create({
     color: Colors.blue,
   },
 
-  // Pending Cards
+  // Pending Card
   pendingCard: {
-    backgroundColor: Colors.white,
     marginHorizontal: Spacing.xl,
     marginBottom: Spacing.sm,
+    backgroundColor: Colors.white,
+    borderRadius: Radius.xl,
     padding: Spacing.md,
-    borderRadius: Radius.lg,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: '#E2E8F0',
   },
   pendingTopInfo: {
     flexDirection: 'row',
@@ -838,199 +1053,332 @@ const styles = StyleSheet.create({
   pendingActionRow: {
     flexDirection: 'row',
     gap: Spacing.sm,
-    marginTop: 2,
+    justifyContent: 'flex-end',
+    borderTopWidth: 1,
+    borderTopColor: '#F8FAFC',
+    paddingTop: Spacing.sm,
   },
   acceptBtn: {
-    flex: 1,
+    backgroundColor: '#16A34A',
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
     gap: 4,
-    backgroundColor: Colors.green,
-    paddingVertical: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
     borderRadius: Radius.md,
   },
   acceptBtnText: {
     color: Colors.white,
-    fontSize: 11,
+    fontSize: Typography.xs,
     fontWeight: Typography.bold,
   },
   declineBtn: {
+    backgroundColor: '#FEE2E2',
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
     gap: 4,
-    backgroundColor: Colors.redLight,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
     borderRadius: Radius.md,
   },
   declineBtnText: {
-    color: Colors.red,
-    fontSize: 11,
-    fontWeight: Typography.bold,
-  },
-
-  // Empty Card
-  emptyCard: {
-    backgroundColor: Colors.white,
-    marginHorizontal: Spacing.xl,
-    marginBottom: Spacing.md,
-    padding: Spacing.lg,
-    borderRadius: Radius.lg,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderStyle: 'dashed',
-  },
-  emptyIconCircle: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: Colors.bg,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 6,
-  },
-  emptyTitle: {
+    color: '#DC2626',
     fontSize: Typography.xs,
     fontWeight: Typography.bold,
-    color: Colors.text,
-  },
-  emptySub: {
-    fontSize: 10,
-    color: Colors.textSecondary,
-    marginTop: 2,
-    textAlign: 'center',
   },
 
-  // Payout Cards
-  payoutCard: {
-    backgroundColor: Colors.white,
-    marginHorizontal: Spacing.xl,
-    marginBottom: Spacing.xs,
+  // Horizontal Scholarships Slider
+  horizontalScroll: {
+    paddingHorizontal: Spacing.xl,
+    gap: Spacing.md,
+    paddingBottom: 10,
+  },
+  discoverCard: {
+    width: 245,
+    backgroundColor: '#FFFFFF',
+    borderRadius: Radius['2xl'],
+    padding: Spacing.lg,
+    borderWidth: 1.5,
+    borderColor: '#E2E8F0',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    elevation: 2,
+    minHeight: 180,
+  },
+  discoverCardTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  countryPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#EFF6FF',
+    paddingHorizontal: 9,
+    paddingVertical: 4,
+    borderRadius: Radius.full,
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
+    gap: 4,
+    maxWidth: 130,
+  },
+  countryPillText: {
+    fontSize: 11,
+    fontWeight: Typography.bold,
+    color: '#1E40AF',
+  },
+  matchScoreBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#ECFDF5',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: Radius.full,
+    borderWidth: 1,
+    borderColor: '#A7F3D0',
+    gap: 3,
+  },
+  matchScoreText: {
+    fontSize: 11,
+    fontWeight: Typography.bold,
+    color: '#059669',
+  },
+  discoverName: {
+    fontSize: 15,
+    fontWeight: Typography.bold,
+    color: '#0F172A',
+    lineHeight: 20,
+  },
+  discoverOrg: {
+    fontSize: Typography.xs,
+    color: '#64748B',
+  },
+  discoverFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 14,
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: '#F1F5F9',
+  },
+  tagFull: {
+    backgroundColor: '#EFF6FF',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  tagFullText: {
+    color: '#2563EB',
+    fontWeight: Typography.bold,
+    fontSize: 10,
+  },
+
+  // Guides
+  guidesContainer: {
+    paddingHorizontal: Spacing.xl,
+    gap: Spacing.sm,
+  },
+  guideCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
     padding: Spacing.md,
-    borderRadius: Radius.lg,
+    borderRadius: Radius.xl,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.03,
+    shadowRadius: 4,
+    elevation: 1,
+    gap: Spacing.md,
+  },
+  guideIconWrap: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  guideTagRow: {
+    marginBottom: 2,
+  },
+  guideTag: {
+    fontSize: 10,
+    fontWeight: Typography.bold,
+    textTransform: 'uppercase',
+  },
+  guideTitle: {
+    fontSize: Typography.sm,
+    fontWeight: Typography.bold,
+    color: '#0F172A',
+  },
+  guideSub: {
+    fontSize: Typography.xs,
+    color: '#64748B',
+    marginTop: 1,
+  },
+
+  // AI Banner
+  aiBanner: {
+    marginHorizontal: Spacing.xl,
+    marginTop: Spacing.xl,
+    backgroundColor: '#F8FAFC',
+    borderRadius: Radius['2xl'],
+    padding: Spacing.md,
+    borderWidth: 1.5,
+    borderColor: '#E2E8F0',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.md,
+  },
+  aiIconCircle: {
+    width: 46,
+    height: 46,
+    borderRadius: 23,
+    backgroundColor: '#2563EB',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  aiTitle: {
+    fontSize: Typography.sm,
+    fontWeight: Typography.bold,
+    color: '#0F172A',
+  },
+  aiSub: {
+    fontSize: 11,
+    color: '#64748B',
+    marginTop: 2,
+    lineHeight: 16,
+  },
+
+  // Payout Card
+  payoutCard: {
+    marginHorizontal: Spacing.xl,
+    marginBottom: Spacing.sm,
+    backgroundColor: Colors.white,
+    borderRadius: Radius.xl,
+    padding: Spacing.md,
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: '#E2E8F0',
     gap: Spacing.md,
   },
   payoutIconBg: {
-    width: 34,
-    height: 34,
-    borderRadius: Radius.md,
-    backgroundColor: Colors.bg,
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    backgroundColor: '#F1F5F9',
     alignItems: 'center',
     justifyContent: 'center',
   },
   payoutTitle: {
-    fontSize: Typography.sm,
+    fontSize: Typography.base,
     fontWeight: Typography.bold,
-    color: Colors.text,
+    color: '#0F172A',
   },
   payoutSub: {
-    fontSize: 10,
-    color: Colors.textSecondary,
+    fontSize: Typography.xs,
+    color: '#64748B',
     marginTop: 1,
   },
   statusBadge: {
     paddingHorizontal: 8,
     paddingVertical: 3,
-    borderRadius: Radius.sm,
+    borderRadius: 6,
   },
-  statusBadgePending: { backgroundColor: Colors.goldLight },
-  statusBadgeDone: { backgroundColor: Colors.greenLight },
-  statusBadgeErr: { backgroundColor: Colors.redLight },
-  statusText: { fontSize: 9, fontWeight: Typography.bold },
-  statusTextPending: { color: Colors.goldDark },
-  statusTextDone: { color: Colors.green },
-  statusTextErr: { color: Colors.red },
+  statusBadgeDone: { backgroundColor: '#DCFCE7' },
+  statusBadgeErr: { backgroundColor: '#FEE2E2' },
+  statusBadgePending: { backgroundColor: '#FEF3C7' },
+  statusText: { fontSize: 10, fontWeight: Typography.bold },
+  statusTextDone: { color: '#16A34A' },
+  statusTextErr: { color: '#DC2626' },
+  statusTextPending: { color: '#D97706' },
 
   // Modal
-  modalOverlay: { 
-    flex: 1, 
-    backgroundColor: 'rgba(0,0,0,0.5)', 
-    justifyContent: 'flex-end' 
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
   },
-  modalContent: { 
-    backgroundColor: Colors.white, 
-    borderTopLeftRadius: 24, 
-    borderTopRightRadius: 24, 
-    padding: Spacing.xl, 
-    paddingBottom: 36 
+  modalContent: {
+    backgroundColor: Colors.white,
+    borderTopLeftRadius: Radius['2xl'],
+    borderTopRightRadius: Radius['2xl'],
+    padding: Spacing.xl,
+    maxHeight: '90%',
   },
-  modalHeader: { 
-    flexDirection: 'row', 
-    justifyContent: 'space-between', 
-    alignItems: 'center', 
-    marginBottom: Spacing.lg 
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: Spacing.lg,
   },
-  modalTitle: { 
-    fontSize: Typography.lg, 
-    fontWeight: Typography.bold, 
-    color: Colors.text 
+  modalTitle: {
+    fontSize: Typography.xl,
+    fontWeight: Typography.bold,
+    color: '#0F172A',
   },
   modalSub: {
-    fontSize: 11,
-    color: Colors.textSecondary,
-    marginTop: 1,
+    fontSize: Typography.xs,
+    color: '#64748B',
+    marginTop: 2,
   },
   modalCloseBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: Colors.bg,
-    alignItems: 'center',
-    justifyContent: 'center',
+    padding: 4,
   },
   balanceInfoBox: {
+    backgroundColor: '#EFF6FF',
+    padding: Spacing.md,
+    borderRadius: Radius.lg,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: Colors.blueLight,
-    padding: Spacing.md,
-    borderRadius: Radius.md,
-    marginBottom: Spacing.md,
+    marginBottom: Spacing.lg,
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
   },
   balanceInfoLabel: {
-    fontSize: 11,
-    color: Colors.blue,
-    fontWeight: Typography.medium,
+    fontSize: Typography.sm,
+    color: '#1E40AF',
   },
   balanceInfoValue: {
-    fontSize: Typography.sm,
+    fontSize: Typography.base,
     fontWeight: Typography.bold,
-    color: Colors.blue,
+    color: '#1E40AF',
   },
-  modalLabel: { 
-    fontSize: 11, 
-    fontWeight: Typography.bold, 
-    color: Colors.text, 
-    marginBottom: 4 
+  modalLabel: {
+    fontSize: Typography.xs,
+    fontWeight: Typography.bold,
+    color: '#334155',
+    marginBottom: 4,
+    marginTop: Spacing.sm,
   },
-  modalInput: { 
-    backgroundColor: Colors.bg, 
-    borderWidth: 1, 
-    borderColor: Colors.border, 
-    borderRadius: Radius.md, 
-    padding: 10, 
-    marginBottom: Spacing.sm, 
+  modalInput: {
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    borderRadius: Radius.lg,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: 10,
     fontSize: Typography.sm,
-    color: Colors.text,
+    color: '#0F172A',
   },
-  submitBtn: { 
-    backgroundColor: Colors.blueDark, 
-    borderRadius: Radius.lg, 
-    padding: Spacing.md, 
-    alignItems: 'center', 
-    marginTop: Spacing.sm 
+  submitBtn: {
+    backgroundColor: Colors.blue,
+    borderRadius: Radius.xl,
+    paddingVertical: 14,
+    alignItems: 'center',
+    marginTop: Spacing.xl,
+    marginBottom: Spacing.md,
   },
-  submitBtnText: { 
-    color: Colors.white, 
-    fontSize: Typography.sm, 
-    fontWeight: Typography.bold 
+  submitBtnText: {
+    color: Colors.white,
+    fontSize: Typography.base,
+    fontWeight: Typography.bold,
   },
 });

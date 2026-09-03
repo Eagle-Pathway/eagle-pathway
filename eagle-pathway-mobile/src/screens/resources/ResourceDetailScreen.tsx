@@ -3,6 +3,7 @@ import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Linking, Activity
 import { toast } from '@/utils/toast';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { Colors, Typography, Spacing, Radius, CommonStyles } from '@/utils/theme';
 import { ErrorState, Skeleton } from '@/components/common';
 import { resourcesService, type Resource } from '@/services/resources';
@@ -39,8 +40,6 @@ export default function ResourceDetailScreen() {
 
   const goBack = () => (router.canGoBack() ? router.back() : router.replace('/resources'));
 
-  // Same signed-URL flow the list used to run on tap — now behind an explicit
-  // button on the detail screen.
   const openResource = useCallback(async () => {
     if (!resource || opening) return;
     try {
@@ -68,44 +67,68 @@ export default function ResourceDetailScreen() {
   }, [resource, opening]);
 
   const isFile = resource?.resource_type === 'file';
-  const actionLabel = isFile ? 'Open Document' : 'Open Link';
+  const actionLabel = isFile ? 'Open PDF Document' : 'Open Official Link';
 
   return (
     <SafeAreaView style={CommonStyles.screenBg} edges={['top', 'bottom']}>
+      {/* Header */}
       <View style={s.header}>
-        <TouchableOpacity style={s.backBtn} onPress={goBack} activeOpacity={0.8} accessibilityRole="button" accessibilityLabel="Go back">
-          <Text style={{ fontSize: 20, color: Colors.text }}>←</Text>
+        <TouchableOpacity 
+          style={s.backBtn} 
+          onPress={goBack} 
+          activeOpacity={0.8}
+        >
+          <Ionicons name="arrow-back" size={20} color="#0F172A" />
         </TouchableOpacity>
-        <Text style={s.headerTitle} numberOfLines={1}>Resource</Text>
+        <Text style={s.headerTitle} numberOfLines={1}>Resource Details</Text>
       </View>
 
       {loading ? (
-        <View style={{ padding: Spacing.xl, paddingTop: 40 }}>
-          <Skeleton style={[s.iconBox, { width: 64, height: 64, borderRadius: 18 }]} />
-          <Skeleton style={{ width: 100, height: 16, borderRadius: 4, marginTop: Spacing.xs, marginBottom: Spacing.xs }} />
-          <Skeleton style={{ width: '80%', height: 32, borderRadius: 8, marginBottom: Spacing.lg }} />
-          <Skeleton style={{ width: '100%', height: 20, borderRadius: 4, marginBottom: Spacing.xs }} />
-          <Skeleton style={{ width: '90%', height: 20, borderRadius: 4, marginBottom: Spacing.xs }} />
-          <Skeleton style={{ width: '95%', height: 20, borderRadius: 4, marginBottom: Spacing.xl }} />
-          <Skeleton style={[s.metaRow, { height: 50, borderWidth: 0 }]} />
+        <View style={{ padding: Spacing.xl, paddingTop: 30 }}>
+          <Skeleton width={64} height={64} borderRadius={18} style={{ marginBottom: Spacing.md }} />
+          <Skeleton width={100} height={18} borderRadius={6} style={{ marginBottom: Spacing.sm }} />
+          <Skeleton width="85%" height={28} borderRadius={8} style={{ marginBottom: Spacing.lg }} />
+          <Skeleton width="100%" height={20} borderRadius={4} style={{ marginBottom: Spacing.xs }} />
+          <Skeleton width="90%" height={20} borderRadius={4} style={{ marginBottom: Spacing.xs }} />
         </View>
       ) : error || !resource ? (
         <ErrorState subtitle="We couldn't load this resource. Check your connection and retry." onRetry={load} />
       ) : (
         <ScrollView contentContainerStyle={{ padding: Spacing.xl, paddingBottom: 120 }} showsVerticalScrollIndicator={false}>
-          <View style={[s.iconBox, { backgroundColor: isFile ? Colors.blueLight : Colors.greenLight }]}>
-            <Text style={{ fontSize: 30 }}>{isFile ? '📄' : '🔗'}</Text>
+          {/* Top Hero Icon Card */}
+          <View style={[s.iconBox, { backgroundColor: isFile ? '#EFF6FF' : '#ECFDF5', borderColor: isFile ? '#BFDBFE' : '#A7F3D0' }]}>
+            <Ionicons 
+              name={isFile ? 'document-text' : 'globe-outline'} 
+              size={32} 
+              color={isFile ? '#2563EB' : '#059669'} 
+            />
           </View>
 
-          <Text style={s.category}>{resource.category || 'General'}</Text>
+          <View style={s.categoryRow}>
+            <View style={s.categoryPill}>
+              <Text style={s.category}>{resource.category || 'General'}</Text>
+            </View>
+            <View style={s.typeTag}>
+              <Text style={s.typeTagText}>{isFile ? 'PDF Document' : 'External Link'}</Text>
+            </View>
+          </View>
+
           <Text style={s.title}>{resource.title}</Text>
 
-          {!!resource.description && <Text style={s.description}>{resource.description}</Text>}
+          {!!resource.description && (
+            <View style={s.descCard}>
+              <Text style={s.descHeading}>Overview &amp; Instructions</Text>
+              <Text style={s.description}>{resource.description}</Text>
+            </View>
+          )}
 
           {isFile && (resource.file_name || formatBytes(resource.file_size)) && (
             <View style={s.metaRow}>
-              {!!resource.file_name && <Text style={s.meta} numberOfLines={1}>{resource.file_name}</Text>}
-              {!!formatBytes(resource.file_size) && <Text style={s.metaDim}>{formatBytes(resource.file_size)}</Text>}
+              <Ionicons name="attach-outline" size={18} color="#2563EB" />
+              <View style={{ flex: 1 }}>
+                {!!resource.file_name && <Text style={s.meta} numberOfLines={1}>{resource.file_name}</Text>}
+                {!!formatBytes(resource.file_size) && <Text style={s.metaDim}>{formatBytes(resource.file_size)}</Text>}
+              </View>
             </View>
           )}
         </ScrollView>
@@ -113,11 +136,19 @@ export default function ResourceDetailScreen() {
 
       {!loading && !error && resource && (
         <View style={s.footer}>
-          <TouchableOpacity style={s.actionBtn} onPress={openResource} disabled={opening} activeOpacity={0.85}>
+          <TouchableOpacity 
+            style={s.actionBtn} 
+            onPress={openResource} 
+            disabled={opening} 
+            activeOpacity={0.88}
+          >
             {opening ? (
-              <ActivityIndicator size="small" color={Colors.white} />
+              <ActivityIndicator size="small" color="#FFFFFF" />
             ) : (
-              <Text style={s.actionText}>{actionLabel}</Text>
+              <>
+                <Ionicons name={isFile ? 'download-outline' : 'open-outline'} size={18} color="#FFFFFF" />
+                <Text style={s.actionText}>{actionLabel}</Text>
+              </>
             )}
           </TouchableOpacity>
         </View>
@@ -127,18 +158,141 @@ export default function ResourceDetailScreen() {
 }
 
 const s = StyleSheet.create({
-  header: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md, padding: Spacing.xl, backgroundColor: Colors.white, borderBottomWidth: 1, borderBottomColor: Colors.border },
-  backBtn: { width: 44, height: 44, backgroundColor: Colors.grayLight, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
-  headerTitle: { fontSize: Typography.lg, fontWeight: Typography.semibold, color: Colors.text },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  iconBox: { width: 64, height: 64, borderRadius: 18, alignItems: 'center', justifyContent: 'center', marginBottom: Spacing.lg },
-  category: { fontSize: Typography.sm, fontWeight: Typography.bold, color: Colors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.5 },
-  title: { fontSize: Typography['2xl'], fontWeight: Typography.bold, color: Colors.text, marginTop: Spacing.xs },
-  description: { fontSize: Typography.md, color: Colors.text, lineHeight: 24, marginTop: Spacing.lg },
-  metaRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md, marginTop: Spacing.xl, padding: Spacing.md, backgroundColor: Colors.card, borderRadius: Radius.lg, borderWidth: 1, borderColor: Colors.border },
-  meta: { flex: 1, fontSize: Typography.sm, color: Colors.text },
-  metaDim: { fontSize: Typography.sm, color: Colors.textSecondary },
-  footer: { padding: Spacing.xl, borderTopWidth: 1, borderTopColor: Colors.border, backgroundColor: Colors.white },
-  actionBtn: { backgroundColor: Colors.blue, borderRadius: Radius.lg, paddingVertical: 15, alignItems: 'center', justifyContent: 'center' },
-  actionText: { fontSize: Typography.md, fontWeight: Typography.bold, color: Colors.white },
+  header: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    gap: Spacing.md, 
+    paddingHorizontal: Spacing.xl, 
+    paddingVertical: Spacing.lg, 
+    backgroundColor: '#FFFFFF', 
+    borderBottomWidth: 1, 
+    borderBottomColor: '#E2E8F0',
+  },
+  backBtn: { 
+    width: 42, 
+    height: 42, 
+    backgroundColor: '#F1F5F9', 
+    borderRadius: Radius.lg, 
+    alignItems: 'center', 
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  headerTitle: { 
+    fontSize: Typography.lg, 
+    fontWeight: Typography.bold, 
+    color: '#0F172A',
+  },
+  iconBox: { 
+    width: 68, 
+    height: 68, 
+    borderRadius: 20, 
+    alignItems: 'center', 
+    justifyContent: 'center', 
+    marginBottom: Spacing.lg,
+    borderWidth: 1.5,
+  },
+  categoryRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 8,
+  },
+  categoryPill: {
+    backgroundColor: '#EFF6FF',
+    paddingHorizontal: 9,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  category: { 
+    fontSize: 11, 
+    fontWeight: Typography.bold, 
+    color: '#1E40AF', 
+    textTransform: 'uppercase', 
+    letterSpacing: 0.5,
+  },
+  typeTag: {
+    backgroundColor: '#F8FAFC',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  typeTagText: {
+    fontSize: 11,
+    color: '#64748B',
+    fontWeight: Typography.medium,
+  },
+  title: { 
+    fontSize: 22, 
+    fontWeight: Typography.bold, 
+    color: '#0F172A', 
+    lineHeight: 28,
+  },
+  descCard: {
+    marginTop: Spacing.xl,
+    backgroundColor: '#FFFFFF',
+    borderRadius: Radius['2xl'],
+    padding: Spacing.lg,
+    borderWidth: 1.5,
+    borderColor: '#E2E8F0',
+  },
+  descHeading: {
+    fontSize: Typography.sm,
+    fontWeight: Typography.bold,
+    color: '#0F172A',
+    marginBottom: 6,
+  },
+  description: { 
+    fontSize: Typography.sm, 
+    color: '#475569', 
+    lineHeight: 22, 
+  },
+  metaRow: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    gap: Spacing.md, 
+    marginTop: Spacing.md, 
+    padding: Spacing.md, 
+    backgroundColor: '#FFFFFF', 
+    borderRadius: Radius.xl, 
+    borderWidth: 1, 
+    borderColor: '#E2E8F0',
+  },
+  meta: { 
+    fontSize: Typography.sm, 
+    color: '#0F172A',
+    fontWeight: Typography.semibold,
+  },
+  metaDim: { 
+    fontSize: Typography.xs, 
+    color: '#64748B',
+    marginTop: 1,
+  },
+  footer: { 
+    padding: Spacing.xl, 
+    borderTopWidth: 1, 
+    borderTopColor: '#E2E8F0', 
+    backgroundColor: '#FFFFFF',
+  },
+  actionBtn: { 
+    backgroundColor: '#2563EB', 
+    borderRadius: Radius.xl, 
+    paddingVertical: 15, 
+    flexDirection: 'row',
+    alignItems: 'center', 
+    justifyContent: 'center',
+    gap: 8,
+    shadowColor: '#2563EB',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  actionText: { 
+    fontSize: Typography.base, 
+    fontWeight: Typography.bold, 
+    color: '#FFFFFF',
+  },
 });

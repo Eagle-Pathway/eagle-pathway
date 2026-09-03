@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import {
   View, Text, TouchableOpacity,
-  StyleSheet, ActivityIndicator, TextInput,
+  StyleSheet, TextInput,
 } from 'react-native';
 import { toast } from '@/utils/toast';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -13,7 +13,6 @@ import { Pill, Avatar, Button, Skeleton } from '@/components/common';
 import { KeyboardAwareScreen } from '@/components/KeyboardAwareScreen';
 import { tutorsService } from '@/services/tutors';
 import { Tutor, TutorReview } from '@/types';
-import { openWhatsApp } from '@/utils/linking';
 
 export default function TutorProfileScreen() {
   const { tutorId } = useLocalSearchParams<{ tutorId: string }>();
@@ -56,7 +55,7 @@ export default function TutorProfileScreen() {
       setTutor({ ...tutor, bio: editBio, hourly_rate: parseInt(editRate) || tutor.hourly_rate });
       setIsEditing(false);
       toast.success('Profile updated', 'Your tutor profile changes have been saved.');
-    } catch (e) {
+    } catch {
       toast.error('Update Failed', 'Failed to update tutor profile.');
     } finally {
       setLoading(false);
@@ -124,8 +123,12 @@ export default function TutorProfileScreen() {
       {/* Hero */}
       <View style={styles.hero}>
         <View style={styles.heroNav}>
-          <TouchableOpacity style={styles.backBtn} onPress={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)/home'))} activeOpacity={0.8} accessibilityRole="button" accessibilityLabel="Go back">
-            <Text style={styles.backIcon}>←</Text>
+          <TouchableOpacity 
+            style={styles.backBtn} 
+            onPress={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)/home'))} 
+            activeOpacity={0.8}
+          >
+            <Ionicons name="arrow-back" size={20} color={Colors.white} />
           </TouchableOpacity>
           <View style={{ flexDirection: 'row', gap: Spacing.sm }}>
             {user?.id === tutor.user_id && (
@@ -144,34 +147,44 @@ export default function TutorProfileScreen() {
             )}
             {isEditing && (
               <TouchableOpacity style={styles.heartBtn} onPress={() => setIsEditing(false)} activeOpacity={0.8}>
-                <Text style={{ fontSize: 18, color: Colors.white }}>✕</Text>
+                <Ionicons name="close" size={18} color={Colors.white} />
               </TouchableOpacity>
             )}
           </View>
         </View>
+
         <Avatar initials={initials} size={80} borderRadius={24} color={Colors.gold} style={styles.heroAvatar} />
-        <Text style={styles.heroName}>{tutorName}</Text>
+        
+        <View style={styles.nameRow}>
+          <Text style={styles.heroName}>{tutorName}</Text>
+          <Ionicons name="shield-checkmark" size={20} color="#60A5FA" />
+        </View>
+
         <Text style={styles.heroTitle}>{heroTitle}</Text>
+
         <View style={styles.heroStats}>
           {[
-            { num: tutor.rating.toFixed(1), lbl: 'Rating' },
+            { num: tutor.rating.toFixed(1), lbl: 'Rating', icon: 'star' },
             { num: tutor.total_reviews > 0 ? tutor.total_reviews : 'New', lbl: 'Reviews' },
             { num: tutor.total_sessions || 0, lbl: 'Sessions' },
             { num: `${tutor.response_rate || 100}%`, lbl: 'Response' },
           ].map(s => (
             <View key={s.lbl} style={styles.heroStat}>
-              <Text style={styles.heroStatNum}>{s.num}</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 2 }}>
+                {s.icon && <Ionicons name="star" size={13} color="#FBBF24" />}
+                <Text style={styles.heroStatNum}>{s.num}</Text>
+              </View>
               <Text style={styles.heroStatLbl}>{s.lbl}</Text>
             </View>
           ))}
         </View>
       </View>
 
-      <KeyboardAwareScreen style={{ backgroundColor: Colors.bg }} contentContainerStyle={{ paddingBottom: 100 }}>
-        {/* About */}
-        <View style={[CommonStyles.card, { marginTop: Spacing.lg }]}>
+      <KeyboardAwareScreen style={{ backgroundColor: Colors.bg }} contentContainerStyle={{ paddingBottom: 120 }}>
+        {/* About Card */}
+        <View style={[CommonStyles.card, { marginTop: Spacing.lg, marginHorizontal: Spacing.lg }]}>
           <View style={{ padding: Spacing.lg }}>
-            <Text style={styles.cardSectionTitle}>About</Text>
+            <Text style={styles.cardSectionTitle}>About Tutor</Text>
             {isEditing ? (
               <TextInput
                 style={styles.bioInput}
@@ -188,11 +201,11 @@ export default function TutorProfileScreen() {
         </View>
 
         {/* Info rows */}
-        <View style={CommonStyles.card}>
+        <View style={[CommonStyles.card, { marginHorizontal: Spacing.lg, marginTop: Spacing.md }]}>
           {[
             { icon: 'location-outline', label: 'Location', value: location },
             { icon: 'school-outline', label: 'Education / University', value: education },
-            { icon: 'cash-outline', label: 'Rate', value: isEditing ? (
+            { icon: 'cash-outline', label: 'Hourly Rate', value: isEditing ? (
               <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                 <Text style={{ color: Colors.text, marginRight: 4 }}>ETB</Text>
                 <TextInput
@@ -203,13 +216,13 @@ export default function TutorProfileScreen() {
                 />
                 <Text style={{ color: Colors.text }}>/hour</Text>
               </View>
-            ) : `ETB ${tutor.hourly_rate}/hour` },
+            ) : `ETB ${tutor.hourly_rate} / hour` },
           ].map((row, i, arr) => (
             <View key={row.label} style={[styles.infoRow, i === arr.length - 1 && { borderBottomWidth: 0 }]}>
               <View style={styles.infoIcon}>
-                <Ionicons name={row.icon as any} size={16} color={Colors.textSecondary} />
+                <Ionicons name={row.icon as any} size={16} color="#2563EB" />
               </View>
-              <View>
+              <View style={{ flex: 1 }}>
                 <Text style={styles.infoLabel}>{row.label}</Text>
                 <Text style={styles.infoValue}>{row.value}</Text>
               </View>
@@ -217,10 +230,10 @@ export default function TutorProfileScreen() {
           ))}
         </View>
 
-        {/* Subjects */}
-        <View style={CommonStyles.card}>
+        {/* Subjects & Levels */}
+        <View style={[CommonStyles.card, { marginHorizontal: Spacing.lg, marginTop: Spacing.md }]}>
           <View style={{ padding: Spacing.lg }}>
-            <Text style={styles.cardSectionTitle}>Subjects & Levels</Text>
+            <Text style={styles.cardSectionTitle}>Subjects &amp; Grade Levels</Text>
             <View style={{ flexDirection: 'row', gap: Spacing.sm, flexWrap: 'wrap', marginTop: Spacing.sm }}>
               {subjectsList.map(s => <Pill key={s} label={s} variant="blue" />)}
               {allGrades.map(g => <Pill key={g} label={g} variant="green" />)}
@@ -230,9 +243,9 @@ export default function TutorProfileScreen() {
 
         {/* Reviews */}
         {reviews.length > 0 && (
-          <View style={CommonStyles.card}>
+          <View style={[CommonStyles.card, { marginHorizontal: Spacing.lg, marginTop: Spacing.md }]}>
             <View style={{ padding: Spacing.lg, paddingBottom: Spacing.sm }}>
-              <Text style={styles.cardSectionTitle}>Student Reviews</Text>
+              <Text style={styles.cardSectionTitle}>Student Reviews ({reviews.length})</Text>
             </View>
             {reviews.slice(0, 3).map((r, i) => (
               <View key={r.id} style={[styles.reviewItem, i === reviews.slice(0,3).length - 1 && { borderBottomWidth: 0 }]}>
@@ -252,14 +265,14 @@ export default function TutorProfileScreen() {
         )}
       </KeyboardAwareScreen>
 
-      {/* Bottom CTA */}
+      {/* Bottom CTA Bar */}
       <View style={[styles.bottomBar, { paddingBottom: Math.max(insets.bottom, Spacing.lg) }]}>
         <TouchableOpacity 
           style={styles.chatBtn} 
           onPress={() => router.push({ pathname: '/chat/[id]', params: { id: tutor.user_id, fullName: tutor.user?.full_name } })}
           activeOpacity={0.8}
         >
-          <Ionicons name="chatbubble-outline" size={20} color={Colors.white} />
+          <Ionicons name="chatbubble-ellipses-outline" size={20} color="#2563EB" />
         </TouchableOpacity>
         <Button
           title="Direct Request"
@@ -281,39 +294,84 @@ export default function TutorProfileScreen() {
 }
 
 const styles = StyleSheet.create({
-  hero: { backgroundColor: Colors.blueDark, padding: Spacing.xl, paddingBottom: Spacing['3xl'], alignItems: 'center' },
-  heroNav: { flexDirection: 'row', justifyContent: 'space-between', alignSelf: 'stretch', marginBottom: Spacing.lg },
-  backBtn: { width: 36, height: 36, backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
-  backIcon: { color: Colors.white, fontSize: 20 },
-  editBtn: { backgroundColor: 'rgba(255,255,255,0.2)', paddingHorizontal: 12, height: 36, borderRadius: 10, justifyContent: 'center', alignItems: 'center' },
+  hero: { 
+    backgroundColor: Colors.blueDark, 
+    padding: Spacing.xl, 
+    paddingBottom: Spacing['3xl'], 
+    alignItems: 'center',
+  },
+  heroNav: { 
+    flexDirection: 'row', 
+    justifyContent: 'space-between', 
+    alignSelf: 'stretch', 
+    marginBottom: Spacing.lg,
+  },
+  backBtn: { 
+    width: 38, 
+    height: 38, 
+    backgroundColor: 'rgba(255,255,255,0.15)', 
+    borderRadius: Radius.md, 
+    alignItems: 'center', 
+    justifyContent: 'center',
+  },
+  editBtn: { 
+    backgroundColor: 'rgba(255,255,255,0.2)', 
+    paddingHorizontal: 12, 
+    height: 38, 
+    borderRadius: Radius.md, 
+    justifyContent: 'center', 
+    alignItems: 'center',
+  },
   editBtnText: { color: Colors.white, fontSize: 13, fontWeight: Typography.bold },
-  heartBtn: { width: 36, height: 36, backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+  heartBtn: { 
+    width: 38, 
+    height: 38, 
+    backgroundColor: 'rgba(255,255,255,0.15)', 
+    borderRadius: Radius.md, 
+    alignItems: 'center', 
+    justifyContent: 'center',
+  },
   heroAvatar: { marginBottom: Spacing.md, borderWidth: 3, borderColor: 'rgba(255,255,255,0.3)' },
-  heroName: { fontSize: Typography['4xl'], fontWeight: Typography.bold, color: Colors.white },
-  heroTitle: { fontSize: Typography.base, color: 'rgba(255,255,255,0.65)', marginTop: 4 },
+  nameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  heroName: { fontSize: Typography['3xl'], fontWeight: Typography.bold, color: Colors.white },
+  heroTitle: { fontSize: Typography.sm, color: 'rgba(255,255,255,0.7)', marginTop: 4 },
   heroStats: { flexDirection: 'row', gap: Spacing['2xl'], marginTop: Spacing.lg },
   heroStat: { alignItems: 'center' },
-  heroStatNum: { fontSize: Typography['2xl'], fontWeight: Typography.bold, color: Colors.white },
+  heroStatNum: { fontSize: Typography.xl, fontWeight: Typography.bold, color: Colors.white },
   heroStatLbl: { fontSize: Typography.xs, color: 'rgba(255,255,255,0.5)', marginTop: 2 },
-  cardSectionTitle: { fontSize: Typography.sm, fontWeight: Typography.bold, color: Colors.textSecondary, letterSpacing: 0.8, textTransform: 'uppercase', marginBottom: Spacing.sm },
-  bioText: { fontSize: Typography.md, color: Colors.text, lineHeight: 22 },
-  bioInput: { fontSize: Typography.md, color: Colors.text, lineHeight: 22, backgroundColor: Colors.grayLight, borderRadius: 8, padding: 12, minHeight: 100, textAlignVertical: 'top' },
-  rateInput: { fontSize: Typography.md, fontWeight: Typography.semibold, color: Colors.text, backgroundColor: Colors.grayLight, borderRadius: 6, paddingHorizontal: 8, paddingVertical: 4, minWidth: 60 },
-  infoRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md, padding: Spacing.md, paddingHorizontal: Spacing.lg, borderBottomWidth: 1, borderBottomColor: Colors.border },
-  infoIcon: { width: 32, height: 32, backgroundColor: Colors.blueLight, borderRadius: 9, alignItems: 'center', justifyContent: 'center' },
-  infoLabel: { fontSize: Typography.sm, color: Colors.textSecondary },
-  infoValue: { fontSize: Typography.md, fontWeight: Typography.semibold, color: Colors.text },
-  reviewItem: { padding: Spacing.lg, borderBottomWidth: 1, borderBottomColor: Colors.border },
-  reviewName: { fontSize: Typography.base, fontWeight: Typography.semibold, color: Colors.text },
-  reviewDate: { fontSize: Typography.sm, color: Colors.textSecondary },
-  reviewText: { fontSize: Typography.base, color: Colors.textSecondary, lineHeight: 20 },
+  cardSectionTitle: { fontSize: Typography.xs, fontWeight: Typography.bold, color: '#64748B', letterSpacing: 0.8, textTransform: 'uppercase', marginBottom: Spacing.sm },
+  bioText: { fontSize: Typography.sm, color: '#334155', lineHeight: 22 },
+  bioInput: { fontSize: Typography.sm, color: '#0F172A', lineHeight: 22, backgroundColor: '#F1F5F9', borderRadius: 8, padding: 12, minHeight: 100, textAlignVertical: 'top' },
+  rateInput: { fontSize: Typography.sm, fontWeight: Typography.semibold, color: '#0F172A', backgroundColor: '#F1F5F9', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 4, minWidth: 60 },
+  infoRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md, padding: Spacing.md, paddingHorizontal: Spacing.lg, borderBottomWidth: 1, borderBottomColor: '#F1F5F9' },
+  infoIcon: { width: 34, height: 34, backgroundColor: '#EFF6FF', borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+  infoLabel: { fontSize: Typography.xs, color: '#64748B' },
+  infoValue: { fontSize: Typography.sm, fontWeight: Typography.bold, color: '#0F172A', marginTop: 1 },
+  reviewItem: { padding: Spacing.lg, borderBottomWidth: 1, borderBottomColor: '#F1F5F9' },
+  reviewName: { fontSize: Typography.sm, fontWeight: Typography.bold, color: '#0F172A' },
+  reviewDate: { fontSize: Typography.xs, color: '#94A3B8' },
+  reviewText: { fontSize: Typography.xs, color: '#475569', lineHeight: 18 },
   chatBtn: {
-    width: 48, height: 48,
-    backgroundColor: Colors.blue, 
-    borderRadius: 12,
+    width: 48, 
+    height: 48,
+    backgroundColor: '#EFF6FF', 
+    borderRadius: Radius.lg,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: Spacing.sm,
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
+    marginRight: Spacing.xs,
   },
-  bottomBar: { padding: Spacing.lg, backgroundColor: Colors.card, borderTopWidth: 1, borderTopColor: Colors.border, flexDirection: 'row', gap: Spacing.sm },
+  bottomBar: { 
+    padding: Spacing.lg, 
+    backgroundColor: '#FFFFFF', 
+    borderTopWidth: 1, 
+    borderTopColor: '#E2E8F0', 
+    flexDirection: 'row', 
+    gap: Spacing.sm,
+  },
 });

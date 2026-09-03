@@ -99,10 +99,6 @@ export default function TutorsScreen() {
                 <Skeleton width={70} height={20} borderRadius={6} />
                 <Skeleton width={80} height={20} borderRadius={6} />
               </View>
-              <View style={[styles.tutorActions, { gap: Spacing.sm }]}>
-                <Skeleton width="80%" height={36} borderRadius={10} style={{ flex: 1 }} />
-                <Skeleton width={40} height={36} borderRadius={10} />
-              </View>
             </View>
           ))}
         </ScrollView>
@@ -114,41 +110,48 @@ export default function TutorsScreen() {
     <SafeAreaView style={CommonStyles.screenBg} edges={['top', 'bottom']}>
       {/* Header */}
       <View style={styles.header}>
-        <View>
+        <View style={{ flex: 1 }}>
           <Text style={styles.title}>Find a Tutor</Text>
-          <Text style={{ fontSize: Typography.xs, color: Colors.textSecondary, marginTop: 2 }}>Browse verified tutors or request a custom match</Text>
+          <Text style={{ fontSize: Typography.xs, color: '#64748B', marginTop: 2 }}>
+            Browse verified tutors or request a custom match
+          </Text>
         </View>
         <TouchableOpacity
           onPress={() => router.push('/request-tutor' as any)}
           style={styles.requestBtn}
-          activeOpacity={0.8}
+          activeOpacity={0.85}
         >
-          <Ionicons name="sparkles" size={14} color={Colors.white} style={{ marginRight: 4 }} />
+          <Ionicons name="sparkles" size={13} color={Colors.white} style={{ marginRight: 4 }} />
           <Text style={styles.requestBtnText}>Request Tutor</Text>
         </TouchableOpacity>
       </View>
 
       {/* Search */}
       <View style={styles.searchBar}>
-        <Ionicons name="search-outline" size={16} color={Colors.textSecondary} />
+        <Ionicons name="search-outline" size={16} color="#94A3B8" />
         <TextInput
           style={styles.searchInput}
-          placeholder="Search by subject, name, university, or city..."
+          placeholder="Search by subject, name, university, city..."
           value={search}
           onChangeText={setSearch}
           onSubmitEditing={load}
-          placeholderTextColor={Colors.textSecondary}
+          placeholderTextColor="#94A3B8"
           returnKeyType="search"
         />
         {search ? (
           <TouchableOpacity onPress={() => setSearch('')} activeOpacity={0.7}>
-            <Ionicons name="close-circle" size={16} color={Colors.textSecondary} />
+            <Ionicons name="close-circle" size={16} color="#94A3B8" />
           </TouchableOpacity>
         ) : null}
       </View>
 
       {/* Mode filters */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={[styles.filterScroll2, { flexGrow: 0 }]} contentContainerStyle={{ paddingHorizontal: Spacing.xl, gap: Spacing.sm, alignItems: 'center' }}>
+      <ScrollView 
+        horizontal 
+        showsHorizontalScrollIndicator={false} 
+        style={[styles.filterScroll2, { flexGrow: 0 }]} 
+        contentContainerStyle={{ paddingHorizontal: Spacing.xl, gap: Spacing.sm, alignItems: 'center' }}
+      >
         {MODES.map(m => (
           <TouchableOpacity
             key={m}
@@ -156,10 +159,31 @@ export default function TutorsScreen() {
             onPress={() => setActiveMode(m)}
             activeOpacity={0.8}
           >
-            <Text style={[styles.chipText, activeMode === m && styles.chipTextActive]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>{m}</Text>
+            <Text style={[styles.chipText, activeMode === m && styles.chipTextActive]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>
+              {m}
+            </Text>
           </TouchableOpacity>
         ))}
       </ScrollView>
+
+      {/* Prominent Request 1-on-1 Banner */}
+      <TouchableOpacity
+        style={styles.customBanner}
+        onPress={() => router.push('/request-tutor' as any)}
+        activeOpacity={0.88}
+      >
+        <View style={styles.customBannerIcon}>
+          <Ionicons name="sparkles" size={18} color="#FFFFFF" />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.customBannerTitle}>Can't find your exact match?</Text>
+          <Text style={styles.customBannerSub}>Submit a 1-minute custom request &amp; let tutors apply directly.</Text>
+        </View>
+        <View style={styles.customBannerBtn}>
+          <Text style={styles.customBannerBtnText}>Request</Text>
+          <Ionicons name="arrow-forward" size={11} color="#2563EB" />
+        </View>
+      </TouchableOpacity>
 
       {error && tutors.length === 0 ? (
         <ErrorState subtitle="We couldn't load tutors. Check your connection and retry." onRetry={load} style={{ padding: Spacing.xl }} />
@@ -167,9 +191,9 @@ export default function TutorsScreen() {
         <EmptyState
           icon="school-outline"
           title="No tutors found"
-          subtitle="Try adjusting your search or mode filter"
-          actionLabel="Clear Filters"
-          onAction={() => { setSearch(''); setActiveMode('All'); }}
+          subtitle="Try adjusting your search or post a custom 1-on-1 tutoring request."
+          actionLabel="Request a Tutor"
+          onAction={() => router.push('/request-tutor' as any)}
           style={{ padding: Spacing.xl }}
         />
       ) : (
@@ -177,10 +201,13 @@ export default function TutorsScreen() {
           data={filtered}
           keyExtractor={t => t.id}
           renderItem={({ item }) => <TutorCard tutor={item} />}
-          contentContainerStyle={{ paddingBottom: 100 }}
+          contentContainerStyle={{ paddingBottom: 120 }}
           showsVerticalScrollIndicator={false}
           refreshControl={<RefreshControl refreshing={loading} onRefresh={load} tintColor={Colors.blue} />}
-          initialNumToRender={8} maxToRenderPerBatch={8} windowSize={5} removeClippedSubviews={true}
+          initialNumToRender={8} 
+          maxToRenderPerBatch={8} 
+          windowSize={5} 
+          removeClippedSubviews={true}
         />
       )}
     </SafeAreaView>
@@ -220,7 +247,6 @@ function TutorCard({ tutor }: { tutor: Tutor }) {
     tutor.user?.city || tutor.location,
   ].filter(Boolean) as string[];
 
-  // Deduplicate and keep top 3 tags
   const uniqueTags = Array.from(new Set(displayTags)).slice(0, 3);
 
   return (
@@ -231,7 +257,10 @@ function TutorCard({ tutor }: { tutor: Tutor }) {
       <View style={styles.tutorTop}>
         <Avatar initials={initials} size={52} borderRadius={15} color={colors[colorIndex]} />
         <View style={styles.tutorInfo}>
-          <Text style={styles.tutorName} numberOfLines={1}>{tutorName}</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+            <Text style={styles.tutorName} numberOfLines={1}>{tutorName}</Text>
+            <Ionicons name="checkmark-circle" size={15} color="#2563EB" />
+          </View>
           <Text style={styles.tutorSubject} numberOfLines={1}>{subtitle}</Text>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: Spacing.sm, marginTop: 4 }}>
             <Text style={styles.rating}><Ionicons name="star" size={12} color="#f59e0b" /> {tutor.rating.toFixed(1)}</Text>
@@ -250,19 +279,19 @@ function TutorCard({ tutor }: { tutor: Tutor }) {
         </View>
       </View>
 
-      {bioSnippet ? (
-        <Text style={styles.tutorBio} numberOfLines={2}>
-          {bioSnippet}
-        </Text>
-      ) : null}
+      {bioSnippet && (
+        <Text style={styles.tutorBio} numberOfLines={2}>{bioSnippet}</Text>
+      )}
 
-      {uniqueTags.length > 0 ? (
+      {uniqueTags.length > 0 && (
         <View style={styles.tags}>
-          {uniqueTags.map(s => (
-            <View key={s} style={styles.tag}><Text style={styles.tagText}>{s}</Text></View>
+          {uniqueTags.map(tag => (
+            <View key={tag} style={styles.tag}>
+              <Text style={styles.tagText}>{tag}</Text>
+            </View>
           ))}
         </View>
-      ) : null}
+      )}
 
       <View style={styles.tutorActions}>
         <TouchableOpacity
@@ -274,18 +303,10 @@ function TutorCard({ tutor }: { tutor: Tutor }) {
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.btnMsg}
-          onPress={() => {
-            router.push({
-              pathname: '/chat/[id]',
-              params: {
-                id: tutor.user_id,
-                fullName: tutorName,
-              }
-            });
-          }}
+          onPress={() => router.push({ pathname: '/chat/[id]', params: { id: tutor.user_id, fullName: tutor.user?.full_name } })}
           activeOpacity={0.85}
         >
-          <Ionicons name="chatbubble-outline" size={16} color={Colors.blue} />
+          <Ionicons name="chatbubble-outline" size={16} color="#2563EB" />
         </TouchableOpacity>
       </View>
     </ScaleBounce>
@@ -293,20 +314,24 @@ function TutorCard({ tutor }: { tutor: Tutor }) {
 }
 
 const styles = StyleSheet.create({
-  header: {
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    paddingHorizontal: Spacing.xl, paddingTop: Spacing.lg, paddingBottom: Spacing.sm,
-    backgroundColor: Colors.card, borderBottomWidth: 1, borderBottomColor: Colors.border,
+  header: { 
+    flexDirection: 'row', 
+    justifyContent: 'space-between', 
+    alignItems: 'center', 
+    paddingHorizontal: Spacing.xl, 
+    paddingTop: Spacing.md, 
+    paddingBottom: Spacing.xs,
+    gap: Spacing.md,
   },
-  title: { fontSize: Typography['3xl'], fontWeight: Typography.bold, color: Colors.text },
+  title: { fontSize: Typography['2xl'], fontWeight: Typography.bold, color: '#0F172A' },
   requestBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.blue,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: 8,
+    backgroundColor: '#2563EB',
+    paddingHorizontal: 12,
+    paddingVertical: 7,
     borderRadius: Radius.full,
-    shadowColor: Colors.blue,
+    shadowColor: '#2563EB',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 4,
@@ -317,48 +342,126 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     fontSize: Typography.xs,
   },
-  filterBtn: { width: 36, height: 36, backgroundColor: Colors.grayLight, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
-  filterIcon: { fontSize: 16 },
   searchBar: {
-    marginHorizontal: Spacing.xl, marginTop: Spacing.md, marginBottom: 4,
-    backgroundColor: Colors.card,
-    borderRadius: Radius.xl, borderWidth: 1.5, borderColor: Colors.border,
-    flexDirection: 'row', alignItems: 'center',
-    paddingHorizontal: Spacing.md, paddingVertical: 10, gap: Spacing.sm,
+    marginHorizontal: Spacing.xl, 
+    marginTop: Spacing.md, 
+    marginBottom: 4,
+    backgroundColor: '#FFFFFF',
+    borderRadius: Radius.xl, 
+    borderWidth: 1.5, 
+    borderColor: '#E2E8F0',
+    flexDirection: 'row', 
+    alignItems: 'center',
+    paddingHorizontal: Spacing.md, 
+    paddingVertical: 9, 
+    gap: Spacing.sm,
   },
-  searchIcon: { fontSize: 16 },
-  searchInput: { flex: 1, fontSize: Typography.md, color: Colors.text },
-  filterScroll: { marginTop: Spacing.md },
-  filterScroll2: { marginTop: Spacing.xs, marginBottom: Spacing.md },
+  searchInput: { flex: 1, fontSize: Typography.sm, color: '#0F172A' },
+  filterScroll2: { marginTop: Spacing.xs, marginBottom: Spacing.sm },
   chip: {
-    borderWidth: 1.5, borderColor: Colors.border,
-    borderRadius: Radius.full, paddingHorizontal: 16, paddingVertical: 8,
-    backgroundColor: Colors.card, alignItems: 'center', justifyContent: 'center',
-    minHeight: 36,
+    borderWidth: 1.5, 
+    borderColor: '#E2E8F0',
+    borderRadius: Radius.full, 
+    paddingHorizontal: 16, 
+    paddingVertical: 6,
+    backgroundColor: '#FFFFFF', 
+    alignItems: 'center', 
+    justifyContent: 'center',
+    minHeight: 34,
   },
-  chipSm: { paddingVertical: 6, paddingHorizontal: 14, minHeight: 34 },
-  chipActive: { borderColor: Colors.blue, backgroundColor: Colors.blueLight },
-  chipText: { fontSize: Typography.sm, fontWeight: Typography.semibold, color: Colors.textSecondary, includeFontPadding: false },
-  chipTextActive: { color: Colors.blue, fontWeight: Typography.bold },
+  chipSm: { paddingVertical: 5, paddingHorizontal: 13, minHeight: 32 },
+  chipActive: { borderColor: '#2563EB', backgroundColor: '#EFF6FF' },
+  chipText: { fontSize: Typography.xs, fontWeight: Typography.semibold, color: '#64748B' },
+  chipTextActive: { color: '#2563EB', fontWeight: Typography.bold },
+
+  customBanner: {
+    marginHorizontal: Spacing.xl,
+    marginBottom: Spacing.md,
+    backgroundColor: '#0D2051',
+    borderRadius: Radius.xl,
+    padding: Spacing.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.md,
+    borderWidth: 1,
+    borderColor: 'rgba(201, 168, 76, 0.35)',
+  },
+  customBannerIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  customBannerTitle: {
+    color: '#FFFFFF',
+    fontSize: Typography.sm,
+    fontWeight: Typography.bold,
+  },
+  customBannerSub: {
+    color: 'rgba(255,255,255,0.7)',
+    fontSize: 11,
+    marginTop: 1,
+  },
+  customBannerBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: Radius.md,
+  },
+  customBannerBtnText: {
+    color: '#2563EB',
+    fontSize: 11,
+    fontWeight: Typography.bold,
+  },
+
   tutorCard: {
-    marginHorizontal: Spacing.xl, marginBottom: Spacing.md,
-    backgroundColor: Colors.card, borderRadius: Radius['2xl'],
-    padding: Spacing.lg, borderWidth: 1, borderColor: Colors.border,
+    marginHorizontal: Spacing.xl, 
+    marginBottom: Spacing.md,
+    backgroundColor: '#FFFFFF', 
+    borderRadius: Radius['2xl'],
+    padding: Spacing.lg, 
+    borderWidth: 1.5, 
+    borderColor: '#E2E8F0',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.04,
+    shadowRadius: 8,
+    elevation: 2,
   },
   tutorTop: { flexDirection: 'row', alignItems: 'flex-start', gap: Spacing.md, marginBottom: Spacing.sm },
   tutorInfo: { flex: 1 },
-  tutorName: { fontSize: Typography.lg, fontWeight: Typography.bold, color: Colors.text },
-  tutorSubject: { fontSize: Typography.sm, color: Colors.textSecondary, marginTop: 2 },
-  tutorBio: { fontSize: Typography.xs, color: Colors.textSecondary, lineHeight: 18, marginBottom: Spacing.sm },
-  rating: { fontSize: Typography.sm, fontWeight: Typography.semibold, color: '#92400e' },
-  reviewCount: { fontSize: Typography.sm, color: Colors.textSecondary },
-  price: { fontSize: Typography.lg, fontWeight: Typography.bold, color: Colors.blue },
-  priceLabel: { fontSize: Typography.xs, color: Colors.textSecondary },
-  tags: { flexDirection: 'row', gap: Spacing.sm, flexWrap: 'wrap', marginBottom: Spacing.md },
-  tag: { backgroundColor: Colors.grayLight, paddingHorizontal: Spacing.sm, paddingVertical: 3, borderRadius: 6 },
-  tagText: { fontSize: Typography.sm, color: Colors.textSecondary },
+  tutorName: { fontSize: Typography.base, fontWeight: Typography.bold, color: '#0F172A' },
+  tutorSubject: { fontSize: Typography.xs, color: '#64748B', marginTop: 2 },
+  tutorBio: { fontSize: Typography.xs, color: '#64748B', lineHeight: 18, marginBottom: Spacing.sm },
+  rating: { fontSize: Typography.xs, fontWeight: Typography.bold, color: '#D97706' },
+  reviewCount: { fontSize: Typography.xs, color: '#94A3B8' },
+  price: { fontSize: Typography.lg, fontWeight: Typography.bold, color: '#1E40AF' },
+  priceLabel: { fontSize: 10, color: '#64748B' },
+  tags: { flexDirection: 'row', gap: Spacing.xs, flexWrap: 'wrap', marginBottom: Spacing.md },
+  tag: { backgroundColor: '#F1F5F9', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
+  tagText: { fontSize: 11, color: '#475569', fontWeight: Typography.medium },
   tutorActions: { flexDirection: 'row', gap: Spacing.sm },
-  btnBook: { flex: 1, backgroundColor: Colors.blue, borderRadius: 10, padding: 10, alignItems: 'center' },
-  btnBookText: { color: Colors.white, fontWeight: Typography.semibold, fontSize: Typography.base },
-  btnMsg: { width: 40, height: 40, backgroundColor: Colors.grayLight, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+  btnBook: { 
+    flex: 1, 
+    backgroundColor: '#2563EB', 
+    borderRadius: Radius.lg, 
+    paddingVertical: 10, 
+    alignItems: 'center',
+  },
+  btnBookText: { color: Colors.white, fontWeight: Typography.bold, fontSize: Typography.sm },
+  btnMsg: { 
+    width: 42, 
+    height: 42, 
+    backgroundColor: '#EFF6FF', 
+    borderRadius: Radius.lg, 
+    alignItems: 'center', 
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
+  },
 });
