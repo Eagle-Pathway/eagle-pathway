@@ -1,7 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
 import {
-  View, Text, TextInput, TouchableOpacity, ScrollView,
-  StyleSheet, KeyboardAvoidingView, Platform, Alert,
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  Alert,
 } from 'react-native';
 import { toast } from '@/utils/toast';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -9,7 +13,6 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Typography, Spacing, Radius } from '@/utils/theme';
 import { Button } from '@/components/common';
-import { PasswordInput } from '@/components/PasswordInput';
 import { PasswordStrengthMeter } from '@/components/PasswordStrengthMeter';
 import { KeyboardAwareScreen } from '@/components/KeyboardAwareScreen';
 import { useAuthStore } from '@/store/authStore';
@@ -21,10 +24,38 @@ import { validatePasswordStrength } from '@eagle-pathway/shared';
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const RESEND_COOLDOWN_SECONDS = 60;
 
-const ROLES: { key: UserRole; label: string; icon: React.ComponentProps<typeof Ionicons>['name'] }[] = [
-  { key: 'student', label: 'Student', icon: 'school-outline' },
-  { key: 'parent', label: 'Parent', icon: 'people-outline' },
-  { key: 'tutor', label: 'Tutor', icon: 'library-outline' },
+const ROLES: { 
+  key: UserRole; 
+  label: string; 
+  tagline: string;
+  icon: React.ComponentProps<typeof Ionicons>['name'];
+  badgeColor: string;
+  bgColor: string;
+}[] = [
+  { 
+    key: 'student', 
+    label: 'Student', 
+    tagline: 'Exams & Scholarships',
+    icon: 'school-outline',
+    badgeColor: '#2563EB',
+    bgColor: 'rgba(37, 99, 235, 0.08)'
+  },
+  { 
+    key: 'parent', 
+    label: 'Parent', 
+    tagline: 'Find 1-on-1 Tutors',
+    icon: 'people-outline',
+    badgeColor: '#D97706',
+    bgColor: 'rgba(217, 119, 6, 0.08)'
+  },
+  { 
+    key: 'tutor', 
+    label: 'Tutor', 
+    tagline: 'Teach & Earn',
+    icon: 'library-outline',
+    badgeColor: '#059669',
+    bgColor: 'rgba(5, 150, 105, 0.08)'
+  },
 ];
 
 export default function SignupScreen() {
@@ -38,33 +69,36 @@ export default function SignupScreen() {
     utm_content?: string;
     verifyEmail?: string;
   }>();
-  // Entering from login with an unverified account: jump straight to the
-  // verification screen with the email prefilled and the resend cooldown
-  // already running (login just sent a fresh code).
+
   const verifyEmail = typeof params.verifyEmail === 'string' ? params.verifyEmail : '';
   const [fullName, setFullName] = useState('');
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState(verifyEmail);
   const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [role, setRole] = useState<UserRole>('student');
   
   const emailRef = useRef<TextInput>(null);
   const phoneRef = useRef<TextInput>(null);
   const passwordRef = useRef<TextInput>(null);
-  const confirmPasswordRef = useRef<TextInput>(null);
   const [isSignedUp, setIsSignedUp] = useState(!!verifyEmail);
   const [code, setCode] = useState('');
   const [resending, setResending] = useState(false);
   const [resendCooldown, setResendCooldown] = useState(verifyEmail ? RESEND_COOLDOWN_SECONDS : 0);
   const { signUp, verifySignup, signInWithGoogle, isLoading, setLoading } = useAuthStore();
 
-  // Tick down the resend cooldown so users can't hammer the (rate-limited) email sender.
   useEffect(() => {
     if (resendCooldown <= 0) return;
     const t = setTimeout(() => setResendCooldown((s) => s - 1), 1000);
     return () => clearTimeout(t);
   }, [resendCooldown]);
+
+  // Clean Ethiopian phone number formatting
+  const handlePhoneChange = (val: string) => {
+    // Keep numbers and +
+    const cleaned = val.replace(/[^0-9+]/g, '');
+    setPhone(cleaned);
+  };
 
   const handleContinue = async () => {
     if (!fullName.trim()) return toast.warning('Name Required', 'Please enter your full name');
@@ -76,11 +110,9 @@ export default function SignupScreen() {
     if (!strength.isValid) {
       return toast.warning(
         'Weak Password',
-        'Your password does not meet security requirements.'
+        'Please enter a password with at least 8 characters, 1 uppercase letter, and 1 number.'
       );
     }
-    
-    if (password !== confirmPassword) return toast.warning('Password Mismatch', 'Passwords do not match');
 
     try {
       const referralCode = params.referral_code || params.ref;
@@ -146,32 +178,36 @@ export default function SignupScreen() {
     }
   };
 
+  // OTP Verification View
   if (isSignedUp) {
     return (
       <SafeAreaView style={styles.container}>
         <KeyboardAwareScreen contentContainerStyle={styles.successContent}>
           <View style={styles.iconBadge}>
-            <Ionicons name="mail-outline" size={40} color={Colors.blue} />
+            <Ionicons name="mail-open-outline" size={38} color={Colors.blue} />
           </View>
           <Text style={styles.successTitle}>Verify your email</Text>
           <Text style={styles.successSubtitle}>
-            We've sent a 6-digit code to <Text style={{ color: Colors.text, fontWeight: Typography.bold }}>{email}</Text>.
+            We've sent a 6-digit code to{' '}
+            <Text style={{ color: Colors.text, fontWeight: Typography.bold }}>{email}</Text>.
             Enter it below to activate your account.
           </Text>
 
-          <TextInput
-            style={[styles.input, styles.codeInput, { width: '100%', marginTop: Spacing.xl }]}
-            placeholder="123456"
-            value={code}
-            onChangeText={(t) => setCode(t.replace(/[^0-9]/g, ''))}
-            keyboardType="number-pad"
-            maxLength={6}
-            autoFocus
-            textContentType="oneTimeCode"
-            placeholderTextColor={Colors.textSecondary}
-            onSubmitEditing={handleVerify}
-            returnKeyType="done"
-          />
+          <View style={styles.otpInputWrapper}>
+            <TextInput
+              style={styles.codeInput}
+              placeholder="123456"
+              value={code}
+              onChangeText={(t) => setCode(t.replace(/[^0-9]/g, ''))}
+              keyboardType="number-pad"
+              maxLength={6}
+              autoFocus
+              textContentType="oneTimeCode"
+              placeholderTextColor={Colors.textSecondary}
+              onSubmitEditing={handleVerify}
+              returnKeyType="done"
+            />
+          </View>
 
           <Button
             title="Verify & Continue"
@@ -180,13 +216,23 @@ export default function SignupScreen() {
             style={{ width: '100%', marginTop: Spacing.lg }}
           />
 
-          <TouchableOpacity style={{ marginTop: Spacing.xl }} onPress={handleResend} disabled={resending || resendCooldown > 0}>
+          <TouchableOpacity 
+            style={{ marginTop: Spacing.xl }} 
+            onPress={handleResend} 
+            disabled={resending || resendCooldown > 0}
+          >
             <Text style={{ color: resendCooldown > 0 ? Colors.textSecondary : Colors.blue, fontWeight: Typography.semibold }}>
               {resending ? 'Resending…' : resendCooldown > 0 ? `Resend code in ${resendCooldown}s` : "Didn't get it? Resend code"}
             </Text>
           </TouchableOpacity>
-          <TouchableOpacity style={{ marginTop: Spacing.lg }} onPress={() => { setIsSignedUp(false); setCode(''); }}>
-            <Text style={{ color: Colors.textSecondary, textDecorationLine: 'underline' }}>Wait, I entered the wrong email</Text>
+          
+          <TouchableOpacity 
+            style={{ marginTop: Spacing.md }} 
+            onPress={() => { setIsSignedUp(false); setCode(''); }}
+          >
+            <Text style={{ color: Colors.textSecondary, textDecorationLine: 'underline', fontSize: Typography.sm }}>
+              Change email address
+            </Text>
           </TouchableOpacity>
         </KeyboardAwareScreen>
       </SafeAreaView>
@@ -196,24 +242,100 @@ export default function SignupScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <KeyboardAwareScreen>
-        <TouchableOpacity style={styles.backBtn} onPress={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)/home'))} accessibilityRole="button" accessibilityLabel="Go back">
-          <Text style={styles.backArrow}>←</Text>
-        </TouchableOpacity>
+        {/* Top Navigation */}
+        <View style={styles.topNav}>
+          <TouchableOpacity 
+            style={styles.backBtn} 
+            onPress={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)/home'))} 
+            accessibilityRole="button" 
+            accessibilityLabel="Go back"
+            activeOpacity={0.7}
+          >
+            <Ionicons name="arrow-back" size={22} color={Colors.text} />
+          </TouchableOpacity>
+        </View>
 
-          <View style={styles.header}>
-            <Text style={styles.title}>Create Account</Text>
-            <Text style={styles.subtitle}>Join Ethiopian students on their journey to studying abroad</Text>
+        {/* Header */}
+        <View style={styles.header}>
+          <Text style={styles.title}>Create Account</Text>
+          <Text style={styles.subtitle}>Join students, parents, and expert tutors across Ethiopia</Text>
+        </View>
+
+        <View style={styles.form}>
+          {/* One-Tap Google Sign In */}
+          <TouchableOpacity
+            style={styles.googleBtn}
+            onPress={async () => {
+              try {
+                await signInWithGoogle();
+                router.replace('/(tabs)/home');
+              } catch (e: any) {
+                if (e?.message !== 'Google sign-in was cancelled or closed.') {
+                  showError(e, 'Google Sign-Up Failed');
+                }
+              } finally {
+                setLoading(false);
+              }
+            }}
+            activeOpacity={0.82}
+          >
+            <Ionicons name="logo-google" size={19} color="#4285F4" />
+            <Text style={styles.googleBtnText}>Continue with Google</Text>
+          </TouchableOpacity>
+
+          {/* Clean Divider */}
+          <View style={styles.dividerRow}>
+            <View style={styles.dividerLine} />
+            <Text style={styles.dividerText}>OR SIGN UP WITH EMAIL</Text>
+            <View style={styles.dividerLine} />
           </View>
 
-          <View style={styles.form}>
-            <View style={styles.fieldGroup}>
-              <Text style={styles.label}>Full Name</Text>
+          {/* Role Selector Cards */}
+          <View style={styles.fieldGroup}>
+            <Text style={styles.label}>I am a...</Text>
+            <View style={styles.roleRow}>
+              {ROLES.map(r => {
+                const isSelected = role === r.key;
+                return (
+                  <TouchableOpacity
+                    key={r.key}
+                    style={[
+                      styles.roleCard,
+                      isSelected && { borderColor: r.badgeColor, backgroundColor: r.bgColor },
+                    ]}
+                    onPress={() => setRole(r.key)}
+                    activeOpacity={0.8}
+                  >
+                    <View style={[styles.roleIconCircle, isSelected && { backgroundColor: r.badgeColor }]}>
+                      <Ionicons
+                        name={r.icon}
+                        size={18}
+                        color={isSelected ? Colors.white : Colors.textSecondary}
+                      />
+                    </View>
+                    <Text style={[styles.roleTitle, isSelected && { color: r.badgeColor }]}>
+                      {r.label}
+                    </Text>
+                    <Text style={styles.roleTagline} numberOfLines={1}>
+                      {r.tagline}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </View>
+
+          {/* Full Name */}
+          <View style={styles.fieldGroup}>
+            <Text style={styles.label}>Full Name</Text>
+            <View style={styles.inputContainer}>
+              <Ionicons name="person-outline" size={19} color={Colors.textSecondary} style={styles.inputIcon} />
               <TextInput
-                style={styles.input}
+                style={styles.textInput}
                 placeholder="e.g. Abebe Girma"
                 value={fullName}
                 onChangeText={setFullName}
-                placeholderTextColor={Colors.textSecondary}
+                placeholderTextColor="#94A3B8"
                 autoCapitalize="words"
                 textContentType="name"
                 autoComplete="name"
@@ -222,17 +344,21 @@ export default function SignupScreen() {
                 blurOnSubmit={false}
               />
             </View>
+          </View>
 
-            <View style={styles.fieldGroup}>
-              <Text style={styles.label}>Email Address</Text>
+          {/* Email */}
+          <View style={styles.fieldGroup}>
+            <Text style={styles.label}>Email Address</Text>
+            <View style={styles.inputContainer}>
+              <Ionicons name="mail-outline" size={19} color={Colors.textSecondary} style={styles.inputIcon} />
               <TextInput
-                style={styles.input}
-                placeholder="your@email.com"
+                style={styles.textInput}
+                placeholder="yourname@gmail.com"
                 value={email}
                 onChangeText={setEmail}
                 keyboardType="email-address"
                 autoCapitalize="none"
-                placeholderTextColor={Colors.textSecondary}
+                placeholderTextColor="#94A3B8"
                 ref={emailRef}
                 textContentType="emailAddress"
                 autoComplete="email"
@@ -241,16 +367,22 @@ export default function SignupScreen() {
                 blurOnSubmit={false}
               />
             </View>
+          </View>
 
-            <View style={styles.fieldGroup}>
-              <Text style={styles.label}>Phone Number</Text>
+          {/* Ethiopian Phone Number */}
+          <View style={styles.fieldGroup}>
+            <Text style={styles.label}>Phone Number</Text>
+            <View style={styles.inputContainer}>
+              <View style={styles.flagBadge}>
+                <Text style={styles.flagText}>🇪🇹 +251</Text>
+              </View>
               <TextInput
-                style={styles.input}
-                placeholder="+251 9xx xxx xxxx"
+                style={styles.textInput}
+                placeholder="9xx xxx xxxx"
                 value={phone}
-                onChangeText={setPhone}
+                onChangeText={handlePhoneChange}
                 keyboardType="phone-pad"
-                placeholderTextColor={Colors.textSecondary}
+                placeholderTextColor="#94A3B8"
                 ref={phoneRef}
                 textContentType="telephoneNumber"
                 autoComplete="tel"
@@ -259,163 +391,277 @@ export default function SignupScreen() {
                 blurOnSubmit={false}
               />
             </View>
+          </View>
 
-            <View style={styles.fieldGroup}>
-              <Text style={styles.label}>Password</Text>
-              <PasswordInput
-                placeholder="••••••••"
+          {/* Password */}
+          <View style={styles.fieldGroup}>
+            <Text style={styles.label}>Password</Text>
+            <View style={styles.inputContainer}>
+              <Ionicons name="lock-closed-outline" size={19} color={Colors.textSecondary} style={styles.inputIcon} />
+              <TextInput
+                style={[styles.textInput, { paddingRight: 40 }]}
+                placeholder="Minimum 8 characters"
                 value={password}
                 onChangeText={setPassword}
+                secureTextEntry={!showPassword}
+                placeholderTextColor="#94A3B8"
                 ref={passwordRef}
                 textContentType="newPassword"
                 autoComplete="password-new"
-                returnKeyType="next"
-                onSubmitEditing={() => confirmPasswordRef.current?.focus()}
-              />
-              <PasswordStrengthMeter password={password} />
-            </View>
-
-            <View style={styles.fieldGroup}>
-              <Text style={styles.label}>Confirm Password</Text>
-              <PasswordInput
-                placeholder="••••••••"
-                value={confirmPassword}
-                onChangeText={setConfirmPassword}
-                ref={confirmPasswordRef}
-                textContentType="newPassword"
-                autoComplete="password-new"
                 returnKeyType="done"
+                onSubmitEditing={handleContinue}
               />
-            </View>
-
-            <View style={styles.fieldGroup}>
-              <Text style={styles.label}>I am a...</Text>
-              <View style={styles.roleRow}>
-                {ROLES.map(r => (
-                  <TouchableOpacity
-                    key={r.key}
-                    style={[styles.roleChip, role === r.key && styles.roleChipActive]}
-                    onPress={() => setRole(r.key)}
-                    activeOpacity={0.8}
-                  >
-                    <Ionicons
-                      name={r.icon}
-                      size={20}
-                      color={role === r.key ? Colors.blue : Colors.textSecondary}
-                    />
-                    <Text style={[styles.roleLabel, role === r.key && styles.roleLabelActive]}>
-                      {r.label}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </View>
-
-            <Button title="Create Account" onPress={handleContinue} loading={isLoading} style={{ marginTop: Spacing.sm }} />
-
-            <View style={{ flexDirection: 'row', alignItems: 'center', marginVertical: Spacing.md }}>
-              <View style={{ flex: 1, height: 1, backgroundColor: Colors.border }} />
-              <Text style={{ marginHorizontal: Spacing.md, fontSize: 12, color: Colors.textSecondary, fontWeight: Typography.medium }}>OR</Text>
-              <View style={{ flex: 1, height: 1, backgroundColor: Colors.border }} />
-            </View>
-
-            <TouchableOpacity
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 10,
-                borderWidth: 1.5,
-                borderColor: Colors.border,
-                borderRadius: Radius.lg,
-                paddingVertical: 14,
-                backgroundColor: Colors.white,
-              }}
-              onPress={async () => {
-                try {
-                  await signInWithGoogle();
-                  router.replace('/(tabs)/home');
-                } catch (e: any) {
-                  if (e?.message !== 'Google sign-in was cancelled or closed.') {
-                    showError(e, 'Google Sign-Up Failed');
-                  }
-                } finally {
-                  setLoading(false);
-                }
-              }}
-              activeOpacity={0.8}
-            >
-              <Ionicons name="logo-google" size={20} color="#4285F4" />
-              <Text style={{ fontSize: Typography.base, fontWeight: Typography.semibold, color: Colors.text }}>
-                Continue with Google
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.loginLink} onPress={() => router.push('/(auth)/login')} activeOpacity={0.7}>
-              <Text 
-                numberOfLines={1} 
-                adjustsFontSizeToFit 
-                minimumFontScale={0.8}
-                style={styles.loginText}
+              <TouchableOpacity
+                style={styles.eyeBtn}
+                onPress={() => setShowPassword(v => !v)}
+                activeOpacity={0.7}
               >
-                {"Already have an account? "}
-                <Text style={styles.loginHighlight}>Sign In</Text>
-              </Text>
-            </TouchableOpacity>
+                <Ionicons 
+                  name={showPassword ? 'eye-off-outline' : 'eye-outline'} 
+                  size={20} 
+                  color={Colors.textSecondary} 
+                />
+              </TouchableOpacity>
+            </View>
+            <PasswordStrengthMeter password={password} />
           </View>
+
+          {/* Submit Button */}
+          <Button 
+            title="Create Account" 
+            onPress={handleContinue} 
+            loading={isLoading} 
+            style={{ marginTop: Spacing.sm }} 
+          />
+
+          {/* Sign In Link */}
+          <TouchableOpacity 
+            style={styles.loginLink} 
+            onPress={() => router.push('/(auth)/login')} 
+            activeOpacity={0.7}
+          >
+            <Text style={styles.loginText}>
+              {"Already have an account? "}
+              <Text style={styles.loginHighlight}>Sign In</Text>
+            </Text>
+          </TouchableOpacity>
+        </View>
       </KeyboardAwareScreen>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.white },
-  iconBadge: {
-    width: 80, height: 80, borderRadius: 40,
-    backgroundColor: Colors.blueLight,
-    alignItems: 'center', justifyContent: 'center',
-    marginBottom: Spacing.xl,
+  container: { 
+    flex: 1, 
+    backgroundColor: '#FFFFFF',
   },
-  backBtn: { padding: Spacing.xl, paddingBottom: 0 },
-  backArrow: { fontSize: 24, color: Colors.text },
-  header: { padding: Spacing.xl, paddingTop: Spacing.lg },
-  title: { fontSize: Typography['6xl'], fontWeight: Typography.bold, color: Colors.text, marginBottom: Spacing.xs },
-  subtitle: { fontSize: Typography.md, color: Colors.textSecondary, lineHeight: 22 },
-  form: { padding: Spacing.xl, gap: Spacing.lg },
-  fieldGroup: { gap: Spacing.xs },
-  label: { fontSize: Typography.base, fontWeight: Typography.semibold, color: Colors.text },
-  optional: { fontWeight: Typography.regular, color: Colors.textSecondary },
-  input: {
+  topNav: {
+    paddingHorizontal: Spacing.lg,
+    paddingTop: Spacing.sm,
+  },
+  backBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#F1F5F9',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  header: { 
+    paddingHorizontal: Spacing.xl, 
+    paddingTop: Spacing.md,
+    paddingBottom: Spacing.xs,
+  },
+  title: { 
+    fontSize: 28, 
+    fontWeight: Typography.bold, 
+    color: '#0F172A', 
+    letterSpacing: -0.5,
+  },
+  subtitle: { 
+    fontSize: Typography.sm, 
+    color: '#64748B', 
+    marginTop: 4,
+    lineHeight: 20,
+  },
+  form: { 
+    padding: Spacing.xl, 
+    gap: Spacing.md,
+  },
+  googleBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
     borderWidth: 1.5,
-    borderColor: Colors.border,
-    borderRadius: Radius.lg,
-    padding: Spacing.md,
-    fontSize: Typography.base,
-    color: Colors.text,
-    backgroundColor: '#fafafa',
+    borderColor: '#E2E8F0',
+    borderRadius: Radius.xl,
+    paddingVertical: 14,
+    backgroundColor: '#FFFFFF',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 1,
   },
-  codeInput: { fontSize: 26, letterSpacing: 8, textAlign: 'center', fontWeight: Typography.bold },
-  roleRow: { flexDirection: 'row', gap: Spacing.sm },
-  roleChip: {
+  googleBtnText: {
+    fontSize: Typography.base,
+    fontWeight: Typography.semibold,
+    color: '#0F172A',
+  },
+  dividerRow: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    gap: Spacing.sm,
+    marginVertical: 4,
+  },
+  dividerLine: { 
+    flex: 1, 
+    height: 1, 
+    backgroundColor: '#E2E8F0',
+  },
+  dividerText: { 
+    fontSize: 11, 
+    fontWeight: Typography.semibold, 
+    color: '#94A3B8',
+    letterSpacing: 0.5,
+  },
+  fieldGroup: { 
+    gap: 6,
+  },
+  label: { 
+    fontSize: Typography.sm, 
+    fontWeight: Typography.semibold, 
+    color: '#1E293B',
+  },
+  inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1.5,
+    borderColor: '#E2E8F0',
+    borderRadius: Radius.xl,
+    backgroundColor: '#F8FAFC',
+    paddingHorizontal: Spacing.md,
+    minHeight: 50,
+  },
+  inputIcon: {
+    marginRight: 10,
+  },
+  textInput: {
+    flex: 1,
+    fontSize: Typography.base,
+    color: '#0F172A',
+    paddingVertical: 12,
+  },
+  flagBadge: {
+    backgroundColor: '#E2E8F0',
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    borderRadius: 8,
+    marginRight: 10,
+  },
+  flagText: {
+    fontSize: Typography.xs,
+    fontWeight: Typography.bold,
+    color: '#334155',
+  },
+  eyeBtn: {
+    position: 'absolute',
+    right: 12,
+    padding: 6,
+  },
+  roleRow: { 
+    flexDirection: 'row', 
+    gap: Spacing.sm,
+  },
+  roleCard: {
     flex: 1,
     borderWidth: 1.5,
-    borderColor: Colors.border,
-    borderRadius: Radius.md,
-    paddingVertical: Spacing.md,
+    borderColor: '#E2E8F0',
+    borderRadius: Radius.xl,
+    paddingVertical: 12,
+    paddingHorizontal: 6,
     alignItems: 'center',
-    gap: 4,
-    backgroundColor: '#fafafa',
+    backgroundColor: '#F8FAFC',
   },
-  roleChipActive: { borderColor: Colors.blue, backgroundColor: Colors.blueLight },
-  roleLabel: { fontSize: Typography.sm, fontWeight: Typography.semibold, color: Colors.textSecondary },
-  roleLabelActive: { color: Colors.blue },
-  dividerRow: { flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
-  dividerLine: { flex: 1, height: 1, backgroundColor: Colors.border },
-  dividerText: { fontSize: Typography.sm, color: Colors.textSecondary },
-  loginLink: { alignItems: 'center', width: '100%', marginTop: Spacing.sm, paddingVertical: Spacing.xs },
-  loginText: { fontSize: Typography.base, color: Colors.textSecondary, textAlign: 'center' },
-  loginHighlight: { color: Colors.blue, fontWeight: Typography.bold },
-  successContent: { flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: Spacing.xl },
-  successTitle: { fontSize: Typography.xl, fontWeight: Typography.bold, color: Colors.text, marginTop: Spacing.xl },
-  successSubtitle: { fontSize: Typography.base, color: Colors.textSecondary, textAlign: 'center', marginTop: Spacing.sm },
+  roleIconCircle: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: '#E2E8F0',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 6,
+  },
+  roleTitle: { 
+    fontSize: Typography.sm, 
+    fontWeight: Typography.bold, 
+    color: '#334155',
+  },
+  roleTagline: {
+    fontSize: 10,
+    color: '#64748B',
+    marginTop: 2,
+    textAlign: 'center',
+  },
+  loginLink: { 
+    alignItems: 'center', 
+    width: '100%', 
+    marginTop: Spacing.xs, 
+    paddingVertical: Spacing.sm,
+  },
+  loginText: { 
+    fontSize: Typography.sm, 
+    color: '#64748B', 
+    textAlign: 'center',
+  },
+  loginHighlight: { 
+    color: Colors.blue, 
+    fontWeight: Typography.bold,
+  },
+  successContent: { 
+    flex: 1, 
+    justifyContent: 'center', 
+    alignItems: 'center', 
+    paddingHorizontal: Spacing.xl,
+  },
+  iconBadge: {
+    width: 84, 
+    height: 84, 
+    borderRadius: 42,
+    backgroundColor: '#EFF6FF',
+    alignItems: 'center', 
+    justifyContent: 'center',
+    marginBottom: Spacing.lg,
+  },
+  successTitle: { 
+    fontSize: Typography['2xl'], 
+    fontWeight: Typography.bold, 
+    color: '#0F172A',
+  },
+  successSubtitle: { 
+    fontSize: Typography.sm, 
+    color: '#64748B', 
+    textAlign: 'center', 
+    marginTop: 6,
+    lineHeight: 20,
+    paddingHorizontal: Spacing.md,
+  },
+  otpInputWrapper: {
+    width: '100%',
+    marginVertical: Spacing.xl,
+  },
+  codeInput: { 
+    borderWidth: 2,
+    borderColor: Colors.blue,
+    backgroundColor: '#F8FAFC',
+    borderRadius: Radius.xl,
+    paddingVertical: 14,
+    fontSize: 30, 
+    letterSpacing: 10, 
+    textAlign: 'center', 
+    fontWeight: Typography.bold,
+    color: '#0F172A',
+  },
 });
