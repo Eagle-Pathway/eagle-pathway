@@ -145,14 +145,28 @@ export const scholarshipsService = {
   },
 
   async getOpenScholarshipsCount(): Promise<number> {
-    const today = new Date().toISOString().slice(0, 10);
-    const { count, error } = await supabase
-      .from('scholarships')
-      .select('*', { count: 'exact', head: true })
-      .eq('is_active', true)
-      .gte('deadline', today);
-    if (error) throw error;
-    return count ?? 0;
+    try {
+      const today = new Date().toISOString().slice(0, 10);
+      const { count, error } = await supabase
+        .from('scholarships')
+        .select('*', { count: 'exact', head: true })
+        .eq('is_active', true)
+        .or(`deadline.gte.${today},deadline.is.null`);
+
+      if (!error && typeof count === 'number' && count > 0) {
+        return count;
+      }
+
+      // Fallback: count all active scholarships in catalog
+      const { count: activeCount } = await supabase
+        .from('scholarships')
+        .select('*', { count: 'exact', head: true })
+        .eq('is_active', true);
+
+      return activeCount ?? 0;
+    } catch {
+      return 0;
+    }
   },
 
   async getScholarshipById(id: string): Promise<Scholarship> {

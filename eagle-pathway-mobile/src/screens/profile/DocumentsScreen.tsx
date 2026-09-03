@@ -22,13 +22,11 @@ export function DocumentsScreen() {
   const [selectedCategory, setSelectedCategory] = useState<'all' | 'academic' | 'identity' | 'other'>('all');
   const [error, setError] = useState(false);
 
-  // Cloud Link & Text Credential Modal State
+  // Google Drive Link Modal State
   const [modalVisible, setModalVisible] = useState(false);
   const [activeType, setActiveType] = useState<DocumentType>('degree_certificate');
   const [activeLabel, setActiveLabel] = useState('Degree Certificate');
   const [cloudUrlInput, setCloudUrlInput] = useState('');
-  const [textContentInput, setTextContentInput] = useState('');
-  const [inputTab, setInputTab] = useState<'link' | 'text'>('link');
   const [submitting, setSubmitting] = useState(false);
 
   const load = useCallback(async () => {
@@ -76,21 +74,15 @@ export function DocumentsScreen() {
     setActiveType(type);
     setActiveLabel(label);
     setCloudUrlInput(existing?.cloud_url || existing?.file_url || '');
-    setTextContentInput(existing?.text_content || '');
-    setInputTab(existing?.text_content && !existing?.cloud_url ? 'text' : 'link');
     setModalVisible(true);
   };
 
   const handleSaveCredential = async () => {
     if (!user) return;
     const cleanUrl = cloudUrlInput.trim();
-    const cleanText = textContentInput.trim();
 
-    if (inputTab === 'link' && !cleanUrl) {
-      return toast.warning('Link Required', 'Please enter a valid Google Drive, OneDrive, or Dropbox link.');
-    }
-    if (inputTab === 'text' && !cleanText) {
-      return toast.warning('Text Required', 'Please enter your credential details or scores.');
+    if (!cleanUrl) {
+      return toast.warning('Google Drive Link Required', 'Please paste a valid Google Drive shareable link.');
     }
 
     setSubmitting(true);
@@ -98,12 +90,11 @@ export function DocumentsScreen() {
       await uploadDocument({
         userId: user.id,
         documentType: activeType,
-        cloudUrl: inputTab === 'link' ? cleanUrl : undefined,
-        textContent: inputTab === 'text' ? cleanText : undefined,
+        cloudUrl: cleanUrl,
         fileName: activeLabel,
       });
       setModalVisible(false);
-      toast.success('Saved to Vault', `${activeLabel} has been updated.`);
+      toast.success('Saved to Vault! 📁', `${activeLabel} Google Drive link attached.`);
       load();
     } catch (e: any) {
       showError(e, 'Failed to Save');
@@ -117,9 +108,9 @@ export function DocumentsScreen() {
       const url = doc.cloud_url || doc.file_url;
       Linking.openURL(url).catch(() => toast.error('Error', 'Could not open link. Check URL format.'));
     } else if (doc.text_content) {
-      Alert.alert(doc.file_name || 'Credential Text', doc.text_content);
+      Alert.alert(doc.file_name || 'Credential Details', doc.text_content);
     } else {
-      toast.warning('Unavailable', 'This document has no link or text content.');
+      toast.warning('Unavailable', 'This document has no link.');
     }
   };
 
@@ -148,18 +139,18 @@ export function DocumentsScreen() {
           <Ionicons name="arrow-back" size={20} color={Colors.text} />
         </TouchableOpacity>
         <Text style={docStyles.title}>Document Vault</Text>
-        <TouchableOpacity style={docStyles.mainUpload} onPress={() => openInputModal('other', 'Cloud Dossier Link')} activeOpacity={0.8}>
-          <Ionicons name="link-outline" size={22} color={Colors.white} />
+        <TouchableOpacity style={docStyles.mainUpload} onPress={() => openInputModal('other', 'Google Drive Document')} activeOpacity={0.8}>
+          <Ionicons name="logo-google" size={20} color={Colors.white} />
         </TouchableOpacity>
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }} refreshControl={<RefreshControl refreshing={loading} onRefresh={load} tintColor={Colors.blue} />}>
-        {/* Info Banner for Zero Storage Cloud Links */}
+        {/* Info Banner for Google Drive */}
         <View style={docStyles.cloudBanner}>
-          <Ionicons name="cloud-done-outline" size={22} color={Colors.blue} />
+          <Ionicons name="logo-google" size={22} color={Colors.blue} />
           <View style={{ flex: 1 }}>
-            <Text style={docStyles.cloudBannerTitle}>100% Cloud Dossier Ready</Text>
-            <Text style={docStyles.cloudBannerSub}>Share your Google Drive or OneDrive document links directly without uploading heavy files.</Text>
+            <Text style={docStyles.cloudBannerTitle}>Google Drive Document Vault</Text>
+            <Text style={docStyles.cloudBannerSub}>Upload your documents to Google Drive, set sharing to "Anyone with the link can view", and paste the links below.</Text>
           </View>
         </View>
 
@@ -183,11 +174,10 @@ export function DocumentsScreen() {
 
         <View style={docStyles.section}>
           <Text style={docStyles.sectionTitle}>Essential Checklist</Text>
-          <Text style={docStyles.sectionHint}>Tap to link your cloud document or enter credential details.</Text>
+          <Text style={docStyles.sectionHint}>Tap any item to add its Google Drive link.</Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={docStyles.checklistScroll}>
             {CORE_DOCS.map(item => {
               const uploaded = hasDoc(item.type);
-              const doc = docOfType(item.type);
               return (
                 <TouchableOpacity
                   key={item.type}
@@ -196,7 +186,7 @@ export function DocumentsScreen() {
                   onPress={() => openInputModal(item.type, item.label)}
                 >
                   <Ionicons 
-                    name={uploaded ? 'checkmark-circle' : 'link-outline'} 
+                    name={uploaded ? 'checkmark-circle' : 'logo-google'} 
                     size={18} 
                     color={uploaded ? Colors.green : Colors.blue} 
                   />
@@ -239,8 +229,8 @@ export function DocumentsScreen() {
         ) : filteredDocs.length === 0 ? (
           <View style={docStyles.empty}>
             <Ionicons name="folder-open-outline" size={48} color={Colors.textSecondary} style={{ marginBottom: 10 }} />
-            <Text style={docStyles.emptyTitle}>No {selectedCategory} credentials linked</Text>
-            <Text style={docStyles.emptySub}>Add your Google Drive links or text details to keep your applications ready.</Text>
+            <Text style={docStyles.emptyTitle}>No {selectedCategory} documents linked</Text>
+            <Text style={docStyles.emptySub}>Add your Google Drive links to keep your applications ready.</Text>
           </View>
         ) : (
           <View style={docStyles.docList}>
@@ -262,7 +252,7 @@ export function DocumentsScreen() {
                 <View style={{ flex: 1 }}>
                   <Text style={docStyles.docName} numberOfLines={1}>{doc.file_name || doc.document_type.replace(/_/g, ' ')}</Text>
                   <Text style={docStyles.docMeta}>
-                    {doc.cloud_url ? 'Google Drive / Cloud Link' : doc.text_content ? 'Structured Text Credential' : 'Linked Document'} · Tap to open
+                    Google Drive Link · Tap to open
                   </Text>
                 </View>
                 <View style={[docStyles.statusPill, { backgroundColor: doc.status === 'approved' ? Colors.greenLight : doc.status === 'rejected' ? Colors.redLight : Colors.goldLight }]}>
@@ -276,68 +266,46 @@ export function DocumentsScreen() {
         )}
       </ScrollView>
 
-      {/* Cloud Link / Text Input Modal */}
+      {/* Google Drive Link Modal */}
       <Modal visible={modalVisible} animationType="slide" transparent onRequestClose={() => setModalVisible(false)}>
         <View style={modalStyles.backdrop}>
           <View style={modalStyles.sheet}>
             <View style={modalStyles.sheetHeader}>
-              <Text style={modalStyles.sheetTitle}>{activeLabel}</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: '#eff6ff', alignItems: 'center', justifyContent: 'center' }}>
+                  <Ionicons name="logo-google" size={20} color={Colors.blue} />
+                </View>
+                <View>
+                  <Text style={modalStyles.sheetTitle}>{activeLabel}</Text>
+                  <Text style={{ fontSize: 11, color: Colors.blue, fontWeight: '600' }}>Google Drive Link</Text>
+                </View>
+              </View>
               <TouchableOpacity onPress={() => setModalVisible(false)} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
                 <Ionicons name="close-circle" size={24} color={Colors.textSecondary} />
               </TouchableOpacity>
             </View>
 
-            {/* Switch between Google Drive Link vs Text Mode */}
-            <View style={modalStyles.tabRow}>
-              <TouchableOpacity 
-                style={[modalStyles.tabBtn, inputTab === 'link' && modalStyles.tabBtnActive]}
-                onPress={() => setInputTab('link')}
-              >
-                <Ionicons name="logo-google" size={16} color={inputTab === 'link' ? Colors.blue : Colors.textSecondary} />
-                <Text style={[modalStyles.tabText, inputTab === 'link' && modalStyles.tabTextActive]}>Google Drive Link</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity 
-                style={[modalStyles.tabBtn, inputTab === 'text' && modalStyles.tabBtnActive]}
-                onPress={() => setInputTab('text')}
-              >
-                <Ionicons name="document-text-outline" size={16} color={inputTab === 'text' ? Colors.blue : Colors.textSecondary} />
-                <Text style={[modalStyles.tabText, inputTab === 'text' && modalStyles.tabTextActive]}>Text / Scores</Text>
-              </TouchableOpacity>
+            {/* Step-by-Step Guide */}
+            <View style={{ backgroundColor: '#f0f9ff', borderRadius: Radius.lg, padding: Spacing.md, borderWidth: 1, borderColor: '#bae6fd', marginBottom: Spacing.lg }}>
+              <Text style={{ fontSize: 12, fontWeight: 'bold', color: '#0369a1', marginBottom: 6 }}>How to provide your link:</Text>
+              <Text style={{ fontSize: 11, color: '#0c4a6e', marginBottom: 4 }}>1. Upload your <Text style={{ fontWeight: 'bold' }}>{activeLabel}</Text> (PDF / image) to Google Drive.</Text>
+              <Text style={{ fontSize: 11, color: '#0c4a6e', marginBottom: 4 }}>2. In Google Drive, tap <Text style={{ fontWeight: 'bold' }}>Share</Text> → change access to <Text style={{ fontWeight: 'bold' }}>"Anyone with the link can view"</Text>.</Text>
+              <Text style={{ fontSize: 11, color: '#0c4a6e' }}>3. Copy the link and paste it below.</Text>
             </View>
 
-            {inputTab === 'link' ? (
-              <View style={modalStyles.inputWrap}>
-                <Text style={modalStyles.fieldLabel}>Shareable Cloud Link (Google Drive / OneDrive / Dropbox):</Text>
-                <TextInput
-                  style={modalStyles.input}
-                  placeholder="https://drive.google.com/file/d/... or shared folder"
-                  placeholderTextColor={Colors.textSecondary}
-                  value={cloudUrlInput}
-                  onChangeText={setCloudUrlInput}
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                  keyboardType="url"
-                />
-                <Text style={modalStyles.tipText}>
-                  💡 Tip: On Google Drive, tap "Share" → set access to "Anyone with the link can view", then copy the link here.
-                </Text>
-              </View>
-            ) : (
-              <View style={modalStyles.inputWrap}>
-                <Text style={modalStyles.fieldLabel}>Credential Details / Scores / Description:</Text>
-                <TextInput
-                  style={[modalStyles.input, modalStyles.textArea]}
-                  placeholder="Enter GPA, score breakdown, institution name, or paste statement..."
-                  placeholderTextColor={Colors.textSecondary}
-                  value={textContentInput}
-                  onChangeText={setTextContentInput}
-                  multiline
-                  numberOfLines={4}
-                  textAlignVertical="top"
-                />
-              </View>
-            )}
+            <View style={modalStyles.inputWrap}>
+              <Text style={modalStyles.fieldLabel}>Shareable Google Drive Link:</Text>
+              <TextInput
+                style={modalStyles.input}
+                placeholder="https://drive.google.com/file/d/..."
+                placeholderTextColor={Colors.textSecondary}
+                value={cloudUrlInput}
+                onChangeText={setCloudUrlInput}
+                autoCapitalize="none"
+                autoCorrect={false}
+                keyboardType="url"
+              />
+            </View>
 
             <View style={modalStyles.btnRow}>
               <TouchableOpacity style={modalStyles.cancelBtn} onPress={() => setModalVisible(false)}>
@@ -351,7 +319,7 @@ export function DocumentsScreen() {
                 {submitting ? (
                   <ActivityIndicator color={Colors.white} size="small" />
                 ) : (
-                  <Text style={modalStyles.saveBtnText}>Save Credential</Text>
+                  <Text style={modalStyles.saveBtnText}>Save Google Drive Link</Text>
                 )}
               </TouchableOpacity>
             </View>

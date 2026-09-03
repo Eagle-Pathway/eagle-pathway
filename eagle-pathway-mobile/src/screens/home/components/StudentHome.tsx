@@ -186,7 +186,7 @@ export const StudentHome: React.FC<StudentHomeProps> = ({
           <View style={styles.quickCards}>
             {[
               { label: 'Find Tutor', sub: `${availableTutorsCount ?? 0} available`, icon: 'school-outline' as const, route: '/(tabs)/tutors' },
-              { label: 'Scholarships', sub: `${openScholarshipsCount ?? 0} open now`, icon: 'ribbon-outline' as const, route: '/(tabs)/scholarships' },
+              { label: 'Scholarships', sub: `${Math.max(openScholarshipsCount ?? 0, recommendedScholarships?.length ?? 0)} open now`, icon: 'ribbon-outline' as const, route: '/(tabs)/scholarships' },
               { label: 'Tracker', sub: `${activeApplications.length} active`, icon: 'bar-chart-outline' as const, route: '/tracker' },
               { label: 'Resources', sub: 'Study guides', icon: 'library-outline' as const, route: '/resources' },
             ].map(card => (

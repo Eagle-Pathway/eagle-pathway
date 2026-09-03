@@ -37,13 +37,11 @@ export function ApplyScreen() {
   const [verificationOutcome, setVerificationOutcome] = useState<any>(null);
   const [showVerificationModal, setShowVerificationModal] = useState(false);
 
-  // Zero-Storage Cloud Link & Text Credential Modal State
+  // Google Drive Link Modal State
   const [docModalVisible, setDocModalVisible] = useState(false);
   const [activeDocType, setActiveDocType] = useState<DocumentType>('degree_certificate');
   const [activeDocLabel, setActiveDocLabel] = useState('Degree Certificate');
   const [cloudUrlInput, setCloudUrlInput] = useState('');
-  const [textContentInput, setTextContentInput] = useState('');
-  const [docInputTab, setDocInputTab] = useState<'link' | 'text'>('link');
   const [submittingDoc, setSubmittingDoc] = useState(false);
 
   const insets = useSafeAreaInsets();
@@ -75,7 +73,7 @@ export function ApplyScreen() {
         toast.success('Starter Inserted! ✍️', 'Profile-customized SOP outline added to your draft.');
       }
     } catch (e: any) {
-      showError(e, 'Failed to Generate Starter');
+      showError(e, 'Could Not Generate SOP');
     }
   };
 
@@ -126,21 +124,15 @@ export function ApplyScreen() {
     setActiveDocType(docType);
     setActiveDocLabel(docLabel);
     setCloudUrlInput(existing?.cloud_url || existing?.file_url || '');
-    setTextContentInput(existing?.text_content || '');
-    setDocInputTab(existing?.text_content && !existing?.cloud_url ? 'text' : 'link');
     setDocModalVisible(true);
   };
 
   const handleSaveDocModal = async () => {
     if (!user) return;
     const cleanUrl = cloudUrlInput.trim();
-    const cleanText = textContentInput.trim();
 
-    if (docInputTab === 'link' && !cleanUrl) {
-      return toast.warning('Link Required', 'Please enter a valid Google Drive, OneDrive, or cloud link.');
-    }
-    if (docInputTab === 'text' && !cleanText) {
-      return toast.warning('Text Required', 'Please enter your credential details or scores.');
+    if (!cleanUrl) {
+      return toast.warning('Google Drive Link Required', 'Please paste a valid Google Drive shareable link.');
     }
 
     setSubmittingDoc(true);
@@ -148,12 +140,11 @@ export function ApplyScreen() {
       await uploadDocument({
         userId: user.id,
         documentType: activeDocType,
-        cloudUrl: docInputTab === 'link' ? cleanUrl : undefined,
-        textContent: docInputTab === 'text' ? cleanText : undefined,
+        cloudUrl: cleanUrl,
         fileName: activeDocLabel,
       });
       setDocModalVisible(false);
-      toast.success('Saved to Application', `${activeDocLabel} updated!`);
+      toast.success('Link Saved! 📁', `${activeDocLabel} Google Drive link attached.`);
       loadDocuments(user.id);
     } catch (e: any) {
       showError(e, 'Failed to Save');
@@ -297,17 +288,17 @@ export function ApplyScreen() {
             <Text style={CommonStyles.sectionTitle}>Personal Information</Text>
             <Text style={applyStyles.intro}>Please confirm your profile details below. These will be submitted with your application.</Text>
             
-            <View style={[CommonStyles.card, { marginTop: Spacing.lg }]}>
+            <View style={[CommonStyles.card, { marginTop: Spacing.lg, paddingVertical: Spacing.sm }]}>
               <View style={applyStyles.infoRow}>
                 <Text style={applyStyles.infoLabel}>Full Name</Text>
-                <Text style={applyStyles.infoValue}>{user?.full_name || 'Not provided'}</Text>
+                <Text style={applyStyles.infoValue} numberOfLines={1} ellipsizeMode="tail">{user?.full_name || 'Not provided'}</Text>
               </View>
               <View style={applyStyles.infoRow}>
                 <Text style={applyStyles.infoLabel}>Email</Text>
-                <Text style={applyStyles.infoValue}>{user?.email || 'Not provided'}</Text>
+                <Text style={applyStyles.infoValue} numberOfLines={1} ellipsizeMode="middle">{user?.email || 'Not provided'}</Text>
               </View>
               <View style={applyStyles.infoRow}>
-                <Text style={applyStyles.infoLabel}>Phone Number</Text>
+                <Text style={applyStyles.infoLabel}>Phone</Text>
                 <Text style={applyStyles.infoValue}>{user?.phone || 'Not provided'}</Text>
               </View>
               <View style={applyStyles.infoRow}>
@@ -316,7 +307,7 @@ export function ApplyScreen() {
               </View>
               <View style={[applyStyles.infoRow, { borderBottomWidth: 0 }]}>
                 <Text style={applyStyles.infoLabel}>Target Countries</Text>
-                <Text style={applyStyles.infoValue}>{user?.target_countries?.join(', ') || 'Global'}</Text>
+                <Text style={applyStyles.infoValue} numberOfLines={2}>{user?.target_countries?.join(', ') || 'Global'}</Text>
               </View>
             </View>
           </View>
@@ -329,13 +320,13 @@ export function ApplyScreen() {
               <Text style={applyStyles.successText}>Personal info collected — step 1 complete!</Text>
             </View>
 
-            {/* Zero-Storage Cloud Notice */}
+            {/* Google Drive Submission Notice */}
             <View style={{ backgroundColor: '#eff6ff', borderRadius: Radius.lg, padding: Spacing.md, borderWidth: 1, borderColor: '#bfdbfe', flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: Spacing.lg }}>
-              <Ionicons name="cloud-done-outline" size={22} color={Colors.blue} />
+              <Ionicons name="logo-google" size={24} color={Colors.blue} />
               <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: Typography.sm, fontWeight: 'bold', color: Colors.blue }}>100% Zero-Storage Cloud Vault</Text>
+                <Text style={{ fontSize: Typography.sm, fontWeight: 'bold', color: Colors.blue }}>Google Drive Document Submission</Text>
                 <Text style={{ fontSize: 11, color: Colors.textSecondary, marginTop: 2 }}>
-                  Paste shareable Google Drive / OneDrive links or enter text credentials. Fast, private, and 0 device storage needed.
+                  Upload your documents to Google Drive, set access to "Anyone with the link can view", and paste the shareable links below.
                 </Text>
               </View>
             </View>
@@ -360,8 +351,6 @@ export function ApplyScreen() {
                   : documents.some(d => d.document_type === mappedType);
 
               const docRecord = documents.find(d => d.document_type === mappedType);
-              const isCloud = docRecord?.cloud_url || docRecord?.file_path === 'cloud_link';
-              const isText = Boolean(docRecord?.text_content);
 
               return (
                 <TouchableOpacity 
@@ -372,7 +361,7 @@ export function ApplyScreen() {
                 >
                   <View style={[applyStyles.docIcon, { backgroundColor: uploaded ? Colors.blueLight : Colors.orangeLight }]}>
                     <Ionicons 
-                      name={isCloud ? "link-outline" : isText ? "document-text-outline" : uploaded ? "checkmark-circle-outline" : "add-circle-outline"} 
+                      name={uploaded ? "checkmark-circle-outline" : "logo-google"} 
                       size={20} 
                       color={uploaded ? Colors.blue : Colors.orange} 
                     />
@@ -381,8 +370,8 @@ export function ApplyScreen() {
                     <Text style={[applyStyles.docName, !uploaded && { color: Colors.orange }]}>{doc}</Text>
                     <Text style={[applyStyles.docMeta, !uploaded && { color: Colors.orange }]}>
                       {uploaded 
-                        ? (isCloud ? 'Google Drive Link Added ✓' : isText ? 'Text Credentials Saved ✓' : 'Linked ✓') 
-                        : 'Tap to add Google Drive Link / Text — Required'}
+                        ? 'Google Drive Link Added ✓' 
+                        : 'Tap to add Google Drive Link — Required'}
                     </Text>
                   </View>
                   {uploaded
@@ -575,95 +564,67 @@ export function ApplyScreen() {
         )}
       </KeyboardAwareScreen>
 
-      {/* Zero-Storage Cloud Link & Text Credential Modal */}
+      {/* Google Drive Link Modal */}
       <Modal visible={docModalVisible} transparent animationType="slide">
         <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' }}>
           <View style={{ backgroundColor: Colors.white, borderTopLeftRadius: Radius['2xl'], borderTopRightRadius: Radius['2xl'], padding: Spacing.xl, paddingBottom: Math.max(insets.bottom + 16, Spacing.xl), maxHeight: '85%' }}>
             
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.md }}>
-              <View>
-                <Text style={{ fontSize: Typography.lg, fontWeight: Typography.bold, color: Colors.text }}>{activeDocLabel}</Text>
-                <Text style={{ fontSize: 12, color: Colors.blue, fontWeight: '600' }}>Zero-Storage Cloud Mode ☁️</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: '#eff6ff', alignItems: 'center', justifyContent: 'center' }}>
+                  <Ionicons name="logo-google" size={20} color={Colors.blue} />
+                </View>
+                <View>
+                  <Text style={{ fontSize: Typography.md, fontWeight: Typography.bold, color: Colors.text }}>{activeDocLabel}</Text>
+                  <Text style={{ fontSize: 11, color: Colors.blue, fontWeight: '600' }}>Google Drive Link Submission</Text>
+                </View>
               </View>
               <TouchableOpacity onPress={() => setDocModalVisible(false)} style={{ padding: 4 }}>
                 <Ionicons name="close-circle" size={24} color={Colors.textSecondary} />
               </TouchableOpacity>
             </View>
 
-            {/* Tab Selector */}
-            <View style={{ flexDirection: 'row', backgroundColor: Colors.grayLight, borderRadius: Radius.md, padding: 4, marginBottom: Spacing.lg }}>
+            {/* Step-by-Step Instructions */}
+            <View style={{ backgroundColor: '#f0f9ff', borderRadius: Radius.lg, padding: Spacing.md, borderWidth: 1, borderColor: '#bae6fd', marginBottom: Spacing.lg }}>
+              <Text style={{ fontSize: 12, fontWeight: 'bold', color: '#0369a1', marginBottom: 6 }}>How to provide your link:</Text>
+              <Text style={{ fontSize: 11, color: '#0c4a6e', marginBottom: 4 }}>1. Upload your <Text style={{ fontWeight: 'bold' }}>{activeDocLabel}</Text> (PDF / image) to Google Drive.</Text>
+              <Text style={{ fontSize: 11, color: '#0c4a6e', marginBottom: 4 }}>2. In Google Drive, tap <Text style={{ fontWeight: 'bold' }}>Share</Text> → change access to <Text style={{ fontWeight: 'bold' }}>"Anyone with the link can view"</Text>.</Text>
+              <Text style={{ fontSize: 11, color: '#0c4a6e' }}>3. Copy the link and paste it in the field below.</Text>
+            </View>
+
+            <Text style={{ fontSize: 12, fontWeight: 'bold', color: Colors.text, marginBottom: 6 }}>
+              Shareable Google Drive Link:
+            </Text>
+
+            <View style={{ flexDirection: 'row', gap: Spacing.sm, alignItems: 'center', marginBottom: Spacing.xl }}>
+              <TextInput
+                value={cloudUrlInput}
+                onChangeText={setCloudUrlInput}
+                placeholder="https://drive.google.com/file/d/..."
+                placeholderTextColor={Colors.textSecondary}
+                autoCapitalize="none"
+                autoCorrect={false}
+                keyboardType="url"
+                style={{ flex: 1, borderWidth: 1, borderColor: Colors.border, borderRadius: Radius.md, padding: Spacing.md, backgroundColor: '#f8fafc', fontSize: 13, color: Colors.text }}
+              />
               <TouchableOpacity 
-                onPress={() => setDocInputTab('link')} 
-                style={{ flex: 1, paddingVertical: 8, borderRadius: Radius.sm, backgroundColor: docInputTab === 'link' ? Colors.white : 'transparent', alignItems: 'center' }}
+                onPress={async () => {
+                  const clip = await Clipboard.getStringAsync();
+                  if (clip && clip.startsWith('http')) {
+                    setCloudUrlInput(clip.trim());
+                    toast.success('Link Pasted! 📋', 'Google Drive URL pasted from clipboard.');
+                  } else {
+                    toast.warning('No Link in Clipboard', 'Please copy a valid Google Drive URL first.');
+                  }
+                }}
+                style={{ backgroundColor: Colors.blueLight, borderWidth: 1, borderColor: '#bfdbfe', borderRadius: Radius.md, paddingHorizontal: Spacing.md, paddingVertical: 14 }}
               >
-                <Text style={{ fontSize: 13, fontWeight: 'bold', color: docInputTab === 'link' ? Colors.blue : Colors.textSecondary }}>
-                  🔗 Cloud Link
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity 
-                onPress={() => setDocInputTab('text')} 
-                style={{ flex: 1, paddingVertical: 8, borderRadius: Radius.sm, backgroundColor: docInputTab === 'text' ? Colors.white : 'transparent', alignItems: 'center' }}
-              >
-                <Text style={{ fontSize: 13, fontWeight: 'bold', color: docInputTab === 'text' ? Colors.blue : Colors.textSecondary }}>
-                  📝 Text / Scores
-                </Text>
+                <Ionicons name="clipboard-outline" size={18} color={Colors.blue} />
               </TouchableOpacity>
             </View>
 
-            {docInputTab === 'link' ? (
-              <View>
-                <Text style={{ fontSize: 13, fontWeight: 'bold', color: Colors.text, marginBottom: 4 }}>
-                  Google Drive / OneDrive / Dropbox Link
-                </Text>
-                <Text style={{ fontSize: 11, color: Colors.textSecondary, marginBottom: Spacing.sm }}>
-                  Make sure link access is set to "Anyone with the link can view".
-                </Text>
-                
-                <View style={{ flexDirection: 'row', gap: Spacing.sm, alignItems: 'center', marginBottom: Spacing.lg }}>
-                  <TextInput
-                    value={cloudUrlInput}
-                    onChangeText={setCloudUrlInput}
-                    placeholder="https://drive.google.com/file/d/..."
-                    autoCapitalize="none"
-                    keyboardType="url"
-                    style={{ flex: 1, borderWidth: 1, borderColor: Colors.border, borderRadius: Radius.md, padding: Spacing.md, backgroundColor: '#f8fafc', fontSize: 13 }}
-                  />
-                  <TouchableOpacity 
-                    onPress={async () => {
-                      const clip = await Clipboard.getStringAsync();
-                      if (clip && clip.startsWith('http')) {
-                        setCloudUrlInput(clip.trim());
-                        toast.success('Link Pasted! 📋', 'Google Drive URL pasted from clipboard.');
-                      } else {
-                        toast.warning('No Link in Clipboard', 'Please copy a valid URL first.');
-                      }
-                    }}
-                    style={{ backgroundColor: Colors.blueLight, borderWidth: 1, borderColor: '#bfdbfe', borderRadius: Radius.md, paddingHorizontal: Spacing.md, paddingVertical: 14 }}
-                  >
-                    <Ionicons name="clipboard-outline" size={18} color={Colors.blue} />
-                  </TouchableOpacity>
-                </View>
-              </View>
-            ) : (
-              <View>
-                <Text style={{ fontSize: 13, fontWeight: 'bold', color: Colors.text, marginBottom: 4 }}>
-                  Credential Text, Scores, or Statements
-                </Text>
-                <Text style={{ fontSize: 11, color: Colors.textSecondary, marginBottom: Spacing.sm }}>
-                  Enter GPA, IELTS band scores, or credential statements directly.
-                </Text>
-                <TextInput
-                  value={textContentInput}
-                  onChangeText={setTextContentInput}
-                  placeholder="e.g. Cumulative GPA: 3.85 / 4.00, IELTS Overall: 7.5..."
-                  multiline
-                  style={{ borderWidth: 1, borderColor: Colors.border, borderRadius: Radius.md, padding: Spacing.md, backgroundColor: '#f8fafc', fontSize: 13, minHeight: 110, textAlignVertical: 'top', marginBottom: Spacing.lg }}
-                />
-              </View>
-            )}
-
             <Button
-              title={submittingDoc ? 'Saving...' : 'Save Credential'}
+              title={submittingDoc ? 'Saving Link...' : 'Save Google Drive Link'}
               variant="primary"
               onPress={handleSaveDocModal}
               loading={submittingDoc}
@@ -866,9 +827,9 @@ const applyStyles = StyleSheet.create({
   radio: { width: 18, height: 18, borderRadius: 9, borderWidth: 2, borderColor: Colors.border },
   paymentInfo: { marginTop: Spacing.lg, backgroundColor: Colors.bg, padding: Spacing.md, borderRadius: Radius.md },
   intro: { fontSize: Typography.sm, color: Colors.textSecondary, lineHeight: 20 },
-  infoRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: Colors.border },
-  infoLabel: { color: Colors.textSecondary, fontSize: Typography.sm },
-  infoValue: { color: Colors.text, fontWeight: 'bold', fontSize: Typography.base },
+  infoRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: Colors.border, gap: Spacing.md },
+  infoLabel: { color: Colors.textSecondary, fontSize: Typography.sm, fontWeight: Typography.medium, flexShrink: 0, minWidth: 95 },
+  infoValue: { color: Colors.text, fontWeight: 'bold', fontSize: Typography.sm, flex: 1, textAlign: 'right' },
   sopInput: { minHeight: 250, backgroundColor: Colors.white, borderRadius: Radius.lg, padding: Spacing.md, borderWidth: 1, borderColor: Colors.border, marginTop: Spacing.lg, fontSize: Typography.base, color: Colors.text, textAlignVertical: 'top' },
   aiTip: { marginTop: Spacing.xl, backgroundColor: Colors.goldLight, padding: Spacing.md, borderRadius: Radius.lg, borderWidth: 1, borderColor: '#e8d5a0' },
   aiTipTitle: { fontWeight: 'bold', color: '#7a5c1e', marginBottom: 4 },
