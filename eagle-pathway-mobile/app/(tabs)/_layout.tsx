@@ -112,8 +112,8 @@ export default function TabLayout() {
         options={{
           tabBarIcon: ({ focused }) => (
             <TabIcon
-              icon={activeRole === 'tutor' ? 'grid-outline' : activeRole === 'parent' ? 'people-outline' : 'home-outline'}
-              label={activeRole === 'tutor' ? 'Dashboard' : activeRole === 'parent' ? 'Family' : 'Home'}
+              icon={activeRole === 'tutor' ? 'grid-outline' : 'home-outline'}
+              label={activeRole === 'tutor' ? 'Dashboard' : 'Home'}
               focused={focused}
             />
           ),
