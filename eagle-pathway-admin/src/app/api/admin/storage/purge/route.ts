@@ -10,69 +10,60 @@ export async function POST(req: NextRequest) {
   const supabaseAdmin = getStrictAdminClient();
 
   try {
-    const bucket = 'documents';
-    
-    // 1. List all files recursively in the 'documents' bucket
-    async function listAllFiles(folder = ''): Promise<string[]> {
-      const { data, error } = await supabaseAdmin.storage
-        .from(bucket)
-        .list(folder, { limit: 1000 });
+    const buckets = ['documents', 'tutor-documents'];
+    let totalDeletedFiles = 0;
 
-      if (error || !data) return [];
+    for (const bucket of buckets) {
+      async function listAllFiles(folder = ''): Promise<string[]> {
+        const { data, error } = await supabaseAdmin.storage
+          .from(bucket)
+          .list(folder, { limit: 1000 });
 
-      let filePaths: string[] = [];
-      for (const item of data) {
-        const fullPath = folder ? `${folder}/${item.name}` : item.name;
-        if (item.id === null) {
-          // It's a folder, recurse
-          const nested = await listAllFiles(fullPath);
-          filePaths = filePaths.concat(nested);
-        } else {
-          filePaths.push(fullPath);
+        if (error || !data) return [];
+
+        let filePaths: string[] = [];
+        for (const item of data) {
+          const fullPath = folder ? `${folder}/${item.name}` : item.name;
+          if (item.id === null) {
+            const nested = await listAllFiles(fullPath);
+            filePaths = filePaths.concat(nested);
+          } else {
+            filePaths.push(fullPath);
+          }
+        }
+        return filePaths;
+      }
+
+      const allFiles = await listAllFiles();
+
+      const chunkSize = 100;
+      for (let i = 0; i < allFiles.length; i += chunkSize) {
+        const chunk = allFiles.slice(i, i + chunkSize);
+        const { error: removeError } = await supabaseAdmin.storage
+          .from(bucket)
+          .remove(chunk);
+
+        if (!removeError) {
+          totalDeletedFiles += chunk.length;
         }
       }
-      return filePaths;
     }
 
-    const allFiles = await listAllFiles();
-
-    if (allFiles.length === 0) {
-      return NextResponse.json({ 
-        success: true, 
-        message: 'Storage is already clean. 0 files found in bucket.',
-        deletedCount: 0 
-      });
-    }
-
-    // 2. Delete all files in chunks of 100
-    const chunkSize = 100;
-    let deletedCount = 0;
-
-    for (let i = 0; i < allFiles.length; i += chunkSize) {
-      const chunk = allFiles.slice(i, i + chunkSize);
-      const { error: removeError } = await supabaseAdmin.storage
-        .from(bucket)
-        .remove(chunk);
-
-      if (!removeError) {
-        deletedCount += chunk.length;
-      }
-    }
-
-    // 3. Mark existing document records as cloud/migrated
-    await supabaseAdmin
+    // Permanently delete all document rows from the database table
+    const { count } = await supabaseAdmin
       .from('documents')
-      .update({ file_path: 'cloud_link', file_size: 0 })
-      .not('file_path', 'eq', 'cloud_link');
+      .delete({ count: 'exact' })
+      .neq('id', '00000000-0000-0000-0000-000000000000');
 
     return NextResponse.json({
       success: true,
-      message: `Successfully purged ${deletedCount} files from Supabase Storage. Storage usage is now 0 MB.`,
-      deletedCount,
+      message: `Permanently deleted ${count ?? 'all'} document records from the database and purged ${totalDeletedFiles} files from Supabase Storage.`,
+      deletedFiles: totalDeletedFiles,
+      deletedRows: count,
     });
   } catch (error: any) {
     return NextResponse.json(
-      { error: error?.message || 'Failed to purge storage files.' },
+      { error: error?.message || 'Failed to delete documents.' },
       { status: 500 }
     );
   }
