@@ -8,19 +8,17 @@ import {
   Linking 
 } from 'react-native';
 import { toast } from '@/utils/toast';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Typography, Spacing, Radius } from '@/utils/theme';
 
 export default function SplashScreen() {
+  const insets = useSafeAreaInsets();
+
   return (
     <View style={styles.container}>
-      {/* Soft Ambient Radial Lights */}
-      <View style={styles.ambientTop} />
-      <View style={styles.ambientBottom} />
-
-      <SafeAreaView style={styles.safe}>
+      <SafeAreaView style={styles.safe} edges={['top']}>
         {/* Center Hero */}
         <View style={styles.centerSection}>
           <View style={styles.logoBox}>
@@ -52,15 +50,15 @@ export default function SplashScreen() {
           </View>
         </View>
 
-        {/* Bottom Actions */}
-        <View style={styles.bottomSection}>
+        {/* Bottom Actions with Proper Safe Insets */}
+        <View style={[styles.bottomSection, { paddingBottom: Math.max(insets.bottom, 24) }]}>
           <TouchableOpacity 
             style={styles.btnPrimary} 
             onPress={() => router.push('/(auth)/signup')} 
             activeOpacity={0.88}
           >
             <Text style={styles.btnPrimaryText}>Get Started</Text>
-            <Ionicons name="arrow-forward" size={18} color="#0A1128" style={{ marginLeft: 6 }} />
+            <Ionicons name="arrow-forward" size={18} color="#07152B" style={{ marginLeft: 6 }} />
           </TouchableOpacity>
 
           <TouchableOpacity 
@@ -74,6 +72,7 @@ export default function SplashScreen() {
           <TouchableOpacity 
             onPress={() => Linking.openURL('https://www.eaglespathway.com/privacy').catch(() => toast.error('Could not open this link.'))} 
             activeOpacity={0.7}
+            style={{ paddingVertical: 6 }}
           >
             <Text style={styles.termsText}>Terms &amp; Privacy Policy</Text>
           </TouchableOpacity>
@@ -86,36 +85,18 @@ export default function SplashScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0A1128',
-  },
-  ambientTop: {
-    position: 'absolute',
-    top: -60,
-    alignSelf: 'center',
-    width: 260,
-    height: 260,
-    borderRadius: 130,
-    backgroundColor: 'rgba(30, 77, 155, 0.22)',
-  },
-  ambientBottom: {
-    position: 'absolute',
-    bottom: -60,
-    right: '20%',
-    width: 200,
-    height: 200,
-    borderRadius: 100,
-    backgroundColor: 'rgba(201, 168, 76, 0.1)',
+    backgroundColor: '#07152B',
   },
   safe: {
     flex: 1,
     justifyContent: 'space-between',
     paddingHorizontal: Spacing.xl,
-    paddingVertical: Spacing.xl,
   },
   centerSection: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
+    paddingTop: Spacing.xl,
   },
   logoBox: {
     width: 96,
@@ -125,7 +106,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1.5,
-    borderColor: 'rgba(255, 255, 255, 0.18)',
+    borderColor: 'rgba(255, 255, 255, 0.16)',
     marginBottom: Spacing.lg,
   },
   logoImg: {
@@ -134,14 +115,14 @@ const styles = StyleSheet.create({
     resizeMode: 'contain',
   },
   title: {
-    fontSize: Typography['4xl'],
+    fontSize: 32,
     fontWeight: Typography.bold,
     color: Colors.white,
     letterSpacing: -0.5,
   },
   subtitle: {
     fontSize: Typography.base,
-    color: 'rgba(255, 255, 255, 0.7)',
+    color: 'rgba(255, 255, 255, 0.72)',
     textAlign: 'center',
     marginTop: 6,
     marginBottom: Spacing['2xl'],
@@ -170,6 +151,7 @@ const styles = StyleSheet.create({
   },
   bottomSection: {
     gap: Spacing.sm,
+    paddingTop: Spacing.sm,
   },
   btnPrimary: {
     backgroundColor: Colors.white,
@@ -185,7 +167,7 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   btnPrimaryText: {
-    color: '#0A1128',
+    color: '#07152B',
     fontWeight: Typography.bold,
     fontSize: Typography.lg,
   },
@@ -206,7 +188,7 @@ const styles = StyleSheet.create({
   termsText: {
     textAlign: 'center',
     fontSize: Typography.xs,
-    color: 'rgba(255, 255, 255, 0.4)',
-    marginTop: 6,
+    color: 'rgba(255, 255, 255, 0.45)',
+    marginTop: 2,
   },
 });
