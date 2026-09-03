@@ -54,13 +54,44 @@ export const tutorsService = {
   async notifyTutorNewBooking(tutorId: string, studentName: string): Promise<void> {
     const tutorUserId = await tutorsService.getTutorUserId(tutorId);
     if (!tutorUserId) return;
+    
+    // 1. In-app Notification
     await supabase.from('notifications').insert({
       user_id: tutorUserId,
       type: 'booking_request',
-      title: 'New Booking Request',
-      body: `${studentName} has requested a session with you.`,
+      title: 'New Booking Request 📅',
+      body: `${studentName} has requested a tutoring session with you.`,
       data: { tutor_id: tutorId, type: 'booking_request' },
     });
+
+    // 2. Direct Background Push Notification to Tutor device
+    try {
+      const { data: tokenRows } = await supabase
+        .from('push_tokens')
+        .select('token')
+        .eq('user_id', tutorUserId);
+
+      if (tokenRows && tokenRows.length > 0) {
+        const messages = tokenRows
+          .map(r => r.token?.trim())
+          .filter(t => t && (t.startsWith('ExponentPushToken') || t.startsWith('ExpoPushToken')))
+          .map(token => ({
+            to: token,
+            sound: 'default',
+            title: 'New Booking Request 📅',
+            body: `${studentName} has requested a tutoring session with you.`,
+            data: { url: '/(tabs)/activity' },
+          }));
+
+        if (messages.length > 0) {
+          fetch('https://exp.host/--/api/v2/push/send', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(messages),
+          }).catch(() => {});
+        }
+      }
+    } catch {}
   },
 
   async getTutorReviews(tutorId: string): Promise<TutorReview[]> {

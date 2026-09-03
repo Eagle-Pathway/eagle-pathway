@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
-  TextInput, Modal, ActivityIndicator,
+  TextInput, Modal, ActivityIndicator, Linking, Alert
 } from 'react-native';
 import { toast } from '@/utils/toast';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -9,7 +9,6 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { Colors, Typography, Spacing, Radius, CommonStyles } from '@/utils/theme';
 import { Button } from '@/components/common';
 import { KeyboardAwareScreen } from '@/components/KeyboardAwareScreen';
-import { scholarshipsService } from '@/services/scholarships';
 import { paymentsService } from '@/services/payments';
 import { useAuthStore } from '@/store/authStore';
 import { useScholarshipStore } from '@/store/scholarshipStore';
@@ -18,7 +17,6 @@ import { Ionicons } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
 import { PACKAGE_PRICING, formatEtb } from '@/constants/packages';
 import { PAYMENT_ACCOUNTS } from '@/constants/paymentAccounts';
-import { parseReceiptText, assertReceiptValidity } from '@/services/receiptParser';
 import type { PackageTier, DocumentType } from '@/types';
 import { showError, getErrorMessage } from '@/utils/errorHandler';
 import { draftStore } from '@/services/draftStore';
@@ -33,12 +31,21 @@ export function ApplyScreen() {
   const [sopContent, setSopContent] = useState('');
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('');
   const [transactionId, setTransactionId] = useState('');
-  const [receiptAsset, setReceiptAsset] = useState<any>(null);
   const [isVerifyingPayment, setIsVerifyingPayment] = useState(false);
-  const [verificationProgressStep, setVerificationProgressStep] = useState('Scanning Receipt Screenshot...');
+  const [verificationProgressStep, setVerificationProgressStep] = useState('Connecting to Bank Gateway...');
   const [verificationError, setVerificationError] = useState<string | null>(null);
   const [verificationOutcome, setVerificationOutcome] = useState<any>(null);
   const [showVerificationModal, setShowVerificationModal] = useState(false);
+
+  // Zero-Storage Cloud Link & Text Credential Modal State
+  const [docModalVisible, setDocModalVisible] = useState(false);
+  const [activeDocType, setActiveDocType] = useState<DocumentType>('degree_certificate');
+  const [activeDocLabel, setActiveDocLabel] = useState('Degree Certificate');
+  const [cloudUrlInput, setCloudUrlInput] = useState('');
+  const [textContentInput, setTextContentInput] = useState('');
+  const [docInputTab, setDocInputTab] = useState<'link' | 'text'>('link');
+  const [submittingDoc, setSubmittingDoc] = useState(false);
+
   const insets = useSafeAreaInsets();
 
   const handleGenerateStarter = async () => {
@@ -102,7 +109,7 @@ export function ApplyScreen() {
 
   const STEPS = ['Info', 'Docs', 'SOP', 'Pay', 'Final'];
 
-  const handlePickAndUpload = async (docLabel: string) => {
+  const handleOpenDocModal = (docLabel: string) => {
     const typeMap: Record<string, DocumentType> = {
       'Degree Certificate': 'degree_certificate',
       'Official Transcript': 'transcript',
@@ -114,23 +121,44 @@ export function ApplyScreen() {
     };
 
     const docType = typeMap[docLabel] || 'other';
+    const existing = documents.find(d => d.document_type === docType);
 
+    setActiveDocType(docType);
+    setActiveDocLabel(docLabel);
+    setCloudUrlInput(existing?.cloud_url || existing?.file_url || '');
+    setTextContentInput(existing?.text_content || '');
+    setDocInputTab(existing?.text_content && !existing?.cloud_url ? 'text' : 'link');
+    setDocModalVisible(true);
+  };
+
+  const handleSaveDocModal = async () => {
+    if (!user) return;
+    const cleanUrl = cloudUrlInput.trim();
+    const cleanText = textContentInput.trim();
+
+    if (docInputTab === 'link' && !cleanUrl) {
+      return toast.warning('Link Required', 'Please enter a valid Google Drive, OneDrive, or cloud link.');
+    }
+    if (docInputTab === 'text' && !cleanText) {
+      return toast.warning('Text Required', 'Please enter your credential details or scores.');
+    }
+
+    setSubmittingDoc(true);
     try {
-      const result = await scholarshipsService.pickDocument();
-      if (result.canceled || !result.assets?.[0]) return;
-      const asset = result.assets[0];
-      if (!user) return;
-      toast.info('Uploading...', 'Please wait while your document is being uploaded.');
-      await uploadDocument({ 
-        userId: user.id, 
-        applicationId: undefined, 
-        documentType: docType, 
-        fileUri: asset.uri, 
-        fileName: asset.name 
+      await uploadDocument({
+        userId: user.id,
+        documentType: activeDocType,
+        cloudUrl: docInputTab === 'link' ? cleanUrl : undefined,
+        textContent: docInputTab === 'text' ? cleanText : undefined,
+        fileName: activeDocLabel,
       });
-      toast.success('Success', 'Document uploaded successfully!');
+      setDocModalVisible(false);
+      toast.success('Saved to Application', `${activeDocLabel} updated!`);
+      loadDocuments(user.id);
     } catch (e: any) {
-      showError(e, 'Upload Failed');
+      showError(e, 'Failed to Save');
+    } finally {
+      setSubmittingDoc(false);
     }
   };
 
@@ -138,15 +166,23 @@ export function ApplyScreen() {
     if (loading) return;
     if (!user || !scholarshipId || !packageTier) return;
     setLoading(true);
-
     try {
-      await createApplication(user.id, scholarshipId, packageTier, sopContent);
-      setLoading(false);
-      toast.success('Application Submitted! 🎉', 'Your consultant has been notified and will reach out shortly.');
-      router.push('/tracker');
+      await createApplication(
+        user.id,
+        scholarshipId,
+        packageTier,
+        sopContent
+      );
+
+      // Clear local draft upon submission
+      draftStore.clearApplicationDraft(scholarshipId);
+
+      toast.success('Application Submitted! 🎉', 'Your application is on its way to the review team.');
+      router.replace(`/(scholarships)/${scholarshipId}?applied=true`);
     } catch (e: any) {
+      showError(e, 'Application Submission Failed');
+    } finally {
       setLoading(false);
-      showError(e, 'Failed to Create Application');
     }
   };
 
@@ -159,7 +195,7 @@ export function ApplyScreen() {
 
   const handleContinue = async () => {
     if (step === 2 && !allDocsUploaded) {
-      toast.warning('Documents incomplete', 'Some required documents are still missing. You can add them now, or continue and upload them later.');
+      toast.warning('Documents Incomplete', 'Some required credentials are missing. You can add them now, or continue and complete them later.');
       setStep(s => s + 1);
       return;
     }
@@ -169,43 +205,22 @@ export function ApplyScreen() {
         toast.warning('Payment Method Required', 'Please select a payment method before continuing.');
         return;
       }
-      if (!receiptAsset) {
-        toast.warning('Receipt Screenshot Required', 'Please upload a screenshot of your payment receipt before continuing.');
+      if (!transactionId || !transactionId.trim()) {
+        toast.warning('Transaction Reference Required', 'Please enter your bank Transaction ID or Telebirr reference code.');
         return;
       }
 
       if (!user || !packageTier) return;
       setIsVerifyingPayment(true);
       setVerificationError(null);
-      setVerificationProgressStep('🔍 Scanning Receipt Screenshot...');
+      setVerificationProgressStep('Connecting to Bank Gateway...');
 
       const method = selectedPaymentMethod.includes('Telebirr') ? 'telebirr' : 'cbe';
       const expectedAmount = PACKAGE_PRICING[packageTier].etb;
+      const cleanTxnId = transactionId.trim();
 
-      // Simulate visual progress update
-      await new Promise(r => setTimeout(r, 600));
-      setVerificationProgressStep('⚙️ Extracting Ref ID, Amount & Beneficiary...');
-
-      // 1. Run local Vision & Text Assertions on attached receipt asset
-      const sampleText = `${receiptAsset.name || ''} ${transactionId || ''}`;
-      const parsedReceipt = parseReceiptText(sampleText);
-
-      // If user entered or screenshot provided recipient/amount, run assertions
-      if (parsedReceipt.isValidReceiptLayout) {
-        const assertion = assertReceiptValidity(parsedReceipt, method, expectedAmount);
-        if (!assertion.isValid) {
-          setIsVerifyingPayment(false);
-          setVerificationError(assertion.reason);
-          toast.error('Verification Failed ❌', assertion.reason);
-          return;
-        }
-      }
-
-      await new Promise(r => setTimeout(r, 600));
-      setVerificationProgressStep(`🏦 Querying ${method === 'telebirr' ? 'Telebirr' : 'CBE'} Bank Source of Truth...`);
-
-      // Auto-fill transaction ID from parsed screenshot if left blank
-      const effectiveTxnId = transactionId.trim() || parsedReceipt.transactionId || `SCREENSHOT-${Date.now()}`;
+      await new Promise(r => setTimeout(r, 500));
+      setVerificationProgressStep(`🏦 Querying ${method === 'telebirr' ? 'Telebirr' : 'CBE'} Bank Records for ${cleanTxnId}...`);
 
       try {
         const res = await paymentsService.submitPaymentReceipt({
@@ -213,9 +228,7 @@ export function ApplyScreen() {
           paymentType: 'scholarship_package',
           method,
           amount: expectedAmount,
-          transactionId: effectiveTxnId,
-          fileUri: receiptAsset?.uri,
-          fileName: receiptAsset?.name,
+          transactionId: cleanTxnId,
         });
 
         setIsVerifyingPayment(false);
@@ -231,11 +244,9 @@ export function ApplyScreen() {
           draftStore.clearApplicationDraft(scholarshipId);
         }
 
-        // Save outcome and open explicit verification results modal
         setVerificationOutcome({
           ...res.verification,
-          parsedReceipt,
-          effectiveTxnId,
+          effectiveTxnId: cleanTxnId,
           method,
           expectedAmount,
         });
@@ -253,74 +264,83 @@ export function ApplyScreen() {
   };
 
   return (
-    <SafeAreaView style={CommonStyles.screenBg} edges={['top', 'bottom']}>
+    <SafeAreaView style={CommonStyles.screenBg}>
       <View style={applyStyles.header}>
-        <TouchableOpacity style={applyStyles.backBtn} onPress={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)/home'))} activeOpacity={0.8} accessibilityRole="button" accessibilityLabel="Go back"><Text style={{ fontSize: 20, color: Colors.text }}>←</Text></TouchableOpacity>
+        <TouchableOpacity style={applyStyles.backBtn} onPress={() => step > 1 ? setStep(s => s - 1) : (router.canGoBack() ? router.back() : router.replace('/(tabs)/home'))}>
+          <Ionicons name="arrow-back" size={20} color={Colors.text} />
+        </TouchableOpacity>
         <Text style={applyStyles.title}>Your Application</Text>
       </View>
-      <Text style={applyStyles.subtitle}>{packageTier?.charAt(0).toUpperCase()}{packageTier?.slice(1)} Package</Text>
 
-      {/* Step indicator */}
+      <Text style={applyStyles.subtitle}>
+        Package: {packageTier ? packageTier.toUpperCase() : 'STANDARD'} • ETB {packageTier ? formatEtb(PACKAGE_PRICING[packageTier].etb) : '0'}
+      </Text>
+
+      {/* Steps Progress Header */}
       <View style={applyStyles.stepsRow}>
-        {STEPS.map((s, i) => (
+        {STEPS.map((s, idx) => (
           <React.Fragment key={s}>
             <View style={applyStyles.stepItem}>
-              <View style={[applyStyles.stepCircle, i + 1 < step && applyStyles.stepDone, i + 1 === step && applyStyles.stepActive, i + 1 > step && applyStyles.stepInactive]}>
-                {i + 1 < step
-                  ? <Text style={applyStyles.stepDoneText}>✓</Text>
-                  : <Text style={[applyStyles.stepNum, i + 1 === step && { color: Colors.white }]}>{i + 1}</Text>}
+              <View style={[applyStyles.stepCircle, step > idx + 1 ? applyStyles.stepDone : step === idx + 1 ? applyStyles.stepActive : applyStyles.stepInactive]}>
+                {step > idx + 1 ? <Ionicons name="checkmark" size={14} color={Colors.white} /> : <Text style={[applyStyles.stepNum, step === idx + 1 && { color: Colors.blueDark }]}>{idx + 1}</Text>}
               </View>
-              <Text style={[applyStyles.stepLabel, i + 1 === step && { color: Colors.gold }]}>{s}</Text>
+              <Text style={[applyStyles.stepLabel, step === idx + 1 && { color: Colors.gold, fontWeight: 'bold' }]}>{s}</Text>
             </View>
-            {i < STEPS.length - 1 && <View style={[applyStyles.stepLine, i + 1 < step && { backgroundColor: Colors.blue }]} />}
+            {idx < STEPS.length - 1 && <View style={[applyStyles.stepLine, step > idx + 1 && { backgroundColor: Colors.blue }]} />}
           </React.Fragment>
         ))}
       </View>
 
-      <KeyboardAwareScreen extraScrollHeight={140} contentContainerStyle={{ paddingBottom: 160 }}>
+      <KeyboardAwareScreen style={{ flex: 1 }}>
         {step === 1 && (
           <View style={{ padding: Spacing.xl }}>
-            <Text style={CommonStyles.sectionTitle}>Verification: Personal Info</Text>
-            <Text style={applyStyles.intro}>
-              Please confirm your profile details. These will be used for your official scholarship application.
-            </Text>
+            <Text style={CommonStyles.sectionTitle}>Personal Information</Text>
+            <Text style={applyStyles.intro}>Please confirm your profile details below. These will be submitted with your application.</Text>
             
-            <View style={[CommonStyles.card, { marginTop: Spacing.xl, padding: Spacing.lg }]}>
+            <View style={[CommonStyles.card, { marginTop: Spacing.lg }]}>
               <View style={applyStyles.infoRow}>
                 <Text style={applyStyles.infoLabel}>Full Name</Text>
-                <Text style={applyStyles.infoValue}>{user?.full_name}</Text>
+                <Text style={applyStyles.infoValue}>{user?.full_name || 'Not provided'}</Text>
               </View>
               <View style={applyStyles.infoRow}>
                 <Text style={applyStyles.infoLabel}>Email</Text>
-                <Text style={applyStyles.infoValue}>{user?.email}</Text>
+                <Text style={applyStyles.infoValue}>{user?.email || 'Not provided'}</Text>
               </View>
               <View style={applyStyles.infoRow}>
-                <Text style={applyStyles.infoLabel}>Current Level</Text>
-                <Text style={applyStyles.infoValue}>{user?.grade_level || 'Not set'}</Text>
+                <Text style={applyStyles.infoLabel}>Phone Number</Text>
+                <Text style={applyStyles.infoValue}>{user?.phone || 'Not provided'}</Text>
               </View>
               <View style={applyStyles.infoRow}>
-                <Text style={applyStyles.infoLabel}>City</Text>
-                <Text style={applyStyles.infoValue}>{user?.city || 'Not set'}</Text>
+                <Text style={applyStyles.infoLabel}>Nationality</Text>
+                <Text style={applyStyles.infoValue}>{(user as any)?.nationality || 'Ethiopian'}</Text>
+              </View>
+              <View style={[applyStyles.infoRow, { borderBottomWidth: 0 }]}>
+                <Text style={applyStyles.infoLabel}>Target Countries</Text>
+                <Text style={applyStyles.infoValue}>{user?.target_countries?.join(', ') || 'Global'}</Text>
               </View>
             </View>
-
-            <TouchableOpacity 
-              style={{ marginTop: Spacing.lg, alignSelf: 'center', flexDirection: 'row', alignItems: 'center', gap: 6 }}
-              onPress={() => router.push('/(tabs)/profile')}
-            >
-              <Ionicons name="pencil-outline" size={16} color={Colors.blue} />
-              <Text style={{ color: Colors.blue, fontWeight: 'bold' }}>Edit Profile Info</Text>
-            </TouchableOpacity>
           </View>
         )}
 
         {step === 2 && (
-          <>
+          <View style={{ padding: Spacing.xl }}>
             <View style={applyStyles.successBanner}>
               <Ionicons name="checkmark-circle" size={18} color={Colors.green} />
               <Text style={applyStyles.successText}>Personal info collected — step 1 complete!</Text>
             </View>
-            <Text style={CommonStyles.sectionTitle}>Upload Your Documents</Text>
+
+            {/* Zero-Storage Cloud Notice */}
+            <View style={{ backgroundColor: '#eff6ff', borderRadius: Radius.lg, padding: Spacing.md, borderWidth: 1, borderColor: '#bfdbfe', flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: Spacing.lg }}>
+              <Ionicons name="cloud-done-outline" size={22} color={Colors.blue} />
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: Typography.sm, fontWeight: 'bold', color: Colors.blue }}>100% Zero-Storage Cloud Vault</Text>
+                <Text style={{ fontSize: 11, color: Colors.textSecondary, marginTop: 2 }}>
+                  Paste shareable Google Drive / OneDrive links or enter text credentials. Fast, private, and 0 device storage needed.
+                </Text>
+              </View>
+            </View>
+
+            <Text style={CommonStyles.sectionTitle}>Required Credentials & Links</Text>
             {requiredDocs.map(doc => {
               const typeMap: Record<string, string> = {
                 'Degree Certificate': 'degree_certificate',
@@ -339,22 +359,39 @@ export function ApplyScreen() {
                   ? refLetterCount >= 2
                   : documents.some(d => d.document_type === mappedType);
 
+              const docRecord = documents.find(d => d.document_type === mappedType);
+              const isCloud = docRecord?.cloud_url || docRecord?.file_path === 'cloud_link';
+              const isText = Boolean(docRecord?.text_content);
+
               return (
-                <TouchableOpacity key={doc} style={[applyStyles.docRow, !uploaded && applyStyles.docRowMissing]} onPress={() => !uploaded && handlePickAndUpload(doc)} activeOpacity={0.8}>
+                <TouchableOpacity 
+                  key={doc} 
+                  style={[applyStyles.docRow, !uploaded && applyStyles.docRowMissing]} 
+                  onPress={() => handleOpenDocModal(doc)} 
+                  activeOpacity={0.8}
+                >
                   <View style={[applyStyles.docIcon, { backgroundColor: uploaded ? Colors.blueLight : Colors.orangeLight }]}>
-                    <Ionicons name={uploaded ? "document-text-outline" : "attach-outline"} size={18} color={uploaded ? Colors.blue : Colors.orange} />
+                    <Ionicons 
+                      name={isCloud ? "link-outline" : isText ? "document-text-outline" : uploaded ? "checkmark-circle-outline" : "add-circle-outline"} 
+                      size={20} 
+                      color={uploaded ? Colors.blue : Colors.orange} 
+                    />
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={[applyStyles.docName, !uploaded && { color: Colors.orange }]}>{doc}</Text>
-                    <Text style={[applyStyles.docMeta, !uploaded && { color: Colors.orange }]}>{uploaded ? 'Uploaded ✓' : 'Tap to upload — Required'}</Text>
+                    <Text style={[applyStyles.docMeta, !uploaded && { color: Colors.orange }]}>
+                      {uploaded 
+                        ? (isCloud ? 'Google Drive Link Added ✓' : isText ? 'Text Credentials Saved ✓' : 'Linked ✓') 
+                        : 'Tap to add Google Drive Link / Text — Required'}
+                    </Text>
                   </View>
                   {uploaded
                     ? <View style={applyStyles.checkCircle}><Ionicons name="checkmark" size={12} color={Colors.green} /></View>
-                    : <View style={applyStyles.crossCircle}><Ionicons name="alert" size={12} color={Colors.orange} /></View>}
+                    : <View style={applyStyles.crossCircle}><Ionicons name="add" size={14} color={Colors.orange} /></View>}
                 </TouchableOpacity>
               );
             })}
-          </>
+          </View>
         )}
 
         {step === 3 && (
@@ -388,131 +425,97 @@ export function ApplyScreen() {
                 fullWidth={false}
                 onPress={async () => {
                   if (!sopContent || sopContent.length < 50) {
-                    toast.warning('Too short', 'Please write at least 50 characters to get meaningful feedback.');
+                    toast.warning('Draft too short', 'Write at least 50 characters to review.');
                     return;
                   }
-                  const result = await reviewSOP(sopContent, scholarshipId, user?.id);
-                  toast.info(`AI Score: ${result.score}/100`, result.feedback);
+                  try {
+                    const review = await reviewSOP(sopContent, scholarshipId);
+                    if (review) {
+                      toast.info(`Score: ${review.score}/100`, review.feedback);
+                    }
+                  } catch (e: any) {
+                    showError(e, 'SOP Review Failed');
+                  }
                 }}
                 loading={isReviewingSOP}
                 style={{ flex: 1 }}
               />
-            </View>
-            
-            <View style={applyStyles.aiTip}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
-                <Ionicons name="bulb-outline" size={16} color={Colors.goldDark} />
-                <Text style={applyStyles.aiTipTitle}>Pro Tip & Policy</Text>
-              </View>
-              <Text style={applyStyles.aiTipText}>AI starters provide motivation and structure based on your profile info. Direct copying is not allowed for final submissions — personalize it in your authentic voice!</Text>
             </View>
           </View>
         )}
 
         {step === 4 && (
           <View style={{ padding: Spacing.xl }}>
-            <Text style={CommonStyles.sectionTitle}>Secure Payment</Text>
-            <Text style={[applyStyles.intro, { marginBottom: Spacing.lg }]}>
-              To begin your {packageTier} consultation, please complete the payment below. A consultant will verify and reach out via WhatsApp.
-            </Text>
+            <Text style={CommonStyles.sectionTitle}>Payment & Activation</Text>
+            <Text style={applyStyles.intro}>Select your payment method and enter your bank transaction reference ID.</Text>
 
             <View style={applyStyles.paymentCard}>
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: Spacing.md }}>
-                <Text style={{ fontWeight: 'bold', fontSize: 16 }}>Amount Due</Text>
-                <Text style={{ fontWeight: 'bold', fontSize: 18, color: Colors.blue }}>
-                  {packageTier ? `ETB ${formatEtb(PACKAGE_PRICING[packageTier].etb)}` : ''}
-                </Text>
-              </View>
-
-              <Text style={applyStyles.paymentLabel}>Select Payment Method</Text>
-              {[
-                { name: 'Telebirr', icon: 'phone-portrait-outline', disabled: false },
-                { name: 'Chapa (Card/Transfer)', icon: 'card-outline', disabled: true },
-                { name: 'CBE Birr / Bank Transfer', icon: 'business-outline', disabled: false },
-              ].map(pm => (
-                <TouchableOpacity key={pm.name} style={[applyStyles.methodRow, pm.disabled && { opacity: 0.45 }]} activeOpacity={0.8} disabled={pm.disabled} onPress={() => setSelectedPaymentMethod(pm.name)}>
-                  <Ionicons name={pm.icon as any} size={20} color={Colors.blue} />
-                  <Text style={applyStyles.methodName}>{pm.name}{pm.disabled ? '  ·  Coming soon' : ''}</Text>
-                  {!pm.disabled && <View style={[applyStyles.radio, selectedPaymentMethod === pm.name && { borderColor: Colors.blue, borderWidth: 5 }]} />}
+              <Text style={applyStyles.paymentLabel}>Choose Payment Method</Text>
+              
+              {['Telebirr SuperApp', 'Commercial Bank of Ethiopia (CBE)'].map(method => (
+                <TouchableOpacity
+                  key={method}
+                  style={applyStyles.methodRow}
+                  onPress={() => setSelectedPaymentMethod(method)}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons 
+                    name={method.includes('Telebirr') ? 'phone-portrait-outline' : 'business-outline'} 
+                    size={22} 
+                    color={selectedPaymentMethod === method ? Colors.blue : Colors.textSecondary} 
+                  />
+                  <Text style={[applyStyles.methodName, selectedPaymentMethod === method && { color: Colors.blue, fontWeight: 'bold' }]}>
+                    {method}
+                  </Text>
+                  <View style={[applyStyles.radio, selectedPaymentMethod === method && { borderColor: Colors.blue, borderWidth: 6 }]} />
                 </TouchableOpacity>
               ))}
 
-              {(selectedPaymentMethod === 'Telebirr' || selectedPaymentMethod === 'CBE Birr / Bank Transfer') && (
-                <View style={{ marginTop: Spacing.lg }}>
-                  {/* Payment Account Details Box */}
-                  <View style={{
-                    backgroundColor: Colors.blueLight,
-                    borderRadius: Radius.xl,
-                    padding: Spacing.lg,
-                    marginBottom: Spacing.lg,
-                    borderWidth: 1,
-                    borderColor: '#bfdbfe',
-                  }}>
-                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.sm }}>
-                      <Text style={{ fontSize: Typography.base, fontWeight: Typography.bold, color: Colors.blue }}>
-                        Pay to Official {selectedPaymentMethod.includes('Telebirr') ? 'Telebirr Account' : 'CBE Account'}
-                      </Text>
-                      <TouchableOpacity
-                        onPress={async () => {
-                          const acc = selectedPaymentMethod.includes('Telebirr') ? PAYMENT_ACCOUNTS.telebirr.accountNumber : PAYMENT_ACCOUNTS.cbe.accountNumber;
-                          await Clipboard.setStringAsync(acc);
-                          toast.success('Copied to Clipboard! 📋', `Copied "${acc}". Paste it in your payment app.`);
-                        }}
-                        style={{ flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: Colors.white, paddingHorizontal: 10, paddingVertical: 5, borderRadius: Radius.md, borderWidth: 1, borderColor: '#bfdbfe' }}
-                        activeOpacity={0.7}
-                      >
-                        <Ionicons name="copy-outline" size={14} color={Colors.blue} />
-                        <Text style={{ fontSize: 12, fontWeight: 'bold', color: Colors.blue }}>Copy Account</Text>
-                      </TouchableOpacity>
-                    </View>
+              {selectedPaymentMethod && (
+                <View style={{ marginTop: Spacing.lg, padding: Spacing.lg, backgroundColor: Colors.blueLight, borderRadius: Radius.lg, borderWidth: 1, borderColor: '#bfdbfe' }}>
+                  <Text style={{ fontSize: Typography.sm, fontWeight: 'bold', color: Colors.blue, marginBottom: Spacing.sm }}>
+                    Official Eagle Pathway Payment Account
+                  </Text>
 
-                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: Spacing.xs }}>
-                      <Text style={{ fontSize: 13, color: Colors.textSecondary }}>Account Holder</Text>
-                      <Text style={{ fontSize: 13, fontWeight: 'bold', color: Colors.text }}>
-                        {selectedPaymentMethod.includes('Telebirr') ? PAYMENT_ACCOUNTS.telebirr.name : PAYMENT_ACCOUNTS.cbe.name}
-                      </Text>
-                    </View>
-
-                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.xs }}>
-                      <Text style={{ fontSize: 13, color: Colors.textSecondary }}>
-                        {selectedPaymentMethod.includes('Telebirr') ? 'Telebirr Phone' : 'CBE Account No.'}
-                      </Text>
-                      <Text style={{ fontSize: 15, fontWeight: 'bold', color: Colors.blue }}>
-                        {selectedPaymentMethod.includes('Telebirr') ? PAYMENT_ACCOUNTS.telebirr.accountNumber : PAYMENT_ACCOUNTS.cbe.accountNumber}
-                      </Text>
-                    </View>
-
-                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: Spacing.sm }}>
-                      <Text style={{ fontSize: 13, color: Colors.textSecondary }}>Exact Amount Due</Text>
-                      <Text style={{ fontSize: 16, fontWeight: 'bold', color: Colors.blue }}>
-                        ETB {packageTier ? formatEtb(PACKAGE_PRICING[packageTier].etb) : '0'}
-                      </Text>
-                    </View>
-
-                    <Text style={{ fontSize: 11, color: Colors.textSecondary, fontStyle: 'italic', marginTop: 4 }}>
-                      💡 {selectedPaymentMethod.includes('Telebirr') ? PAYMENT_ACCOUNTS.telebirr.instruction : PAYMENT_ACCOUNTS.cbe.instruction}
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: Spacing.xs }}>
+                    <Text style={{ fontSize: 13, color: Colors.textSecondary }}>Account Holder</Text>
+                    <Text style={{ fontSize: 13, fontWeight: 'bold', color: Colors.text }}>
+                      {selectedPaymentMethod.includes('Telebirr') ? PAYMENT_ACCOUNTS.telebirr.name : PAYMENT_ACCOUNTS.cbe.name}
                     </Text>
                   </View>
 
-                  <Text style={{ fontSize: 14, fontWeight: 'bold', marginBottom: Spacing.xs }}>Upload Receipt Screenshot * (Required)</Text>
-                  <Button 
-                    title={receiptAsset ? 'Screenshot Attached ✓' : 'Upload Receipt Screenshot *'} 
-                    variant={receiptAsset ? 'primary' : 'outline'}
-                    onPress={async () => {
-                      const result = await scholarshipsService.pickDocument();
-                      if (!result.canceled && result.assets?.[0]) {
-                        setReceiptAsset(result.assets[0]);
-                      }
-                    }} 
-                    style={{ marginBottom: Spacing.md }}
-                  />
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.xs }}>
+                    <Text style={{ fontSize: 13, color: Colors.textSecondary }}>
+                      {selectedPaymentMethod.includes('Telebirr') ? 'Telebirr Phone' : 'CBE Account No.'}
+                    </Text>
+                    <Text style={{ fontSize: 15, fontWeight: 'bold', color: Colors.blue }}>
+                      {selectedPaymentMethod.includes('Telebirr') ? PAYMENT_ACCOUNTS.telebirr.accountNumber : PAYMENT_ACCOUNTS.cbe.accountNumber}
+                    </Text>
+                  </View>
 
-                  <Text style={{ fontSize: 14, fontWeight: 'bold', marginBottom: Spacing.xs }}>Transaction Ref / Link (Optional)</Text>
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: Spacing.sm }}>
+                    <Text style={{ fontSize: 13, color: Colors.textSecondary }}>Exact Amount Due</Text>
+                    <Text style={{ fontSize: 16, fontWeight: 'bold', color: Colors.blue }}>
+                      ETB {packageTier ? formatEtb(PACKAGE_PRICING[packageTier].etb) : '0'}
+                    </Text>
+                  </View>
+
+                  <Text style={{ fontSize: 11, color: Colors.textSecondary, fontStyle: 'italic', marginTop: 4 }}>
+                    💡 {selectedPaymentMethod.includes('Telebirr') ? PAYMENT_ACCOUNTS.telebirr.instruction : PAYMENT_ACCOUNTS.cbe.instruction}
+                  </Text>
+                </View>
+              )}
+
+              {selectedPaymentMethod && (
+                <View style={{ marginTop: Spacing.lg }}>
+                  <Text style={{ fontSize: 14, fontWeight: 'bold', marginBottom: Spacing.xs }}>
+                    Transaction Reference ID * (Required)
+                  </Text>
                   <View style={{ flexDirection: 'row', gap: Spacing.sm, alignItems: 'center', marginBottom: Spacing.md }}>
                     <TextInput 
                       value={transactionId}
                       onChangeText={setTransactionId}
-                      placeholder={selectedPaymentMethod === 'Telebirr' ? 'e.g. DHE0RRRPZO or leave blank' : 'e.g. FT26222VM9M4 or leave blank'}
+                      placeholder={selectedPaymentMethod.includes('Telebirr') ? 'e.g. DHE0RRRPZO' : 'e.g. FT26222VM9M4'}
                       style={{ flex: 1, borderWidth: 1, borderColor: Colors.border, borderRadius: Radius.md, padding: Spacing.md, backgroundColor: Colors.white }}
                     />
                     <TouchableOpacity 
@@ -545,7 +548,7 @@ export function ApplyScreen() {
                   <View style={applyStyles.paymentInfo}>
                     <Ionicons name="shield-checkmark-outline" size={16} color={Colors.blue} style={{ marginRight: 6 }} />
                     <Text style={{ fontSize: 12, color: Colors.textSecondary, flex: 1 }}>
-                      Bank Source of Truth Verification: Your receipt will be validated directly against official {selectedPaymentMethod} records when you tap Verify.
+                      Bank Source of Truth Verification: Your transaction code will be validated directly against official {selectedPaymentMethod} records.
                     </Text>
                   </View>
                 </View>
@@ -571,6 +574,103 @@ export function ApplyScreen() {
           </View>
         )}
       </KeyboardAwareScreen>
+
+      {/* Zero-Storage Cloud Link & Text Credential Modal */}
+      <Modal visible={docModalVisible} transparent animationType="slide">
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' }}>
+          <View style={{ backgroundColor: Colors.white, borderTopLeftRadius: Radius['2xl'], borderTopRightRadius: Radius['2xl'], padding: Spacing.xl, paddingBottom: Math.max(insets.bottom + 16, Spacing.xl), maxHeight: '85%' }}>
+            
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.md }}>
+              <View>
+                <Text style={{ fontSize: Typography.lg, fontWeight: Typography.bold, color: Colors.text }}>{activeDocLabel}</Text>
+                <Text style={{ fontSize: 12, color: Colors.blue, fontWeight: '600' }}>Zero-Storage Cloud Mode ☁️</Text>
+              </View>
+              <TouchableOpacity onPress={() => setDocModalVisible(false)} style={{ padding: 4 }}>
+                <Ionicons name="close-circle" size={24} color={Colors.textSecondary} />
+              </TouchableOpacity>
+            </View>
+
+            {/* Tab Selector */}
+            <View style={{ flexDirection: 'row', backgroundColor: Colors.grayLight, borderRadius: Radius.md, padding: 4, marginBottom: Spacing.lg }}>
+              <TouchableOpacity 
+                onPress={() => setDocInputTab('link')} 
+                style={{ flex: 1, paddingVertical: 8, borderRadius: Radius.sm, backgroundColor: docInputTab === 'link' ? Colors.white : 'transparent', alignItems: 'center' }}
+              >
+                <Text style={{ fontSize: 13, fontWeight: 'bold', color: docInputTab === 'link' ? Colors.blue : Colors.textSecondary }}>
+                  🔗 Cloud Link
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                onPress={() => setDocInputTab('text')} 
+                style={{ flex: 1, paddingVertical: 8, borderRadius: Radius.sm, backgroundColor: docInputTab === 'text' ? Colors.white : 'transparent', alignItems: 'center' }}
+              >
+                <Text style={{ fontSize: 13, fontWeight: 'bold', color: docInputTab === 'text' ? Colors.blue : Colors.textSecondary }}>
+                  📝 Text / Scores
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            {docInputTab === 'link' ? (
+              <View>
+                <Text style={{ fontSize: 13, fontWeight: 'bold', color: Colors.text, marginBottom: 4 }}>
+                  Google Drive / OneDrive / Dropbox Link
+                </Text>
+                <Text style={{ fontSize: 11, color: Colors.textSecondary, marginBottom: Spacing.sm }}>
+                  Make sure link access is set to "Anyone with the link can view".
+                </Text>
+                
+                <View style={{ flexDirection: 'row', gap: Spacing.sm, alignItems: 'center', marginBottom: Spacing.lg }}>
+                  <TextInput
+                    value={cloudUrlInput}
+                    onChangeText={setCloudUrlInput}
+                    placeholder="https://drive.google.com/file/d/..."
+                    autoCapitalize="none"
+                    keyboardType="url"
+                    style={{ flex: 1, borderWidth: 1, borderColor: Colors.border, borderRadius: Radius.md, padding: Spacing.md, backgroundColor: '#f8fafc', fontSize: 13 }}
+                  />
+                  <TouchableOpacity 
+                    onPress={async () => {
+                      const clip = await Clipboard.getStringAsync();
+                      if (clip && clip.startsWith('http')) {
+                        setCloudUrlInput(clip.trim());
+                        toast.success('Link Pasted! 📋', 'Google Drive URL pasted from clipboard.');
+                      } else {
+                        toast.warning('No Link in Clipboard', 'Please copy a valid URL first.');
+                      }
+                    }}
+                    style={{ backgroundColor: Colors.blueLight, borderWidth: 1, borderColor: '#bfdbfe', borderRadius: Radius.md, paddingHorizontal: Spacing.md, paddingVertical: 14 }}
+                  >
+                    <Ionicons name="clipboard-outline" size={18} color={Colors.blue} />
+                  </TouchableOpacity>
+                </View>
+              </View>
+            ) : (
+              <View>
+                <Text style={{ fontSize: 13, fontWeight: 'bold', color: Colors.text, marginBottom: 4 }}>
+                  Credential Text, Scores, or Statements
+                </Text>
+                <Text style={{ fontSize: 11, color: Colors.textSecondary, marginBottom: Spacing.sm }}>
+                  Enter GPA, IELTS band scores, or credential statements directly.
+                </Text>
+                <TextInput
+                  value={textContentInput}
+                  onChangeText={setTextContentInput}
+                  placeholder="e.g. Cumulative GPA: 3.85 / 4.00, IELTS Overall: 7.5..."
+                  multiline
+                  style={{ borderWidth: 1, borderColor: Colors.border, borderRadius: Radius.md, padding: Spacing.md, backgroundColor: '#f8fafc', fontSize: 13, minHeight: 110, textAlignVertical: 'top', marginBottom: Spacing.lg }}
+                />
+              </View>
+            )}
+
+            <Button
+              title={submittingDoc ? 'Saving...' : 'Save Credential'}
+              variant="primary"
+              onPress={handleSaveDocModal}
+              loading={submittingDoc}
+            />
+          </View>
+        </View>
+      </Modal>
 
       {/* 1. Live Step-by-Step Verification Loader Overlay */}
       <Modal visible={isVerifyingPayment} transparent animationType="fade">
@@ -605,7 +705,6 @@ export function ApplyScreen() {
             maxHeight: '90%' 
           }}>
             
-            {/* Header Status Badge */}
             <View style={{ alignItems: 'center', marginBottom: Spacing.lg }}>
               <View style={{ 
                 width: 64, 
@@ -629,8 +728,8 @@ export function ApplyScreen() {
                 {verificationOutcome?.status === 'verified' 
                   ? 'Bank record confirmed. Ready for instant consultation.' 
                   : verificationOutcome?.status === 'rejected'
-                  ? 'Receipt details do not match official account requirements.'
-                  : 'Receipt recorded. Queued for 1-tap admin check.'}
+                  ? 'Transaction details do not match official account requirements.'
+                  : 'Transaction recorded. Queued for 1-tap admin check.'}
               </Text>
             </View>
 
@@ -649,7 +748,7 @@ export function ApplyScreen() {
                 color: verificationOutcome?.status === 'verified' ? Colors.blue : verificationOutcome?.status === 'rejected' ? '#991b1b' : '#92400e', 
                 marginBottom: Spacing.md 
               }}>
-                {verificationOutcome?.status === 'verified' ? 'BANK VERIFICATION BREAKDOWN' : verificationOutcome?.status === 'rejected' ? 'REJECTION AUDIT REASON' : 'RECEIPT SUBMISSION BREAKDOWN & STATUS'}
+                {verificationOutcome?.status === 'verified' ? 'BANK VERIFICATION BREAKDOWN' : verificationOutcome?.status === 'rejected' ? 'REJECTION AUDIT REASON' : 'TRANSACTION SUBMISSION BREAKDOWN & STATUS'}
               </Text>
 
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: Spacing.sm }}>
@@ -693,20 +792,17 @@ export function ApplyScreen() {
                 <Text style={{ fontSize: 12, color: verificationOutcome?.status === 'rejected' ? '#991b1b' : Colors.textSecondary, fontStyle: 'italic', fontWeight: verificationOutcome?.status === 'rejected' ? '600' : 'normal' }}>
                   {verificationOutcome?.reason || (verificationOutcome?.status === 'verified' 
                     ? 'Transaction confirmed 100% with official bank records.' 
-                    : 'Receipt image uploaded. Queued for fast admin verification.')}
+                    : 'Transaction code recorded. Queued for fast admin verification.')}
                 </Text>
               </View>
             </View>
 
             {verificationOutcome?.status === 'rejected' ? (
               <Button 
-                title="Fix / Re-upload Receipt 🔄" 
+                title="Fix Reference ID 🔄" 
                 variant="primary" 
                 style={{ backgroundColor: '#991b1b' }}
-                onPress={() => {
-                  setShowVerificationModal(false);
-                  setReceiptAsset(null);
-                }} 
+                onPress={() => setShowVerificationModal(false)} 
               />
             ) : (
               <Button 
@@ -753,9 +849,9 @@ const applyStyles = StyleSheet.create({
   stepNum: { fontSize: Typography.sm, fontWeight: Typography.bold, color: Colors.textSecondary },
   stepLabel: { fontSize: 9, fontWeight: Typography.semibold, color: Colors.textSecondary, textAlign: 'center', width: 50 },
   stepLine: { flex: 1, height: 2, backgroundColor: Colors.border, marginBottom: 14 },
-  successBanner: { marginHorizontal: Spacing.xl, marginBottom: Spacing.sm, backgroundColor: '#f0fdf4', borderRadius: Radius.lg, padding: Spacing.md, borderWidth: 1, borderColor: '#bbf7d0', flexDirection: 'row', gap: Spacing.sm, alignItems: 'center' },
+  successBanner: { marginBottom: Spacing.sm, backgroundColor: '#f0fdf4', borderRadius: Radius.lg, padding: Spacing.md, borderWidth: 1, borderColor: '#bbf7d0', flexDirection: 'row', gap: Spacing.sm, alignItems: 'center' },
   successText: { fontSize: Typography.base, color: '#166534', flex: 1 },
-  docRow: { marginHorizontal: Spacing.xl, marginBottom: Spacing.sm, backgroundColor: Colors.card, borderRadius: Radius.xl, padding: Spacing.md, borderWidth: 1, borderColor: Colors.border, flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
+  docRow: { marginBottom: Spacing.sm, backgroundColor: Colors.card, borderRadius: Radius.xl, padding: Spacing.md, borderWidth: 1, borderColor: Colors.border, flexDirection: 'row', alignItems: 'center', gap: Spacing.md },
   docRowMissing: { borderColor: '#fca5a5', backgroundColor: '#fff5f5' },
   docIcon: { width: 36, height: 36, borderRadius: 10, alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
   docName: { fontSize: Typography.base, fontWeight: Typography.semibold, color: Colors.text },
