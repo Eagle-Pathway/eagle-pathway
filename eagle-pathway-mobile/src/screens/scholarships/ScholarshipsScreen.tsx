@@ -173,6 +173,26 @@ export default function ScholarshipsScreen({ hideBack = false }: { hideBack?: bo
         <FlatList
           data={filtered}
           keyExtractor={s => s.id}
+          ListHeaderComponent={
+            <TouchableOpacity
+              style={styles.communityBanner}
+              onPress={() => router.push('/scholarship/submit')}
+              activeOpacity={0.85}
+            >
+              <View style={styles.communityBannerLeft}>
+                <View style={styles.communityIconWrap}>
+                  <Ionicons name="sparkles" size={18} color={Colors.gold} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.communityBannerTitle}>Know a scholarship we missed?</Text>
+                  <Text style={styles.communityBannerSub}>Suggest it to our team to help fellow students worldwide.</Text>
+                </View>
+              </View>
+              <View style={styles.communityBannerBtn}>
+                <Text style={styles.communityBannerBtnText}>Suggest +</Text>
+              </View>
+            </TouchableOpacity>
+          }
           renderItem={({ item }) => (
             <ScholarshipCard
               scholarship={item}
@@ -180,7 +200,7 @@ export default function ScholarshipsScreen({ hideBack = false }: { hideBack?: bo
               onSave={() => toggleSaveScholarship(item.id)}
             />
           )}
-          contentContainerStyle={{ paddingTop: Spacing.lg, paddingBottom: 100 }}
+          contentContainerStyle={{ paddingTop: Spacing.md, paddingBottom: 100 }}
           showsVerticalScrollIndicator={false}
           refreshControl={<RefreshControl refreshing={isLoadingScholarships} onRefresh={load} tintColor={Colors.blue} />}
           initialNumToRender={8} maxToRenderPerBatch={8} windowSize={5} removeClippedSubviews={true}
@@ -312,4 +332,53 @@ const styles = StyleSheet.create({
   metaRow: { flexDirection: 'row', gap: Spacing.sm, flexWrap: 'wrap', flex: 1 },
   metaPill: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 10 },
   metaText: { fontSize: 11, fontWeight: 'bold' },
+  communityBanner: {
+    marginHorizontal: Spacing.xl,
+    marginBottom: Spacing.md,
+    backgroundColor: '#EFF6FF',
+    borderRadius: Radius.xl,
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
+    padding: Spacing.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: Spacing.sm,
+  },
+  communityBannerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    flex: 1,
+  },
+  communityIconWrap: {
+    width: 34,
+    height: 34,
+    borderRadius: 10,
+    backgroundColor: Colors.blueDark,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  communityBannerTitle: {
+    fontSize: 13,
+    fontWeight: Typography.bold,
+    color: Colors.blueDark,
+  },
+  communityBannerSub: {
+    fontSize: 11,
+    color: '#1E40AF',
+    marginTop: 1,
+    lineHeight: 14,
+  },
+  communityBannerBtn: {
+    backgroundColor: Colors.blueDark,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 10,
+  },
+  communityBannerBtnText: {
+    fontSize: 12,
+    fontWeight: Typography.bold,
+    color: Colors.white,
+  },
 });

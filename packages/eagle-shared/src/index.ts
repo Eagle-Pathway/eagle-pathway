@@ -4,6 +4,9 @@ export * from './utils/logger';
 export * from './utils/passwordStrength';
 export * from './utils/scoreValidation';
 export * from './constants/metadata';
+export * from './constants/geography';
+export * from './constants/taxonomy';
+export * from './matching/engine';
 
 export const formatDate = (dateString: string): string => {
   const date = new Date(dateString);

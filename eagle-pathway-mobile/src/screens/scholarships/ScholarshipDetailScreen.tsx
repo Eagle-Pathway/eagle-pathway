@@ -168,10 +168,103 @@ export function ScholarshipDetailScreen() {
 
       <ScrollView style={{ backgroundColor: Colors.bg }} contentContainerStyle={{ paddingBottom: 100 }}>
         <View style={[CommonStyles.card, { marginTop: Spacing.lg }]}>
+          {/* Trust Verification Badge */}
+          <View style={[sdStyles.section, { backgroundColor: '#f0fdf4', borderColor: '#bbf7d0', borderBottomWidth: 1 }]}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              <Ionicons name="shield-checkmark" size={20} color={Colors.green} />
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: Typography.sm, fontWeight: 'bold', color: '#166534' }}>
+                  {scholarship.verification_status === 'verified' || scholarship.source_status === 'verified'
+                    ? 'Verified by Eagle Pathway'
+                    : 'Eagle Pathway Listed'}
+                </Text>
+                <Text style={{ fontSize: 11, color: '#15803d', marginTop: 1 }}>
+                  {sourceStatusLabel(scholarship)}
+                </Text>
+              </View>
+            </View>
+          </View>
+
+          {/* Structured Funding Breakdown */}
+          <View style={sdStyles.section}>
+            <Text style={sdStyles.sectionTitle}>Funding & Financial Support</Text>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: Spacing.sm }}>
+              <View style={[sdStyles.fundingBadge, { backgroundColor: Colors.blueLight }]}>
+                <Ionicons name="school-outline" size={14} color={Colors.blue} />
+                <Text style={sdStyles.fundingBadgeText}>
+                  Tuition: {scholarship.tuition_coverage === 'full' ? '100% Full Coverage' : scholarship.tuition_coverage === 'partial' ? 'Partial Waiver' : 'Not Covered'}
+                </Text>
+              </View>
+              {scholarship.stipend_provided && (
+                <View style={[sdStyles.fundingBadge, { backgroundColor: '#fef3c7' }]}>
+                  <Ionicons name="cash-outline" size={14} color="#b45309" />
+                  <Text style={[sdStyles.fundingBadgeText, { color: '#92400e' }]}>
+                    Stipend: {scholarship.stipend_monthly_amount ? `${scholarship.stipend_monthly_amount} ${scholarship.stipend_currency || 'USD'}/mo` : 'Monthly Living Allowance'}
+                  </Text>
+                </View>
+              )}
+              {scholarship.accommodation_coverage && scholarship.accommodation_coverage !== 'none' && (
+                <View style={[sdStyles.fundingBadge, { backgroundColor: '#f0fdf4' }]}>
+                  <Ionicons name="home-outline" size={14} color={Colors.green} />
+                  <Text style={[sdStyles.fundingBadgeText, { color: '#166534' }]}>
+                    Housing: {scholarship.accommodation_coverage === 'full' ? 'Full Housing' : 'Partial Housing'}
+                  </Text>
+                </View>
+              )}
+              {scholarship.travel_allowance && (
+                <View style={[sdStyles.fundingBadge, { backgroundColor: '#eff6ff' }]}>
+                  <Ionicons name="airplane-outline" size={14} color={Colors.blue} />
+                  <Text style={sdStyles.fundingBadgeText}>Flights Included</Text>
+                </View>
+              )}
+              {scholarship.health_insurance_covered && (
+                <View style={[sdStyles.fundingBadge, { backgroundColor: '#fdf4ff' }]}>
+                  <Ionicons name="medkit-outline" size={14} color="#86198f" />
+                  <Text style={[sdStyles.fundingBadgeText, { color: '#86198f' }]}>Health Insurance</Text>
+                </View>
+              )}
+            </View>
+            <Text style={[sdStyles.bodyText, { fontSize: Typography.sm, color: Colors.textSecondary }]}>
+              {renderLinkedText(scholarship.funding_details)}
+            </Text>
+          </View>
+
+          {/* Geographic & Nationality Eligibility */}
+          <View style={sdStyles.section}>
+            <Text style={sdStyles.sectionTitle}>Nationality & Location</Text>
+            <View style={sdStyles.eligRow}>
+              <View style={[sdStyles.eligIcon, { backgroundColor: Colors.blueLight }]}>
+                <Ionicons name="globe-outline" size={14} color={Colors.blue} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={sdStyles.eligLabel}>Eligible Nationalities</Text>
+                <Text style={sdStyles.eligDetail}>
+                  {scholarship.eligible_nationalities_mode === 'all' || !scholarship.eligible_nationalities_mode
+                    ? 'Open to applicants from all countries worldwide 🌍'
+                    : scholarship.eligible_nationalities_mode === 'developing_countries'
+                    ? 'Open to citizens of developing countries (including Ethiopia & Africa) 🌱'
+                    : scholarship.eligible_countries && scholarship.eligible_countries.length > 0
+                    ? `Open to: ${scholarship.eligible_countries.slice(0, 5).join(', ')}${scholarship.eligible_countries.length > 5 ? ` +${scholarship.eligible_countries.length - 5} more` : ''}`
+                    : 'Specific regional restrictions apply'}
+                </Text>
+              </View>
+            </View>
+            <View style={sdStyles.eligRow}>
+              <View style={[sdStyles.eligIcon, { backgroundColor: Colors.goldLight }]}>
+                <Ionicons name="location-outline" size={14} color={Colors.goldDark} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={sdStyles.eligLabel}>Study Destination</Text>
+                <Text style={sdStyles.eligDetail}>{scholarship.country_flag} {scholarship.country} {scholarship.intake_period ? `• Intake: ${scholarship.intake_period}` : ''}</Text>
+              </View>
+            </View>
+          </View>
+
+          {/* Your Eligibility Analyzer */}
           {eligibility.total > 0 && (
             <View style={sdStyles.section}>
               <View style={sdStyles.eligHeader}>
-                <Text style={sdStyles.sectionTitle}>Your Eligibility</Text>
+                <Text style={sdStyles.sectionTitle}>Your Eligibility Match</Text>
                 <View style={[sdStyles.eligChip, { backgroundColor: eligibilityChip.bg }]}>
                   <Text style={[sdStyles.eligChipText, { color: eligibilityChip.color }]}>{eligibilityChip.text}</Text>
                 </View>
@@ -209,6 +302,63 @@ export function ScholarshipDetailScreen() {
                   <Text style={sdStyles.profileCtaText}>Complete your profile to check eligibility →</Text>
                 </ScaleBounce>
               )}
+            </View>
+          )}
+
+          {/* Required Documents Checklist */}
+          {(scholarship.requires_cv || scholarship.requires_motivation_letter || scholarship.requires_degree_certificate || scholarship.requires_transcript || scholarship.requires_passport || (scholarship.recommendation_letters_count || 0) > 0) && (
+            <View style={sdStyles.section}>
+              <Text style={sdStyles.sectionTitle}>Required Application Documents</Text>
+              <View style={{ gap: 8 }}>
+                {scholarship.requires_cv && (
+                  <View style={sdStyles.reqItem}>
+                    <View style={sdStyles.checkBox}><Ionicons name="checkmark" size={12} color={Colors.green} /></View>
+                    <Text style={sdStyles.reqText}>Curriculum Vitae (CV / Resume)</Text>
+                  </View>
+                )}
+                {scholarship.requires_motivation_letter && (
+                  <View style={sdStyles.reqItem}>
+                    <View style={sdStyles.checkBox}><Ionicons name="checkmark" size={12} color={Colors.green} /></View>
+                    <Text style={sdStyles.reqText}>Statement of Purpose / Motivation Letter</Text>
+                  </View>
+                )}
+                {scholarship.requires_degree_certificate && (
+                  <View style={sdStyles.reqItem}>
+                    <View style={sdStyles.checkBox}><Ionicons name="checkmark" size={12} color={Colors.green} /></View>
+                    <Text style={sdStyles.reqText}>Official Degree Certificate / Diploma</Text>
+                  </View>
+                )}
+                {scholarship.requires_transcript && (
+                  <View style={sdStyles.reqItem}>
+                    <View style={sdStyles.checkBox}><Ionicons name="checkmark" size={12} color={Colors.green} /></View>
+                    <Text style={sdStyles.reqText}>Official Academic Transcript</Text>
+                  </View>
+                )}
+                {scholarship.requires_passport && (
+                  <View style={sdStyles.reqItem}>
+                    <View style={sdStyles.checkBox}><Ionicons name="checkmark" size={12} color={Colors.green} /></View>
+                    <Text style={sdStyles.reqText}>Valid International Passport Copy</Text>
+                  </View>
+                )}
+                {(scholarship.recommendation_letters_count || 0) > 0 && (
+                  <View style={sdStyles.reqItem}>
+                    <View style={sdStyles.checkBox}><Ionicons name="checkmark" size={12} color={Colors.green} /></View>
+                    <Text style={sdStyles.reqText}>{scholarship.recommendation_letters_count} Recommendation Letter(s)</Text>
+                  </View>
+                )}
+                {scholarship.requires_work_certificate && (
+                  <View style={sdStyles.reqItem}>
+                    <View style={sdStyles.checkBox}><Ionicons name="checkmark" size={12} color={Colors.green} /></View>
+                    <Text style={sdStyles.reqText}>Proof of Work Experience / Employment Certificate</Text>
+                  </View>
+                )}
+                {scholarship.requires_research_proposal && (
+                  <View style={sdStyles.reqItem}>
+                    <View style={sdStyles.checkBox}><Ionicons name="checkmark" size={12} color={Colors.green} /></View>
+                    <Text style={sdStyles.reqText}>Detailed Research Proposal</Text>
+                  </View>
+                )}
+              </View>
             </View>
           )}
 
@@ -407,4 +557,7 @@ const sdStyles = StyleSheet.create({
   linkSubtext: { fontSize: Typography.xs, color: Colors.textSecondary, fontStyle: 'italic' },
   storiesBtn: { backgroundColor: Colors.goldLight, padding: Spacing.md, borderRadius: Radius.md, alignItems: 'center', borderWidth: 1, borderColor: '#e8d5a0', marginBottom: Spacing.xs },
   storiesBtnText: { color: '#7a5c1e', fontWeight: 'bold', fontSize: Typography.md },
+  fundingBadge: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 10, paddingVertical: 6, borderRadius: Radius.md },
+  fundingBadgeText: { fontSize: 12, fontWeight: Typography.bold, color: Colors.blue },
 });
+

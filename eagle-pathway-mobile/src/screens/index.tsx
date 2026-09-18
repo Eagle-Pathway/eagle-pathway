@@ -2,6 +2,7 @@
 
 // Scholarships & Applications
 export { ScholarshipDetailScreen } from './scholarships/ScholarshipDetailScreen';
+export { SubmitScholarshipScreen } from './scholarships/SubmitScholarshipScreen';
 export { PackagesScreen } from './scholarships/PackagesScreen';
 export { ApplyScreen } from './scholarships/ApplyScreen';
 export { MagicDraftScreen } from './scholarships/MagicDraftScreen';

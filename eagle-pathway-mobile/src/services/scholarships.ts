@@ -639,6 +639,112 @@ ${name}`;
     const applications = data as Application[];
     return Promise.all(applications.map(withSignedApplicationDocuments));
   },
+
+  /**
+   * Submit a community-suggested scholarship for admin moderation and verification.
+   * Saved strictly as is_active: false and verification_status: 'under_review'.
+   */
+  async submitScholarship(payload: {
+    name: string;
+    organization: string;
+    country: string;
+    host_country?: string;
+    country_flag?: string;
+    funding_details: string;
+    funding_type?: string;
+    deadline: string;
+    degree_levels?: string[];
+    broad_field?: string;
+    specific_field?: string;
+    fields_of_study?: string[];
+    min_gpa?: number;
+    website_url?: string;
+    application_url?: string;
+    description: string;
+    requirements?: string[];
+    submission_notes?: string;
+    tuition_coverage?: string;
+    stipend_provided?: boolean;
+    stipend_monthly_amount?: number;
+    stipend_currency?: string;
+    accommodation_coverage?: string;
+    travel_allowance?: boolean;
+    nationality_restriction_type?: string;
+    eligible_countries?: string[];
+    requires_cv?: boolean;
+    requires_motivation_letter?: boolean;
+    requires_degree_certificate?: boolean;
+    requires_transcript?: boolean;
+    requires_passport?: boolean;
+  }): Promise<{ success: boolean; data?: any; error?: string }> {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+
+      const insertData: Record<string, any> = {
+        name: payload.name,
+        organization: payload.organization,
+        country: payload.country,
+        host_country: payload.host_country || payload.country,
+        country_flag: payload.country_flag || '🌍',
+        funding_details: payload.funding_details || 'Scholarship Opportunity',
+        funding_type: payload.funding_type || 'fully_funded',
+        deadline: payload.deadline,
+        degree_levels: payload.degree_levels || ['masters'],
+        broad_field: payload.broad_field || 'All Fields',
+        specific_field: payload.specific_field || 'All Disciplines',
+        fields_of_study: payload.fields_of_study || [payload.broad_field || 'General'],
+        min_gpa: payload.min_gpa || 3.0,
+        min_gpa_max: 4.0,
+        website_url: payload.website_url || null,
+        application_url: payload.application_url || null,
+        description: payload.description || 'Community suggested scholarship.',
+        requirements: payload.requirements || ['See official website for full requirements'],
+        benefits: { 'funding': payload.funding_details || 'See official site' },
+        
+        // Structured Benefits
+        tuition_coverage: payload.tuition_coverage || 'full',
+        stipend_provided: payload.stipend_provided ?? false,
+        stipend_monthly_amount: payload.stipend_monthly_amount || null,
+        stipend_currency: payload.stipend_currency || 'USD',
+        accommodation_coverage: payload.accommodation_coverage || 'none',
+        travel_allowance: payload.travel_allowance ?? false,
+
+        // Geo & Nationalities
+        nationality_restriction_type: payload.nationality_restriction_type || 'all',
+        eligible_countries: payload.eligible_countries || [],
+
+        // Document requirements
+        requires_cv: payload.requires_cv ?? false,
+        requires_motivation_letter: payload.requires_motivation_letter ?? false,
+        requires_degree_certificate: payload.requires_degree_certificate ?? false,
+        requires_transcript: payload.requires_transcript ?? false,
+        requires_passport: payload.requires_passport ?? false,
+
+        // Submitter & Verification Status (STRICTLY INACTIVE & UNDER REVIEW)
+        is_active: false,
+        verification_status: 'under_review',
+        source_status: 'unverified',
+        confidence_score: 50,
+        submitted_by_user_id: user?.id || null,
+        submitted_by_email: user?.email || null,
+        submission_notes: payload.submission_notes || null,
+      };
+
+      const { data, error } = await supabase
+        .from('scholarships')
+        .insert([insertData])
+        .select()
+        .single();
+
+      if (error) {
+        return { success: false, error: error.message };
+      }
+
+      return { success: true, data };
+    } catch (err: any) {
+      return { success: false, error: err?.message || 'Failed to submit scholarship' };
+    }
+  },
 };
 
 

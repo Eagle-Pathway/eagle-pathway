@@ -149,6 +149,19 @@ export interface TutorSessionLog {
 // ─── SCHOLARSHIP ─────────────────────────────────────────────────────────────
 export type DegreeLevel = 'undergraduate' | 'masters' | 'phd' | 'all';
 export type FundingType = 'fully_funded' | 'partial' | 'stipend_only';
+export type EligibleNationalitiesMode = 'all' | 'specific_countries' | 'regions' | 'developing_countries' | 'other';
+export type RequiredPreviousDegree = 'high_school' | 'bachelors' | 'masters' | 'phd' | 'other' | 'any';
+export type CurrentStudentStatus = 'graduated' | 'final_year' | 'enrolled' | 'any';
+export type GpaRequirementType = 'min_gpa' | 'min_percentage' | 'min_class' | 'none' | 'other';
+export type WorkExpRequiredType = 'yes' | 'no' | 'preferred';
+export type WorkExpAfterDegreeType = 'bachelors' | 'masters' | 'any';
+export type AgeRequirementType = 'none' | 'min_age' | 'max_age' | 'range';
+export type AgeReferencePoint = 'deadline' | 'programme_start' | 'other';
+export type EnglishMediumAcceptedPolicy = 'yes' | 'no' | 'conditional';
+export type CoverageType = 'full' | 'partial' | 'none';
+export type ApplicationOpenStatus = 'open' | 'upcoming' | 'closed' | 'expected';
+export type ApplicationMethodType = 'university_portal' | 'scholarship_portal' | 'email' | 'other';
+export type VerificationStatusType = 'draft' | 'submitted' | 'under_review' | 'needs_info' | 'verified' | 'published' | 'rejected' | 'expired';
 
 export interface Scholarship {
   id: string;
@@ -177,12 +190,98 @@ export interface Scholarship {
   stale_reason?: string;
   created_at: string;
   
-  // Complexity fields
+  // 1. Nationalities & Geography
+  eligible_nationalities_mode?: EligibleNationalitiesMode;
+  eligible_countries?: string[];
+  eligible_regions?: string[];
+
+  // 2. Degree Requirements & Status
+  required_previous_degree?: RequiredPreviousDegree;
+  current_student_status?: CurrentStudentStatus;
+
+  // 3. Granular Field Taxonomy
+  broad_field?: string;
+  specific_field?: string;
+  related_fields?: string[];
+
+  // 4. GPA Requirements
+  gpa_requirement_type?: GpaRequirementType;
+  min_percentage?: number;
+  min_class_honors?: string;
+
+  // 5. Work Experience Rules
+  work_exp_required?: WorkExpRequiredType;
+  work_exp_min_years?: number;
+  work_exp_after_degree?: WorkExpAfterDegreeType;
+  work_exp_sectors?: string[];
+
+  // 6. Age Rules
+  age_requirement_type?: AgeRequirementType;
+  min_age?: number;
+  max_age?: number;
+  age_reference_point?: AgeReferencePoint;
+
+  // 7. Language Requirements
+  english_test_required?: boolean;
   requires_ielts?: boolean;
+  ielts_min?: number;
+  toefl_ibt_min?: number;
+  pte_min?: number;
+  duolingo_min?: number;
+  cambridge_min?: string;
+  other_language_req?: string;
   accepts_english_medium?: boolean;
-  target_departments?: string[]; // ["Computer Science", "Engineering", "Business", "Any"]
+  english_medium_accepted?: EnglishMediumAcceptedPolicy;
+
+  // 8. Granular Funding & Benefits
+  tuition_coverage?: CoverageType;
+  stipend_provided?: boolean;
+  stipend_monthly_amount?: number;
+  stipend_currency?: string;
+  accommodation_coverage?: CoverageType;
+  meals_coverage?: CoverageType;
+  travel_allowance?: boolean;
+  travel_allowance_amount?: number;
+  health_insurance_covered?: boolean;
+  application_fee_covered?: boolean;
+
+  // 9. Application Information
+  application_status?: ApplicationOpenStatus;
+  intake_period?: string;
+  program_duration?: string;
+  application_method?: ApplicationMethodType;
+  application_url?: string;
+
+  // 10. Structured Document Checklist
+  requires_cv?: boolean;
+  requires_motivation_letter?: boolean;
+  requires_recommendation_letter?: boolean;
   recommendation_letters_count?: number;
+  requires_transcript?: boolean;
+  requires_degree_certificate?: boolean;
+  requires_passport?: boolean;
+  requires_writing_sample?: boolean;
+  requires_portfolio?: boolean;
+  requires_research_proposal?: boolean;
+  requires_work_certificate?: boolean;
+  other_required_docs?: string[];
+  target_departments?: string[];
+
+  // 11. Verification Lifecycle & Provenance
+  verification_status?: VerificationStatusType;
+  submitted_by_user_id?: string;
+  submitted_by_email?: string;
+  submission_notes?: string;
+  is_community_submission?: boolean;
+  last_verified_at?: string;
+  verified_by_user_id?: string;
+  deadline_verified?: boolean;
+  eligibility_verified?: boolean;
+  application_link_verified?: boolean;
+  confidence_score?: number;
+  admin_internal_notes?: string;
 }
+
 
 // ─── APPLICATION ─────────────────────────────────────────────────────────────
 export type ApplicationStatus =

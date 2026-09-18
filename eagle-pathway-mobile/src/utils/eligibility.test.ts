@@ -9,7 +9,7 @@ function sch(over: Partial<Scholarship>): Scholarship {
     ...over,
   } as unknown as Scholarship;
 }
-function usr(over: Partial<User>): User {
+function usr(over: Partial<User> & Record<string, any>): User {
   return { id: 'u1', ...over } as unknown as User;
 }
 
@@ -81,5 +81,35 @@ describe('analyzeEligibility', () => {
       sch({ degree_levels: ['all'] }),
     );
     expect(r.criteria.find((c) => c.key === 'degree')!.status).toBe('met');
+  });
+
+  it('checks nationality eligibility for developing countries', () => {
+    const rEligible = analyzeEligibility(
+      usr({ country: 'Ethiopia' }),
+      sch({ degree_levels: ['masters'], eligible_nationalities_mode: 'developing_countries' }),
+    );
+    expect(rEligible.criteria.find((c) => c.key === 'nationality')!.status).toBe('met');
+
+    const rIneligible = analyzeEligibility(
+      usr({ country: 'United States' }),
+      sch({ degree_levels: ['masters'], eligible_nationalities_mode: 'developing_countries' }),
+    );
+    expect(rIneligible.criteria.find((c) => c.key === 'nationality')!.status).toBe('unmet');
+    expect(rIneligible.eligible).toBe(false);
+  });
+
+  it('checks mandatory work experience rules', () => {
+    const rMet = analyzeEligibility(
+      usr({ years_of_experience: 3 }),
+      sch({ degree_levels: ['masters'], work_exp_required: 'yes', work_exp_min_years: 2 }),
+    );
+    expect(rMet.criteria.find((c) => c.key === 'work_experience')!.status).toBe('met');
+
+    const rUnmet = analyzeEligibility(
+      usr({ years_of_experience: 1 }),
+      sch({ degree_levels: ['masters'], work_exp_required: 'yes', work_exp_min_years: 2 }),
+    );
+    expect(rUnmet.criteria.find((c) => c.key === 'work_experience')!.status).toBe('unmet');
+    expect(rUnmet.eligible).toBe(false);
   });
 });
