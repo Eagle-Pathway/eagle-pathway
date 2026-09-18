@@ -360,3 +360,23 @@ export interface StudentTask {
   type: TaskType;
   created_at: string;
 }
+
+// ─── SUCCESS STORY ──────────────────────────────────────────────────────────
+export interface SuccessStory {
+  id: string;
+  student_name: string;
+  scholarship_name: string;
+  scholarship_id?: string | null;
+  country?: string | null;
+  country_flag?: string | null;
+  year?: number | null;
+  quote: string;
+  story?: string | null;
+  avatar_url?: string | null;
+  screenshot_url?: string | null;
+  video_url?: string | null;
+  telegram_voice_url?: string | null;
+  is_published?: boolean;
+  created_at: string;
+}
+

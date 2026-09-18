@@ -11,6 +11,10 @@ export interface SuccessStory {
   year?: number | null;
   quote: string;
   story?: string | null;
+  screenshot_url?: string | null;
+  video_url?: string | null;
+  telegram_voice_url?: string | null;
+  is_published?: boolean;
   created_at: string;
 }
 
