@@ -362,3 +362,6 @@ export function generateScholarshipMatchReport(
     gapCount: hard.gaps,
   };
 }
+
+export const evaluateScholarshipMatch = generateScholarshipMatchReport;
+

@@ -1,5 +1,6 @@
 import { supabase } from './supabase';
 import { Scholarship, Application, PackageTier, Document, DocumentType, User } from '../types';
+import { evaluateScholarshipMatch, type ScholarshipMatchReport } from '@eagle-pathway/shared';
 import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system/legacy';
 import { decode } from 'base64-arraybuffer';
@@ -446,7 +447,7 @@ export const scholarshipsService = {
     };
   },
 
-  async getRecommendedScholarships(userId: string): Promise<(Scholarship & { matchScore?: number; matchReason?: string })[]> {
+  async getRecommendedScholarships(userId: string): Promise<(Scholarship & { matchScore?: number; matchReason?: string; matchReport?: ScholarshipMatchReport })[]> {
     const { data: user } = await supabase.from('users').select('*').eq('id', userId).single();
     if (!user) return [];
 
@@ -458,106 +459,27 @@ export const scholarshipsService = {
     if (error) throw error;
 
     const scored = (scholarships as Scholarship[]).map(sch => {
-      let score = 30; // Base score
-      const reasons: string[] = [];
+      const matchReport = evaluateScholarshipMatch(user as any, sch);
 
-      // 1. Degree Level Match (Weight: 35)
-      const userLevel = (user.grade_level || '').toLowerCase();
-      const schLevels = (sch.degree_levels || []).map(l => l.toLowerCase());
-      if (schLevels.includes(userLevel) || schLevels.includes('all')) {
-        score += 35;
-      } else {
-        score -= 25; // Penalty for wrong level
-      }
-
-      // 2. Target Degree Level Match (Weight: 15)
-      const targetDegree = (user.target_degree_level || '').toLowerCase();
-      const degreeMap: Record<string, string> = { bsc: 'undergraduate', msc: 'masters', phd: 'phd' };
-      const mappedTarget = degreeMap[targetDegree] || targetDegree;
-      if (schLevels.includes(mappedTarget) || schLevels.includes('all')) {
-        score += 15;
-        reasons.push(`Matches your target ${user.target_degree_level} degree`);
-      }
-
-      // 3. Field of Study Match (Weight: 20)
-      const userInterests = [
-        ...(user.interested_subjects || []),
-        ...(user.academic_summary?.split(' ') || []),
-        ...(user.career_goals?.split(' ') || [])
-      ].map(s => s.toLowerCase());
-      const schFields = (sch.fields_of_study || []).map(f => f.toLowerCase());
-      const interestMatches = schFields.filter(f =>
-        userInterests.some(ui => ui.includes(f) || f.includes(ui)) || f === 'any'
-      );
-      if (interestMatches.length > 0) {
-        score += 20;
-        reasons.push(`Matches your interest in ${interestMatches[0] === 'any' ? 'multiple fields' : interestMatches[0]}`);
-      }
-
-      // 4. Department Match (Weight: 15)
-      if (sch.target_departments && user.target_departments) {
-        const deptOverlap = sch.target_departments.filter(d =>
-          d === 'Any' || user.target_departments!.includes(d)
-        );
-        if (deptOverlap.length > 0) {
-          score += 15;
-          reasons.push(`Open for ${deptOverlap[0] === 'Any' ? 'all departments' : deptOverlap[0]}`);
+      // Extract top positive reason
+      let matchReason = matchReport.summaryBadges[0]?.text || 'Academic Match';
+      if (matchReport.softFactors.length > 0) {
+        const topFactor = [...matchReport.softFactors].sort((a, b) => b.score - a.score)[0];
+        if (topFactor && topFactor.score >= 70) {
+          matchReason = `${topFactor.name} (${topFactor.score}%)`;
         }
-      } else {
-        score += 5; // Neutral if not specified
       }
-
-      // 5. English Proficiency (Weight: 10)
-      if (sch.requires_ielts) {
-        if (user.has_ielts) {
-          score += 10;
-          reasons.push('You meet the IELTS requirement');
-        } else if (sch.accepts_english_medium && user.is_english_medium) {
-          score += 6;
-          reasons.push('Your English medium background qualifies');
-        } else {
-          score -= 15; // Hard disqualifier
-        }
-      } else if (sch.accepts_english_medium && user.is_english_medium) {
-        score += 5;
-      }
-
-      // 6. GPA Match (Weight: 10)
-      if (sch.min_gpa) {
-        if (user.gpa && user.gpa >= sch.min_gpa) {
-          score += 10;
-          reasons.push('You meet the GPA requirements');
-        } else if (user.gpa && user.gpa < sch.min_gpa) {
-          score -= 10;
-        }
-      } else {
-        score += 5;
-      }
-
-      // 7. Extracurriculars boost (Weight: 5)
-      if (user.has_extracurriculars) score += 5;
-
-      // 8. Country Preference (Weight: 5)
-      if (user.target_countries?.includes(sch.country)) {
-        score += 5;
-        reasons.push(`Located in ${sch.country} (your preference)`);
-      }
-
-      // 9. Deadline urgency (small awareness boost)
-      const daysToDeadline = sch.deadline
-        ? (new Date(sch.deadline).getTime() - Date.now()) / (1000 * 3600 * 24)
-        : 100;
-      if (daysToDeadline > 0 && daysToDeadline < 30) score += 5;
 
       return {
         ...sch,
-        matchScore: Math.min(Math.max(score, 0), 99),
-        matchReason: reasons[0] || `${user.grade_level || 'General'} Academic Fit`,
+        matchScore: matchReport.overallScore,
+        matchReason,
+        matchReport,
       };
     });
 
     return scored
-      .filter(s => (s.matchScore || 0) > 55)
+      .filter(s => s.matchReport.eligibilityStatus !== 'not_eligible' && (s.matchScore || 0) >= 40)
       .sort((a, b) => (b.matchScore || 0) - (a.matchScore || 0))
       .slice(0, 10);
   },
