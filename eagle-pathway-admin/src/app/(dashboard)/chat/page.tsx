@@ -103,7 +103,13 @@ export default function AdminChatPage() {
         if (payload.eventType === 'INSERT') {
           const newMsg = payload.new as ChatMessage;
           if (selectedUser && (newMsg.sender_id === selectedUser.id || newMsg.recipient_id === selectedUser.id)) {
-            setMessages(prev => [...prev, newMsg]);
+            setMessages(prev => {
+              // Deduplicate by ID or identical content & sender within close timestamp
+              if (prev.some(m => m.id === newMsg.id || (m.sender_id === newMsg.sender_id && m.content === newMsg.content && Math.abs(new Date(m.created_at).getTime() - new Date(newMsg.created_at).getTime()) < 4000))) {
+                return prev.map(m => (m.sender_id === newMsg.sender_id && m.content === newMsg.content ? newMsg : m));
+              }
+              return [...prev, newMsg];
+            });
             if (newMsg.sender_id === selectedUser.id && user?.id) {
               supabase
                 .from('messages')
@@ -193,21 +199,65 @@ export default function AdminChatPage() {
     if (!inputText.trim() || !selectedUser || !user) return;
 
     const content = inputText.trim();
+    const tempId = `temp_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+    const nowIso = new Date().toISOString();
+
+    const optimisticMsg: ChatMessage = {
+      id: tempId,
+      sender_id: user.id,
+      recipient_id: selectedUser.id,
+      content,
+      is_read: false,
+      created_at: nowIso,
+    };
+
+    // 1. Immediately render in message stream
+    setMessages(prev => [...prev, optimisticMsg]);
     setInputText('');
 
-    const { error } = await supabase
-      .from('messages')
-      .insert([
-        { 
-          sender_id: user.id, 
-          recipient_id: selectedUser.id, 
-          content,
-          is_read: false
-        }
-      ]);
+    // 2. Immediately update or prepend conversation in sidebar
+    setConversations(prev => {
+      const exists = prev.some(c => c.id === selectedUser.id);
+      if (exists) {
+        return prev.map(c => 
+          c.id === selectedUser.id 
+            ? { ...c, last_message: content, last_time: nowIso } 
+            : c
+        );
+      } else {
+        return [{
+          ...selectedUser,
+          last_message: content,
+          last_time: nowIso,
+          unread_count: 0
+        }, ...prev];
+      }
+    });
 
-    if (error) {
-      console.error(error);
+    try {
+      const { data, error } = await supabase
+        .from('messages')
+        .insert([
+          { 
+            sender_id: user.id, 
+            recipient_id: selectedUser.id, 
+            content,
+            is_read: false
+          }
+        ])
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      if (data) {
+        // Replace optimistic placeholder with real DB record
+        setMessages(prev => prev.map(m => m.id === tempId ? (data as ChatMessage) : m));
+      }
+    } catch (error) {
+      console.error('Failed to send message:', error);
+      // Revert optimistic message and restore input
+      setMessages(prev => prev.filter(m => m.id !== tempId));
       setInputText(content);
     }
   };
