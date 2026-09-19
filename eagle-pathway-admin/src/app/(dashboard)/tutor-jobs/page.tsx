@@ -92,7 +92,7 @@ interface JobApplication {
 }
 
 const DEFAULT_SUBJECTS = [
-  'Math', 'Physics', 'Chemistry', 'Biology', 'English', 'Amharic',
+  'All Subjects', 'Math', 'Physics', 'Chemistry', 'Biology', 'English', 'Amharic',
   'History', 'Geography', 'Civics', 'Economics', 'Business', 'ICT/Computer',
   'SAT', 'IELTS', 'TOEFL', 'French', 'Arabic', 'Chinese',
   'Music', 'Art', 'Physical Education', 'General Tutoring',
