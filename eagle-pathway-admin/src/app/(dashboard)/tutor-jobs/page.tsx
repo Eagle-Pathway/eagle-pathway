@@ -291,8 +291,8 @@ Join Our Channel: https://t.me/EagleTutorialsServices`;
   // Save / Update Job
   async function handleSaveJob(e: React.FormEvent) {
     e.preventDefault();
-    if (!formData.place || !formData.grade || !formData.subjects.length || !formData.requester_phone) {
-      showToast('error', 'Please fill in Place, Grade, Phone, and at least one Subject.');
+    if (!formData.place || !formData.grade || !formData.subjects.length) {
+      showToast('error', 'Please fill in Place, Grade, and at least one Subject.');
       return;
     }
 
@@ -313,7 +313,7 @@ Join Our Channel: https://t.me/EagleTutorialsServices`;
         hourly_rate: parseFloat(formData.hourly_rate) || 500,
         gender_preference: formData.gender_preference,
         requester_name: formData.requester_name.trim() || null,
-        requester_phone: formData.requester_phone.trim(),
+        requester_phone: formData.requester_phone.trim() || null,
         notes: formData.selectedDays.length > 0 
           ? (formData.notes ? `${formData.notes} | Preferred Days: ${formData.selectedDays.join(', ')}` : `Preferred Days: ${formData.selectedDays.join(', ')}`)
           : (formData.notes.trim() || null),
@@ -615,25 +615,29 @@ Join Our Channel: https://t.me/EagleTutorialsServices`;
                   </div>
 
                   {/* Requester Phone & Contact Bar */}
-                  <div className="mt-3 p-3 rounded-xl bg-slate-50 border border-slate-100 space-y-1">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-[10px] font-bold text-gray-400 uppercase">Requester Phone</span>
-                      {job.requester_phone ? (
-                        <a
-                          href={`tel:${job.requester_phone}`}
-                          className="flex items-center text-xs font-bold text-brand-blue hover:underline"
-                        >
-                          <Phone className="w-3 h-3 mr-1 text-emerald-600" />
-                          {job.requester_phone}
-                        </a>
-                      ) : (
-                        <span className="text-gray-400">No phone</span>
+                  {job.requester_phone || job.requester_name ? (
+                    <div className="mt-3 p-3 rounded-xl bg-slate-50 border border-slate-100 space-y-1">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-[10px] font-bold text-gray-400 uppercase">Requester (Internal)</span>
+                        {job.requester_phone ? (
+                          <a
+                            href={`tel:${job.requester_phone}`}
+                            className="flex items-center text-xs font-bold text-brand-blue hover:underline"
+                          >
+                            <Phone className="w-3 h-3 mr-1 text-emerald-600" />
+                            {job.requester_phone}
+                          </a>
+                        ) : null}
+                      </div>
+                      {job.requester_name && (
+                        <p className="text-xs text-gray-700 font-medium">Name: {job.requester_name}</p>
                       )}
                     </div>
-                    {job.requester_name && (
-                      <p className="text-xs text-gray-700 font-medium">Name: {job.requester_name}</p>
-                    )}
-                  </div>
+                  ) : (
+                    <div className="mt-3 px-3 py-2 rounded-xl bg-slate-50/70 border border-slate-100 flex items-center justify-between text-[11px] text-gray-400 font-medium">
+                      <span>Direct Admin Broadcast</span>
+                    </div>
+                  )}
 
                   {/* Subjects */}
                   <div className="mt-3 flex flex-wrap gap-1">
@@ -702,13 +706,15 @@ Join Our Channel: https://t.me/EagleTutorialsServices`;
                   {/* Primary Tab-Specific Actions */}
                   {isPendingVerification && (
                     <div className="flex gap-2">
-                      <a
-                        href={`tel:${job.requester_phone}`}
-                        className="flex-1 flex items-center justify-center px-3 py-2 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl transition-colors shadow-sm"
-                      >
-                        <PhoneCall className="w-3.5 h-3.5 mr-1.5" />
-                        Call Requester
-                      </a>
+                      {job.requester_phone ? (
+                        <a
+                          href={`tel:${job.requester_phone}`}
+                          className="flex-1 flex items-center justify-center px-3 py-2 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl transition-colors shadow-sm"
+                        >
+                          <PhoneCall className="w-3.5 h-3.5 mr-1.5" />
+                          Call Requester
+                        </a>
+                      ) : null}
                       <button
                         onClick={() => handleApproveAndPublish(job)}
                         disabled={actionLoading}
@@ -865,21 +871,24 @@ Join Our Channel: https://t.me/EagleTutorialsServices`;
             <form onSubmit={handleSaveJob} className="flex-1 overflow-y-auto p-6 space-y-4">
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs font-bold text-gray-700 block mb-1">Requester Phone *</label>
+                  <label className="text-xs font-bold text-gray-700 block mb-1">
+                    Requester Phone <span className="text-[11px] font-normal text-gray-400">(Optional / Private)</span>
+                  </label>
                   <input
                     type="tel"
-                    placeholder="0911223344"
+                    placeholder="0911223344 (Optional)"
                     value={formData.requester_phone}
                     onChange={(e) => setFormData({ ...formData, requester_phone: e.target.value })}
-                    required
                     className="w-full px-3 py-2 text-xs border border-gray-200 rounded-xl focus:ring-2 focus:ring-brand-blue outline-none"
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-bold text-gray-700 block mb-1">Requester Name</label>
+                  <label className="text-xs font-bold text-gray-700 block mb-1">
+                    Requester Name <span className="text-[11px] font-normal text-gray-400">(Optional)</span>
+                  </label>
                   <input
                     type="text"
-                    placeholder="Parent / Student Name"
+                    placeholder="Parent / Student Name (Optional)"
                     value={formData.requester_name}
                     onChange={(e) => setFormData({ ...formData, requester_name: e.target.value })}
                     className="w-full px-3 py-2 text-xs border border-gray-200 rounded-xl focus:ring-2 focus:ring-brand-blue outline-none"
