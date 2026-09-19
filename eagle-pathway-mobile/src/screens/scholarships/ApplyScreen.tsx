@@ -17,6 +17,7 @@ import * as Clipboard from 'expo-clipboard';
 import type { PackageTier, DocumentType } from '@/types';
 import { showError } from '@/utils/errorHandler';
 import { draftStore } from '@/services/draftStore';
+import { validateCloudDocumentUrl } from '@eagle-pathway/shared';
 
 const TIER_NAMES: Record<PackageTier, string> = {
   basic: 'Basic Assistance',
@@ -126,7 +127,12 @@ export function ApplyScreen() {
     const cleanUrl = cloudUrlInput.trim();
 
     if (!cleanUrl) {
-      return toast.warning('Google Drive Link Required', 'Please paste a valid Google Drive shareable link.');
+      return toast.warning('Link Required', 'Please paste a valid Google Drive, OneDrive, or Dropbox shareable link.');
+    }
+
+    const validation = validateCloudDocumentUrl(cleanUrl);
+    if (!validation.isValid) {
+      return toast.warning('Invalid Document Link', validation.error || 'Please provide a secure https:// link from Google Drive, OneDrive, Dropbox, or iCloud.');
     }
 
     setSubmittingDoc(true);
@@ -134,11 +140,11 @@ export function ApplyScreen() {
       await uploadDocument({
         userId: user.id,
         documentType: activeDocType,
-        cloudUrl: cleanUrl,
+        cloudUrl: validation.sanitizedUrl || cleanUrl,
         fileName: activeDocLabel,
       });
       setDocModalVisible(false);
-      toast.success('Link Saved! 📁', `${activeDocLabel} Google Drive link attached.`);
+      toast.success('Link Saved! 📁', `${activeDocLabel} cloud document attached.`);
       loadDocuments(user.id);
     } catch (e: any) {
       showError(e, 'Failed to Save');

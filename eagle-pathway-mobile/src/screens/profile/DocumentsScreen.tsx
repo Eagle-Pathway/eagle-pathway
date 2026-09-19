@@ -14,6 +14,7 @@ import { useDocumentStore } from '@/store/documentStore';
 import { Ionicons } from '@expo/vector-icons';
 import type { DocumentType, Document } from '@/types';
 import { withTimeout } from '@/utils/asyncUtils';
+import { validateCloudDocumentUrl } from '@eagle-pathway/shared';
 
 export function DocumentsScreen() {
   const { user } = useAuthStore();
@@ -82,7 +83,12 @@ export function DocumentsScreen() {
     const cleanUrl = cloudUrlInput.trim();
 
     if (!cleanUrl) {
-      return toast.warning('Google Drive Link Required', 'Please paste a valid Google Drive shareable link.');
+      return toast.warning('Link Required', 'Please paste a valid Google Drive, OneDrive, or Dropbox shareable link.');
+    }
+
+    const validation = validateCloudDocumentUrl(cleanUrl);
+    if (!validation.isValid) {
+      return toast.warning('Invalid Document Link', validation.error || 'Please provide a secure https:// link from Google Drive, OneDrive, Dropbox, or iCloud.');
     }
 
     setSubmitting(true);
@@ -90,11 +96,11 @@ export function DocumentsScreen() {
       await uploadDocument({
         userId: user.id,
         documentType: activeType,
-        cloudUrl: cleanUrl,
+        cloudUrl: validation.sanitizedUrl || cleanUrl,
         fileName: activeLabel,
       });
       setModalVisible(false);
-      toast.success('Saved to Vault! 📁', `${activeLabel} Google Drive link attached.`);
+      toast.success('Saved to Vault! 📁', `${activeLabel} cloud document link attached.`);
       load();
     } catch (e: any) {
       showError(e, 'Failed to Save');

@@ -3,6 +3,7 @@ export * from './utils/theme';
 export * from './utils/logger';
 export * from './utils/passwordStrength';
 export * from './utils/scoreValidation';
+export * from './utils/documentValidation';
 export * from './constants/metadata';
 export * from './constants/geography';
 export * from './constants/taxonomy';

@@ -1,6 +1,6 @@
 import { supabase } from './supabase';
 import { Scholarship, Application, PackageTier, Document, DocumentType, User } from '../types';
-import { evaluateScholarshipMatch, type ScholarshipMatchReport } from '@eagle-pathway/shared';
+import { evaluateScholarshipMatch, type ScholarshipMatchReport, validateCloudDocumentUrl } from '@eagle-pathway/shared';
 import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system/legacy';
 import { decode } from 'base64-arraybuffer';
@@ -272,6 +272,13 @@ export const scholarshipsService = {
 
     // 2. Pure Cloud Link / Text Mode (Zero Supabase Storage)
     if (params.cloudUrl || params.textContent || !params.fileUri) {
+      if (params.cloudUrl) {
+        const validation = validateCloudDocumentUrl(params.cloudUrl);
+        if (!validation.isValid) {
+          throw new Error(validation.error || 'Invalid cloud document URL.');
+        }
+      }
+
       const fileUrl = params.cloudUrl || '';
       const { data, error } = await supabase
         .from('documents')

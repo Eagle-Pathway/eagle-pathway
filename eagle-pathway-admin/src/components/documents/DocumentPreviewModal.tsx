@@ -17,6 +17,7 @@ import {
   Cloud
 } from 'lucide-react';
 import { getFreshSignedUrl } from '@/lib/storageHelper';
+import { validateCloudDocumentUrl } from '@eagle-pathway/shared';
 
 export interface PreviewableDocument {
   id: string;
@@ -53,11 +54,23 @@ export function DocumentPreviewModal({ document, onClose, onUpdateStatus }: Docu
   const [loadingUrl, setLoadingUrl] = useState<boolean>(true);
   const [imageError, setImageError] = useState<boolean>(false);
 
-  const isCloudLink = document?.cloud_url || 
-                      document?.file_path === 'cloud_link' || 
-                      document?.file_url?.includes('drive.google.com') ||
-                      document?.file_url?.includes('onedrive') ||
-                      document?.file_url?.includes('dropbox.com');
+  const rawCloudTarget = document?.cloud_url || (document?.file_path === 'cloud_link' ? document?.file_url : null) || document?.file_url;
+  const cloudValidation = validateCloudDocumentUrl(rawCloudTarget);
+  const isCloudLink = Boolean(
+    document?.cloud_url || 
+    document?.file_path === 'cloud_link' || 
+    cloudValidation.isValid
+  );
+
+  const providerName = cloudValidation.provider === 'google_drive' 
+    ? 'Google Drive' 
+    : cloudValidation.provider === 'onedrive' 
+    ? 'Microsoft OneDrive / SharePoint'
+    : cloudValidation.provider === 'dropbox'
+    ? 'Dropbox'
+    : cloudValidation.provider === 'icloud'
+    ? 'Apple iCloud'
+    : 'Cloud Storage';
 
   const hasTextContent = Boolean(document?.text_content);
 
@@ -224,17 +237,20 @@ export function DocumentPreviewModal({ document, onClose, onUpdateStatus }: Docu
               <p className="text-xs text-gray-300">Loading document...</p>
             </div>
           ) : isCloudLink ? (
-            /* Cloud Link (Google Drive / OneDrive) Display Card */
+            /* Cloud Link (Google Drive / OneDrive / Dropbox / iCloud) Display Card */
             <div className="flex flex-col items-center justify-center text-center p-8 bg-slate-800/90 rounded-2xl max-w-lg text-white border border-slate-700 space-y-5 shadow-2xl">
               <div className="w-16 h-16 rounded-2xl bg-brand-blue/20 flex items-center justify-center text-blue-400">
                 <Cloud className="w-8 h-8" />
               </div>
               <div>
-                <h4 className="text-lg font-bold">Google Drive / Cloud Dossier</h4>
+                <div className="inline-flex items-center space-x-1.5 px-3 py-1 bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 rounded-full text-xs font-semibold mb-3">
+                  <span>🔒 Verified {providerName}</span>
+                </div>
+                <h4 className="text-lg font-bold">{providerName} Dossier</h4>
                 <p className="text-xs text-gray-300 mt-2 max-w-sm">
-                  This student provided their credentials via a direct cloud folder or file link. Click below to inspect their full documents on Google Drive in a secure new tab.
+                  This student provided their credentials via a verified {providerName} link. Click below to inspect their full documents in an isolated, secure browser tab.
                 </p>
-                <div className="mt-4 p-3 bg-slate-900/80 rounded-xl text-xs font-mono text-blue-300 break-all max-w-md border border-slate-700">
+                <div className="mt-4 p-3 bg-slate-900/80 rounded-xl text-xs font-mono text-blue-300 break-all max-w-md border border-slate-700 select-all">
                   {document.cloud_url || resolvedUrl || document.file_url}
                 </div>
               </div>
@@ -245,7 +261,7 @@ export function DocumentPreviewModal({ document, onClose, onUpdateStatus }: Docu
                 className="inline-flex items-center px-6 py-3 bg-brand-blue text-white rounded-xl text-sm font-bold shadow-lg hover:bg-blue-600 transition-all hover:scale-105"
               >
                 <ExternalLink className="w-4 h-4 mr-2" />
-                Open Google Drive Dossier ↗
+                Open {providerName} Dossier ↗
               </a>
             </div>
           ) : hasTextContent ? (

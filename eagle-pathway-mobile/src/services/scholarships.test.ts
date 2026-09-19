@@ -245,6 +245,49 @@ describe('scholarshipsService', () => {
         }),
       ).rejects.toMatchObject({ message: 'sign failed' });
     });
+
+    it('successfully persists a valid Google Drive cloud link', async () => {
+      const insertedDoc = {
+        id: 'doc-cloud-1',
+        user_id: 'user-1',
+        document_type: 'degree_certificate',
+        file_path: 'cloud_link',
+        cloud_url: 'https://drive.google.com/file/d/abc123xyz/view?usp=sharing',
+      };
+      (mockSupabase.from as ReturnType<typeof vi.fn>).mockReturnValue({
+        insert: vi.fn().mockReturnValue({
+          select: vi.fn().mockReturnValue({
+            single: vi.fn().mockResolvedValue({ data: insertedDoc, error: null }),
+          }),
+        }),
+        select: vi.fn().mockReturnValue({
+          eq: vi.fn().mockReturnValue({
+            eq: vi.fn().mockResolvedValue({ data: [], error: null }),
+          }),
+        }),
+      });
+
+      const result = await scholarshipsService.uploadDocument({
+        userId: 'user-1',
+        documentType: 'degree_certificate' as never,
+        cloudUrl: 'https://drive.google.com/file/d/abc123xyz/view?usp=sharing',
+        fileName: 'Degree Certificate',
+      });
+
+      expect(result.cloud_url).toContain('drive.google.com');
+      expect(result.file_path).toBe('cloud_link');
+    });
+
+    it('rejects an invalid or untrusted cloud URL scheme', async () => {
+      await expect(
+        scholarshipsService.uploadDocument({
+          userId: 'user-1',
+          documentType: 'degree_certificate' as never,
+          cloudUrl: 'http://insecure-site.xyz/file.pdf',
+          fileName: 'Degree Certificate',
+        }),
+      ).rejects.toThrow();
+    });
   });
 
   describe('getUserDocuments (signed URLs)', () => {
