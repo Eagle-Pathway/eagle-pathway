@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   View, Text, FlatList, TouchableOpacity,
-  StyleSheet, ActivityIndicator, RefreshControl, ScrollView,
+  StyleSheet, RefreshControl, ScrollView, Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -9,9 +9,20 @@ import { Colors, Typography, Spacing, Radius, CommonStyles } from '@/utils/theme
 import { Avatar, EmptyState, ErrorState, Skeleton } from '@/components/common';
 import { useAuthStore } from '../../store/authStore';
 import { useChatStore } from '@/store/ChatStore';
-
 import { getUserRole } from '@/utils/role';
 import { withTimeout } from '@/utils/asyncUtils';
+
+function formatConversationDate(dateString?: string): string {
+  if (!dateString) return '';
+  try {
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return '';
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return `${months[date.getMonth()]} ${date.getDate()}`;
+  } catch {
+    return '';
+  }
+}
 
 export default function ChatListScreen() {
   const { user } = useAuthStore();
@@ -41,17 +52,59 @@ export default function ChatListScreen() {
 
   const onRefresh = () => { load(); };
 
-function formatConversationDate(dateString?: string): string {
-  if (!dateString) return '';
-  try {
-    const date = new Date(dateString);
-    if (isNaN(date.getTime())) return '';
-    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    return `${months[date.getMonth()]} ${date.getDate()}`;
-  } catch {
-    return '';
-  }
-}
+  const handleOpenLink = async (url: string) => {
+    try {
+      await Linking.openURL(url);
+    } catch (e) {
+      console.error('Could not open link:', e);
+    }
+  };
+
+  const renderSupportHeader = () => (
+    <View style={styles.supportCard}>
+      <Text style={styles.welcomeText}>
+        👋 Welcome! Whether you need an Astegni / Tutor fast or Scholarship Guidance, we are here to help:
+      </Text>
+
+      <View style={styles.supportLinksContainer}>
+        <TouchableOpacity 
+          style={styles.supportBtn}
+          onPress={() => handleOpenLink('https://t.me/EagleTutorialsServices')}
+          activeOpacity={0.8}
+        >
+          <View style={styles.supportIconWrapBlue}>
+            <Text style={styles.supportEmoji}>👨‍🏫</Text>
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.supportTitle}>Need a tutor fast?</Text>
+            <Text style={styles.supportLinkText}>Telegram: @EagleTutorialsServices</Text>
+          </View>
+          <Text style={styles.supportArrow}>↗</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity 
+          style={styles.supportBtn}
+          onPress={() => handleOpenLink('https://t.me/Tegegnpathway')}
+          activeOpacity={0.8}
+        >
+          <View style={styles.supportIconWrapGold}>
+            <Text style={styles.supportEmoji}>🎓</Text>
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.supportTitle}>Need a Scholarship Guidance?</Text>
+            <Text style={styles.supportLinkText}>Telegram: @Tegegnpathway</Text>
+          </View>
+          <Text style={styles.supportArrow}>↗</Text>
+        </TouchableOpacity>
+      </View>
+
+      {conversations.length > 0 && (
+        <View style={styles.sectionDivider}>
+          <Text style={styles.sectionTitle}>Direct Messages</Text>
+        </View>
+      )}
+    </View>
+  );
 
   const renderItem = ({ item }: { item: any }) => {
     const initials = item.full_name?.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase() || '?';
@@ -81,7 +134,7 @@ function formatConversationDate(dateString?: string): string {
             )}
           </View>
           <View style={styles.roleBadge}>
-             <Text style={styles.roleText}>{item.role.toUpperCase()}</Text>
+             <Text style={styles.roleText}>{item.role?.toUpperCase()}</Text>
           </View>
         </View>
       </TouchableOpacity>
@@ -98,40 +151,50 @@ function formatConversationDate(dateString?: string): string {
       </View>
 
       {isLoadingConversations && conversations.length === 0 ? (
-        <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingVertical: Spacing.md, paddingBottom: 100 }}>
-          {[1, 2, 3, 4, 5].map(i => (
-            <View key={i} style={styles.convCard}>
-              <Skeleton width={50} height={50} borderRadius={25} />
-              <View style={[styles.convInfo, { gap: 6 }]}>
-                <View style={[styles.convHeader, { gap: Spacing.md }]}>
-                  <Skeleton width="40%" height={16} />
-                  <Skeleton width="15%" height={12} />
+        <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 100 }}>
+          {renderSupportHeader()}
+          <View style={{ paddingVertical: Spacing.sm }}>
+            {[1, 2, 3].map(i => (
+              <View key={i} style={styles.convCard}>
+                <Skeleton width={50} height={50} borderRadius={25} />
+                <View style={[styles.convInfo, { gap: 6 }]}>
+                  <View style={[styles.convHeader, { gap: Spacing.md }]}>
+                    <Skeleton width="40%" height={16} />
+                    <Skeleton width="15%" height={12} />
+                  </View>
+                  <Skeleton width="70%" height={12} />
+                  <Skeleton width={60} height={14} borderRadius={10} style={{ marginTop: 4 }} />
                 </View>
-                <Skeleton width="70%" height={12} />
-                <Skeleton width={60} height={14} borderRadius={10} style={{ marginTop: 4 }} />
               </View>
-            </View>
-          ))}
+            ))}
+          </View>
         </ScrollView>
       ) : error && conversations.length === 0 ? (
-        <ErrorState subtitle="We couldn't load your messages. Check your connection and retry." onRetry={load} />
+        <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 100 }}>
+          {renderSupportHeader()}
+          <ErrorState subtitle="We couldn't load your messages. Check your connection and retry." onRetry={load} />
+        </ScrollView>
       ) : conversations.length === 0 ? (
-        <EmptyState
-          icon="chatbubbles-outline"
-          title="No messages yet"
-          subtitle={
-            isTutor
-              ? "Direct messages from students and parents will appear here when they book a session or send an inquiry."
-              : "Direct messages from your consultants and tutors will appear here."
-          }
-          actionLabel={isTutor ? "View Tutor Jobs" : "Browse Tutors"}
-          onAction={() => router.push(isTutor ? '/(tabs)/explore' : '/(tabs)/tutors')}
-        />
+        <ScrollView style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 100 }}>
+          {renderSupportHeader()}
+          <EmptyState
+            icon="chatbubbles-outline"
+            title="No direct messages yet"
+            subtitle={
+              isTutor
+                ? "Direct messages from students and parents will appear here when they book a session or send an inquiry."
+                : "Direct messages from your consultants and tutors will appear here."
+            }
+            actionLabel={isTutor ? "View Tutor Jobs" : "Browse Tutors"}
+            onAction={() => router.push(isTutor ? '/(tabs)/explore' : '/(tabs)/tutors')}
+          />
+        </ScrollView>
       ) : (
         <FlatList
           data={conversations}
           keyExtractor={(item) => item.id}
           renderItem={renderItem}
+          ListHeaderComponent={renderSupportHeader}
           contentContainerStyle={styles.listContainer}
           refreshControl={
             <RefreshControl refreshing={isLoadingConversations} onRefresh={onRefresh} tintColor={Colors.blue} />
@@ -156,6 +219,91 @@ const styles = StyleSheet.create({
   headerTitle: { fontSize: Typography['3xl'], fontWeight: Typography.bold, color: Colors.text, flex: 1 },
   backBtn: { width: 36, height: 36, backgroundColor: Colors.grayLight, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
   listContainer: { paddingBottom: 100 },
+
+  // Welcome & Support Card
+  supportCard: {
+    margin: Spacing.lg,
+    padding: Spacing.lg,
+    backgroundColor: Colors.white,
+    borderRadius: Radius['2xl'],
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  welcomeText: {
+    fontSize: Typography.sm,
+    lineHeight: 20,
+    color: Colors.text,
+    fontWeight: '600',
+    marginBottom: Spacing.md,
+  },
+  supportLinksContainer: {
+    gap: Spacing.sm,
+  },
+  supportBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: Spacing.md,
+    backgroundColor: '#f8fafc',
+    borderRadius: Radius.xl,
+    borderWidth: 1,
+    borderColor: '#edf2f7',
+    gap: Spacing.md,
+  },
+  supportIconWrapBlue: {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    backgroundColor: 'rgba(30, 64, 175, 0.1)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  supportIconWrapGold: {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    backgroundColor: 'rgba(217, 119, 6, 0.12)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  supportEmoji: {
+    fontSize: 18,
+  },
+  supportTitle: {
+    fontSize: Typography.xs,
+    fontWeight: '700',
+    color: Colors.text,
+  },
+  supportLinkText: {
+    fontSize: Typography.xs,
+    color: Colors.blue,
+    fontWeight: '600',
+    marginTop: 2,
+  },
+  supportArrow: {
+    fontSize: 16,
+    color: Colors.textSecondary,
+    fontWeight: 'bold',
+  },
+  sectionDivider: {
+    marginTop: Spacing.lg,
+    paddingTop: Spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: '#f1f5f9',
+  },
+  sectionTitle: {
+    fontSize: Typography.xs,
+    fontWeight: 'bold',
+    color: Colors.textSecondary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
+  },
+
+  // Conversation Card
   convCard: { flexDirection: 'row', padding: Spacing.lg, backgroundColor: Colors.white, borderBottomWidth: 1, borderBottomColor: Colors.grayLight, alignItems: 'center', gap: Spacing.md },
   convInfo: { flex: 1 },
   convHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 2 },
@@ -169,3 +317,4 @@ const styles = StyleSheet.create({
   roleBadge: { marginTop: 4, alignSelf: 'flex-start', paddingHorizontal: 6, paddingVertical: 2, backgroundColor: Colors.grayLight, borderRadius: Radius.full },
   roleText: { fontSize: 8, fontWeight: 'bold', color: Colors.textSecondary, letterSpacing: 0.5 },
 });
+
