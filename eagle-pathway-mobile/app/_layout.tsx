@@ -172,6 +172,7 @@ export default function RootLayout() {
             <Stack.Screen name="apply-job" options={{ presentation: 'card' }} />
             <Stack.Screen name="my-applications" options={{ presentation: 'card' }} />
             <Stack.Screen name="application-detail" options={{ presentation: 'card' }} />
+            <Stack.Screen name="chat/[id]" options={{ presentation: 'card' }} />
           </Stack>
           <OfflineBanner />
           <Toast config={toastConfig} topOffset={60} visibilityTime={3500} />

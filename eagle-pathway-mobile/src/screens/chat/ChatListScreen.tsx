@@ -41,6 +41,18 @@ export default function ChatListScreen() {
 
   const onRefresh = () => { load(); };
 
+function formatConversationDate(dateString?: string): string {
+  if (!dateString) return '';
+  try {
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return '';
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return `${months[date.getMonth()]} ${date.getDate()}`;
+  } catch {
+    return '';
+  }
+}
+
   const renderItem = ({ item }: { item: any }) => {
     const initials = item.full_name?.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase() || '?';
     
@@ -55,7 +67,7 @@ export default function ChatListScreen() {
           <View style={styles.convHeader}>
             <Text style={styles.convName}>{item.full_name}</Text>
             <Text style={styles.convTime}>
-              {item.last_time ? new Date(item.last_time).toLocaleDateString([], { month: 'short', day: 'numeric' }) : ''}
+              {formatConversationDate(item.last_time)}
             </Text>
           </View>
           <View style={styles.convFooter}>

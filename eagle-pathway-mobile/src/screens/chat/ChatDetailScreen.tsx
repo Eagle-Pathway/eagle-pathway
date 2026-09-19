@@ -1,20 +1,38 @@
 import React, { useEffect, useState, useRef } from 'react';
 import {
   View, Text, FlatList, TouchableOpacity,
-  StyleSheet, ActivityIndicator, TextInput, KeyboardAvoidingView, Platform, Alert
+  StyleSheet, TextInput, KeyboardAvoidingView, Platform, Alert
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useLocalSearchParams, router } from 'expo-router';
-import { Colors, Typography, Spacing, Radius, CommonStyles } from '@/utils/theme';
+import { Colors, Typography, Spacing, CommonStyles } from '@/utils/theme';
 import { Avatar, Skeleton } from '@/components/common';
 import { useAuthStore } from '@/store/authStore';
 import { useChatStore } from '@/store/ChatStore';
 import { supabase } from '@/services/supabase';
 
+function formatMessageTime(dateString?: string): string {
+  if (!dateString) return '';
+  try {
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return '';
+    const hours = date.getHours();
+    const minutes = date.getMinutes();
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    const formattedHours = hours % 12 || 12;
+    const formattedMinutes = minutes < 10 ? `0${minutes}` : minutes;
+    return `${formattedHours}:${formattedMinutes} ${ampm}`;
+  } catch {
+    return '';
+  }
+}
+
 export default function ChatDetailScreen() {
-  const { id, fullName: paramFullName } = useLocalSearchParams<{ id: string, fullName?: string }>();
-  const otherId = id;
+  const params = useLocalSearchParams<{ id: string; fullName?: string }>();
+  const otherId = Array.isArray(params.id) ? params.id[0] : params.id;
+  const initialName = Array.isArray(params.fullName) ? params.fullName[0] : params.fullName;
+
   const insets = useSafeAreaInsets();
   const { user } = useAuthStore();
   const { 
@@ -26,14 +44,14 @@ export default function ChatDetailScreen() {
   } = useChatStore();
   
   const [inputText, setInputText] = useState('');
-  const [chatUserFullName, setChatUserFullName] = useState(paramFullName || '');
+  const [chatUserFullName, setChatUserFullName] = useState(initialName || '');
   const flatListRef = useRef<FlatList>(null);
 
   useEffect(() => {
-    if (paramFullName) {
-      setChatUserFullName(paramFullName);
+    if (initialName) {
+      setChatUserFullName(initialName);
     }
-  }, [paramFullName]);
+  }, [initialName]);
 
   useEffect(() => {
     let isMounted = true;
@@ -44,8 +62,8 @@ export default function ChatDetailScreen() {
           .from('users')
           .select('full_name')
           .eq('id', otherId)
-          .single();
-        if (!error && data && isMounted) {
+          .maybeSingle();
+        if (!error && data?.full_name && isMounted) {
           setChatUserFullName(data.full_name);
         }
       } catch (e) {
@@ -57,10 +75,14 @@ export default function ChatDetailScreen() {
   }, [otherId, chatUserFullName]);
 
   useEffect(() => {
-    if (user && otherId) {
+    if (user?.id && otherId) {
       loadMessages(user.id, otherId);
       const unsubscribe = subscribeToMessages(user.id);
-      return unsubscribe;
+      return () => {
+        if (typeof unsubscribe === 'function') {
+          unsubscribe();
+        }
+      };
     }
   }, [user?.id, otherId]);
 
@@ -77,21 +99,25 @@ export default function ChatDetailScreen() {
   };
 
   const renderMessage = ({ item }: { item: any }) => {
-    const isMine = item.sender_id === user?.id;
+    const isMine = item?.sender_id === user?.id;
+    const initial = chatUserFullName?.trim()?.charAt(0)?.toUpperCase() || 'T';
+
     return (
       <View style={[styles.messageRow, isMine ? styles.myRow : styles.theirRow]}>
-        {!isMine && <Avatar initials={chatUserFullName?.charAt(0) || 'T'} size={28} style={styles.miniAvatar} color={Colors.blue} />}
+        {!isMine && <Avatar initials={initial} size={28} style={styles.miniAvatar} color={Colors.blue} />}
         <View style={[styles.bubble, isMine ? styles.myBubble : styles.theirBubble]}>
           <Text style={[styles.messageText, isMine ? styles.myText : styles.theirText]}>
-            {item.content}
+            {item?.content || ''}
           </Text>
           <Text style={[styles.timeText, isMine ? styles.myTime : styles.theirTime]}>
-            {new Date(item.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+            {formatMessageTime(item?.created_at)}
           </Text>
         </View>
       </View>
     );
   };
+
+  const headerInitial = chatUserFullName?.trim()?.charAt(0)?.toUpperCase() || 'T';
 
   return (
     <SafeAreaView style={[CommonStyles.flex1, { backgroundColor: Colors.bg }]} edges={['top', 'bottom']}>
@@ -100,9 +126,9 @@ export default function ChatDetailScreen() {
         <TouchableOpacity style={styles.backBtn} onPress={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)/home'))} accessibilityRole="button" accessibilityLabel="Go back">
           <Text style={{ fontSize: 20 }}>←</Text>
         </TouchableOpacity>
-        <Avatar initials={chatUserFullName?.charAt(0) || 'T'} size={36} color={Colors.blue} />
+        <Avatar initials={headerInitial} size={36} color={Colors.blue} />
         <View style={{ flex: 1, marginLeft: Spacing.sm }}>
-          <Text style={styles.headerName}>{chatUserFullName}</Text>
+          <Text style={styles.headerName}>{chatUserFullName || 'Chat'}</Text>
           <Text style={styles.statusText}>Online</Text>
         </View>
         <TouchableOpacity 
@@ -150,10 +176,14 @@ export default function ChatDetailScreen() {
             keyboardShouldPersistTaps="handled"
             ref={flatListRef}
             data={activeMessages}
-            keyExtractor={(item) => item.id}
+            keyExtractor={(item) => item?.id || Math.random().toString()}
             renderItem={renderMessage}
             contentContainerStyle={styles.listContainer}
-            onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
+            onContentSizeChange={() => {
+              if (activeMessages.length > 0) {
+                flatListRef.current?.scrollToEnd({ animated: true });
+              }
+            }}
             initialNumToRender={8} maxToRenderPerBatch={8} windowSize={5} removeClippedSubviews={true}
           />
         )}
@@ -205,3 +235,4 @@ const styles = StyleSheet.create({
   sendBtn: { marginLeft: Spacing.md, width: 44, height: 44, backgroundColor: Colors.blue, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
   sendIcon: { fontSize: 18, color: Colors.white },
 });
+
