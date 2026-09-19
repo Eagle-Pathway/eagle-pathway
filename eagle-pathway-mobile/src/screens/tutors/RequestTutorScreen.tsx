@@ -40,6 +40,7 @@ export function RequestTutorScreen() {
   const [hourlyRate, setHourlyRate] = useState('500');
   const [phone, setPhone] = useState(user?.phone || '');
   const [requesterName, setRequesterName] = useState(user?.full_name || '');
+  const [genderPreference, setGenderPreference] = useState<'both' | 'female' | 'male'>('both');
   const [notes, setNotes] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -103,6 +104,7 @@ export function RequestTutorScreen() {
         days_per_week: daysCount,
         start_time: startTime.trim() || '4 LT',
         hourly_rate: parseFloat(hourlyRate) || 500,
+        gender_preference: genderPreference,
         tutor_id: targetTutor?.id || null,
         notes: combinedNotes,
         status: 'submitted',
@@ -207,6 +209,23 @@ export function RequestTutorScreen() {
                   onPress={() => setMode(m)}
                 >
                   <Text style={[styles.modeBtnText, mode === m && styles.modeBtnTextActive]}>{m}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            <Text style={[styles.label, { marginTop: 12 }]}>Who Can Apply (Gender Preference)</Text>
+            <View style={styles.modeRow}>
+              {([
+                { id: 'both', label: 'Both M & F' },
+                { id: 'female', label: 'Female Only' },
+                { id: 'male', label: 'Male Only' },
+              ] as const).map(g => (
+                <TouchableOpacity
+                  key={g.id}
+                  style={[styles.modeBtn, genderPreference === g.id && styles.modeBtnActive]}
+                  onPress={() => setGenderPreference(g.id)}
+                >
+                  <Text style={[styles.modeBtnText, genderPreference === g.id && styles.modeBtnTextActive]}>{g.label}</Text>
                 </TouchableOpacity>
               ))}
             </View>

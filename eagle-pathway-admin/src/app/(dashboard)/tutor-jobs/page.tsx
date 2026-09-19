@@ -195,6 +195,11 @@ export default function TutorJobsPage() {
     const headerTag = isClosed ? '#Closed' : '#Open';
     const modeTag = job.mode ? `[${job.mode.toUpperCase()}]` : '[HYBRID]';
     const subjectsStr = (job.subjects || []).join(', ') || 'General Subjects';
+    const genderStr = job.gender_preference === 'female'
+      ? 'Female tutors only'
+      : job.gender_preference === 'male'
+      ? 'Male tutors only'
+      : 'Both Female and Male can apply';
 
     return `${headerTag}
 
@@ -206,6 +211,7 @@ export default function TutorJobsPage() {
   ✅ Days : ${job.days_per_week || 3} days/week
   ✅ Start Time : ${job.start_time || '4 LT'}
   ✅ Hourly amount : ${job.hourly_rate || 500} birr / hr
+  ✅ Who can apply : ${genderStr}
 
 🗓 Available to start immediately
 
@@ -652,7 +658,7 @@ Join Our Channel: https://t.me/EagleTutorialsServices`;
                   </div>
 
                   {/* Logistics Strip */}
-                  <div className="mt-4 pt-3 border-t border-gray-100 grid grid-cols-2 gap-2 text-xs text-gray-600">
+                  <div className="mt-4 pt-3 border-t border-gray-100 grid grid-cols-3 gap-2 text-xs text-gray-600">
                     <div>
                       <span className="text-[10px] text-gray-400 block font-semibold">Schedule</span>
                       <span className="font-bold">{job.session_hours}h/day · {job.days_per_week}d/wk</span>
@@ -660,6 +666,12 @@ Join Our Channel: https://t.me/EagleTutorialsServices`;
                     <div>
                       <span className="text-[10px] text-gray-400 block font-semibold">Hourly Rate</span>
                       <span className="font-bold text-emerald-600">{job.hourly_rate} ETB/hr</span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-gray-400 block font-semibold">Who Can Apply</span>
+                      <span className="font-bold text-gray-700">
+                        {job.gender_preference === 'female' ? 'Female Only' : job.gender_preference === 'male' ? 'Male Only' : 'Both M & F'}
+                      </span>
                     </div>
                   </div>
 
@@ -921,7 +933,7 @@ Join Our Channel: https://t.me/EagleTutorialsServices`;
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
                   <label className="text-xs font-bold text-gray-700 block mb-1">Mode</label>
                   <select
@@ -943,6 +955,18 @@ Join Our Channel: https://t.me/EagleTutorialsServices`;
                     onChange={(e) => setFormData({ ...formData, session_hours: e.target.value })}
                     className="w-full px-3 py-2 text-xs border border-gray-200 rounded-xl focus:ring-2 focus:ring-brand-blue outline-none"
                   />
+                </div>
+                <div>
+                  <label className="text-xs font-bold text-gray-700 block mb-1">Who can apply (Gender)</label>
+                  <select
+                    value={formData.gender_preference}
+                    onChange={(e) => setFormData({ ...formData, gender_preference: e.target.value })}
+                    className="w-full px-3 py-2 text-xs border border-gray-200 rounded-xl focus:ring-2 focus:ring-brand-blue outline-none"
+                  >
+                    <option value="both">Both Female and Male can apply</option>
+                    <option value="female">Female tutors only</option>
+                    <option value="male">Male tutors only</option>
+                  </select>
                 </div>
               </div>
 

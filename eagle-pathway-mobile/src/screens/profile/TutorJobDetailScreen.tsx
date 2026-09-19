@@ -128,7 +128,7 @@ export function TutorJobDetailScreen() {
           <DetailRow icon="📅" label="Days" value={`${job.days_per_week} days/week`} />
           <DetailRow icon="🕐" label="Start Time" value={toEATDisplay(job.start_time)} />
           <DetailRow icon="💰" label="Hourly Rate" value={`${job.hourly_rate} ETB/hr`} highlight />
-          <DetailRow icon="👤" label="Gender" value={job.gender_preference === 'both' ? 'Male & Female' : job.gender_preference === 'male' ? 'Male Only' : 'Female Only'} />
+          <DetailRow icon="👤" label="Who can apply" value={job.gender_preference === 'female' ? 'Female tutors only' : job.gender_preference === 'male' ? 'Male tutors only' : 'Both Female and Male can apply'} />
         </View>
 
         {/* Notice Card for Non-Approved / Missing Fields Status */}
