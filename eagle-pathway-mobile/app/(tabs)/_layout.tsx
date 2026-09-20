@@ -163,7 +163,7 @@ export default function TabLayout() {
       <Tabs.Screen name="my-applications" options={{ href: null }} />
       <Tabs.Screen name="service" options={{ href: null }} />
       <Tabs.Screen name="bookings" options={{ href: null }} />
-      <Tabs.Screen name="assistant" options={{ href: null }} />
+      <Tabs.Screen name="assistant" options={{ href: null, tabBarStyle: { display: 'none' } }} />
     </Tabs>
       {!isAssistant && <AiAssistantFAB />}
     </>

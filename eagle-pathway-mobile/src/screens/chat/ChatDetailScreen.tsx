@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import {
   View, Text, FlatList, TouchableOpacity,
-  StyleSheet, TextInput, KeyboardAvoidingView, Platform, Alert
+  StyleSheet, TextInput, KeyboardAvoidingView, Keyboard, Platform, Alert
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -45,7 +45,26 @@ export default function ChatDetailScreen() {
   
   const [inputText, setInputText] = useState('');
   const [chatUserFullName, setChatUserFullName] = useState(initialName || '');
+  const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
   const flatListRef = useRef<FlatList>(null);
+
+  useEffect(() => {
+    const showSub = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
+      () => {
+        setIsKeyboardOpen(true);
+        setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
+      }
+    );
+    const hideSub = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
+      () => setIsKeyboardOpen(false)
+    );
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
 
   useEffect(() => {
     if (initialName) {
@@ -152,7 +171,8 @@ export default function ChatDetailScreen() {
       {/* Chat Messages + Input in KeyboardAvoidingView */}
       <KeyboardAvoidingView 
         style={{ flex: 1 }} 
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={0}
       >
         {isLoadingMessages && activeMessages.length === 0 ? (
           <View style={[CommonStyles.flex1, { padding: Spacing.lg }]}>
@@ -189,7 +209,7 @@ export default function ChatDetailScreen() {
         )}
 
         {/* Input area */}
-        <View style={[styles.inputArea, { paddingBottom: Math.max(insets.bottom, Spacing.md) }]}>
+        <View style={[styles.inputArea, { paddingBottom: isKeyboardOpen ? Spacing.sm : Math.max(insets.bottom, Spacing.md) }]}>
           <TextInput
             style={styles.input}
             placeholder="Type a message..."

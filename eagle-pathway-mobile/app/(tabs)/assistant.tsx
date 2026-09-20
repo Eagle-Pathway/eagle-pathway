@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -6,14 +6,15 @@ import {
   TouchableOpacity,
   FlatList,
   KeyboardAvoidingView,
+  Keyboard,
   Platform,
   StyleSheet,
   ActivityIndicator,
   ScrollView,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Stack, useRouter } from 'expo-router';
-import { Colors } from '../../src/utils/theme';
+import { useRouter } from 'expo-router';
+import { Colors, Typography, Radius, Spacing } from '../../src/utils/theme';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../src/services/supabase';
 
@@ -56,7 +57,26 @@ export default function AssistantScreen() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
   const flatListRef = useRef<FlatList>(null);
+
+  useEffect(() => {
+    const showSub = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow',
+      () => {
+        setIsKeyboardOpen(true);
+        setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
+      }
+    );
+    const hideSub = Keyboard.addListener(
+      Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide',
+      () => setIsKeyboardOpen(false)
+    );
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
 
   const sendMessage = async (textOverride?: string) => {
     const messageText = textOverride || input;
@@ -122,24 +142,33 @@ export default function AssistantScreen() {
   };
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
-      <Stack.Screen 
-        options={{
-          headerShown: true,
-          title: 'Eagle AI Guide',
-          headerTitleStyle: { fontWeight: 'bold', color: Colors.blueDark },
-          headerLeft: () => (
-            <TouchableOpacity onPress={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)/home'))} style={{ marginLeft: 16 }}>
-              <Ionicons name="arrow-back" size={24} color={Colors.text} />
-            </TouchableOpacity>
-          ),
-        }} 
-      />
+    <View style={styles.container}>
+      {/* Top Header */}
+      <View style={[styles.header, { paddingTop: Math.max(insets.top, 12) + 6 }]}>
+        <TouchableOpacity 
+          onPress={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)/home'))} 
+          style={styles.backBtn}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="arrow-back" size={24} color={Colors.text} />
+        </TouchableOpacity>
+        <View style={styles.headerBotIcon}>
+          <Ionicons name="sparkles" size={16} color={Colors.white} />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.headerTitle}>Eagle AI Guide</Text>
+          <View style={styles.onlineBadge}>
+            <View style={styles.onlineDot} />
+            <Text style={styles.onlineText}>Active • Academic Advisor</Text>
+          </View>
+        </View>
+      </View>
       
       {/* Content + Input inside full-height KeyboardAvoidingView */}
       <KeyboardAvoidingView 
         style={{ flex: 1 }} 
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={0}
       >
         <FlatList
           keyboardShouldPersistTaps="handled"
@@ -152,7 +181,7 @@ export default function AssistantScreen() {
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
               <View style={styles.emptyIconBg}>
-                <Ionicons name="hardware-chip-outline" size={40} color={Colors.textSecondary} />
+                <Ionicons name="hardware-chip-outline" size={40} color={Colors.blue} />
               </View>
               <Text style={styles.emptyTitle}>Your AI Academic Guide</Text>
               <Text style={styles.emptyText}>I can help you with scholarship searches, SOP reviews, visa info, and more.</Text>
@@ -169,8 +198,9 @@ export default function AssistantScreen() {
                   style={styles.quickChip} 
                   onPress={() => sendMessage(action.prompt)}
                   disabled={isLoading}
+                  activeOpacity={0.8}
                 >
-                  <Ionicons name={action.icon as any} size={16} color={Colors.blue} style={{ marginRight: 6 }} />
+                  <Ionicons name={action.icon as any} size={15} color={Colors.blue} style={{ marginRight: 6 }} />
                   <Text style={styles.quickChipText}>{action.label}</Text>
                 </TouchableOpacity>
               ))}
@@ -178,7 +208,7 @@ export default function AssistantScreen() {
           </View>
         )}
 
-        <View style={[styles.inputContainer, { paddingBottom: Math.max(insets.bottom, 12) }]}>
+        <View style={[styles.inputContainer, { paddingBottom: isKeyboardOpen ? 10 : Math.max(insets.bottom, 12) }]}>
           <TextInput
             style={styles.input}
             value={input}
@@ -193,6 +223,7 @@ export default function AssistantScreen() {
             style={[styles.sendButton, (!input.trim() || isLoading) && styles.sendButtonDisabled]}
             onPress={() => sendMessage()}
             disabled={!input.trim() || isLoading}
+            activeOpacity={0.85}
           >
             {isLoading ? (
               <ActivityIndicator color={Colors.white} size="small" />
@@ -210,6 +241,51 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f8fafc',
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingBottom: 12,
+    backgroundColor: Colors.white,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e2e8f0',
+    gap: 10,
+  },
+  backBtn: {
+    padding: 6,
+    borderRadius: 10,
+    backgroundColor: '#f1f5f9',
+  },
+  headerBotIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 12,
+    backgroundColor: Colors.blueDark,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  headerTitle: {
+    fontSize: Typography.base,
+    fontWeight: Typography.bold,
+    color: Colors.blueDark,
+  },
+  onlineBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    marginTop: 2,
+  },
+  onlineDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 3.5,
+    backgroundColor: '#10b981',
+  },
+  onlineText: {
+    fontSize: 11,
+    color: '#64748b',
+    fontWeight: Typography.medium,
   },
   listContent: {
     padding: 16,
