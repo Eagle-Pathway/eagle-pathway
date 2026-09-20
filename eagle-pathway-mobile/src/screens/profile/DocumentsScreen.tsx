@@ -300,17 +300,84 @@ export function DocumentsScreen() {
             </View>
 
             <View style={modalStyles.inputWrap}>
-              <Text style={modalStyles.fieldLabel}>Shareable Google Drive Link:</Text>
-              <TextInput
-                style={modalStyles.input}
-                placeholder="https://drive.google.com/file/d/..."
-                placeholderTextColor={Colors.textSecondary}
-                value={cloudUrlInput}
-                onChangeText={setCloudUrlInput}
-                autoCapitalize="none"
-                autoCorrect={false}
-                keyboardType="url"
-              />
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                <Text style={modalStyles.fieldLabel}>Shareable Document Link:</Text>
+                {cloudUrlInput.trim().length > 0 && (
+                  <View style={[
+                    styles.validationPill,
+                    validateCloudDocumentUrl(cloudUrlInput.trim()).isValid ? styles.pillValid : styles.pillInvalid
+                  ]}>
+                    <Ionicons 
+                      name={validateCloudDocumentUrl(cloudUrlInput.trim()).isValid ? "checkmark-circle" : "alert-circle"} 
+                      size={12} 
+                      color={validateCloudDocumentUrl(cloudUrlInput.trim()).isValid ? Colors.green : Colors.orange} 
+                    />
+                    <Text style={[
+                      styles.validationPillText,
+                      { color: validateCloudDocumentUrl(cloudUrlInput.trim()).isValid ? Colors.green : Colors.orange }
+                    ]}>
+                      {validateCloudDocumentUrl(cloudUrlInput.trim()).isValid 
+                        ? `${validateCloudDocumentUrl(cloudUrlInput.trim()).providerLabel || 'Cloud Link'} ✓` 
+                        : 'Check Format'}
+                    </Text>
+                  </View>
+                )}
+              </View>
+
+              <View style={{ flexDirection: 'row', gap: Spacing.sm, alignItems: 'center' }}>
+                <TextInput
+                  style={[
+                    modalStyles.input,
+                    { flex: 1 },
+                    cloudUrlInput.trim().length > 0 && (
+                      validateCloudDocumentUrl(cloudUrlInput.trim()).isValid 
+                        ? { borderColor: Colors.green } 
+                        : { borderColor: Colors.orange }
+                    )
+                  ]}
+                  placeholder="https://drive.google.com/file/d/..."
+                  placeholderTextColor={Colors.textSecondary}
+                  value={cloudUrlInput}
+                  onChangeText={setCloudUrlInput}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  keyboardType="url"
+                />
+              </View>
+
+              {/* Live Status Feedback & Test Link Button */}
+              {cloudUrlInput.trim().length > 0 && (
+                <View style={{ marginTop: 10 }}>
+                  {validateCloudDocumentUrl(cloudUrlInput.trim()).isValid ? (
+                    <View style={styles.validFeedbackBox}>
+                      <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                        <Ionicons name="checkmark-circle" size={16} color={Colors.green} />
+                        <Text style={styles.validFeedbackText}>
+                          Valid {validateCloudDocumentUrl(cloudUrlInput.trim()).providerLabel} link
+                        </Text>
+                      </View>
+                      <TouchableOpacity
+                        style={styles.testLinkBtn}
+                        onPress={() => {
+                          const url = cloudUrlInput.trim();
+                          Linking.openURL(url).catch(() => toast.error('Error', 'Could not open link. Check URL format.'));
+                        }}
+                        activeOpacity={0.7}
+                      >
+                        <Ionicons name="open-outline" size={14} color={Colors.blue} />
+                        <Text style={styles.testLinkText}>Test Link</Text>
+                      </TouchableOpacity>
+                    </View>
+                  ) : (
+                    <View style={styles.invalidFeedbackBox}>
+                      <Ionicons name="information-circle" size={16} color={Colors.orange} />
+                      <Text style={styles.invalidFeedbackText}>
+                        {validateCloudDocumentUrl(cloudUrlInput.trim()).error || 'Please enter a valid https:// shareable link.'}
+                      </Text>
+                    </View>
+                  )}
+                </View>
+              )}
             </View>
 
             <View style={modalStyles.btnRow}>
@@ -325,7 +392,7 @@ export function DocumentsScreen() {
                 {submitting ? (
                   <ActivityIndicator color={Colors.white} size="small" />
                 ) : (
-                  <Text style={modalStyles.saveBtnText}>Save Google Drive Link</Text>
+                  <Text style={modalStyles.saveBtnText}>Save Document Link</Text>
                 )}
               </TouchableOpacity>
             </View>
@@ -394,4 +461,73 @@ const modalStyles = StyleSheet.create({
   cancelBtnText: { fontSize: Typography.sm, fontWeight: Typography.semibold, color: Colors.textSecondary },
   saveBtn: { flex: 2, paddingVertical: 14, borderRadius: Radius.xl, alignItems: 'center', justifyContent: 'center', backgroundColor: Colors.blue },
   saveBtnText: { fontSize: Typography.sm, fontWeight: Typography.bold, color: Colors.white },
+});
+
+const styles = StyleSheet.create({
+  validationPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  pillValid: {
+    backgroundColor: '#ECFDF5',
+  },
+  pillInvalid: {
+    backgroundColor: '#FFFBEB',
+  },
+  validationPillText: {
+    fontSize: 11,
+    fontWeight: Typography.bold,
+  },
+  validFeedbackBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#ECFDF5',
+    borderWidth: 1,
+    borderColor: '#A7F3D0',
+    borderRadius: Radius.md,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  validFeedbackText: {
+    fontSize: 12,
+    color: '#065F46',
+    fontWeight: Typography.medium,
+  },
+  testLinkBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#BAE6FD',
+    borderRadius: Radius.sm,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  testLinkText: {
+    fontSize: 11,
+    color: Colors.blue,
+    fontWeight: Typography.bold,
+  },
+  invalidFeedbackBox: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 6,
+    backgroundColor: '#FFFBEB',
+    borderWidth: 1,
+    borderColor: '#FDE68A',
+    borderRadius: Radius.md,
+    padding: 10,
+  },
+  invalidFeedbackText: {
+    fontSize: 12,
+    color: '#92400E',
+    flex: 1,
+    lineHeight: 16,
+  },
 });

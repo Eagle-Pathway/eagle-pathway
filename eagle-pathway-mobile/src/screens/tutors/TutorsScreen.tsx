@@ -20,6 +20,7 @@ export default function TutorsScreen() {
   const [search, setSearch] = useState('');
   const [activeMode, setActiveMode] = useState('All');
   const [error, setError] = useState(false);
+  const [isOffline, setIsOffline] = useState(false);
 
   const load = async () => {
     setLoading(true);
@@ -29,10 +30,23 @@ export default function TutorsScreen() {
         isOnline: activeMode === 'Online' ? true : undefined,
         isInPerson: activeMode === 'In-Person' ? true : undefined,
         search: search || undefined,
-      }), 3500);
+      }), 4000);
       setTutors(data);
+      setIsOffline(false);
     } catch (e) {
-      console.error(e);
+      console.warn('[TutorsScreen] Network load failed, checking cached tutors:', e);
+      try {
+        const fallback = await tutorsService.getTutors({
+          isOnline: activeMode === 'Online' ? true : undefined,
+          isInPerson: activeMode === 'In-Person' ? true : undefined,
+          search: search || undefined,
+        });
+        if (fallback && fallback.length > 0) {
+          setTutors(fallback);
+          setIsOffline(true);
+          return;
+        }
+      } catch {}
       setError(true);
     } finally {
       setLoading(false);
@@ -165,6 +179,14 @@ export default function TutorsScreen() {
           </TouchableOpacity>
         ))}
       </ScrollView>
+
+      {/* Offline Status Banner */}
+      {isOffline && (
+        <View style={styles.offlineBanner}>
+          <Ionicons name="cloud-offline-outline" size={15} color="#D97706" />
+          <Text style={styles.offlineBannerText}>Showing offline saved tutors • Pull down to retry</Text>
+        </View>
+      )}
 
       {/* Prominent Request 1-on-1 Banner */}
       <TouchableOpacity
@@ -463,5 +485,23 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderWidth: 1,
     borderColor: '#BFDBFE',
+  },
+  offlineBanner: {
+    marginHorizontal: Spacing.xl,
+    marginBottom: Spacing.sm,
+    backgroundColor: '#FFFBEB',
+    borderRadius: Radius.lg,
+    borderWidth: 1,
+    borderColor: '#FDE68A',
+    paddingHorizontal: Spacing.md,
+    paddingVertical: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.xs,
+  },
+  offlineBannerText: {
+    fontSize: 12,
+    fontWeight: Typography.medium,
+    color: '#B45309',
   },
 });

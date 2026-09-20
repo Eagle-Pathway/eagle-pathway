@@ -7,6 +7,7 @@ import { decode } from 'base64-arraybuffer';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const SCHOLARSHIPS_CACHE_KEY = 'eagle_scholarships_offline_cache_v1';
+const SCHOLARSHIP_DETAIL_CACHE_PREFIX = 'eagle_scholarship_detail_';
 const SIGNED_URL_TTL_SECONDS = 60 * 60 * 24 * 7;
 const SOP_AI_API_URL = process.env.EXPO_PUBLIC_EAGLE_AI_API_URL;
 
@@ -110,15 +111,27 @@ export const scholarshipsService = {
         }
       }
 
+      if (filters?.fundingType) {
+        query = query.eq('funding_type', filters.fundingType);
+      }
+
       const { data, error } = await query.order('created_at', { ascending: false });
       if (error) throw error;
 
       // Save to local offline cache if this was a general list fetch (no search filter)
-      if (!searchTerm && data && Array.isArray(data)) {
+      if (!searchTerm && (!filters?.fundingType && !filters?.degreeLevel) && data && Array.isArray(data)) {
         AsyncStorage.setItem(SCHOLARSHIPS_CACHE_KEY, JSON.stringify(data)).catch(() => {});
       }
 
-      return data as Scholarship[];
+      let result = (data || []) as Scholarship[];
+      if (filters?.degreeLevel && filters.degreeLevel.toLowerCase() !== 'all') {
+        const targetDeg = filters.degreeLevel.toLowerCase();
+        result = result.filter(s => 
+          s.degree_levels && s.degree_levels.some(d => d.toLowerCase() === targetDeg)
+        );
+      }
+
+      return result;
     } catch (networkError: any) {
       // Offline fallback: Attempt to serve from local AsyncStorage cache
       try {
@@ -126,16 +139,31 @@ export const scholarshipsService = {
         if (cachedRaw) {
           const cached = JSON.parse(cachedRaw) as Scholarship[];
           if (Array.isArray(cached) && cached.length > 0) {
+            let filtered = cached;
+
             if (searchTerm) {
               const lower = searchTerm.toLowerCase();
-              return cached.filter(
+              filtered = filtered.filter(
                 (s) =>
                   s.name?.toLowerCase().includes(lower) ||
                   s.organization?.toLowerCase().includes(lower) ||
-                  s.country?.toLowerCase().includes(lower)
+                  s.country?.toLowerCase().includes(lower) ||
+                  s.description?.toLowerCase().includes(lower)
               );
             }
-            return cached;
+
+            if (filters?.fundingType) {
+              filtered = filtered.filter(s => s.funding_type === filters.fundingType);
+            }
+
+            if (filters?.degreeLevel && filters.degreeLevel.toLowerCase() !== 'all') {
+              const targetDeg = filters.degreeLevel.toLowerCase();
+              filtered = filtered.filter(s => 
+                s.degree_levels && s.degree_levels.some(d => d.toLowerCase() === targetDeg)
+              );
+            }
+
+            return filtered;
           }
         }
       } catch (cacheErr) {
@@ -166,18 +194,49 @@ export const scholarshipsService = {
 
       return activeCount ?? 0;
     } catch {
+      try {
+        const cachedRaw = await AsyncStorage.getItem(SCHOLARSHIPS_CACHE_KEY);
+        if (cachedRaw) {
+          const cached = JSON.parse(cachedRaw) as Scholarship[];
+          if (Array.isArray(cached)) return cached.length;
+        }
+      } catch {}
       return 0;
     }
   },
 
   async getScholarshipById(id: string): Promise<Scholarship> {
-    const { data, error } = await supabase
-      .from('scholarships')
-      .select('*')
-      .eq('id', id)
-      .single();
-    if (error) throw error;
-    return data as Scholarship;
+    const detailKey = `${SCHOLARSHIP_DETAIL_CACHE_PREFIX}${id}`;
+    try {
+      const { data, error } = await supabase
+        .from('scholarships')
+        .select('*')
+        .eq('id', id)
+        .single();
+      if (error) throw error;
+
+      if (data) {
+        AsyncStorage.setItem(detailKey, JSON.stringify(data)).catch(() => {});
+      }
+      return data as Scholarship;
+    } catch (networkError: any) {
+      // Offline fallback: Check specific scholarship detail cache or general list cache
+      try {
+        const cachedDetail = await AsyncStorage.getItem(detailKey);
+        if (cachedDetail) {
+          return JSON.parse(cachedDetail) as Scholarship;
+        }
+        const generalCache = await AsyncStorage.getItem(SCHOLARSHIPS_CACHE_KEY);
+        if (generalCache) {
+          const list = JSON.parse(generalCache) as Scholarship[];
+          const match = list.find(s => s.id === id);
+          if (match) return match;
+        }
+      } catch (cacheErr) {
+        console.warn('[ScholarshipsService] getScholarshipById cache error:', cacheErr);
+      }
+      throw networkError;
+    }
   },
 
   async createApplication(params: {
@@ -455,40 +514,73 @@ export const scholarshipsService = {
   },
 
   async getRecommendedScholarships(userId: string): Promise<(Scholarship & { matchScore?: number; matchReason?: string; matchReport?: ScholarshipMatchReport })[]> {
-    const { data: user } = await supabase.from('users').select('*').eq('id', userId).single();
-    if (!user) return [];
+    try {
+      const { data: user } = await supabase.from('users').select('*').eq('id', userId).single();
+      if (!user) return [];
 
-    const { data: scholarships, error } = await supabase
-      .from('scholarships')
-      .select('*')
-      .eq('is_active', true);
+      let scholarships: Scholarship[] = [];
+      const { data, error } = await supabase
+        .from('scholarships')
+        .select('*')
+        .eq('is_active', true);
 
-    if (error) throw error;
-
-    const scored = (scholarships as Scholarship[]).map(sch => {
-      const matchReport = evaluateScholarshipMatch(user as any, sch);
-
-      // Extract top positive reason
-      let matchReason = matchReport.summaryBadges[0]?.text || 'Academic Match';
-      if (matchReport.softFactors.length > 0) {
-        const topFactor = [...matchReport.softFactors].sort((a, b) => b.score - a.score)[0];
-        if (topFactor && topFactor.score >= 70) {
-          matchReason = `${topFactor.name} (${topFactor.score}%)`;
-        }
+      if (error) {
+        throw error;
+      } else if (data) {
+        scholarships = data as Scholarship[];
       }
 
-      return {
-        ...sch,
-        matchScore: matchReport.overallScore,
-        matchReason,
-        matchReport,
-      };
-    });
+      const scored = scholarships.map(sch => {
+        const matchReport = evaluateScholarshipMatch(user as any, sch);
 
-    return scored
-      .filter(s => s.matchReport.eligibilityStatus !== 'not_eligible' && (s.matchScore || 0) >= 40)
-      .sort((a, b) => (b.matchScore || 0) - (a.matchScore || 0))
-      .slice(0, 10);
+        // Extract top positive reason
+        let matchReason = matchReport.summaryBadges[0]?.text || 'Academic Match';
+        if (matchReport.softFactors.length > 0) {
+          const topFactor = [...matchReport.softFactors].sort((a, b) => b.score - a.score)[0];
+          if (topFactor && topFactor.score >= 70) {
+            matchReason = `${topFactor.name} (${topFactor.score}%)`;
+          }
+        }
+
+        return {
+          ...sch,
+          matchScore: matchReport.overallScore,
+          matchReason,
+          matchReport,
+        };
+      });
+
+      return scored
+        .filter(s => s.matchReport.eligibilityStatus !== 'not_eligible' && (s.matchScore || 0) >= 40)
+        .sort((a, b) => (b.matchScore || 0) - (a.matchScore || 0))
+        .slice(0, 10);
+    } catch (networkError) {
+      // Offline fallback: Use cached scholarships if available
+      try {
+        const cachedRaw = await AsyncStorage.getItem(SCHOLARSHIPS_CACHE_KEY);
+        if (cachedRaw) {
+          const cached = JSON.parse(cachedRaw) as Scholarship[];
+          if (Array.isArray(cached) && cached.length > 0) {
+            return cached.slice(0, 10).map(s => ({
+              ...s,
+              matchScore: 90,
+              matchReason: 'Saved Offline Match',
+              matchReport: {
+                overallScore: 90,
+                academicScore: 90,
+                eligibilityStatus: 'eligible',
+                summaryBadges: [{ text: 'Offline Catalog', type: 'match' }],
+                softFactors: [],
+                eligibleCount: 3,
+                totalCriteria: 3,
+                feedback: ['Viewing cached scholarship match.'],
+              } as any,
+            }));
+          }
+        }
+      } catch {}
+      return [];
+    }
   },
 
   async generateMagicSOP(student: User, scholarship?: Partial<Scholarship> | null): Promise<string> {

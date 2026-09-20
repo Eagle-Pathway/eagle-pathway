@@ -8,8 +8,21 @@ export type CloudStorageProvider = 'google_drive' | 'onedrive' | 'dropbox' | 'ic
 export interface CloudUrlValidationResult {
   isValid: boolean;
   provider: CloudStorageProvider;
+  providerLabel?: string;
   error?: string;
   sanitizedUrl?: string;
+}
+
+const PROVIDER_LABELS: Record<CloudStorageProvider, string> = {
+  google_drive: 'Google Drive',
+  onedrive: 'Microsoft OneDrive',
+  dropbox: 'Dropbox',
+  icloud: 'iCloud',
+  unknown: 'Cloud Storage',
+};
+
+export function getCloudProviderLabel(provider: CloudStorageProvider): string {
+  return PROVIDER_LABELS[provider] || 'Cloud Storage';
 }
 
 const ALLOWED_EXACT_HOSTS = new Set([
@@ -93,9 +106,21 @@ export function validateCloudDocumentUrl(rawUrl: string | null | undefined): Clo
       };
     }
 
+    // 3. Catch common unshared / private root drive homepage links
+    const path = parsed.pathname.toLowerCase();
+    if (provider === 'google_drive' && (path.includes('/my-drive') || path === '/drive' || path === '/drive/u/0' || path === '/drive/')) {
+      return {
+        isValid: false,
+        provider,
+        providerLabel: PROVIDER_LABELS[provider],
+        error: 'This looks like your private Google Drive homepage. Please open your specific file, tap Share → Copy link, and paste that link here.',
+      };
+    }
+
     return {
       isValid: true,
       provider,
+      providerLabel: PROVIDER_LABELS[provider],
       sanitizedUrl: parsed.toString(),
     };
   } catch {

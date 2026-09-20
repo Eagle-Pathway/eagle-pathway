@@ -13,7 +13,22 @@ describe('validateCloudDocumentUrl', () => {
       const result = validateCloudDocumentUrl(url);
       expect(result.isValid).toBe(true);
       expect(result.provider).toBe('google_drive');
+      expect(result.providerLabel).toBe('Google Drive');
       expect(result.error).toBeUndefined();
+    });
+  });
+
+  it('detects and warns on private unshared Google Drive homepage links', () => {
+    const privateUrls = [
+      'https://drive.google.com/drive/my-drive',
+      'https://drive.google.com/drive/u/0/my-drive',
+      'https://drive.google.com/drive',
+    ];
+
+    privateUrls.forEach(url => {
+      const result = validateCloudDocumentUrl(url);
+      expect(result.isValid).toBe(false);
+      expect(result.error).toContain('private Google Drive homepage');
     });
   });
 

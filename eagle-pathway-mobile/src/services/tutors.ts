@@ -1,5 +1,9 @@
 import { supabase } from './supabase';
 import { Tutor, TutorReview, Booking, BookingStatus, SessionType } from '../types';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+const TUTORS_CACHE_KEY = 'eagle_tutors_offline_cache_v1';
+const TUTOR_DETAIL_CACHE_PREFIX = 'eagle_tutor_detail_';
 
 export const tutorsService = {
   async getTutors(filters?: {
@@ -10,40 +14,134 @@ export const tutorsService = {
     maxRate?: number;
     search?: string;
   }): Promise<Tutor[]> {
-    let query = supabase
-      .from('tutors')
-      .select('*, user:users(*)')
-      .eq('is_verified', true);
+    try {
+      let query = supabase
+        .from('tutors')
+        .select('*, user:users(*)')
+        .eq('is_verified', true);
 
-    if (filters?.isOnline) query = query.eq('is_online', true);
-    if (filters?.isInPerson) query = query.eq('is_in_person', true);
-    if (filters?.maxRate) query = query.lte('hourly_rate', filters.maxRate);
-    if (filters?.subject) {
-      query = query.contains('subjects', [filters.subject]);
+      if (filters?.isOnline) query = query.eq('is_online', true);
+      if (filters?.isInPerson) query = query.eq('is_in_person', true);
+      if (filters?.maxRate) query = query.lte('hourly_rate', filters.maxRate);
+      if (filters?.subject) {
+        query = query.contains('subjects', [filters.subject]);
+      }
+
+      const { data, error } = await query.order('rating', { ascending: false });
+      if (error) throw error;
+
+      // Cache the full verified tutors list when general or unfiltered fetch succeeds
+      if (!filters || Object.keys(filters).length === 0 || (!filters.subject && !filters.search && !filters.maxRate && !filters.isOnline && !filters.isInPerson)) {
+        if (data && Array.isArray(data)) {
+          AsyncStorage.setItem(TUTORS_CACHE_KEY, JSON.stringify(data)).catch(() => {});
+        }
+      }
+
+      return data as Tutor[];
+    } catch (networkError: any) {
+      // Offline fallback: Attempt to load from local AsyncStorage cache
+      try {
+        const cachedRaw = await AsyncStorage.getItem(TUTORS_CACHE_KEY);
+        if (cachedRaw) {
+          const cached = JSON.parse(cachedRaw) as Tutor[];
+          if (Array.isArray(cached) && cached.length > 0) {
+            let filtered = cached;
+
+            if (filters?.isOnline) {
+              filtered = filtered.filter(t => t.is_online);
+            }
+            if (filters?.isInPerson) {
+              filtered = filtered.filter(t => t.is_in_person);
+            }
+            if (filters?.maxRate) {
+              filtered = filtered.filter(t => t.hourly_rate <= filters.maxRate!);
+            }
+            if (filters?.subject) {
+              const subLower = filters.subject.toLowerCase();
+              filtered = filtered.filter(t => 
+                (t.subjects || []).some(s => s.toLowerCase().includes(subLower)) ||
+                (t.user?.interested_subjects || []).some(s => s.toLowerCase().includes(subLower))
+              );
+            }
+            if (filters?.search) {
+              const s = filters.search.trim().toLowerCase();
+              filtered = filtered.filter(t => {
+                const fullName = t.user?.full_name?.toLowerCase() || '';
+                const uni = t.user?.university_name?.toLowerCase() || '';
+                const city = (t.user?.city || t.location || '').toLowerCase();
+                const exp = (t.bio || t.user?.teaching_experience || '').toLowerCase();
+                const allSubjects = (t.subjects || []).concat(t.user?.interested_subjects || []).map(sub => sub.toLowerCase());
+
+                return fullName.includes(s) ||
+                  uni.includes(s) ||
+                  city.includes(s) ||
+                  exp.includes(s) ||
+                  allSubjects.some(sub => sub.includes(s));
+              });
+            }
+
+            return filtered;
+          }
+        }
+      } catch (cacheErr) {
+        console.warn('[TutorsService] Cache fallback error:', cacheErr);
+      }
+      throw networkError;
     }
-
-    const { data, error } = await query.order('rating', { ascending: false });
-    if (error) throw error;
-    return data as Tutor[];
   },
 
   async getVerifiedTutorsCount(): Promise<number> {
-    const { count, error } = await supabase
-      .from('tutors')
-      .select('*', { count: 'exact', head: true })
-      .eq('is_verified', true);
-    if (error) throw error;
-    return count ?? 0;
+    try {
+      const { count, error } = await supabase
+        .from('tutors')
+        .select('*', { count: 'exact', head: true })
+        .eq('is_verified', true);
+      if (error) throw error;
+      return count ?? 0;
+    } catch {
+      try {
+        const cachedRaw = await AsyncStorage.getItem(TUTORS_CACHE_KEY);
+        if (cachedRaw) {
+          const cached = JSON.parse(cachedRaw) as Tutor[];
+          if (Array.isArray(cached)) return cached.length;
+        }
+      } catch {}
+      return 0;
+    }
   },
 
   async getTutorById(tutorId: string): Promise<Tutor> {
-    const { data, error } = await supabase
-      .from('tutors')
-      .select('*, user:users(*)')
-      .eq('id', tutorId)
-      .single();
-    if (error) throw error;
-    return data as Tutor;
+    const detailKey = `${TUTOR_DETAIL_CACHE_PREFIX}${tutorId}`;
+    try {
+      const { data, error } = await supabase
+        .from('tutors')
+        .select('*, user:users(*)')
+        .eq('id', tutorId)
+        .single();
+      if (error) throw error;
+
+      if (data) {
+        AsyncStorage.setItem(detailKey, JSON.stringify(data)).catch(() => {});
+      }
+      return data as Tutor;
+    } catch (networkError: any) {
+      // Offline fallback: Check specific tutor cache or find in general cache
+      try {
+        const cachedDetail = await AsyncStorage.getItem(detailKey);
+        if (cachedDetail) {
+          return JSON.parse(cachedDetail) as Tutor;
+        }
+        const generalCache = await AsyncStorage.getItem(TUTORS_CACHE_KEY);
+        if (generalCache) {
+          const tutors = JSON.parse(generalCache) as Tutor[];
+          const match = tutors.find(t => t.id === tutorId);
+          if (match) return match;
+        }
+      } catch (cacheErr) {
+        console.warn('[TutorsService] getTutorById cache error:', cacheErr);
+      }
+      throw networkError;
+    }
   },
 
   async getTutorUserId(tutorId: string): Promise<string | null> {

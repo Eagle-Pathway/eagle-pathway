@@ -40,10 +40,24 @@ export default function ScholarshipsScreen({ hideBack = false }: { hideBack?: bo
   const [selectedFilters, setSelectedFilters] = useState<string[]>(['All']);
   const [showSavedOnly, setShowSavedOnly] = useState(false);
   const [error, setError] = useState(false);
+  const [isOffline, setIsOffline] = useState(false);
 
   const load = useCallback(async () => {
     setError(false);
-    try { await withTimeout(loadScholarships(), 3500); } catch { setError(true); }
+    try { 
+      await withTimeout(loadScholarships(), 4000); 
+      setIsOffline(false);
+    } catch (e) { 
+      console.warn('[ScholarshipsScreen] Network load failed, checking cached list:', e);
+      try {
+        await loadScholarships();
+        if (useScholarshipStore.getState().scholarships.length > 0) {
+          setIsOffline(true);
+          return;
+        }
+      } catch {}
+      setError(true); 
+    }
   }, [loadScholarships]);
 
   useEffect(() => { load(); }, []);
@@ -174,24 +188,32 @@ export default function ScholarshipsScreen({ hideBack = false }: { hideBack?: bo
           data={filtered}
           keyExtractor={s => s.id}
           ListHeaderComponent={
-            <TouchableOpacity
-              style={styles.communityBanner}
-              onPress={() => router.push('/scholarship/submit')}
-              activeOpacity={0.85}
-            >
-              <View style={styles.communityBannerLeft}>
-                <View style={styles.communityIconWrap}>
-                  <Ionicons name="sparkles" size={18} color={Colors.gold} />
+            <>
+              {isOffline && (
+                <View style={styles.offlineBanner}>
+                  <Ionicons name="cloud-offline-outline" size={15} color="#D97706" />
+                  <Text style={styles.offlineBannerText}>Showing offline saved scholarships • Pull down to retry</Text>
                 </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.communityBannerTitle}>Know a scholarship we missed?</Text>
-                  <Text style={styles.communityBannerSub}>Suggest it to our team to help fellow students worldwide.</Text>
+              )}
+              <TouchableOpacity
+                style={styles.communityBanner}
+                onPress={() => router.push('/scholarship/submit')}
+                activeOpacity={0.85}
+              >
+                <View style={styles.communityBannerLeft}>
+                  <View style={styles.communityIconWrap}>
+                    <Ionicons name="sparkles" size={18} color={Colors.gold} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.communityBannerTitle}>Know a scholarship we missed?</Text>
+                    <Text style={styles.communityBannerSub}>Suggest it to our team to help fellow students worldwide.</Text>
+                  </View>
                 </View>
-              </View>
-              <View style={styles.communityBannerBtn}>
-                <Text style={styles.communityBannerBtnText}>Suggest +</Text>
-              </View>
-            </TouchableOpacity>
+                <View style={styles.communityBannerBtn}>
+                  <Text style={styles.communityBannerBtnText}>Suggest +</Text>
+                </View>
+              </TouchableOpacity>
+            </>
           }
           renderItem={({ item }) => (
             <ScholarshipCard
@@ -380,5 +402,23 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: Typography.bold,
     color: Colors.white,
+  },
+  offlineBanner: {
+    marginHorizontal: Spacing.xl,
+    marginBottom: Spacing.md,
+    backgroundColor: '#FFFBEB',
+    borderRadius: Radius.lg,
+    borderWidth: 1,
+    borderColor: '#FDE68A',
+    paddingHorizontal: Spacing.md,
+    paddingVertical: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.xs,
+  },
+  offlineBannerText: {
+    fontSize: 12,
+    fontWeight: Typography.medium,
+    color: '#B45309',
   },
 });
