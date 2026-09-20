@@ -40,23 +40,59 @@ export const googleAuthService = {
     const refreshToken = searchParams.get('refresh_token');
 
     if (code) {
-      const { data: exchangeData, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
-      if (exchangeError) throw exchangeError;
-      return {
-        session: exchangeData.session,
-        user: exchangeData.user,
-      };
+      try {
+        const { data: exchangeData, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+        if (!exchangeError && exchangeData?.session) {
+          return {
+            session: exchangeData.session,
+            user: exchangeData.user,
+          };
+        }
+      } catch (codeErr) {
+        console.log('[GoogleAuth] Code exchange error (may be handled by callback):', codeErr);
+      }
+
+      // Check if session was established concurrently
+      const { data: currentSession } = await supabase.auth.getSession();
+      if (currentSession?.session) {
+        return {
+          session: currentSession.session,
+          user: currentSession.session.user,
+        };
+      }
     }
 
     if (accessToken && refreshToken) {
-      const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
-        access_token: accessToken,
-        refresh_token: refreshToken,
-      });
-      if (sessionError) throw sessionError;
+      try {
+        const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
+          access_token: accessToken,
+          refresh_token: refreshToken,
+        });
+        if (!sessionError && sessionData?.session) {
+          return {
+            session: sessionData.session,
+            user: sessionData.user,
+          };
+        }
+      } catch (tokenErr) {
+        console.log('[GoogleAuth] Token set error:', tokenErr);
+      }
+
+      const { data: currentSession } = await supabase.auth.getSession();
+      if (currentSession?.session) {
+        return {
+          session: currentSession.session,
+          user: currentSession.session.user,
+        };
+      }
+    }
+
+    // Final check for active session before throwing
+    const { data: fallbackSession } = await supabase.auth.getSession();
+    if (fallbackSession?.session) {
       return {
-        session: sessionData.session,
-        user: sessionData.user,
+        session: fallbackSession.session,
+        user: fallbackSession.session.user,
       };
     }
 

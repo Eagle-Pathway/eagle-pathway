@@ -26,6 +26,7 @@ export default function LoginScreen() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const passwordRef = useRef<TextInput>(null);
   const { signIn, signInWithGoogle, isLoading, setLoading } = useAuthStore();
 
@@ -101,23 +102,30 @@ export default function LoginScreen() {
         <View style={styles.form}>
           {/* One-Tap Google Sign In */}
           <TouchableOpacity
-            style={styles.googleBtn}
+            style={[styles.googleBtn, isGoogleLoading && { opacity: 0.7 }]}
+            disabled={isGoogleLoading || isLoading}
             onPress={async () => {
+              if (isGoogleLoading) return;
+              setIsGoogleLoading(true);
               try {
                 await signInWithGoogle();
                 router.replace('/(tabs)/home');
               } catch (e: any) {
-                if (e?.message !== 'Google sign-in was cancelled or closed.') {
+                const msg = e?.message || '';
+                if (!/cancelled|closed/i.test(msg)) {
                   showError(e, 'Google Sign-In Failed');
                 }
               } finally {
+                setIsGoogleLoading(false);
                 setLoading(false);
               }
             }}
             activeOpacity={0.82}
           >
             <Ionicons name="logo-google" size={19} color="#4285F4" />
-            <Text style={styles.googleBtnText}>Continue with Google</Text>
+            <Text style={styles.googleBtnText}>
+              {isGoogleLoading ? 'Connecting to Google…' : 'Continue with Google'}
+            </Text>
           </TouchableOpacity>
 
           {/* Clean Divider */}
