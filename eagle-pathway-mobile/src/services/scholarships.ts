@@ -612,8 +612,7 @@ ${name}`;
       const insertData: Record<string, any> = {
         name: payload.name,
         organization: payload.organization,
-        country: payload.country,
-        host_country: payload.host_country || payload.country,
+        country: payload.country || payload.host_country || 'Global',
         country_flag: payload.country_flag || '🌍',
         funding_details: payload.funding_details || 'Scholarship Opportunity',
         funding_type: payload.funding_type || 'fully_funded',

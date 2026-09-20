@@ -9,6 +9,7 @@ import { Colors, Typography, Spacing, Radius, CommonStyles } from '@/utils/theme
 import { Ionicons } from '@expo/vector-icons';
 import { scholarshipsService } from '@/services/scholarships';
 import { getBroadFields } from '@eagle-pathway/shared';
+import { showError } from '@/utils/errorHandler';
 
 const STEPS = [
   { id: 1, title: 'Essentials', icon: 'school-outline' },
@@ -138,10 +139,10 @@ export function SubmitScholarshipScreen() {
       if (res.success) {
         setSubmittedSuccess(true);
       } else {
-        Alert.alert('Submission Error', res.error || 'Failed to submit scholarship. Please try again.');
+        showError(res.error || 'Failed to submit scholarship.', 'Submission Incomplete');
       }
     } catch (e: any) {
-      Alert.alert('Submission Error', e?.message || 'Something went wrong. Please check your connection.');
+      showError(e, 'Submission Incomplete');
     } finally {
       setSubmitting(false);
     }
