@@ -6,7 +6,6 @@ import {
   StyleSheet, 
   Image, 
   Linking,
-  ScrollView
 } from 'react-native';
 import { toast } from '@/utils/toast';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -14,24 +13,23 @@ import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Typography, Spacing, Radius } from '@/utils/theme';
 
+const TERMS_URL = 'https://www.eaglespathway.com/terms';
+const PRIVACY_URL = 'https://www.eaglespathway.com/privacy';
+
 export default function SplashScreen() {
   const insets = useSafeAreaInsets();
 
   return (
     <View style={styles.container}>
       <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
-        <ScrollView 
-          contentContainerStyle={[
-            styles.scrollContent, 
-            { 
-              paddingTop: Math.max(insets.top + 24, 44),
-              paddingBottom: Math.max(insets.bottom + 36, 54) 
-            }
-          ]}
-          showsVerticalScrollIndicator={false}
-          bounces={false}
-        >
-          {/* Brand & Hero Section */}
+        <View style={[
+          styles.content,
+          {
+            paddingTop: Math.max(insets.top + 16, 32),
+            paddingBottom: Math.max(insets.bottom + 16, 28),
+          }
+        ]}>
+          {/* Main Hero & Brand Section */}
           <View style={styles.centerSection}>
             <View style={styles.logoBox}>
               <Image 
@@ -39,30 +37,30 @@ export default function SplashScreen() {
                 style={styles.logoImg} 
               />
             </View>
-            
-            <Text style={styles.title}>Eagle Pathway</Text>
-            <Text style={styles.subtitle}>Your Gateway to Academic Excellence &amp; Global Success</Text>
 
-            {/* 3 Modern Feature Pills */}
-            <View style={styles.pillRow}>
-              <View style={styles.featurePill}>
-                <Ionicons name="school-outline" size={16} color="#60A5FA" />
-                <Text style={styles.featureText}>Tutoring</Text>
+            <Text style={styles.brandTitle}>Eagle Pathway</Text>
+            <Text style={styles.tagline}>
+              Your Gateway to Academic Excellence & Global Success
+            </Text>
+
+            {/* Clean, solid feature badges */}
+            <View style={styles.badgeRow}>
+              <View style={styles.badge}>
+                <Ionicons name="school-outline" size={15} color="#93C5FD" />
+                <Text style={styles.badgeText}>Scholarships</Text>
               </View>
-
-              <View style={styles.featurePill}>
-                <Ionicons name="globe-outline" size={16} color="#FBBF24" />
-                <Text style={styles.featureText}>Scholarships</Text>
+              <View style={styles.badge}>
+                <Ionicons name="person-outline" size={15} color="#FDE047" />
+                <Text style={styles.badgeText}>Tutoring</Text>
               </View>
-
-              <View style={styles.featurePill}>
-                <Ionicons name="rocket-outline" size={16} color="#34D399" />
-                <Text style={styles.featureText}>Mentorship</Text>
+              <View style={styles.badge}>
+                <Ionicons name="sparkles-outline" size={15} color="#6EE7B7" />
+                <Text style={styles.badgeText}>AI Mentor</Text>
               </View>
             </View>
           </View>
 
-          {/* Action Buttons - Distinctly separated with 96px gap */}
+          {/* Action Buttons Section */}
           <View style={styles.actionSection}>
             <TouchableOpacity 
               style={styles.btnPrimary} 
@@ -70,7 +68,7 @@ export default function SplashScreen() {
               activeOpacity={0.88}
             >
               <Text style={styles.btnPrimaryText}>Get Started</Text>
-              <Ionicons name="arrow-forward" size={18} color={Colors.blueDark} style={{ marginLeft: 6 }} />
+              <Ionicons name="arrow-forward" size={18} color="#0D2051" style={{ marginLeft: 6 }} />
             </TouchableOpacity>
 
             <TouchableOpacity 
@@ -78,18 +76,31 @@ export default function SplashScreen() {
               onPress={() => router.push('/(auth)/login')} 
               activeOpacity={0.85}
             >
-              <Text style={styles.btnSecondaryText}>I Already Have an Account</Text>
+              <Text style={styles.btnSecondaryText}>Sign In</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity 
-              onPress={() => Linking.openURL('https://www.eaglespathway.com/privacy').catch(() => toast.error('Could not open this link.'))} 
-              activeOpacity={0.7}
-              style={styles.termsWrap}
-            >
-              <Text style={styles.termsText}>Terms &amp; Privacy Policy</Text>
-            </TouchableOpacity>
+            {/* Solid Minimal Legal Footer */}
+            <View style={styles.legalRow}>
+              <TouchableOpacity 
+                onPress={() => Linking.openURL(TERMS_URL).catch(() => toast.error('Could not open Terms of Service.'))}
+                activeOpacity={0.7}
+                hitSlop={{ top: 8, bottom: 8, left: 6, right: 6 }}
+              >
+                <Text style={styles.legalLinkText}>Terms</Text>
+              </TouchableOpacity>
+
+              <Text style={styles.legalDot}>•</Text>
+
+              <TouchableOpacity 
+                onPress={() => Linking.openURL(PRIVACY_URL).catch(() => toast.error('Could not open Privacy Policy.'))}
+                activeOpacity={0.7}
+                hitSlop={{ top: 8, bottom: 8, left: 6, right: 6 }}
+              >
+                <Text style={styles.legalLinkText}>Privacy</Text>
+              </TouchableOpacity>
+            </View>
           </View>
-        </ScrollView>
+        </View>
       </SafeAreaView>
     </View>
   );
@@ -98,123 +109,121 @@ export default function SplashScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#0D2051', // Official Eagle Pathway Brand Blue Dark
+    backgroundColor: '#0D2051', // Solid brand dark navy - zero gradients
   },
   safe: {
     flex: 1,
   },
-  scrollContent: {
-    flexGrow: 1,
-    justifyContent: 'center',
-    paddingHorizontal: Spacing.xl,
+  content: {
+    flex: 1,
+    justifyContent: 'space-between',
+    paddingHorizontal: 24,
   },
   centerSection: {
+    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
   },
   logoBox: {
-    width: 90,
-    height: 90,
-    borderRadius: 26,
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    width: 86,
+    height: 86,
+    borderRadius: 22,
+    backgroundColor: '#132860',
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1.5,
-    borderColor: 'rgba(201, 168, 76, 0.35)', // Eagle Gold border accent
-    marginBottom: Spacing.md,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.25,
-    shadowRadius: 12,
-    elevation: 4,
+    borderColor: '#C9A84C', // Solid gold border
+    marginBottom: 20,
   },
   logoImg: {
-    width: 62,
-    height: 62,
+    width: 58,
+    height: 58,
     resizeMode: 'contain',
   },
-  title: {
-    fontSize: 30,
+  brandTitle: {
+    fontSize: 32,
     fontWeight: Typography.bold,
     color: '#FFFFFF',
     letterSpacing: -0.5,
-  },
-  subtitle: {
-    fontSize: Typography.sm,
-    color: 'rgba(255, 255, 255, 0.75)',
     textAlign: 'center',
-    marginTop: 6,
-    marginBottom: Spacing.xl,
-    lineHeight: 20,
-    paddingHorizontal: Spacing.sm,
+    marginBottom: 8,
   },
-  pillRow: {
+  tagline: {
+    fontSize: 13.5,
+    color: '#CBD5E1',
+    textAlign: 'center',
+    lineHeight: 20,
+    paddingHorizontal: 16,
+    marginBottom: 24,
+  },
+  badgeRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: Spacing.sm,
+    gap: 8,
   },
-  featurePill: {
+  badge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-    paddingHorizontal: 13,
-    paddingVertical: 8,
+    backgroundColor: '#172E6D',
+    paddingHorizontal: 12,
+    paddingVertical: 7,
     borderRadius: Radius.full,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.16)',
+    borderColor: '#244394',
     gap: 6,
   },
-  featureText: {
-    fontSize: Typography.xs,
-    fontWeight: Typography.semibold,
+  badgeText: {
+    fontSize: 11.5,
+    fontWeight: '600',
     color: '#FFFFFF',
   },
   actionSection: {
     width: '100%',
-    gap: Spacing.md,
-    marginTop: 96, // Substantial 96px margin separating the buttons from the badges
+    gap: 12,
+    marginBottom: 8,
   },
   btnPrimary: {
     backgroundColor: '#FFFFFF',
-    borderRadius: Radius.xl,
+    borderRadius: 14,
     paddingVertical: 15,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#FFFFFF',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.12,
-    shadowRadius: 8,
-    elevation: 3,
   },
   btnPrimaryText: {
     color: '#0D2051',
     fontWeight: Typography.bold,
-    fontSize: Typography.base,
+    fontSize: 15.5,
   },
   btnSecondary: {
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
-    borderRadius: Radius.xl,
+    backgroundColor: '#172E6D',
+    borderRadius: 14,
     paddingVertical: 14,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1.5,
-    borderColor: 'rgba(255, 255, 255, 0.2)',
+    borderColor: '#244394',
   },
   btnSecondaryText: {
     color: '#FFFFFF',
     fontWeight: Typography.semibold,
-    fontSize: Typography.sm,
+    fontSize: 14.5,
   },
-  termsWrap: {
-    paddingVertical: 6,
+  legalRow: {
+    flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 4,
+    justifyContent: 'center',
+    gap: 8,
+    paddingTop: 8,
   },
-  termsText: {
-    textAlign: 'center',
-    fontSize: Typography.xs,
-    color: 'rgba(255, 255, 255, 0.55)',
+  legalLinkText: {
+    fontSize: 11.5,
+    color: '#94A3B8',
+    fontWeight: '500',
+  },
+  legalDot: {
+    fontSize: 11,
+    color: '#64748B',
   },
 });
