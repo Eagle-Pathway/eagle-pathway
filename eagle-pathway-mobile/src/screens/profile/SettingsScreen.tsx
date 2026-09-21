@@ -12,8 +12,9 @@ import { CustomModal } from '@/components/common';
 import { Ionicons } from '@expo/vector-icons';
 import { showError } from '@/utils/errorHandler';
 
-// Public privacy policy — must be published here before Play submission.
+// Public privacy policy & terms of service — must be published here before Play submission.
 const PRIVACY_POLICY_URL = 'https://www.eaglespathway.com/privacy';
+const TERMS_URL = 'https://www.eaglespathway.com/terms';
 const ANDROID_PACKAGE = 'com.eaglepathway.app';
 
 export function SettingsScreen() {
@@ -51,6 +52,10 @@ export function SettingsScreen() {
     Linking.openURL(PRIVACY_POLICY_URL).catch(() => showError('Could not open the privacy policy.', 'Notice'));
   };
 
+  const handleTerms = () => {
+    Linking.openURL(TERMS_URL).catch(() => showError('Could not open terms of service.', 'Notice'));
+  };
+
   const handleRate = () => {
     Linking.openURL(`market://details?id=${ANDROID_PACKAGE}`).catch(() =>
       Linking.openURL(`https://play.google.com/store/apps/details?id=${ANDROID_PACKAGE}`).catch(() => {}),
@@ -75,9 +80,10 @@ export function SettingsScreen() {
       ],
     },
     {
-      title: 'Account',
+      title: 'Account & Legal',
       items: [
         { icon: 'lock-closed-outline', label: 'Change Password', type: 'nav', onPress: () => setChangePasswordVisible(true) },
+        { icon: 'document-text-outline', label: 'Terms of Service', type: 'nav', onPress: handleTerms },
         { icon: 'shield-checkmark-outline', label: 'Privacy & Data', type: 'nav', onPress: handlePrivacy },
       ],
     },

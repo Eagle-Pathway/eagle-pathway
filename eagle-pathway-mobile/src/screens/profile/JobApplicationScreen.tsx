@@ -16,7 +16,7 @@ import { useTutorJobStore } from '@/store/tutorJobStore';
 import { tutorJobsService } from '@/services/tutorJobs';
 import { authService } from '@/services/auth';
 
-const POLICY_URL = 'https://docs.google.com/document/d/1manAx_EUc8eIu4ScyddKyo1jdFAIwiQn2tZFunAqRdQ/edit?usp=sharing';
+const TERMS_URL = 'https://www.eaglespathway.com/terms';
 
 export function JobApplicationScreen() {
   const { jobId } = useLocalSearchParams<{ jobId: string }>();
@@ -279,8 +279,8 @@ export function JobApplicationScreen() {
               </Text>
             </View>
 
-            <TouchableOpacity onPress={() => Linking.openURL(POLICY_URL).catch(() => toast.error('Link Error', 'Could not open this link. Please check if you have a supported app installed.'))} style={profStyles.policyLink}>
-              <Text style={profStyles.policyLinkText}>📄 Read our full policy document →</Text>
+            <TouchableOpacity onPress={() => Linking.openURL(TERMS_URL).catch(() => toast.error('Link Error', 'Could not open this link. Please check if you have a supported app installed.'))} style={profStyles.policyLink}>
+              <Text style={profStyles.policyLinkText}>📄 Read our full terms & policy →</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -291,7 +291,7 @@ export function JobApplicationScreen() {
                 {policyAgreed && <Text style={profStyles.checkmark}>✓</Text>}
               </View>
               <Text style={profStyles.checkboxLabel}>
-                I have read and agree to the Eagle Tutorials policy
+                I have read and agree to the Eagle Tutorials policy & terms
               </Text>
             </TouchableOpacity>
           </View>
