@@ -8,6 +8,7 @@ import { Colors, Typography, Spacing } from '@/utils/theme';
 import { EmptyState, ErrorState } from '@/components/common';
 import { useAuthStore } from '@/store/authStore';
 import { useNotificationStore } from '@/store/notificationStore';
+import { resolveNotificationRoute } from '@/utils/deepLink';
 
 export function NotificationsScreen() {
   const { user } = useAuthStore();
@@ -74,40 +75,16 @@ export function NotificationsScreen() {
                   handleMarkRead(n.id);
                 }
 
-                const data = n.data as any;
-                switch (n.type) {
-                  case 'application_update':
-                  case 'sop_reviewed':
-                  case 'offer_received':
-                    if (data?.application_id) {
-                      router.push({
-                        pathname: '/tracker',
-                        params: { applicationId: data.application_id }
-                      });
-                    } else {
-                      router.push('/tracker');
-                    }
-                    break;
-                  case 'document_approved':
-                  case 'document_rejected':
-                    router.push('/documents');
-                    break;
-                  case 'booking_confirmed':
-                  case 'session_reminder':
-                    router.push('/(tabs)/bookings');
-                    break;
-                  case 'scholarship_alert':
-                    if (data?.scholarship_id) {
-                      router.push({
-                        pathname: '/scholarship-detail',
-                        params: { scholarshipId: data.scholarship_id }
-                      });
-                    } else {
-                      router.push('/(tabs)/scholarships');
-                    }
-                    break;
-                  default:
-                    break;
+                const targetRoute = resolveNotificationRoute(n.data as any, n.type);
+                if (targetRoute) {
+                  if (targetRoute.params) {
+                    router.push({
+                      pathname: targetRoute.pathname as any,
+                      params: targetRoute.params,
+                    });
+                  } else {
+                    router.push(targetRoute.pathname as any);
+                  }
                 }
               }}
             >

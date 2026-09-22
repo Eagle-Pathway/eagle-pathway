@@ -14,6 +14,7 @@ import { notificationsService } from '../src/services/notifications';
 import { ErrorBoundary } from '../src/components/ErrorBoundary';
 import { OfflineBanner } from '../src/components/OfflineBanner';
 import { initErrorLogging } from '../src/services/errorLog';
+import { resolveNotificationRoute } from '../src/utils/deepLink';
 import Toast from 'react-native-toast-message';
 import { toastConfig } from '../src/components/ToastConfig';
 
@@ -122,17 +123,35 @@ export default function RootLayout() {
       }, 3000);
     }
 
-    // 7. Notification Listeners
+    // 7. Notification Deep Linking & Listeners
+    const handleNotificationResponse = (response: any) => {
+      const data = response?.notification?.request?.content?.data;
+      if (!data) return;
+      const targetRoute = resolveNotificationRoute(data);
+      if (targetRoute) {
+        if (targetRoute.params) {
+          router.push({
+            pathname: targetRoute.pathname as any,
+            params: targetRoute.params,
+          });
+        } else {
+          router.push(targetRoute.pathname as any);
+        }
+      }
+    };
+
     const notificationListener = notificationsService.addNotificationListener(notification => {
-      console.log('Notification received:', notification);
+      console.log('[Notifications] Received notification:', notification);
     });
 
-    const responseListener = notificationsService.addResponseListener(response => {
-      const data = response.notification.request.content.data;
-      if (data?.url && typeof data.url === 'string') {
-        router.push(data.url as any);
+    const responseListener = notificationsService.addResponseListener(handleNotificationResponse);
+
+    // Check cold-start notification (tapped while app was completely closed)
+    notificationsService.getLastNotificationResponse().then(initialResponse => {
+      if (initialResponse) {
+        setTimeout(() => handleNotificationResponse(initialResponse), 300);
       }
-    });
+    }).catch(() => {});
 
     return () => {
       clearTimeout(splashTimeout);

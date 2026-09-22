@@ -104,4 +104,12 @@ export const notificationsService = {
   addResponseListener(handler: (response: Notifications.NotificationResponse) => void) {
     return Notifications.addNotificationResponseReceivedListener(handler);
   },
+
+  async getLastNotificationResponse(): Promise<Notifications.NotificationResponse | null> {
+    try {
+      return await Notifications.getLastNotificationResponseAsync();
+    } catch {
+      return null;
+    }
+  },
 };
