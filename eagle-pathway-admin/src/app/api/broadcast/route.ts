@@ -45,6 +45,7 @@ export async function POST(req: NextRequest) {
       body,
       type: safeType,
       is_read: false,
+      data: { url: deepLinkUrl, type: safeType },
     }));
 
     // 4. Insert in-app notifications (in batches if large, but Supabase SDK handles arrays up to ~1000 well. We'll chunk to be safe)
@@ -100,6 +101,21 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // 7. Record in broadcast_logs
+    try {
+      await supabase.from('broadcast_logs').insert({
+        title,
+        body,
+        audience,
+        type: safeType,
+        target_url: deepLinkUrl,
+        notified_count: users.length,
+        push_count: tokens.length,
+      });
+    } catch (logErr) {
+      console.warn('Could not log broadcast to broadcast_logs:', logErr);
+    }
+
     return NextResponse.json({
       success: true,
       notified_count: users.length,
@@ -111,5 +127,32 @@ export async function POST(req: NextRequest) {
       { error: e.message || 'Internal server error' },
       { status: e.message?.includes('Authentication') ? 401 : 500 },
     );
+  }
+}
+
+export async function GET(req: NextRequest) {
+  try {
+    const authResult = await verifyAdminRequest(req);
+    if (!authResult.authorized) {
+      return authResult.errorResponse!;
+    }
+
+    const supabase = getStrictAdminClient();
+    const { data: logs, error } = await supabase
+      .from('broadcast_logs')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(25);
+
+    if (error) {
+      // If table doesn't exist yet, return empty list gracefully
+      console.warn('Broadcast logs query warning:', error);
+      return NextResponse.json({ logs: [] });
+    }
+
+    return NextResponse.json({ logs: logs || [] });
+  } catch (e: any) {
+    console.error('Failed to fetch broadcast logs:', e);
+    return NextResponse.json({ logs: [] });
   }
 }

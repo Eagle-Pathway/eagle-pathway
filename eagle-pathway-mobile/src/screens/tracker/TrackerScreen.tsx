@@ -88,11 +88,14 @@ export function TrackerScreen({ hideHeader = false }: { hideHeader?: boolean }) 
       <SafeAreaView style={CommonStyles.screenBg} edges={['top', 'bottom']}>
         <View style={trackerStyles.detailHeader}>
           <ScaleBounce style={trackerStyles.backBtn} onPress={() => setSelectedApp(null)}>
-            <Text style={{ fontSize: 20 }}>←</Text>
+            <Ionicons name="arrow-back" size={20} color={Colors.text} />
           </ScaleBounce>
           <Text style={trackerStyles.detailTitle}>Application Status</Text>
         </View>
-        <ScrollView contentContainerStyle={{ paddingBottom: 100 }}>
+        <ScrollView 
+          contentContainerStyle={{ paddingBottom: 100 }}
+          refreshControl={<RefreshControl refreshing={loading} onRefresh={load} tintColor={Colors.blue} />}
+        >
           <View style={trackerStyles.summaryCard}>
             <View style={{ width: 64, height: 64, borderRadius: 32, backgroundColor: Colors.bg, alignItems: 'center', justifyContent: 'center', marginBottom: Spacing.sm, padding: 6, borderWidth: 1, borderColor: Colors.border }}>
               {(() => {
@@ -204,7 +207,7 @@ export function TrackerScreen({ hideHeader = false }: { hideHeader?: boolean }) 
         {!hideHeader && (
           <View style={trackerStyles.heroHeader}>
             <ScaleBounce style={trackerStyles.backBtnCircle} onPress={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)/home'))}>
-              <Text style={{ fontSize: 20, color: Colors.white }}>←</Text>
+              <Ionicons name="arrow-back" size={20} color={Colors.white} />
             </ScaleBounce>
           </View>
         )}
@@ -288,6 +291,67 @@ export function TrackerScreen({ hideHeader = false }: { hideHeader?: boolean }) 
                   <Pill label={app.package_tier.toUpperCase()} variant="gold" />
                 </View>
               </View>
+
+              {/* Quick Actions Strip */}
+              <View style={trackerStyles.quickActionsRow}>
+                <TouchableOpacity
+                  style={trackerStyles.quickActionBtn}
+                  onPress={(e) => {
+                    e.stopPropagation();
+                    router.push('/documents');
+                  }}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons name="document-text-outline" size={14} color={Colors.blue} />
+                  <Text style={trackerStyles.quickActionBtnText}>Documents</Text>
+                </TouchableOpacity>
+
+                {['documents', 'sop', 'draft', 'submitted'].includes(app.status) && (
+                  <TouchableOpacity
+                    style={trackerStyles.quickActionBtn}
+                    onPress={(e) => {
+                      e.stopPropagation();
+                      router.push({
+                        pathname: '/scholarship/sop',
+                        params: { applicationId: app.id, scholarshipName: app.scholarship?.name },
+                      });
+                    }}
+                    activeOpacity={0.8}
+                  >
+                    <Ionicons name="sparkles-outline" size={14} color="#7C3AED" />
+                    <Text style={[trackerStyles.quickActionBtnText, { color: '#7C3AED' }]}>AI SOP</Text>
+                  </TouchableOpacity>
+                )}
+
+                <TouchableOpacity
+                  style={trackerStyles.quickActionBtn}
+                  onPress={(e) => {
+                    e.stopPropagation();
+                    if (app.consultant_id) {
+                      router.push({
+                        pathname: '/chat/[id]',
+                        params: { id: app.consultant_id, fullName: app.consultant?.full_name || 'Consultant' },
+                      });
+                    } else {
+                      router.push('/chat');
+                    }
+                  }}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons name="chatbubbles-outline" size={14} color={Colors.text} />
+                  <Text style={[trackerStyles.quickActionBtnText, { color: Colors.text }]}>Advisor</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[trackerStyles.quickActionBtn, { borderRightWidth: 0 }]}
+                  onPress={() => setSelectedApp(app)}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons name="eye-outline" size={14} color={Colors.blue} />
+                  <Text style={trackerStyles.quickActionBtnText}>Timeline</Text>
+                </TouchableOpacity>
+              </View>
+
               <View style={trackerStyles.footerRow}>
                 <Text style={trackerStyles.footerTxt}>Last update: {new Date(app.updated_at).toLocaleDateString()}</Text>
                 <View style={trackerStyles.viewDetailBtn}>
@@ -371,5 +435,28 @@ const trackerStyles = StyleSheet.create({
     color: Colors.white,
     fontWeight: Typography.bold,
     fontSize: 11,
+  },
+  quickActionsRow: {
+    flexDirection: 'row',
+    backgroundColor: Colors.card,
+    borderTopWidth: 1,
+    borderTopColor: Colors.border,
+    paddingVertical: 8,
+    paddingHorizontal: Spacing.sm,
+  },
+  quickActionBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+    paddingVertical: 6,
+    borderRightWidth: 1,
+    borderRightColor: Colors.border,
+  },
+  quickActionBtnText: {
+    fontSize: Typography.xs,
+    fontWeight: Typography.semibold,
+    color: Colors.blue,
   },
 });

@@ -276,12 +276,68 @@ export const tutorsService = {
       .eq('id', bookingId);
     if (error) throw error;
   },
-  async cancelBooking(bookingId: string): Promise<void> {
+
+  async rescheduleBooking(params: {
+    bookingId: string;
+    newDate: string;
+    newTime: string;
+    reason?: string;
+    targetUserId?: string;
+    initiatorName?: string;
+  }): Promise<void> {
+    const { bookingId, newDate, newTime, reason, targetUserId, initiatorName } = params;
+    const { error } = await supabase
+      .from('bookings')
+      .update({ 
+        session_date: newDate,
+        session_time: newTime,
+        status: 'pending',
+      })
+      .eq('id', bookingId);
+    if (error) throw error;
+
+    // Send in-app notification to the counterparty (tutor or student)
+    if (targetUserId) {
+      try {
+        await supabase.from('notifications').insert({
+          user_id: targetUserId,
+          title: 'Session Rescheduled 📅',
+          body: `${initiatorName || 'Your session partner'} requested to reschedule to ${newDate} at ${newTime}${reason ? `. Reason: ${reason}` : ''}.`,
+          type: 'booking_confirmed',
+          data: { url: '/(tabs)/activity' },
+          is_read: false,
+        });
+      } catch (notifErr) {
+        console.warn('Could not dispatch reschedule notification:', notifErr);
+      }
+    }
+  },
+
+  async cancelBooking(bookingId: string, options?: {
+    reason?: string;
+    targetUserId?: string;
+    initiatorName?: string;
+  }): Promise<void> {
     const { error } = await supabase
       .from('bookings')
       .update({ status: 'cancelled' })
       .eq('id', bookingId);
     if (error) throw error;
+
+    if (options?.targetUserId) {
+      try {
+        await supabase.from('notifications').insert({
+          user_id: options.targetUserId,
+          title: 'Session Cancelled',
+          body: `${options.initiatorName || 'A participant'} cancelled the session${options.reason ? `. Reason: ${options.reason}` : '.'}`,
+          type: 'session_reminder',
+          data: { url: '/(tabs)/activity' },
+          is_read: false,
+        });
+      } catch (notifErr) {
+        console.warn('Could not dispatch cancellation notification:', notifErr);
+      }
+    }
   },
   async updateTutorProfile(userId: string, updates: Partial<Tutor>): Promise<void> {
     const { error } = await supabase

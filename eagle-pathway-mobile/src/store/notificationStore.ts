@@ -11,6 +11,8 @@ interface NotificationState {
   loadNotifications: (userId: string) => Promise<void>;
   markAllNotificationsRead: (userId: string) => Promise<void>;
   markNotificationRead: (notificationId: string) => Promise<void>;
+  deleteNotification: (notificationId: string) => Promise<void>;
+  clearAllNotifications: (userId: string) => Promise<void>;
   incrementUnread: () => void;
   decrementUnread: () => void;
 }
@@ -49,6 +51,23 @@ export const useNotificationStore = create<NotificationState>((set, get) => ({
       ),
       unreadCount: Math.max(0, state.unreadCount - 1),
     }));
+  },
+
+  deleteNotification: async (notificationId) => {
+    const target = get().notifications.find(n => n.id === notificationId);
+    await notificationsService.deleteNotification(notificationId);
+    set(state => ({
+      notifications: state.notifications.filter(n => n.id !== notificationId),
+      unreadCount: target && !target.is_read ? Math.max(0, state.unreadCount - 1) : state.unreadCount,
+    }));
+  },
+
+  clearAllNotifications: async (userId) => {
+    await notificationsService.clearAll(userId);
+    set({
+      notifications: [],
+      unreadCount: 0,
+    });
   },
 
   incrementUnread: () => set(state => ({ unreadCount: state.unreadCount + 1 })),

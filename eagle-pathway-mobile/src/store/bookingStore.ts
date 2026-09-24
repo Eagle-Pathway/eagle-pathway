@@ -11,7 +11,15 @@ interface BookingState {
   // Actions
   loadBookings: (userId: string) => Promise<void>;
   loadTutorBookings: (tutorId: string) => Promise<void>;
-  cancelBooking: (bookingId: string) => Promise<void>;
+  cancelBooking: (bookingId: string, options?: { reason?: string; targetUserId?: string; initiatorName?: string }) => Promise<void>;
+  rescheduleBooking: (params: {
+    bookingId: string;
+    newDate: string;
+    newTime: string;
+    reason?: string;
+    targetUserId?: string;
+    initiatorName?: string;
+  }) => Promise<void>;
   updateBookingStatus: (bookingId: string, status: BookingStatus) => Promise<void>;
   setTutorProfile: (profile: Tutor | null) => void;
 }
@@ -45,11 +53,25 @@ export const useBookingStore = create<BookingState>((set, get) => ({
     }
   },
 
-  cancelBooking: async (bookingId) => {
-    await tutorsService.cancelBooking(bookingId);
+  cancelBooking: async (bookingId, options) => {
+    await tutorsService.cancelBooking(bookingId, options);
     set(state => ({
       bookings: state.bookings.map(b =>
         b.id === bookingId ? { ...b, status: 'cancelled' as const } : b
+      ),
+    }));
+  },
+
+  rescheduleBooking: async (params) => {
+    await tutorsService.rescheduleBooking(params);
+    set(state => ({
+      bookings: state.bookings.map(b =>
+        b.id === params.bookingId ? { 
+          ...b, 
+          session_date: params.newDate, 
+          session_time: params.newTime, 
+          status: 'pending' as const 
+        } : b
       ),
     }));
   },
