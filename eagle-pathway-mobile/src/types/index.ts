@@ -430,6 +430,7 @@ export interface TutorJobPost {
   start_time: string;
   hourly_rate: number;
   gender_preference: GenderPreference;
+  mode?: string;
   status: TutorJobStatus;
   notification_sent?: boolean;
   posted_by_user?: User;

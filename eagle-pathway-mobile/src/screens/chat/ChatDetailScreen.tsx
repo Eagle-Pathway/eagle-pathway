@@ -11,6 +11,7 @@ import { Avatar, Skeleton } from '@/components/common';
 import { useAuthStore } from '@/store/authStore';
 import { useChatStore } from '@/store/ChatStore';
 import { supabase } from '@/services/supabase';
+import { showError } from '@/utils/errorHandler';
 
 function formatMessageTime(dateString?: string): string {
   if (!dateString) return '';
@@ -114,6 +115,7 @@ export default function ChatDetailScreen() {
       flatListRef.current?.scrollToEnd({ animated: true });
     } catch (e) {
       setInputText(content);
+      showError(e, 'Message Not Sent');
     }
   };
 
@@ -143,7 +145,7 @@ export default function ChatDetailScreen() {
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity style={styles.backBtn} onPress={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)/home'))} accessibilityRole="button" accessibilityLabel="Go back">
-          <Text style={{ fontSize: 20 }}>←</Text>
+          <Ionicons name="arrow-back" size={22} color={Colors.text} />
         </TouchableOpacity>
         <Avatar initials={headerInitial} size={36} color={Colors.blue} />
         <View style={{ flex: 1, marginLeft: Spacing.sm }}>
@@ -223,7 +225,7 @@ export default function ChatDetailScreen() {
             onPress={handleSend}
             disabled={!inputText.trim()}
           >
-            <Text style={styles.sendIcon}>🏹</Text>
+            <Ionicons name="send" size={18} color={Colors.white} />
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>

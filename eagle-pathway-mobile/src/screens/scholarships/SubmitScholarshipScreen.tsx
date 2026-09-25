@@ -1,15 +1,19 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View, Text, ScrollView, TextInput, TouchableOpacity,
-  StyleSheet, Alert, ActivityIndicator, KeyboardAvoidingView, Platform
+  StyleSheet, ActivityIndicator, KeyboardAvoidingView, Platform
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Colors, Typography, Spacing, Radius, CommonStyles } from '@/utils/theme';
 import { Ionicons } from '@expo/vector-icons';
 import { scholarshipsService } from '@/services/scholarships';
 import { getBroadFields } from '@eagle-pathway/shared';
 import { showError } from '@/utils/errorHandler';
+import { toast } from '@/utils/toast';
+
+const SCHOLARSHIP_DRAFT_KEY = '@eagle_scholarship_submission_draft';
 
 const STEPS = [
   { id: 1, title: 'Essentials', icon: 'school-outline' },
@@ -63,6 +67,33 @@ export function SubmitScholarshipScreen() {
     requires_passport: false,
   });
 
+  // Restore draft on mount
+  useEffect(() => {
+    let isMounted = true;
+    (async () => {
+      try {
+        const saved = await AsyncStorage.getItem(SCHOLARSHIP_DRAFT_KEY);
+        if (saved && isMounted) {
+          const parsed = JSON.parse(saved);
+          if (parsed && typeof parsed === 'object') {
+            setFormData(prev => ({ ...prev, ...parsed }));
+            toast.info('Draft Restored', 'Restored your previous unsaved scholarship draft.');
+          }
+        }
+      } catch (err) {
+        console.error('Failed to restore scholarship draft', err);
+      }
+    })();
+    return () => { isMounted = false; };
+  }, []);
+
+  // Auto-save draft on form change
+  useEffect(() => {
+    if (formData.name.trim() || formData.organization.trim()) {
+      AsyncStorage.setItem(SCHOLARSHIP_DRAFT_KEY, JSON.stringify(formData)).catch(console.error);
+    }
+  }, [formData]);
+
   const updateField = (key: string, value: any) => {
     setFormData(prev => ({ ...prev, [key]: value }));
   };
@@ -70,22 +101,22 @@ export function SubmitScholarshipScreen() {
   const handleNext = () => {
     if (currentStep === 1) {
       if (!formData.name.trim()) {
-        Alert.alert('Required Field', 'Please enter the scholarship or program name.');
+        toast.warning('Required Field', 'Please enter the scholarship or program name.');
         return;
       }
       if (!formData.organization.trim()) {
-        Alert.alert('Required Field', 'Please enter the offering organization or university.');
+        toast.warning('Required Field', 'Please enter the offering organization or university.');
         return;
       }
       if (!formData.website_url.trim()) {
-        Alert.alert('Required Field', 'Please enter the official program website link.');
+        toast.warning('Required Field', 'Please enter the official program website link.');
         return;
       }
     }
 
     if (currentStep === 3) {
       if (!formData.deadline.trim()) {
-        Alert.alert('Deadline Required', 'Please enter the approximate or official application deadline date (e.g. 2027-03-31 or March 2027).');
+        toast.warning('Deadline Required', 'Please enter the approximate or official application deadline date (e.g. 2027-03-31 or March 2027).');
         return;
       }
     }
@@ -137,6 +168,7 @@ export function SubmitScholarshipScreen() {
       });
 
       if (res.success) {
+        await AsyncStorage.removeItem(SCHOLARSHIP_DRAFT_KEY).catch(console.error);
         setSubmittedSuccess(true);
       } else {
         showError(res.error || 'Failed to submit scholarship.', 'Submission Incomplete');
@@ -155,7 +187,7 @@ export function SubmitScholarshipScreen() {
           <View style={styles.successIconWrap}>
             <Ionicons name="checkmark-circle" size={64} color={Colors.green} />
           </View>
-          <Text style={styles.successTitle}>Scholarship Submitted! 🎓</Text>
+          <Text style={styles.successTitle}>Scholarship Submitted!</Text>
           <Text style={styles.successBody}>
             Thank you for contributing to the Eagle Pathway community!
           </Text>
@@ -413,9 +445,9 @@ export function SubmitScholarshipScreen() {
                 <Text style={styles.label}>Eligible Nationalities</Text>
                 <View style={{ gap: 6, marginTop: 4 }}>
                   {[
-                    { id: 'all', label: '🌍 Open to All International Nationalities' },
-                    { id: 'developing_countries', label: '🌱 Developing Countries Only (DAC / Global South)' },
-                    { id: 'specific_countries', label: '🎯 Specific Selected Countries' },
+                    { id: 'all', label: 'Open to All International Nationalities' },
+                    { id: 'developing_countries', label: 'Developing Countries Only (DAC / Global South)' },
+                    { id: 'specific_countries', label: 'Specific Selected Countries' },
                   ].map((n) => (
                     <TouchableOpacity
                       key={n.id}
@@ -469,7 +501,7 @@ export function SubmitScholarshipScreen() {
                 <Text style={styles.label}>Funding Level</Text>
                 <View style={styles.segmentedRow}>
                   {[
-                    { id: 'fully_funded', label: '🌟 Fully Funded' },
+                    { id: 'fully_funded', label: 'Fully Funded' },
                     { id: 'partial', label: 'Partial Tuition' },
                     { id: 'tuition_only', label: 'Tuition Only' },
                   ].map((f) => (
@@ -654,7 +686,8 @@ export function SubmitScholarshipScreen() {
           <View style={styles.bottomActions}>
             {currentStep < 4 ? (
               <TouchableOpacity style={styles.primaryBtn} onPress={handleNext} activeOpacity={0.85}>
-                <Text style={styles.primaryBtnText}>Continue ➔</Text>
+                <Text style={styles.primaryBtnText}>Continue</Text>
+                <Ionicons name="arrow-forward" size={16} color={Colors.white} />
               </TouchableOpacity>
             ) : (
               <TouchableOpacity
@@ -666,7 +699,10 @@ export function SubmitScholarshipScreen() {
                 {submitting ? (
                   <ActivityIndicator color={Colors.white} />
                 ) : (
-                  <Text style={styles.primaryBtnText}>Submit for Verification 🚀</Text>
+                  <>
+                    <Text style={styles.primaryBtnText}>Submit for Verification</Text>
+                    <Ionicons name="paper-plane" size={16} color={Colors.white} />
+                  </>
                 )}
               </TouchableOpacity>
             )}
@@ -946,8 +982,11 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.blueDark,
     borderRadius: Radius.md,
     paddingVertical: 14,
+    paddingHorizontal: Spacing.xl,
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    gap: 8,
     shadowColor: Colors.blueDark,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,

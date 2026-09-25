@@ -10,6 +10,7 @@ import { Colors, Typography, Spacing, Radius, CommonStyles } from '@/utils/theme
 import { Button } from '@/components/common';
 import { KeyboardAwareScreen } from '@/components/KeyboardAwareScreen';
 import { toast } from '@/utils/toast';
+import { showError } from '@/utils/errorHandler';
 import { useAuthStore } from '@/store/authStore';
 import { supabase } from '@/services/supabase';
 import { tutorsService } from '@/services/tutors';
@@ -118,7 +119,7 @@ export function RequestTutorScreen() {
       );
       router.back();
     } catch (err: any) {
-      toast.error('Submission Failed', err.message || 'Could not submit your request. Please try again.');
+      showError(err, 'Request Submission Failed');
     } finally {
       setLoading(false);
     }

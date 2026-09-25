@@ -26,6 +26,8 @@ export function TutorJobFeedScreen() {
   const { jobs, loadingJobs, loadJobs } = useTutorJobStore();
   const [appliedIds, setAppliedIds] = useState<Set<string>>(new Set());
   const [refreshing, setRefreshing] = useState(false);
+  const [filterMode, setFilterMode] = useState<'all' | 'In-person' | 'Online' | 'Hybrid'>('all');
+  const [filterGender, setFilterGender] = useState<'all' | 'female' | 'male'>('all');
 
   useEffect(() => { withTimeout(loadJobs(), 3500); }, []);
 
@@ -62,6 +64,16 @@ export function TutorJobFeedScreen() {
 
   const openJobs = jobs.filter(j => j.status === 'open');
 
+  const filteredJobs = jobs.filter(job => {
+    if (filterMode !== 'all') {
+      if (job.mode && job.mode.toLowerCase() !== filterMode.toLowerCase()) return false;
+    }
+    if (filterGender !== 'all') {
+      if (job.gender_preference && job.gender_preference !== filterGender && job.gender_preference !== 'both') return false;
+    }
+    return true;
+  });
+
   return (
     <View style={CommonStyles.flex1}>
       {/* Top Header Bar */}
@@ -80,6 +92,55 @@ export function TutorJobFeedScreen() {
           <Ionicons name="document-text-outline" size={14} color={Colors.blue} />
           <Text style={s.headerLink}>My Applications</Text>
         </TouchableOpacity>
+      </View>
+
+      {/* Filter Chips Bar */}
+      <View style={s.filtersContainer}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.filtersScroll}>
+          <TouchableOpacity
+            style={[s.filterChip, filterMode === 'all' && s.filterChipActive]}
+            onPress={() => setFilterMode('all')}
+          >
+            <Text style={[s.filterChipText, filterMode === 'all' && s.filterChipTextActive]}>All Modes</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[s.filterChip, filterMode === 'In-person' && s.filterChipActive]}
+            onPress={() => setFilterMode('In-person')}
+          >
+            <Ionicons name="location-outline" size={12} color={filterMode === 'In-person' ? Colors.white : Colors.textSecondary} />
+            <Text style={[s.filterChipText, filterMode === 'In-person' && s.filterChipTextActive]}>In-person</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[s.filterChip, filterMode === 'Online' && s.filterChipActive]}
+            onPress={() => setFilterMode('Online')}
+          >
+            <Ionicons name="videocam-outline" size={12} color={filterMode === 'Online' ? Colors.white : Colors.textSecondary} />
+            <Text style={[s.filterChipText, filterMode === 'Online' && s.filterChipTextActive]}>Online</Text>
+          </TouchableOpacity>
+
+          <View style={s.filterDivider} />
+
+          <TouchableOpacity
+            style={[s.filterChip, filterGender === 'all' && s.filterChipActive]}
+            onPress={() => setFilterGender('all')}
+          >
+            <Text style={[s.filterChipText, filterGender === 'all' && s.filterChipTextActive]}>All Genders</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[s.filterChip, filterGender === 'female' && s.filterChipActive]}
+            onPress={() => setFilterGender('female')}
+          >
+            <Ionicons name="female" size={12} color={filterGender === 'female' ? Colors.white : '#C026D3'} />
+            <Text style={[s.filterChipText, filterGender === 'female' && s.filterChipTextActive]}>Female Only</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[s.filterChip, filterGender === 'male' && s.filterChipActive]}
+            onPress={() => setFilterGender('male')}
+          >
+            <Ionicons name="male" size={12} color={filterGender === 'male' ? Colors.white : '#0284C7'} />
+            <Text style={[s.filterChipText, filterGender === 'male' && s.filterChipTextActive]}>Male Only</Text>
+          </TouchableOpacity>
+        </ScrollView>
       </View>
 
       <ScrollView
@@ -106,14 +167,14 @@ export function TutorJobFeedScreen() {
               </View>
             ))}
           </View>
-        ) : jobs.length === 0 ? (
+        ) : filteredJobs.length === 0 ? (
           <EmptyState 
             icon="briefcase-outline" 
-            title="No Open Jobs Right Now" 
-            subtitle="New parent and student tutoring requests will appear here as soon as they are approved." 
+            title={jobs.length === 0 ? "No Open Jobs Right Now" : "No Matching Jobs"} 
+            subtitle={jobs.length === 0 ? "New parent and student tutoring requests will appear here as soon as they are approved." : "Try clearing your filters to see other available tutoring jobs."} 
           />
         ) : (
-          jobs.map(job => {
+          filteredJobs.map(job => {
             const hasApplied = appliedIds.has(job.id);
             const isClosed = (job.status as string) === 'closed' || (job.status as string) === 'hired';
 
@@ -130,8 +191,35 @@ export function TutorJobFeedScreen() {
                       <Ionicons name="location-sharp" size={15} color="#2563EB" />
                       <Text style={s.place} numberOfLines={1}>{job.place || 'Addis Ababa'}</Text>
                     </View>
-                    <View style={s.gradePill}>
-                      <Text style={s.gradeText}>🎓 {job.grade || 'General'}</Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4, flexWrap: 'wrap' }}>
+                      <View style={s.gradePill}>
+                        <Ionicons name="school-outline" size={12} color="#2563EB" />
+                        <Text style={s.gradeText}>{job.grade || 'General'}</Text>
+                      </View>
+                      {job.gender_preference === 'female' && (
+                        <View style={s.genderPillFemale}>
+                          <Ionicons name="female" size={11} color="#C026D3" />
+                          <Text style={s.genderTextFemale}>Female Only</Text>
+                        </View>
+                      )}
+                      {job.gender_preference === 'male' && (
+                        <View style={s.genderPillMale}>
+                          <Ionicons name="male" size={11} color="#0284C7" />
+                          <Text style={s.genderTextMale}>Male Only</Text>
+                        </View>
+                      )}
+                      {(!job.gender_preference || job.gender_preference === 'both') && (
+                        <View style={s.genderPillBoth}>
+                          <Ionicons name="people-outline" size={11} color="#64748B" />
+                          <Text style={s.genderTextBoth}>Any Gender</Text>
+                        </View>
+                      )}
+                      {job.mode && (
+                        <View style={s.modePill}>
+                          <Ionicons name={job.mode === 'Online' ? 'videocam-outline' : 'location-outline'} size={11} color="#475569" />
+                          <Text style={s.modeText}>{job.mode}</Text>
+                        </View>
+                      )}
                     </View>
                   </View>
 
@@ -270,7 +358,52 @@ const s = StyleSheet.create({
     fontWeight: Typography.bold, 
     color: '#0F172A',
   },
+  filtersContainer: {
+    backgroundColor: Colors.white,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E2E8F0',
+    paddingVertical: 10,
+  },
+  filtersScroll: {
+    paddingHorizontal: Spacing.xl,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  filterChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: Radius.full,
+    backgroundColor: '#F8FAFC',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  filterChipActive: {
+    backgroundColor: '#2563EB',
+    borderColor: '#2563EB',
+  },
+  filterChipText: {
+    fontSize: 12,
+    fontWeight: Typography.medium,
+    color: '#475569',
+  },
+  filterChipTextActive: {
+    color: '#FFFFFF',
+    fontWeight: Typography.bold,
+  },
+  filterDivider: {
+    width: 1,
+    height: 18,
+    backgroundColor: '#CBD5E1',
+    marginHorizontal: 4,
+  },
   gradePill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
     alignSelf: 'flex-start',
     backgroundColor: '#F8FAFC',
     paddingHorizontal: 8,
@@ -278,6 +411,70 @@ const s = StyleSheet.create({
     borderRadius: 6,
     borderWidth: 1,
     borderColor: '#E2E8F0',
+  },
+  genderPillFemale: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    backgroundColor: '#FDF4FF',
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#F5D0FE',
+  },
+  genderTextFemale: {
+    fontSize: Typography.xs,
+    color: '#A21CAF',
+    fontWeight: Typography.semibold,
+  },
+  genderPillMale: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    backgroundColor: '#F0F9FF',
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#BAE6FD',
+  },
+  genderTextMale: {
+    fontSize: Typography.xs,
+    color: '#0369A1',
+    fontWeight: Typography.semibold,
+  },
+  genderPillBoth: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    backgroundColor: '#F8FAFC',
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  genderTextBoth: {
+    fontSize: Typography.xs,
+    color: '#64748B',
+    fontWeight: Typography.semibold,
+  },
+  modePill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    backgroundColor: '#F8FAFC',
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  modeText: {
+    fontSize: Typography.xs,
+    color: '#475569',
+    fontWeight: Typography.medium,
   },
   gradeText: { 
     fontSize: Typography.xs, 

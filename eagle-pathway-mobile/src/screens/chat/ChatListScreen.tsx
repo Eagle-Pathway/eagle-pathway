@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { Colors, Typography, Spacing, Radius, CommonStyles } from '@/utils/theme';
 import { Avatar, EmptyState, ErrorState, Skeleton } from '@/components/common';
 import { useAuthStore } from '../../store/authStore';
@@ -73,13 +74,13 @@ export default function ChatListScreen() {
           activeOpacity={0.8}
         >
           <View style={styles.supportIconWrapBlue}>
-            <Text style={styles.supportEmoji}>👨‍🏫</Text>
+            <Ionicons name="school" size={20} color={Colors.blue} />
           </View>
           <View style={{ flex: 1 }}>
             <Text style={styles.supportTitle}>Need a tutor fast?</Text>
             <Text style={styles.supportLinkText}>Telegram: @EagleTutorialsServices</Text>
           </View>
-          <Text style={styles.supportArrow}>↗</Text>
+          <Ionicons name="open-outline" size={18} color={Colors.textSecondary} />
         </TouchableOpacity>
 
         <TouchableOpacity 
@@ -88,13 +89,13 @@ export default function ChatListScreen() {
           activeOpacity={0.8}
         >
           <View style={styles.supportIconWrapGold}>
-            <Text style={styles.supportEmoji}>🎓</Text>
+            <Ionicons name="ribbon" size={20} color={Colors.gold} />
           </View>
           <View style={{ flex: 1 }}>
             <Text style={styles.supportTitle}>Need a Scholarship Guidance?</Text>
             <Text style={styles.supportLinkText}>Telegram: @Tegegnpathway</Text>
           </View>
-          <Text style={styles.supportArrow}>↗</Text>
+          <Ionicons name="open-outline" size={18} color={Colors.textSecondary} />
         </TouchableOpacity>
       </View>
 
@@ -145,7 +146,7 @@ export default function ChatListScreen() {
     <SafeAreaView style={CommonStyles.screenBg} edges={['top', 'bottom']}>
       <View style={styles.header}>
         <TouchableOpacity style={styles.backBtn} onPress={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)/home'))} activeOpacity={0.8} accessibilityRole="button" accessibilityLabel="Go back">
-          <Text style={{ fontSize: 20, color: Colors.text }}>←</Text>
+          <Ionicons name="arrow-back" size={20} color={Colors.text} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Messages</Text>
       </View>

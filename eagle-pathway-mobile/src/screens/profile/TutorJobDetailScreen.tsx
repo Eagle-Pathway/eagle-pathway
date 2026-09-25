@@ -5,6 +5,7 @@ import {
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { Colors, Typography, Spacing, Radius, CommonStyles } from '@/utils/theme';
+import { Ionicons } from '@expo/vector-icons';
 import { Button, Skeleton } from '@/components/common';
 import { useTutorJobStore } from '@/store/tutorJobStore';
 import { tutorJobsService } from '@/services/tutorJobs';
@@ -90,7 +91,7 @@ export function TutorJobDetailScreen() {
       <SafeAreaView style={CommonStyles.screenBg} edges={['top', 'bottom']}>
         <View style={s.header}>
           <TouchableOpacity onPress={() => router.back()} style={s.backBtn} accessibilityRole="button" accessibilityLabel="Go back">
-            <Text style={s.backText}>←</Text>
+            <Ionicons name="arrow-back" size={24} color={Colors.text} />
           </TouchableOpacity>
           <Text style={s.headerTitle}>Job Not Found</Text>
           <View style={{ width: 40 }} />
@@ -111,24 +112,28 @@ export function TutorJobDetailScreen() {
     <SafeAreaView style={CommonStyles.screenBg} edges={['top', 'bottom']}>
       <View style={s.header}>
         <TouchableOpacity onPress={() => router.back()} style={s.backBtn} accessibilityRole="button" accessibilityLabel="Go back">
-          <Text style={s.backText}>←</Text>
+          <Ionicons name="arrow-back" size={24} color={Colors.text} />
         </TouchableOpacity>
         <Text style={s.headerTitle}>Job Details</Text>
         <View style={{ width: 40 }} />
       </View>
       <ScrollView contentContainerStyle={{ padding: Spacing.lg, paddingBottom: 140 }}>
-        <Text style={s.title}>📌 Tutor at {job.place}</Text>
+        <Text style={s.title}>Tutor at {job.place}</Text>
         <Text style={s.subtitle}>{job.grade}</Text>
 
         <View style={s.detailCard}>
-          <DetailRow icon="📍" label="Place" value={job.place} />
-          <DetailRow icon="📚" label="Grade" value={job.grade} />
-          <DetailRow icon="📖" label="Subjects" value={job.subjects?.join(', ')} />
-          <DetailRow icon="⏱" label="Session" value={`${job.session_hours} hrs/day`} />
-          <DetailRow icon="📅" label="Days" value={`${job.days_per_week} days/week`} />
-          <DetailRow icon="🕐" label="Start Time" value={toEATDisplay(job.start_time)} />
-          <DetailRow icon="💰" label="Hourly Rate" value={`${job.hourly_rate} ETB/hr`} highlight />
-          <DetailRow icon="👤" label="Who can apply" value={job.gender_preference === 'female' ? 'Female tutors only' : job.gender_preference === 'male' ? 'Male tutors only' : 'Both Female and Male can apply'} />
+          <DetailRow icon={<Ionicons name="location-outline" size={17} color={Colors.blue} />} label="Place" value={job.place} />
+          <DetailRow icon={<Ionicons name="school-outline" size={17} color={Colors.blue} />} label="Grade" value={job.grade} />
+          <DetailRow icon={<Ionicons name="book-outline" size={17} color={Colors.blue} />} label="Subjects" value={job.subjects?.join(', ')} />
+          <DetailRow icon={<Ionicons name="time-outline" size={17} color={Colors.blue} />} label="Session" value={`${job.session_hours} hrs/day`} />
+          <DetailRow icon={<Ionicons name="calendar-outline" size={17} color={Colors.blue} />} label="Days" value={`${job.days_per_week} days/week`} />
+          <DetailRow icon={<Ionicons name="alarm-outline" size={17} color={Colors.blue} />} label="Start Time" value={toEATDisplay(job.start_time)} />
+          <DetailRow icon={<Ionicons name="cash-outline" size={17} color={Colors.goldDark} />} label="Hourly Rate" value={`${job.hourly_rate} ETB/hr`} highlight />
+          <DetailRow 
+            icon={<Ionicons name="people-outline" size={17} color="#7C3AED" />} 
+            label="Eligibility" 
+            value={job.gender_preference === 'female' ? 'Female tutors only' : job.gender_preference === 'male' ? 'Male tutors only' : 'All tutors can apply'} 
+          />
         </View>
 
         {/* Notice Card for Non-Approved / Missing Fields Status */}
@@ -140,9 +145,15 @@ export function TutorJobDetailScreen() {
             approval.status === 'rejected' && { backgroundColor: Colors.redLight, borderColor: Colors.red },
           ]}>
             <View style={s.noticeHeader}>
-              <Text style={s.noticeIcon}>
-                {approval.status === 'missing_fields' ? '📝' : approval.status === 'pending_approval' ? '🔒' : '❌'}
-              </Text>
+              <View style={s.noticeIconWrap}>
+                {approval.status === 'missing_fields' ? (
+                  <Ionicons name="document-text-outline" size={20} color={Colors.orange} />
+                ) : approval.status === 'pending_approval' ? (
+                  <Ionicons name="lock-closed-outline" size={20} color={Colors.blue} />
+                ) : (
+                  <Ionicons name="close-circle-outline" size={20} color={Colors.red} />
+                )}
+              </View>
               <Text style={[
                 s.noticeTitle,
                 approval.status === 'missing_fields' && { color: Colors.orange },
@@ -178,14 +189,14 @@ export function TutorJobDetailScreen() {
 
         {hasApplied && (
           <View style={[s.infoBox, { backgroundColor: Colors.blueLight }]}>
-            <Text style={s.infoIcon}>✅</Text>
+            <Ionicons name="checkmark-circle-outline" size={20} color={Colors.blue} />
             <Text style={s.infoText}>You have already applied for this position.</Text>
           </View>
         )}
 
         {job.status === 'closed' && (
           <View style={[s.infoBox, { backgroundColor: Colors.grayLight }]}>
-            <Text style={s.infoIcon}>🔒</Text>
+            <Ionicons name="lock-closed-outline" size={20} color={Colors.textSecondary} />
             <Text style={s.infoText}>This position is no longer accepting applications.</Text>
           </View>
         )}
@@ -234,10 +245,10 @@ export function TutorJobDetailScreen() {
   );
 }
 
-function DetailRow({ icon, label, value, highlight }: { icon: string; label: string; value: string; highlight?: boolean }) {
+function DetailRow({ icon, label, value, highlight }: { icon: React.ReactNode; label: string; value: string; highlight?: boolean }) {
   return (
     <View style={s.detailRow}>
-      <Text style={s.detailIcon}>{icon}</Text>
+      <View style={s.detailIconBox}>{icon}</View>
       <Text style={s.detailLabel}>{label}</Text>
       <Text style={[s.detailValue, highlight && { color: Colors.gold, fontWeight: Typography.bold }]}>{value}</Text>
     </View>
@@ -253,11 +264,13 @@ const s = StyleSheet.create({
   subtitle: { fontSize: Typography.md, color: Colors.textSecondary, marginBottom: Spacing.lg },
   detailCard: { backgroundColor: Colors.card, borderRadius: Radius.xl, padding: Spacing.lg, borderWidth: 1, borderColor: Colors.border },
   detailRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 8, borderBottomWidth: 1, borderBottomColor: Colors.border },
+  detailIconBox: { width: 28, alignItems: 'flex-start', justifyContent: 'center' },
   detailIcon: { fontSize: 16, width: 28 },
   detailLabel: { fontSize: Typography.base, color: Colors.textSecondary, width: 90 },
   detailValue: { fontSize: Typography.base, color: Colors.text, flex: 1, textAlign: 'right' },
   noticeCard: { marginTop: Spacing.lg, borderRadius: Radius.xl, padding: Spacing.lg, borderWidth: 1.5 },
   noticeHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 6 },
+  noticeIconWrap: { width: 24, height: 24, alignItems: 'center', justifyContent: 'center' },
   noticeIcon: { fontSize: 20 },
   noticeTitle: { fontSize: Typography.base, fontWeight: Typography.bold },
   noticeSub: { fontSize: Typography.sm, color: Colors.textSecondary, lineHeight: 20 },
