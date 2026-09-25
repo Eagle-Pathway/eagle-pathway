@@ -155,6 +155,137 @@ function TypingIndicator() {
   );
 }
 
+function renderInlineMarkdown(text: string, isUser: boolean): React.ReactNode {
+  const tokens = text.split(/(\*\*[^*]+\*\*|`[^`]+`|\*[^*]+\*)/g);
+
+  return tokens.map((token, idx) => {
+    if (!token) return null;
+
+    if (token.startsWith('**') && token.endsWith('**') && token.length >= 4) {
+      return (
+        <Text key={idx} style={[styles.mdBold, isUser ? styles.mdBoldUser : styles.mdBoldAssistant]}>
+          {token.slice(2, -2)}
+        </Text>
+      );
+    }
+
+    if (token.startsWith('`') && token.endsWith('`') && token.length >= 2) {
+      return (
+        <Text key={idx} style={[styles.mdCode, isUser ? styles.mdCodeUser : styles.mdCodeAssistant]}>
+          {token.slice(1, -1)}
+        </Text>
+      );
+    }
+
+    if (token.startsWith('*') && token.endsWith('*') && token.length >= 2) {
+      return (
+        <Text key={idx} style={{ fontStyle: 'italic' }}>
+          {token.slice(1, -1)}
+        </Text>
+      );
+    }
+
+    return <Text key={idx}>{token}</Text>;
+  });
+}
+
+function MarkdownMessageText({ content, isUser }: { content: string; isUser: boolean }) {
+  if (!content) {
+    return (
+      <Text style={[styles.messageText, isUser ? styles.messageTextUser : styles.messageTextAssistant]}>
+        ...
+      </Text>
+    );
+  }
+
+  const lines = content.split('\n');
+  const elements: React.ReactNode[] = [];
+
+  for (let i = 0; i < lines.length; i++) {
+    const rawLine = lines[i];
+    const line = rawLine.trimEnd();
+
+    if (!line.trim()) {
+      elements.push(<View key={`sp-${i}`} style={{ height: 6 }} />);
+      continue;
+    }
+
+    // Heading 1 (# ...)
+    if (line.startsWith('# ')) {
+      elements.push(
+        <Text key={`h1-${i}`} style={[styles.mdH1, isUser ? styles.messageTextUser : styles.mdHeadingAssistant]}>
+          {renderInlineMarkdown(line.slice(2).trim(), isUser)}
+        </Text>
+      );
+      continue;
+    }
+
+    // Heading 2 (## ...)
+    if (line.startsWith('## ')) {
+      elements.push(
+        <Text key={`h2-${i}`} style={[styles.mdH2, isUser ? styles.messageTextUser : styles.mdHeadingAssistant]}>
+          {renderInlineMarkdown(line.slice(3).trim(), isUser)}
+        </Text>
+      );
+      continue;
+    }
+
+    // Heading 3 (### ...)
+    if (line.startsWith('### ')) {
+      elements.push(
+        <Text key={`h3-${i}`} style={[styles.mdH3, isUser ? styles.messageTextUser : styles.mdHeadingAssistant]}>
+          {renderInlineMarkdown(line.slice(4).trim(), isUser)}
+        </Text>
+      );
+      continue;
+    }
+
+    // Numbered list item (e.g. "1. ", "2. ", "10) ")
+    const numMatch = line.match(/^(\d+[\.\)])\s+(.*)$/);
+    if (numMatch) {
+      const numPrefix = numMatch[1];
+      const rest = numMatch[2];
+      elements.push(
+        <View key={`num-${i}`} style={styles.mdListRow}>
+          <Text style={[styles.mdListPrefix, isUser ? styles.messageTextUser : styles.mdListPrefixAssistant]}>
+            {numPrefix}
+          </Text>
+          <Text style={[styles.mdListContent, isUser ? styles.messageTextUser : styles.messageTextAssistant]}>
+            {renderInlineMarkdown(rest, isUser)}
+          </Text>
+        </View>
+      );
+      continue;
+    }
+
+    // Bullet list item (e.g. "- ", "* ", "• ")
+    const bulletMatch = line.match(/^([•\-\*])\s+(.*)$/);
+    if (bulletMatch) {
+      const rest = bulletMatch[2];
+      elements.push(
+        <View key={`bullet-${i}`} style={styles.mdListRow}>
+          <Text style={[styles.mdListPrefix, isUser ? styles.messageTextUser : styles.mdListPrefixAssistant]}>
+            •
+          </Text>
+          <Text style={[styles.mdListContent, isUser ? styles.messageTextUser : styles.messageTextAssistant]}>
+            {renderInlineMarkdown(rest, isUser)}
+          </Text>
+        </View>
+      );
+      continue;
+    }
+
+    // Standard paragraph line
+    elements.push(
+      <Text key={`p-${i}`} style={[styles.messageText, isUser ? styles.messageTextUser : styles.messageTextAssistant]}>
+        {renderInlineMarkdown(line, isUser)}
+      </Text>
+    );
+  }
+
+  return <View style={styles.mdContainer}>{elements}</View>;
+}
+
 export default function AssistantScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -287,9 +418,7 @@ export default function AssistantScreen() {
           </View>
         )}
         <View style={[styles.messageBubble, isUser ? styles.messageBubbleUser : styles.messageBubbleAssistant]}>
-          <Text style={[styles.messageText, isUser ? styles.messageTextUser : styles.messageTextAssistant]}>
-            {item.content || '...'}
-          </Text>
+          <MarkdownMessageText content={item.content} isUser={isUser} />
 
           <View style={[styles.messageFooter, isUser ? styles.messageFooterUser : styles.messageFooterAssistant]}>
             <Text style={[styles.timestampText, isUser ? styles.timestampTextUser : styles.timestampTextAssistant]}>
@@ -715,6 +844,76 @@ const styles = StyleSheet.create({
   },
   messageTextAssistant: {
     color: '#1E293B',
+  },
+  mdContainer: {
+    width: '100%',
+  },
+  mdBold: {
+    fontWeight: '700',
+  },
+  mdBoldUser: {
+    color: Colors.white,
+  },
+  mdBoldAssistant: {
+    color: '#0F172A',
+  },
+  mdH1: {
+    fontSize: 17,
+    fontWeight: '700',
+    marginTop: 6,
+    marginBottom: 4,
+    lineHeight: 22,
+  },
+  mdH2: {
+    fontSize: 15.5,
+    fontWeight: '700',
+    marginTop: 6,
+    marginBottom: 3,
+    lineHeight: 20,
+  },
+  mdH3: {
+    fontSize: 14.5,
+    fontWeight: '700',
+    marginTop: 5,
+    marginBottom: 2,
+    lineHeight: 19,
+  },
+  mdHeadingAssistant: {
+    color: Colors.blueDark,
+  },
+  mdListRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginTop: 3,
+    marginBottom: 2,
+  },
+  mdListPrefix: {
+    width: 22,
+    fontSize: 14,
+    fontWeight: '700',
+    lineHeight: 21,
+  },
+  mdListPrefixAssistant: {
+    color: Colors.blue,
+  },
+  mdListContent: {
+    flex: 1,
+    fontSize: 14.5,
+    lineHeight: 21,
+  },
+  mdCode: {
+    fontFamily: Platform.OS === 'ios' ? 'Menlo' : 'monospace',
+    fontSize: 12.5,
+    paddingHorizontal: 4,
+    borderRadius: 4,
+  },
+  mdCodeAssistant: {
+    backgroundColor: '#F1F5F9',
+    color: '#0F172A',
+  },
+  mdCodeUser: {
+    backgroundColor: 'rgba(255,255,255,0.25)',
+    color: Colors.white,
   },
   messageFooter: {
     flexDirection: 'row',
