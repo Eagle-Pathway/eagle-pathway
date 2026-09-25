@@ -8,6 +8,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { format } from 'date-fns';
 import { Colors, Typography, Spacing, Radius, CommonStyles } from '@/utils/theme';
+import { Ionicons } from '@expo/vector-icons';
 import { EmptyState, ErrorState, Skeleton } from '@/components/common';
 import { KeyboardAwareScreen } from '@/components/KeyboardAwareScreen';
 import { openWhatsApp } from '@/utils/linking';
@@ -108,11 +109,11 @@ export function RecommendationsScreen() {
     <SafeAreaView style={CommonStyles.screenBg} edges={['top', 'bottom']}>
       <View style={s.header}>
         <TouchableOpacity style={s.backBtn} onPress={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)/home'))} activeOpacity={0.8} accessibilityRole="button" accessibilityLabel="Go back">
-          <Text style={{ fontSize: 20, color: Colors.text }}>←</Text>
+          <Ionicons name="arrow-back" size={20} color={Colors.text} />
         </TouchableOpacity>
         <Text style={s.title}>Recommendation Letters</Text>
-        <TouchableOpacity style={s.addBtn} onPress={() => setModal(true)} activeOpacity={0.8}>
-          <Text style={s.addBtnText}>+</Text>
+        <TouchableOpacity style={s.addBtn} onPress={() => setModal(true)} activeOpacity={0.8} accessibilityRole="button" accessibilityLabel="Add recommendation">
+          <Ionicons name="add" size={22} color={Colors.white} />
         </TouchableOpacity>
       </View>
 

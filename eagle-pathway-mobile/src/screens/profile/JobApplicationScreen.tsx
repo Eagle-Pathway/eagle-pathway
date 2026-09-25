@@ -7,6 +7,7 @@ import { toast } from '@/utils/toast';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { Colors, Typography, Spacing, Radius, CommonStyles } from '@/utils/theme';
+import { Ionicons } from '@expo/vector-icons';
 import { Button, ProgressBar, Card } from '@/components/common';
 import { KeyboardAwareScreen } from '@/components/KeyboardAwareScreen';
 import { supabase } from '@/services/supabase';
@@ -195,7 +196,7 @@ export function JobApplicationScreen() {
     <SafeAreaView style={CommonStyles.screenBg} edges={['top', 'bottom']}>
       <View style={profStyles.header}>
         <TouchableOpacity onPress={() => router.back()} style={profStyles.backBtn} accessibilityRole="button" accessibilityLabel="Go back">
-          <Text style={profStyles.backText}>←</Text>
+          <Ionicons name="arrow-back" size={20} color={Colors.text} />
         </TouchableOpacity>
         <Text style={profStyles.headerTitle}>{jobId ? 'Apply for Job' : 'Tutor Application'}</Text>
         <View style={{ width: 40 }} />

@@ -5,6 +5,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Colors, Typography, Spacing, Radius, CommonStyles } from '@/utils/theme';
+import { Ionicons } from '@expo/vector-icons';
 import { ProgressBar } from '@/components/common';
 import { useAuthStore } from '@/store/authStore';
 import { useScholarshipStore } from '@/store/scholarshipStore';
@@ -52,7 +53,9 @@ export function ProgressScreen() {
       <View style={progStyles.hero}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: Spacing.xl }}>
           <View><Text style={progStyles.heroLabel}>Your Journey</Text><Text style={progStyles.heroTitle}>My Progress</Text></View>
-          <TouchableOpacity style={progStyles.backBtn} onPress={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)/home'))} activeOpacity={0.8} accessibilityRole="button" accessibilityLabel="Go back"><Text style={{ color: Colors.white, fontSize: 20 }}>←</Text></TouchableOpacity>
+          <TouchableOpacity style={progStyles.backBtn} onPress={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)/home'))} activeOpacity={0.8} accessibilityRole="button" accessibilityLabel="Go back">
+            <Ionicons name="arrow-back" size={20} color={Colors.white} />
+          </TouchableOpacity>
         </View>
         <View style={progStyles.scoreBox}>
           <Text style={progStyles.scoreLabel}>Scholarship Readiness Score</Text>

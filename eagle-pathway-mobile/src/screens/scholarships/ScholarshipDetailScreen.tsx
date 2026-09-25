@@ -126,11 +126,15 @@ export function ScholarshipDetailScreen() {
     <SafeAreaView style={[CommonStyles.flex1, { backgroundColor: Colors.blueDark }]} edges={['top', 'bottom']}>
       <View style={sdStyles.hero}>
         <View style={sdStyles.heroNav}>
-          <ScaleBounce style={sdStyles.backBtn} onPress={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)/home'))}><Text style={{ color: Colors.white, fontSize: 20 }}>←</Text></ScaleBounce>
+          <ScaleBounce style={sdStyles.backBtn} onPress={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)/home'))} accessibilityRole="button" accessibilityLabel="Go back">
+            <Ionicons name="arrow-back" size={20} color={Colors.white} />
+          </ScaleBounce>
           <View style={{ flexDirection: 'row', gap: Spacing.sm }}>
-            <ScaleBounce style={sdStyles.iconBtn}><Text style={{ fontSize: 16 }}>↗</Text></ScaleBounce>
-            <ScaleBounce style={sdStyles.iconBtn} onPress={() => toggleSaveScholarship(scholarship.id)}>
-              <Text style={{ fontSize: 16 }}>{isSaved ? '🔖' : '🏷️'}</Text>
+            <ScaleBounce style={sdStyles.iconBtn} onPress={handleApplySelf} accessibilityRole="button" accessibilityLabel="Open official link">
+              <Ionicons name="open-outline" size={18} color={Colors.white} />
+            </ScaleBounce>
+            <ScaleBounce style={sdStyles.iconBtn} onPress={() => toggleSaveScholarship(scholarship.id)} accessibilityRole="button" accessibilityLabel="Save scholarship">
+              <Ionicons name={isSaved ? "bookmark" : "bookmark-outline"} size={18} color={isSaved ? Colors.gold : Colors.white} />
             </ScaleBounce>
           </View>
         </View>

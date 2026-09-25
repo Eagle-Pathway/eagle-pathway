@@ -6,6 +6,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Colors, Typography, Spacing, Radius, CommonStyles } from '@/utils/theme';
+import { Ionicons } from '@expo/vector-icons';
 import { scholarshipsService } from '@/services/scholarships';
 import { interviewService, type AnswerFeedback } from '@/services/interview';
 import { useAuthStore } from '@/store/authStore';
@@ -76,7 +77,7 @@ export function MockInterviewScreen() {
     <SafeAreaView style={CommonStyles.screenBg} edges={['top', 'bottom']}>
       <View style={s.header}>
         <TouchableOpacity style={s.backBtn} onPress={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)/home'))} activeOpacity={0.8} accessibilityRole="button" accessibilityLabel="Go back">
-          <Text style={{ fontSize: 20, color: Colors.text }}>←</Text>
+          <Ionicons name="arrow-back" size={20} color={Colors.text} />
         </TouchableOpacity>
         <Text style={s.title} numberOfLines={1}>Mock Interview</Text>
         <View style={{ width: 44 }} />
@@ -86,7 +87,9 @@ export function MockInterviewScreen() {
         <ScrollView contentContainerStyle={{ padding: Spacing.xl, paddingBottom: 120 }} showsVerticalScrollIndicator={false}>
           {phase === 'intro' && (
             <View>
-              <Text style={s.heroEmoji}>🎤</Text>
+              <View style={{ alignItems: 'center', marginBottom: Spacing.md }}>
+                <Ionicons name="mic" size={44} color={Colors.blue} />
+              </View>
               <Text style={s.h1}>Practice your interview</Text>
               <Text style={s.body}>
                 {scholarship ? `Get ready for your ${scholarship.name} interview. ` : ''}
@@ -129,7 +132,7 @@ export function MockInterviewScreen() {
                     <Text style={s.feedbackText}>{feedback.feedback}</Text>
                     {feedback.tips.map((tip, i) => (
                       <View key={i} style={s.tipRow}>
-                        <Text style={s.tipBullet}>💡</Text>
+                        <Ionicons name="bulb-outline" size={16} color={Colors.gold} />
                         <Text style={s.tipText}>{tip}</Text>
                       </View>
                     ))}
@@ -144,7 +147,9 @@ export function MockInterviewScreen() {
 
           {phase === 'done' && (
             <View style={{ alignItems: 'center' }}>
-              <Text style={s.heroEmoji}>🏆</Text>
+              <View style={{ alignItems: 'center', marginBottom: Spacing.md }}>
+                <Ionicons name="trophy" size={48} color={Colors.gold} />
+              </View>
               <Text style={s.h1}>Practice complete</Text>
               <View style={s.summaryScore}>
                 <Text style={[s.summaryNum, { color: avg >= 75 ? Colors.green : avg >= 55 ? Colors.goldDark : Colors.red }]}>{avg}</Text>

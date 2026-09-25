@@ -5,6 +5,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Colors, Typography, Spacing, Radius, CommonStyles } from '@/utils/theme';
+import { Ionicons } from '@expo/vector-icons';
 import { Button } from '@/components/common';
 import type { PackageTier } from '@/types';
 
@@ -45,7 +46,7 @@ export function PackagesScreen() {
     <SafeAreaView style={CommonStyles.screenBg} edges={['top', 'bottom']}>
       <View style={pkgStyles.header}>
         <TouchableOpacity style={pkgStyles.backBtn} onPress={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)/home'))} activeOpacity={0.8} accessibilityRole="button" accessibilityLabel="Go back">
-          <Text style={{ fontSize: 20, color: Colors.text }}>←</Text>
+          <Ionicons name="arrow-back" size={20} color={Colors.text} />
         </TouchableOpacity>
         <Text style={pkgStyles.title}>Select Package</Text>
       </View>

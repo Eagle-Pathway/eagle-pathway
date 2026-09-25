@@ -7,6 +7,7 @@ import { toast } from '@/utils/toast';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Colors, Typography, Radius, Spacing, CommonStyles } from '@/utils/theme';
+import { Ionicons } from '@expo/vector-icons';
 import { Button, Dropdown, DropdownOption } from '@/components/common';
 import { KeyboardAwareScreen } from '@/components/KeyboardAwareScreen';
 import { useAuthStore } from '@/store/authStore';
@@ -606,7 +607,7 @@ export function EditProfileScreen() {
           accessibilityRole="button"
           accessibilityLabel="Go back"
         >
-          <Text style={{ fontSize: 20, color: Colors.text }}>←</Text>
+          <Ionicons name="arrow-back" size={20} color={Colors.text} />
         </TouchableOpacity>
         <Text style={editProfStyles.title}>Edit Profile ({role.charAt(0).toUpperCase() + role.slice(1)})</Text>
       </View>

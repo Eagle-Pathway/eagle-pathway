@@ -2,6 +2,8 @@ import React, { useEffect, useState } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
 } from 'react-native';
+import * as Clipboard from 'expo-clipboard';
+import { Ionicons } from '@expo/vector-icons';
 import { toast } from '@/utils/toast';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -31,16 +33,21 @@ export function MagicDraftScreen() {
     setDraft(result);
   };
 
-  const handleCopy = () => {
-    // In a real app, use Clipboard.setString
-    toast.success('Copied!', 'Draft copied to clipboard. You can now use it in your application.');
+  const handleCopy = async () => {
+    if (!draft) return;
+    try {
+      await Clipboard.setStringAsync(draft);
+      toast.success('Copied!', 'Draft copied to clipboard. You can now use it in your application.');
+    } catch {
+      toast.info('Notice', 'Could not copy draft to clipboard.');
+    }
   };
 
   return (
     <SafeAreaView style={CommonStyles.screenBg} edges={['top', 'bottom']}>
       <View style={magicStyles.header}>
         <TouchableOpacity style={magicStyles.backBtn} onPress={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)/home'))} activeOpacity={0.8} accessibilityRole="button" accessibilityLabel="Go back">
-          <Text style={{ fontSize: 20, color: Colors.text }}>←</Text>
+          <Ionicons name="arrow-back" size={20} color={Colors.text} />
         </TouchableOpacity>
         <Text style={magicStyles.title}>Eagle AI Magic Draft</Text>
       </View>
@@ -49,14 +56,14 @@ export function MagicDraftScreen() {
         {!draft ? (
           <View style={magicStyles.emptyState}>
             <View style={magicStyles.aiCircle}>
-              <Text style={{ fontSize: 40 }}>✨</Text>
+              <Ionicons name="sparkles" size={44} color={Colors.blue} />
             </View>
             <Text style={magicStyles.emptyTitle}>Ready to write your SOP?</Text>
             <Text style={magicStyles.emptySub}>
               We will combine your profile summary, GPA ({user?.gpa || '3.5'}), and interests with the requirements of {scholarship?.name || 'this scholarship'} to create a professional draft.
             </Text>
             <Button 
-              title={isGeneratingMagicSOP ? 'Generating Magic... ✨' : 'Generate My Draft Now'} 
+              title={isGeneratingMagicSOP ? 'Generating SOP...' : 'Generate My Draft Now'} 
               variant='primary' 
               onPress={handleGenerate} 
               loading={isGeneratingMagicSOP}
@@ -67,15 +74,19 @@ export function MagicDraftScreen() {
           <View>
             <View style={magicStyles.draftHeader}>
               <Text style={magicStyles.draftLabel}>AI-Generated Statement of Purpose</Text>
-              <TouchableOpacity onPress={handleCopy} activeOpacity={0.7}>
-                <Text style={{ color: Colors.blue, fontWeight: 'bold' }}>📋 Copy All</Text>
+              <TouchableOpacity onPress={handleCopy} activeOpacity={0.7} style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                <Ionicons name="copy-outline" size={14} color={Colors.blue} />
+                <Text style={{ color: Colors.blue, fontWeight: 'bold' }}>Copy All</Text>
               </TouchableOpacity>
             </View>
             <View style={magicStyles.draftCard}>
               <Text style={magicStyles.draftText}>{draft}</Text>
             </View>
             <View style={magicStyles.tipBox}>
-              <Text style={magicStyles.tipTitle}>💡 Tip for Success</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                <Ionicons name="bulb-outline" size={16} color="#7a5c1e" />
+                <Text style={magicStyles.tipTitle}>Tip for Success</Text>
+              </View>
               <Text style={magicStyles.tipText}>
                 This is a solid draft! We recommend reading through it and adding 1-2 personal anecdotes to make it truly unique before submitting.
               </Text>

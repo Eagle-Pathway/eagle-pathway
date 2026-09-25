@@ -61,10 +61,10 @@ export function SuccessStoriesScreen() {
           accessibilityRole="button"
           accessibilityLabel="Go back"
         >
-          <Text style={{ fontSize: 20, color: Colors.text }}>←</Text>
+          <Ionicons name="arrow-back" size={20} color={Colors.text} />
         </TouchableOpacity>
         <View style={{ flex: 1 }}>
-          <Text style={s.title}>Success Stories 🏆</Text>
+          <Text style={s.title}>Success Stories</Text>
           <Text style={s.subtitle} numberOfLines={1}>{subtitle}</Text>
         </View>
       </View>

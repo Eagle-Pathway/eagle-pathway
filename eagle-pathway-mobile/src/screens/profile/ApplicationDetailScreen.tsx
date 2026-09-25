@@ -7,15 +7,16 @@ import { toast } from '@/utils/toast';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Colors, Typography, Spacing, Radius, CommonStyles } from '@/utils/theme';
+import { Ionicons } from '@expo/vector-icons';
 import { Skeleton } from '@/components/common';
 import { tutorJobsService } from '@/services/tutorJobs';
 import type { TutorJobApplication } from '@/types';
 
-const STATUS_CONFIG: Record<string, { icon: string; label: string; color: string; bg: string }> = {
-  pending: { icon: '🟡', label: 'Pending Review', color: '#b45309', bg: '#fffbeb' },
-  contacted: { icon: '🔵', label: 'Contacted', color: '#1d4ed8', bg: '#eff6ff' },
-  hired: { icon: '🟢', label: 'Hired', color: '#15803d', bg: '#f0fdf4' },
-  rejected: { icon: '🔴', label: 'Not Selected', color: '#dc2626', bg: '#fef2f2' },
+const STATUS_CONFIG: Record<string, { iconName: keyof typeof Ionicons.glyphMap; label: string; color: string; bg: string }> = {
+  pending: { iconName: 'time-outline', label: 'Pending Review', color: '#b45309', bg: '#fffbeb' },
+  contacted: { iconName: 'chatbubble-outline', label: 'Contacted', color: '#1d4ed8', bg: '#eff6ff' },
+  hired: { iconName: 'checkmark-circle-outline', label: 'Hired', color: '#15803d', bg: '#f0fdf4' },
+  rejected: { iconName: 'close-circle-outline', label: 'Not Selected', color: '#dc2626', bg: '#fef2f2' },
 };
 
 function toEATDisplay(utcTime: string): string {
@@ -69,7 +70,7 @@ export function ApplicationDetailScreen() {
       <SafeAreaView style={CommonStyles.screenBg} edges={['top', 'bottom']}>
         <View style={profStyles.header}>
           <TouchableOpacity onPress={() => router.back()} style={profStyles.backBtn} accessibilityRole="button" accessibilityLabel="Go back">
-            <Text style={profStyles.backText}>←</Text>
+            <Ionicons name="arrow-back" size={20} color={Colors.text} />
           </TouchableOpacity>
           <Text style={profStyles.headerTitle}>Not Found</Text>
           <View style={{ width: 40 }} />
@@ -85,14 +86,14 @@ export function ApplicationDetailScreen() {
     <SafeAreaView style={CommonStyles.screenBg} edges={['top', 'bottom']}>
       <View style={profStyles.header}>
         <TouchableOpacity onPress={() => router.back()} style={profStyles.backBtn} accessibilityRole="button" accessibilityLabel="Go back">
-          <Text style={profStyles.backText}>←</Text>
+          <Ionicons name="arrow-back" size={20} color={Colors.text} />
         </TouchableOpacity>
         <Text style={profStyles.headerTitle}>Application Details</Text>
         <View style={{ width: 40 }} />
       </View>
       <ScrollView contentContainerStyle={{ padding: Spacing.lg, paddingBottom: 100 }}>
         <View style={[profStyles.statusBanner, { backgroundColor: status.bg }]}>
-          <Text style={profStyles.statusIcon}>{status.icon}</Text>
+          <Ionicons name={status.iconName} size={26} color={status.color} />
           <View style={{ flex: 1 }}>
             <Text style={[profStyles.statusLabel, { color: status.color }]}>{status.label}</Text>
             <Text style={profStyles.statusDate}>Applied {new Date(app.created_at).toLocaleDateString()}</Text>
@@ -103,13 +104,13 @@ export function ApplicationDetailScreen() {
           <View style={profStyles.section}>
             <Text style={profStyles.sectionTitle}>Job Details</Text>
             <View style={profStyles.card}>
-              <Row icon="📍" label="Place" value={job.place} />
-              <Row icon="📚" label="Grade" value={job.grade} />
-              <Row icon="📖" label="Subjects" value={job.subjects?.join(', ')} />
-              <Row icon="⏱" label="Session" value={`${job.session_hours} hrs/day`} />
-              <Row icon="📅" label="Days" value={`${job.days_per_week} days/week`} />
-              <Row icon="🕐" label="Start" value={toEATDisplay(job.start_time)} />
-              <Row icon="💰" label="Rate" value={`${job.hourly_rate} ETB/hr`} />
+              <Row iconName="location-outline" label="Place" value={job.place} />
+              <Row iconName="school-outline" label="Grade" value={job.grade} />
+              <Row iconName="book-outline" label="Subjects" value={job.subjects?.join(', ')} />
+              <Row iconName="hourglass-outline" label="Session" value={`${job.session_hours} hrs/day`} />
+              <Row iconName="calendar-outline" label="Days" value={`${job.days_per_week} days/week`} />
+              <Row iconName="time-outline" label="Start" value={toEATDisplay(job.start_time)} />
+              <Row iconName="cash-outline" label="Rate" value={`${job.hourly_rate} ETB/hr`} />
             </View>
           </View>
         )}
@@ -117,12 +118,12 @@ export function ApplicationDetailScreen() {
         <View style={profStyles.section}>
           <Text style={profStyles.sectionTitle}>Your Application</Text>
           <View style={profStyles.card}>
-            <Row icon="🎓" label="Status" value={app.education_status || '-'} />
-            <Row icon="📍" label="Address" value={app.living_address || '-'} />
-            <Row icon="🏛" label="University" value={app.university_name || '-'} />
-            <Row icon="📞" label="Phone" value={app.phone_number || '-'} />
-            <Row icon="✈️" label="Telegram" value={app.telegram_username ? '@' + app.telegram_username : '-'} />
-            <Row icon="📊" label="CGPA" value={app.cgpa || '-'} />
+            <Row iconName="school-outline" label="Status" value={app.education_status || '-'} />
+            <Row iconName="location-outline" label="Address" value={app.living_address || '-'} />
+            <Row iconName="business-outline" label="University" value={app.university_name || '-'} />
+            <Row iconName="call-outline" label="Phone" value={app.phone_number || '-'} />
+            <Row iconName="send-outline" label="Telegram" value={app.telegram_username ? '@' + app.telegram_username : '-'} />
+            <Row iconName="stats-chart-outline" label="CGPA" value={app.cgpa || '-'} />
           </View>
         </View>
 
@@ -141,10 +142,10 @@ export function ApplicationDetailScreen() {
   );
 }
 
-function Row({ icon, label, value }: { icon: string; label: string; value: string }) {
+function Row({ iconName, label, value }: { iconName: keyof typeof Ionicons.glyphMap; label: string; value: string }) {
   return (
     <View style={profStyles.row}>
-      <Text style={profStyles.rowIcon}>{icon}</Text>
+      <Ionicons name={iconName} size={18} color={Colors.textSecondary} style={{ marginRight: 8, width: 22 }} />
       <Text style={profStyles.rowLabel}>{label}</Text>
       <Text style={profStyles.rowValue}>{value}</Text>
     </View>

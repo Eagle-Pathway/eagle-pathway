@@ -79,8 +79,8 @@ export default function ForgotPasswordScreen() {
 
   return (
     <SafeAreaView style={styles.screen}>
-      <TouchableOpacity style={styles.back} onPress={() => (router.canGoBack() ? router.back() : backToLogin())} activeOpacity={0.7}>
-        <Text style={{ fontSize: 24, color: Colors.text }}>←</Text>
+      <TouchableOpacity style={styles.back} onPress={() => (router.canGoBack() ? router.back() : backToLogin())} activeOpacity={0.7} accessibilityRole="button" accessibilityLabel="Go back">
+        <Ionicons name="arrow-back" size={24} color={Colors.text} />
       </TouchableOpacity>
 
       <KeyboardAwareScreen contentContainerStyle={styles.body}>

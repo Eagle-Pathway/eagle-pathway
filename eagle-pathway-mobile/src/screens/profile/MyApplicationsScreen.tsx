@@ -4,6 +4,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { Colors, Typography, Spacing, Radius, CommonStyles } from '@/utils/theme';
 import { EmptyState, Skeleton, ScaleBounce } from '@/components/common';
 import { useAuthStore } from '@/store/authStore';
@@ -11,11 +12,11 @@ import { useTutorJobStore } from '@/store/tutorJobStore';
 
 import { withTimeout } from '@/utils/asyncUtils';
 
-const STATUS_CONFIG: Record<string, { icon: string; label: string; color: string; bg: string }> = {
-  pending: { icon: '🟡', label: 'Pending', color: '#b45309', bg: '#fffbeb' },
-  contacted: { icon: '🔵', label: 'Contacted', color: '#1d4ed8', bg: '#eff6ff' },
-  hired: { icon: '🟢', label: 'Hired', color: '#15803d', bg: '#f0fdf4' },
-  rejected: { icon: '🔴', label: 'Rejected', color: '#dc2626', bg: '#fef2f2' },
+const STATUS_CONFIG: Record<string, { iconName: keyof typeof Ionicons.glyphMap; label: string; color: string; bg: string }> = {
+  pending: { iconName: 'time-outline', label: 'Pending', color: '#b45309', bg: '#fffbeb' },
+  contacted: { iconName: 'chatbubble-outline', label: 'Contacted', color: '#1d4ed8', bg: '#eff6ff' },
+  hired: { iconName: 'checkmark-circle-outline', label: 'Hired', color: '#15803d', bg: '#f0fdf4' },
+  rejected: { iconName: 'close-circle-outline', label: 'Rejected', color: '#dc2626', bg: '#fef2f2' },
 };
 
 function toEATDisplay(utcTime: string): string {
@@ -40,7 +41,7 @@ export function MyApplicationsScreen() {
     <SafeAreaView style={CommonStyles.screenBg} edges={['top', 'bottom']}>
       <View style={profStyles.header}>
         <TouchableOpacity onPress={() => router.back()} style={profStyles.backBtn} accessibilityRole="button" accessibilityLabel="Go back">
-          <Text style={profStyles.backText}>←</Text>
+          <Ionicons name="arrow-back" size={20} color={Colors.text} />
         </TouchableOpacity>
         <Text style={profStyles.headerTitle}>My Applications</Text>
         <View style={{ width: 40 }} />
@@ -81,24 +82,34 @@ export function MyApplicationsScreen() {
                     )}
                     {!job && <Text style={profStyles.appTitle}>Job Post</Text>}
                   </View>
-                  <View style={[profStyles.statusBadge, { backgroundColor: status.bg }]}>
+                  <View style={[profStyles.statusBadge, { backgroundColor: status.bg, flexDirection: 'row', alignItems: 'center', gap: 4 }]}>
+                    <Ionicons name={status.iconName} size={12} color={status.color} />
                     <Text style={[profStyles.statusText, { color: status.color }]}>
-                      {status.icon} {status.label}
+                      {status.label}
                     </Text>
                   </View>
                 </View>
 
                 {job && (
-                  <View style={profStyles.appDetails}>
-                    <Text style={profStyles.appDetailText}>💰 {job.hourly_rate} ETB/hr</Text>
-                    <Text style={profStyles.appDetailText}>🕐 {toEATDisplay(job.start_time)}</Text>
-                    <Text style={profStyles.appDetailText}>📅 {new Date(app.created_at).toLocaleDateString()}</Text>
+                  <View style={[profStyles.appDetails, { flexDirection: 'row', alignItems: 'center', gap: Spacing.md, flexWrap: 'wrap' }]}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                      <Ionicons name="cash-outline" size={13} color={Colors.textSecondary} />
+                      <Text style={profStyles.appDetailText}>{job.hourly_rate} ETB/hr</Text>
+                    </View>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                      <Ionicons name="time-outline" size={13} color={Colors.textSecondary} />
+                      <Text style={profStyles.appDetailText}>{toEATDisplay(job.start_time)}</Text>
+                    </View>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                      <Ionicons name="calendar-outline" size={13} color={Colors.textSecondary} />
+                      <Text style={profStyles.appDetailText}>{new Date(app.created_at).toLocaleDateString()}</Text>
+                    </View>
                   </View>
                 )}
 
                 <View style={profStyles.appFooter}>
                   <Text style={profStyles.appFooterText}>Applied {new Date(app.created_at).toLocaleDateString()}</Text>
-                  <Text style={profStyles.appArrow}>›</Text>
+                  <Ionicons name="chevron-forward" size={14} color={Colors.textSecondary} />
                 </View>
               </ScaleBounce>
             );

@@ -4,6 +4,7 @@ import {
   TouchableOpacity, ActivityIndicator, Modal
 } from 'react-native';
 import { toast } from '@/utils/toast';
+import { showError } from '@/utils/errorHandler';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, router } from 'expo-router';
 import { Colors, Typography, Spacing, Radius, CommonStyles } from '@/utils/theme';
@@ -12,6 +13,7 @@ import { useAuthStore } from '@/store/authStore';
 import { Ionicons } from '@expo/vector-icons';
 import { Button } from '@/components/common';
 import { KeyboardAwareScreen } from '@/components/KeyboardAwareScreen';
+import { draftStore } from '@/services/draftStore';
 
 type AiInlineComment = {
   paragraph_index: number;
@@ -39,6 +41,36 @@ export default function SOPEditorScreen() {
   const [aiReport, setAiReport] = useState<AiSopReport | null>(null);
   const [showAiModal, setShowAiModal] = useState(false);
 
+  // Restore local unsaved SOP draft on mount
+  useEffect(() => {
+    let isMounted = true;
+    const loadLocalDraft = async () => {
+      const targetId = application?.scholarship_id || applicationId;
+      if (!targetId) return;
+      try {
+        const localDraft = await draftStore.getSopDraft(targetId);
+        if (localDraft && localDraft.trim() && isMounted) {
+          if (!application?.sop_content || localDraft !== application.sop_content) {
+            setContent(localDraft);
+            toast.info('Draft Restored', 'Restored your unsaved local SOP draft.');
+          }
+        }
+      } catch (err) {
+        console.error('Failed to load local SOP draft:', err);
+      }
+    };
+    loadLocalDraft();
+    return () => { isMounted = false; };
+  }, [application?.scholarship_id, applicationId]);
+
+  // Auto-save local draft on content change
+  useEffect(() => {
+    const targetId = application?.scholarship_id || applicationId;
+    if (targetId && content.trim()) {
+      draftStore.saveSopDraft(targetId, content).catch(console.error);
+    }
+  }, [content, application?.scholarship_id, applicationId]);
+
   const wordCount = content.split(/\s+/).filter(w => w.length > 0).length;
 
   const handleSave = async () => {
@@ -46,9 +78,13 @@ export default function SOPEditorScreen() {
     setIsSaving(true);
     try {
       await updateSOP(applicationId, content);
+      const targetId = application?.scholarship_id || applicationId;
+      if (targetId) {
+        await draftStore.clearSopDraft(targetId).catch(console.error);
+      }
       toast.success('Draft saved', 'Your SOP draft was saved successfully.');
     } catch (error) {
-      toast.error('Save Failed', 'Failed to save SOP draft.');
+      showError(error, 'Save Failed');
     } finally {
       setIsSaving(false);
     }
@@ -61,7 +97,7 @@ export default function SOPEditorScreen() {
       setAiReport(result);
       setShowAiModal(true);
     } catch (error) {
-      toast.error('AI Review Error', 'AI service is currently busy. Please try again later.');
+      showError(error, 'AI Review Error');
     }
   };
 
@@ -69,7 +105,7 @@ export default function SOPEditorScreen() {
     <SafeAreaView style={CommonStyles.screenBg} edges={['top', 'bottom']}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)/home'))} style={styles.backBtn} accessibilityRole="button" accessibilityLabel="Go back">
-          <Text style={{ fontSize: 20 }}>←</Text>
+          <Ionicons name="arrow-back" size={20} color={Colors.text} />
         </TouchableOpacity>
         <View style={{ flex: 1 }}>
           <Text style={styles.headerTitle} numberOfLines={1}>SOP Editor</Text>

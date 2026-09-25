@@ -566,9 +566,9 @@ export function ApplyScreen() {
       </Modal>
 
       <View style={[applyStyles.bottomBar, { paddingBottom: Math.max(insets.bottom, Spacing.lg) }]}>
-        <Button title={step === 1 ? 'Cancel' : '← Back'} variant="secondary" onPress={() => step > 1 ? setStep(s => s - 1) : (router.canGoBack() ? router.back() : router.replace('/(tabs)/home'))} style={{ flex: 0.5 }} fullWidth={false} />
+        <Button title={step === 1 ? 'Cancel' : 'Back'} variant="secondary" onPress={() => step > 1 ? setStep(s => s - 1) : (router.canGoBack() ? router.back() : router.replace('/(tabs)/home'))} style={{ flex: 0.5 }} fullWidth={false} />
         <Button 
-          title={step === 4 ? 'Submit Application 🚀' : 'Continue →'} 
+          title={step === 4 ? 'Submit Application' : 'Continue'} 
           variant="primary" 
           onPress={step < 4 ? handleContinue : handleSubmit} 
           loading={loading} 

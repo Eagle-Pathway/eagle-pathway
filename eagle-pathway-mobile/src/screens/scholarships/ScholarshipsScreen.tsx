@@ -112,7 +112,7 @@ export default function ScholarshipsScreen({ hideBack = false }: { hideBack?: bo
             }}
             activeOpacity={0.8}
           >
-            <Text style={{ fontSize: 20, color: Colors.white }}>←</Text>
+            <Ionicons name="arrow-back" size={20} color={Colors.white} />
           </TouchableOpacity>
 
           <TouchableOpacity 

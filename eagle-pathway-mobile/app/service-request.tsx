@@ -457,7 +457,7 @@ export default function ServiceRequestScreen({
       {!hideHeader && (
         <View style={styles.header}>
           <TouchableOpacity onPress={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)/home'))} style={styles.backBtn} accessibilityRole="button" accessibilityLabel="Go back">
-            <Text style={{ fontSize: 20 }}>←</Text>
+            <Ionicons name="arrow-back" size={20} color={Colors.text} />
           </TouchableOpacity>
           <Text style={styles.title}>Payment Services</Text>
         </View>
