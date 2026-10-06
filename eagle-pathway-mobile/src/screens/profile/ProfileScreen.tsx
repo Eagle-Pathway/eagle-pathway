@@ -18,6 +18,7 @@ import { useNotificationStore } from '@/store/notificationStore';
 import { useParentStore } from '@/store/parentStore';
 import { supabase } from '@/services/supabase';
 import { showError } from '@/utils/errorHandler';
+import { rateAppService } from '@/utils/rateApp';
 
 export function ProfileScreen() {
   const { user, signOut, uploadAvatar } = useAuthStore();
@@ -110,7 +111,8 @@ export function ProfileScreen() {
     badge: string | null;
     bgColor: string;
     iconColor: string;
-    route: string;
+    route?: string;
+    onPress?: () => void;
   }> = [
     ...(role === 'tutor'
       ? [
@@ -126,6 +128,7 @@ export function ProfileScreen() {
     { iconName: 'book-outline' as const, label: 'Resources', badge: null, bgColor: '#EFF6FF', iconColor: Colors.blue, route: '/resources' },
     { iconName: 'calendar-outline' as const, label: 'My Bookings', badge: null, bgColor: '#F3F4F6', iconColor: Colors.textSecondary, route: '/(tabs)/bookings' },
     { iconName: 'notifications-outline' as const, label: 'Notifications', badge: unreadCount > 0 ? `${unreadCount} New` : null, bgColor: '#EFF6FF', iconColor: Colors.blue, route: '/notifications' },
+    { iconName: 'star-outline' as const, label: 'Rate Eagle Pathway', badge: 'Play Store', bgColor: '#FEF3C7', iconColor: Colors.goldDark, onPress: () => rateAppService.openPlayStore() },
     { iconName: 'settings-outline' as const, label: 'Settings', badge: null, bgColor: '#F3F4F6', iconColor: Colors.textSecondary, route: '/settings' },
   ];
 
@@ -238,7 +241,7 @@ export function ProfileScreen() {
             <TouchableOpacity
               key={item.label}
               style={[profStyles.menuItem, i === 0 && { borderTopWidth: 0 }]}
-              onPress={() => item.route ? router.push(item.route as any) : null}
+              onPress={() => (item.onPress ? item.onPress() : item.route ? router.push(item.route as any) : null)}
               activeOpacity={0.7}
             >
               <View style={[profStyles.menuIcon, { backgroundColor: item.bgColor }]}>

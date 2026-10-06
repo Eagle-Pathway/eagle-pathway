@@ -38,6 +38,8 @@ export default function RootLayout() {
   const { loadSavedScholarships } = useScholarshipStore();
   const splashHidden = useRef(false);
 
+  const pendingUpdateReady = useRef(false);
+
   const safeHideSplash = () => {
     if (!splashHidden.current) {
       splashHidden.current = true;
@@ -52,10 +54,16 @@ export default function RootLayout() {
       safeHideSplash();
     }, 800);
 
-    // 2. Manage Supabase AppState for background token refreshing
+    // 2. Manage Supabase AppState for background token refreshing & graceful OTA reload
     const appStateListener = AppState.addEventListener('change', (state) => {
-      if (state === 'active') supabase.auth.startAutoRefresh();
-      else supabase.auth.stopAutoRefresh();
+      if (state === 'active') {
+        supabase.auth.startAutoRefresh();
+      } else {
+        supabase.auth.stopAutoRefresh();
+        if (state === 'background' && pendingUpdateReady.current) {
+          Updates.reloadAsync().catch(() => {});
+        }
+      }
     });
 
     // 3. Load local offline caches in background
@@ -108,19 +116,28 @@ export default function RootLayout() {
         safeHideSplash();
       });
 
-    // 6. Silent background OTA update check (non-blocking)
+    // 6. Graceful background OTA update check (non-disruptive)
     if (!__DEV__) {
       setTimeout(() => {
         Updates.checkForUpdateAsync()
           .then(({ isAvailable }) => {
             if (isAvailable) {
               Updates.fetchUpdateAsync().then(() => {
-                Updates.reloadAsync();
+                pendingUpdateReady.current = true;
+                Toast.show({
+                  type: 'info',
+                  text1: 'Update Ready ✨',
+                  text2: 'Tap to refresh now or updates will apply on next launch.',
+                  visibilityTime: 6000,
+                  onPress: () => {
+                    Updates.reloadAsync().catch(() => {});
+                  },
+                });
               }).catch(() => {});
             }
           })
           .catch(() => {});
-      }, 3000);
+      }, 5000);
     }
 
     // 7. Notification Deep Linking & Listeners

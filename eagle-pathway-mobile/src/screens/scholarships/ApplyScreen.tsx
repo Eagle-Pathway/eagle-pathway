@@ -7,7 +7,7 @@ import { toast } from '@/utils/toast';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Colors, Typography, Spacing, Radius, CommonStyles } from '@/utils/theme';
-import { Button } from '@/components/common';
+import { Button, RateAppModal } from '@/components/common';
 import { KeyboardAwareScreen } from '@/components/KeyboardAwareScreen';
 import { useAuthStore } from '@/store/authStore';
 import { useScholarshipStore } from '@/store/scholarshipStore';
@@ -18,6 +18,7 @@ import type { PackageTier, DocumentType } from '@/types';
 import { showError } from '@/utils/errorHandler';
 import { draftStore } from '@/services/draftStore';
 import { validateCloudDocumentUrl } from '@eagle-pathway/shared';
+import { rateAppService } from '@/utils/rateApp';
 
 const TIER_NAMES: Record<PackageTier, string> = {
   basic: 'Basic Assistance',
@@ -40,6 +41,7 @@ export function ApplyScreen() {
   const [activeDocLabel, setActiveDocLabel] = useState('Degree Certificate');
   const [cloudUrlInput, setCloudUrlInput] = useState('');
   const [submittingDoc, setSubmittingDoc] = useState(false);
+  const [rateModalVisible, setRateModalVisible] = useState(false);
 
   const insets = useSafeAreaInsets();
 
@@ -169,7 +171,17 @@ export function ApplyScreen() {
       draftStore.clearApplicationDraft(scholarshipId);
 
       toast.success('Application Submitted! 🎉', 'Your application is on its way to the review team.');
-      router.replace(`/(scholarships)/${scholarshipId}?applied=true`);
+
+      await rateAppService.recordDelightAction();
+      const shouldPrompt = await rateAppService.shouldPrompt();
+      if (shouldPrompt) {
+        setRateModalVisible(true);
+      } else {
+        router.replace({
+          pathname: '/scholarship-detail',
+          params: { scholarshipId, applied: 'true' },
+        });
+      }
     } catch (e: any) {
       showError(e, 'Application Submission Failed');
     } finally {
@@ -576,6 +588,18 @@ export function ApplyScreen() {
           fullWidth={false} 
         />
       </View>
+      <RateAppModal
+        visible={rateModalVisible}
+        onClose={() => {
+          setRateModalVisible(false);
+          router.replace({
+            pathname: '/scholarship-detail',
+            params: { scholarshipId, applied: 'true' },
+          });
+        }}
+        title="Application Submitted! 🎉"
+        subtitle="Congratulations on taking this step! Please consider rating Eagle Pathway on Google Play — your review inspires other students to pursue their education dreams."
+      />
     </SafeAreaView>
   );
 }

@@ -9,7 +9,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { format, addDays, startOfMonth, getDaysInMonth, getDay } from 'date-fns';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Typography, Spacing, Radius, CommonStyles } from '@/utils/theme';
-import { Button, Avatar } from '@/components/common';
+import { Button, Avatar, RateAppModal } from '@/components/common';
 import { KeyboardAwareScreen } from '@/components/KeyboardAwareScreen';
 import { tutorsService } from '@/services/tutors';
 import { tutorSessionsService } from '@/services/tutorSessions';
@@ -17,6 +17,7 @@ import { useAuthStore } from '@/store/authStore';
 import { useBookingStore } from '@/store/bookingStore';
 import { Tutor } from '@/types';
 import { showError } from '@/utils/errorHandler';
+import { rateAppService } from '@/utils/rateApp';
 
 const MORNING_SLOTS = ['8:00 AM', '8:30 AM', '9:00 AM', '9:30 AM', '10:00 AM', '10:30 AM', '11:00 AM', '11:30 AM'];
 const AFTERNOON_SLOTS = ['12:00 PM', '12:30 PM', '2:00 PM', '2:30 PM', '3:00 PM', '3:30 PM', '4:00 PM', '4:30 PM'];
@@ -44,6 +45,7 @@ export default function BookingScreen() {
   const [notes, setNotes] = useState('');
   const [loading, setLoading] = useState(false);
   const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [rateModalVisible, setRateModalVisible] = useState(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -100,7 +102,14 @@ export default function BookingScreen() {
       await loadBookings(user.id);
       const msg = isRecurring ? `Weekly sessions for the next ${bookingsToCreate} weeks are booked.` : `Your session with ${tutor.user?.full_name} is confirmed.`;
       toast.success('Booking Confirmed! 🎉', msg);
-      router.push('/(tabs)/bookings');
+
+      await rateAppService.recordDelightAction();
+      const shouldPrompt = await rateAppService.shouldPrompt();
+      if (shouldPrompt) {
+        setRateModalVisible(true);
+      } else {
+        router.push('/(tabs)/bookings');
+      }
     } catch (e: any) {
       const slotTaken = e?.code === '23505' || /duplicate|already|uq_active_booking_slot|409|conflict/i.test(e?.message || '');
       if (slotTaken) {
@@ -374,6 +383,15 @@ export default function BookingScreen() {
           loading={loading}
         />
       </View>
+      <RateAppModal
+        visible={rateModalVisible}
+        onClose={() => {
+          setRateModalVisible(false);
+          router.push('/(tabs)/bookings');
+        }}
+        title="Session Booked! 🎉"
+        subtitle="Enjoying booking verified tutors on Eagle Pathway? Please rate us on Google Play — your feedback helps other students find great tutors!"
+      />
     </SafeAreaView>
   );
 }

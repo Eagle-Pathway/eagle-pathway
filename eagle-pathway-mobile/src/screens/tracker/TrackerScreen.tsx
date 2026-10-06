@@ -333,7 +333,7 @@ export function TrackerScreen({ hideHeader = false }: { hideHeader?: boolean }) 
                         params: { id: app.consultant_id, fullName: app.consultant?.full_name || 'Consultant' },
                       });
                     } else {
-                      router.push('/chat');
+                      router.push('/(tabs)/chat');
                     }
                   }}
                   activeOpacity={0.8}

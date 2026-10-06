@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import {
   View, Text, ScrollView, TouchableOpacity, StyleSheet,
-  Linking,
+  Linking, Share,
 } from 'react-native';
 import { toast } from '@/utils/toast';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -122,6 +122,26 @@ export function ScholarshipDetailScreen() {
     }
   };
 
+  const handleShareScholarship = async () => {
+    if (!scholarship) return;
+    try {
+      const deadlineStr = scholarship.deadline ? format(new Date(scholarship.deadline), 'MMM d, yyyy') : 'Open';
+      const fundingStr = scholarship.funding_type === 'fully_funded' ? 'Fully Funded' : 'Financial Support Listed';
+      const message =
+        `🎓 ${scholarship.name}\n` +
+        `🏛️ ${scholarship.organization}${scholarship.country ? ` · ${scholarship.country}` : ''}\n` +
+        `💰 Funding: ${fundingStr}\n` +
+        `📅 Deadline: ${deadlineStr}\n\n` +
+        `Explore requirements and get expert admission guidance on Eagle Pathway:\n` +
+        `https://play.google.com/store/apps/details?id=com.eaglepathway.app`;
+
+      await Share.share({
+        title: scholarship.name,
+        message,
+      });
+    } catch {}
+  };
+
   return (
     <SafeAreaView style={[CommonStyles.flex1, { backgroundColor: Colors.blueDark }]} edges={['top', 'bottom']}>
       <View style={sdStyles.hero}>
@@ -130,6 +150,9 @@ export function ScholarshipDetailScreen() {
             <Ionicons name="arrow-back" size={20} color={Colors.white} />
           </ScaleBounce>
           <View style={{ flexDirection: 'row', gap: Spacing.sm }}>
+            <ScaleBounce style={sdStyles.iconBtn} onPress={handleShareScholarship} accessibilityRole="button" accessibilityLabel="Share scholarship">
+              <Ionicons name="share-social-outline" size={18} color={Colors.white} />
+            </ScaleBounce>
             <ScaleBounce style={sdStyles.iconBtn} onPress={handleApplySelf} accessibilityRole="button" accessibilityLabel="Open official link">
               <Ionicons name="open-outline" size={18} color={Colors.white} />
             </ScaleBounce>

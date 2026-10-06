@@ -268,4 +268,5 @@ const styles = StyleSheet.create({
 });
 
 export * from './CustomModal';
+export * from './RateAppModal';
 
