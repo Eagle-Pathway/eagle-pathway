@@ -4,22 +4,23 @@
     "slug": "eagle-pathway",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/expo-icon-1024.png",
     "userInterfaceStyle": "light",
     "splash": {
-      "image": "./assets/splash.png",
+      "image": "./assets/splash-icon-1024.png",
       "resizeMode": "contain",
-      "backgroundColor": "#1E4D9B"
+      "backgroundColor": "#0b2a5b"
     },
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.eaglepathway.app"
     },
     "android": {
-      "versionCode": 5,
+      "versionCode": 6,
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#1E4D9B"
+        "foregroundImage": "./assets/adaptive-icon-foreground-1024.png",
+        "monochromeImage": "./assets/adaptive-icon-monochrome-1024.png",
+        "backgroundColor": "#0b2a5b"
       },
       "softwareKeyboardLayoutMode": "resize",
       "package": "com.eaglepathway.app",
@@ -45,7 +46,7 @@
       [
         "expo-notifications",
         {
-          "color": "#1E4D9B"
+          "color": "#0b2a5b"
         }
       ],
       [
