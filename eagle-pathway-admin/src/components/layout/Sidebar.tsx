@@ -126,19 +126,22 @@ export default function Sidebar() {
       <div className={`h-20 flex items-center ${isCollapsed ? 'justify-center px-0' : 'px-6'} border-b border-gray-100 overflow-hidden`}>
         {isCollapsed ? (
           <Image
-            src="/icon.png"
+            src="/brand/icon-light.svg"
             alt="Eagle Pathway"
             width={40}
             height={40}
-            className="h-10 w-10 flex-shrink-0 rounded-xl shadow-md shadow-brand-blue/20"
+            className="h-10 w-10 flex-shrink-0"
+            unoptimized
+            priority
           />
         ) : (
           <Image
-            src="/logo.png"
-            alt="Eagle Pathway Admin"
+            src="/brand/logo-light-no-global.svg"
+            alt="Eagle Pathway"
             width={180}
             height={48}
             className="h-12 w-auto flex-shrink-0 animate-in fade-in duration-300"
+            unoptimized
             priority
           />
         )}

@@ -76,11 +76,12 @@ export default function LoginPage() {
       <div className="w-full max-w-md p-8 sm:p-10 space-y-8 bg-white/70 backdrop-blur-2xl rounded-3xl shadow-2xl border border-white/50 relative z-10 m-4">
         <div className="text-center">
           <Image
-            src="/logo.png"
+            src="/brand/logo-light-no-global.svg"
             alt="Eagle Pathway"
             width={280}
             height={80}
             className="mx-auto h-20 w-auto mb-6 transform transition-transform hover:scale-105"
+            unoptimized
             priority
           />
           <h2 className="text-3xl font-bold text-gray-900 tracking-tight">Admin Portal</h2>
