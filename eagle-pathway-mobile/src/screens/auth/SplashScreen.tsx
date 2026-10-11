@@ -4,9 +4,9 @@ import {
   Text, 
   TouchableOpacity, 
   StyleSheet, 
-  Image, 
   Linking,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { toast } from '@/utils/toast';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -35,6 +35,7 @@ export default function SplashScreen() {
               <Image 
                 source={require('../../../assets/icon.png')} 
                 style={styles.logoImg} 
+                contentFit="contain"
               />
             </View>
 

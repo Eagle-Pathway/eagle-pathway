@@ -1,8 +1,9 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   View, Text, ScrollView, TextInput, TouchableOpacity,
-  StyleSheet, FlatList, Image, RefreshControl
+  StyleSheet, FlatList, RefreshControl
 } from 'react-native';
+import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Colors, Typography, Spacing, Radius, CommonStyles } from '@/utils/theme';
@@ -244,7 +245,13 @@ export function ScholarshipCard({ scholarship: s, isSaved, onSave }: { scholarsh
     >
       {s.image_url && (
         <View style={styles.imageContainer}>
-          <Image source={{ uri: s.image_url }} style={styles.cardImage} resizeMode="cover" />
+          <Image
+            source={{ uri: s.image_url }}
+            style={styles.cardImage}
+            contentFit="cover"
+            cachePolicy="memory-disk"
+            transition={200}
+          />
           <View style={styles.imageOverlay} />
           <View style={styles.imageBadge}>
             <Text style={styles.imageBadgeText}>{s.funding_type === 'fully_funded' ? 'Full Funding' : 'Partial'}</Text>

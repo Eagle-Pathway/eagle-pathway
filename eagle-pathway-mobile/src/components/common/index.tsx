@@ -3,6 +3,7 @@ import {
   View, Text, TouchableOpacity, ActivityIndicator,
   StyleSheet, ViewStyle, TextStyle,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors, Typography, Radius, Spacing, CommonStyles } from '../../utils/theme';
 import { ScaleBounce } from './ScaleBounce';
@@ -167,8 +168,6 @@ export const LoadingScreen: React.FC = () => (
   </View>
 );
 
-import { Image } from 'react-native';
-
 // ─── Avatar ───────────────────────────────────────────────────────────────────
 interface AvatarProps {
   initials: string;
@@ -189,7 +188,13 @@ export const Avatar: React.FC<AvatarProps> = ({
       alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }, style
   ]}>
     {imageUri ? (
-      <Image source={{ uri: imageUri }} style={{ width: size, height: size }} />
+      <Image
+        source={{ uri: imageUri }}
+        style={{ width: size, height: size }}
+        contentFit="cover"
+        cachePolicy="memory-disk"
+        transition={200}
+      />
     ) : (
       <Text style={{ color: textColor, fontWeight: Typography.bold, fontSize: size * 0.32 }}>
         {initials}

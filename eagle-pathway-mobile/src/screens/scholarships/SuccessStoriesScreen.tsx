@@ -1,7 +1,8 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import {
-  View, Text, FlatList, TouchableOpacity, StyleSheet, Image, Modal, Linking, Alert
+  View, Text, FlatList, TouchableOpacity, StyleSheet, Modal, Linking, Alert
 } from 'react-native';
+import { Image } from 'expo-image';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Colors, Typography, Spacing, Radius, CommonStyles } from '@/utils/theme';
@@ -125,7 +126,9 @@ export function SuccessStoriesScreen() {
                       <Image
                         source={{ uri: item.screenshot_url }}
                         style={s.screenshotThumb}
-                        resizeMode="cover"
+                        contentFit="cover"
+                        cachePolicy="memory-disk"
+                        transition={200}
                       />
                       <View style={s.screenshotOverlay}>
                         <Ionicons name="scan-outline" size={16} color={Colors.white} />
@@ -196,7 +199,9 @@ export function SuccessStoriesScreen() {
             <Image
               source={{ uri: selectedScreenshot }}
               style={s.modalImage}
-              resizeMode="contain"
+              contentFit="contain"
+              cachePolicy="memory-disk"
+              transition={200}
             />
           )}
         </View>
