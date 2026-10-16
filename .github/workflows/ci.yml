@@ -57,6 +57,15 @@ jobs:
         working-directory: eagle-pathway-admin
         run: npx vitest run
 
+      # --- Production Build Checks ---
+      # Runs Next.js build on the admin workspace to prevent broken Vercel production deployments.
+      - name: Production Build (admin)
+        working-directory: eagle-pathway-admin
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL || 'https://bkkhheaeqhhfeyfwjjxx.supabase.co' }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'sb_publishable_VbwNpq5HT2kCv4enDaifNQ_sn8F1Rsm' }}
+        run: npm run build
+
       # --- Lint (non-blocking for now) ---
       # The mobile workspace still uses a legacy .eslintrc.json with the
       # deprecated --ext flag under ESLint 9. Lint runs for visibility but
