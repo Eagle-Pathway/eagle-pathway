@@ -272,7 +272,9 @@ export default function SignupScreen() {
               setIsGoogleLoading(true);
               try {
                 await signInWithGoogle();
-                router.replace('/(tabs)/home');
+                if (useAuthStore.getState().isAuthenticated) {
+                  router.replace('/(tabs)/home');
+                }
               } catch (e: any) {
                 const msg = e?.message || '';
                 if (!/cancelled|closed/i.test(msg)) {

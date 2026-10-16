@@ -5,6 +5,11 @@ import { router, useLocalSearchParams } from 'expo-router';
 import * as Linking from 'expo-linking';
 import { supabase } from '../../src/services/supabase';
 import { useAuthStore } from '../../src/store/authStore';
+import {
+  safeExchangeCodeForSession,
+  safeSetSessionFromTokens,
+  extractAuthParams,
+} from '../../src/services/googleAuthService';
 import { Colors, Typography, Spacing, Radius } from '../../src/utils/theme';
 import { Ionicons } from '@expo/vector-icons';
 import { getErrorMessage } from '../../src/utils/errorHandler';
@@ -37,9 +42,47 @@ export default function AuthCallbackScreen() {
       if (isMounted) setShowSlowNotice(true);
     }, 4000);
 
+    async function processIncomingUrl(url: string | null) {
+      if (!url || hasRedirectedRef.current) return;
+      const parsed = extractAuthParams(url);
+
+      if (parsed.error || parsed.errorDescription) {
+        const rawErr = parsed.errorDescription || parsed.error;
+        const userFriendly = /access_denied|cancelled|closed/i.test(rawErr || '')
+          ? 'Sign-in was cancelled. You can try again whenever you are ready.'
+          : getErrorMessage(rawErr);
+        if (isMounted) setErrorMessage(userFriendly);
+        return;
+      }
+
+      if (parsed.code) {
+        try {
+          const res = await safeExchangeCodeForSession(parsed.code);
+          if (res?.session) {
+            await navigateToHomeSafely(res.session);
+            return;
+          }
+        } catch (e) {
+          console.log('[AuthCallback] Code exchange handled concurrently:', e);
+        }
+      }
+
+      if (parsed.accessToken && parsed.refreshToken) {
+        try {
+          const res = await safeSetSessionFromTokens(parsed.accessToken, parsed.refreshToken);
+          if (res?.session) {
+            await navigateToHomeSafely(res.session);
+            return;
+          }
+        } catch (e) {
+          console.log('[AuthCallback] Token set handled concurrently:', e);
+        }
+      }
+    }
+
     async function handleAuth() {
       try {
-        // 1. Check for explicit cancellation/error from Google OAuth
+        // 1. Check for explicit cancellation/error from Google OAuth query params
         if (params.error || params.error_description) {
           const rawErr = params.error_description || params.error;
           const userFriendly = /access_denied|cancelled|closed/i.test(rawErr || '')
@@ -56,61 +99,30 @@ export default function AuthCallbackScreen() {
           return;
         }
 
-        // 3. Extract authorization code or tokens from params or deep-link URL
-        let code = params.code;
-        let accessToken: string | null = null;
-        let refreshToken: string | null = null;
-
-        const initialUrl = await Linking.getInitialURL();
-        if (initialUrl) {
-          const parsed = Linking.parse(initialUrl);
-          if (parsed.queryParams?.code) {
-            code = String(parsed.queryParams.code);
-          }
-          if (parsed.queryParams?.error_description) {
-            if (isMounted) setErrorMessage(getErrorMessage(String(parsed.queryParams.error_description)));
-            return;
-          }
-          if (initialUrl.includes('#')) {
-            const hashParams = new URLSearchParams(initialUrl.split('#')[1]);
-            accessToken = hashParams.get('access_token');
-            refreshToken = hashParams.get('refresh_token');
-          }
-        }
-
-        // 4. Try exchanging authorization code if present
-        if (code) {
+        // 3. Try authorization code from Expo Router local search params via mutex
+        if (params.code) {
           try {
-            const { data } = await supabase.auth.exchangeCodeForSession(code);
-            if (data?.session) {
-              await navigateToHomeSafely(data.session);
+            const res = await safeExchangeCodeForSession(params.code);
+            if (res?.session) {
+              await navigateToHomeSafely(res.session);
               return;
             }
           } catch (codeErr) {
-            console.log('[AuthCallback] Code exchange handled concurrently:', codeErr);
+            console.log('[AuthCallback] Initial code exchange via params deferred:', codeErr);
           }
         }
 
-        // 5. Try setting session directly if hash tokens are present
-        if (accessToken && refreshToken) {
-          try {
-            const { data } = await supabase.auth.setSession({
-              access_token: accessToken,
-              refresh_token: refreshToken,
-            });
-            if (data?.session) {
-              await navigateToHomeSafely(data.session);
-              return;
-            }
-          } catch (tokenErr) {
-            console.log('[AuthCallback] Token set handled concurrently:', tokenErr);
-          }
+        // 4. Check initial deep-link URL (cold start)
+        const initialUrl = await Linking.getInitialURL();
+        if (initialUrl) {
+          await processIncomingUrl(initialUrl);
+          if (hasRedirectedRef.current) return;
         }
 
-        // 6. Graceful polling for session completion
-        for (let attempt = 0; attempt < 5; attempt++) {
-          await new Promise((r) => setTimeout(r, 600));
-          if (!isMounted) return;
+        // 5. Polling fallback for concurrent completion
+        for (let attempt = 0; attempt < 8; attempt++) {
+          await new Promise((r) => setTimeout(r, 400));
+          if (!isMounted || hasRedirectedRef.current) return;
 
           const { data: pollSession } = await supabase.auth.getSession();
           if (pollSession?.session) {
@@ -135,11 +147,17 @@ export default function AuthCallbackScreen() {
       }
     }
 
+    // Active listener for warm deep links and fragment tokens
+    const linkSubscription = Linking.addEventListener('url', (event) => {
+      processIncomingUrl(event.url).catch(() => {});
+    });
+
     handleAuth();
 
     return () => {
       isMounted = false;
       clearTimeout(slowTimer);
+      linkSubscription.remove();
     };
   }, [params]);
 

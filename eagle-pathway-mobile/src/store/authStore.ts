@@ -217,7 +217,15 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
     set({ isLoading: true });
     try {
-      const profile = await authService.getProfile(session.user.id);
+      let profile = await authService.getProfile(session.user.id);
+
+      // If user profile has no avatar but Google provided one in auth metadata, sync it
+      const googleAvatar = session.user.user_metadata?.avatar_url || session.user.user_metadata?.picture;
+      if (googleAvatar && !profile.avatar_url) {
+        authService.updateProfile(session.user.id, { avatar_url: googleAvatar }).catch(() => {});
+        profile = { ...profile, avatar_url: googleAvatar };
+      }
+
       set({ user: profile, isAuthenticated: true });
     } catch {
       // Profile missing in public.users - create profile from session metadata
@@ -226,6 +234,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const fullName = metadata.full_name || metadata.name || u.email?.split('@')[0] || 'Eagle User';
       const email = u.email || '';
       const role = (metadata.role as UserRole) || 'student';
+      const avatarUrl = metadata.avatar_url || metadata.picture || null;
 
       try {
         const profile = await authService.createProfile(
@@ -244,10 +253,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
             first_landing_url: metadata.first_landing_url,
           }
         );
+        if (avatarUrl && profile && !profile.avatar_url) {
+          authService.updateProfile(u.id, { avatar_url: avatarUrl }).catch(() => {});
+        }
         const finalUser: User = profile || {
           id: u.id,
           email,
           full_name: fullName,
+          avatar_url: avatarUrl,
           phone: '',
           role,
           roles: [role],
@@ -261,6 +274,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           id: u.id,
           email,
           full_name: fullName,
+          avatar_url: avatarUrl,
           phone: '',
           role,
           roles: [role],
