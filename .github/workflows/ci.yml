@@ -21,7 +21,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: npm
 
       # The committed lockfile is generated on Windows and only records the
       # host platform's rollup native binary, so installing against it on the

@@ -28,13 +28,9 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: npm
 
-      - name: Setup EAS CLI
-        uses: expo/expo-github-action@v8
-        with:
-          eas-version: latest
-          token: ${{ secrets.EXPO_TOKEN }}
+      - name: Install EAS CLI
+        run: npm install -g eas-cli
 
       - name: Install dependencies
         run: |
@@ -43,4 +39,6 @@ jobs:
 
       - name: Publish EAS Update
         working-directory: eagle-pathway-mobile
-        run: eas update --channel ${{ github.event.inputs.channel }} --message "${{ github.event.inputs.message }}"
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: eas update --channel ${{ github.event.inputs.channel }} --message "${{ github.event.inputs.message }}" --non-interactive
