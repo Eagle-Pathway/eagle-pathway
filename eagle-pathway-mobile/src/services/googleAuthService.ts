@@ -128,12 +128,26 @@ export async function safeSetSessionFromTokens(
   throw new Error('Failed to establish session from tokens.');
 }
 
+let isCallbackActive = false;
+
+export function setCallbackActive(active: boolean) {
+  isCallbackActive = active;
+}
+
+export function isCallbackHandled(): boolean {
+  return isCallbackActive;
+}
+
 export const googleAuthService = {
+  setCallbackActive,
+  isCallbackHandled,
+
   /**
    * Triggers native browser Google OAuth sign-in flow via Supabase Auth.
-   * Handles Android Chrome Custom Tab dismissals and concurrent deep-link intents gracefully.
+   * Handles Android Chrome Custom Tab dismissals and coordinates with callback screen smoothly.
    */
-  async signInWithGoogle(): Promise<{ session: any; user: any }> {
+  async signInWithGoogle(): Promise<{ session: any; user: any; handledByCallback?: boolean }> {
+    isCallbackActive = false;
     // Generate clean callback URL aligned with Expo Router route app/(auth)/callback.tsx
     const redirectTo = Linking.createURL('callback');
 
@@ -160,35 +174,37 @@ export const googleAuthService = {
       }
 
       if (params.code) {
-        return await safeExchangeCodeForSession(params.code);
+        const exchanged = await safeExchangeCodeForSession(params.code);
+        return { ...exchanged, handledByCallback: false };
       }
 
       if (params.accessToken && params.refreshToken) {
-        return await safeSetSessionFromTokens(params.accessToken, params.refreshToken);
+        const tokens = await safeSetSessionFromTokens(params.accessToken, params.refreshToken);
+        return { ...tokens, handledByCallback: false };
       }
     }
 
-    // 2. On Android, Chrome Custom Tabs are often dismissed when the OS opens the redirect deep-link intent.
-    // Rather than treating 'dismiss' or 'cancel' as an instant failure, grant a 2.5-second grace window
-    // to check if the session was established concurrently via the deep link.
+    // 2. On Android, Chrome Custom Tabs dismiss when the OS opens the redirect deep-link intent.
+    // Check if callback.tsx took over handling via the incoming deep link.
     const pollStart = Date.now();
-    while (Date.now() - pollStart < 2500) {
-      const { data: activeSession } = await supabase.auth.getSession();
-      if (activeSession?.session) {
-        return {
-          session: activeSession.session,
-          user: activeSession.session.user,
-        };
+    while (Date.now() - pollStart < 800) {
+      if (isCallbackActive) {
+        return { session: null, user: null, handledByCallback: true };
       }
-      await new Promise((r) => setTimeout(r, 200));
+      await new Promise((r) => setTimeout(r, 100));
     }
 
-    // 3. Final check for active session before concluding cancellation
+    if (isCallbackActive) {
+      return { session: null, user: null, handledByCallback: true };
+    }
+
+    // 3. Fallback check for active session before concluding cancellation
     const { data: fallbackSession } = await supabase.auth.getSession();
     if (fallbackSession?.session) {
       return {
         session: fallbackSession.session,
         user: fallbackSession.session.user,
+        handledByCallback: false,
       };
     }
 

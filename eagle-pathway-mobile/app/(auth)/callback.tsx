@@ -3,16 +3,21 @@ import { View, Text, ActivityIndicator, StyleSheet, TouchableOpacity } from 'rea
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import * as Linking from 'expo-linking';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '../../src/services/supabase';
 import { useAuthStore } from '../../src/store/authStore';
 import {
   safeExchangeCodeForSession,
   safeSetSessionFromTokens,
   extractAuthParams,
+  setCallbackActive,
 } from '../../src/services/googleAuthService';
 import { Colors, Typography, Spacing, Radius } from '../../src/utils/theme';
 import { Ionicons } from '@expo/vector-icons';
 import { getErrorMessage } from '../../src/utils/errorHandler';
+import { getUserRole } from '../../src/utils/role';
+import { isProfileIncomplete } from '../../src/utils/profile';
+import { ONBOARDED_KEY } from '../../src/screens/onboarding/OnboardingScreen';
 
 export default function AuthCallbackScreen() {
   const params = useLocalSearchParams<{ code?: string; error?: string; error_description?: string }>();
@@ -30,17 +35,30 @@ export default function AuthCallbackScreen() {
     } catch (e) {
       console.log('[AuthCallback] Profile load deferred:', e);
     } finally {
+      // First-run onboarding check: smoothly route students with incomplete profile directly to onboarding
+      const currentUser = useAuthStore.getState().user;
+      const role = getUserRole(currentUser).toLowerCase();
+      if (currentUser && role === 'student' && isProfileIncomplete(currentUser)) {
+        try {
+          const seen = await AsyncStorage.getItem(ONBOARDED_KEY);
+          if (!seen) {
+            router.replace('/onboarding');
+            return;
+          }
+        } catch {}
+      }
       router.replace('/(tabs)/home');
     }
   };
 
   useEffect(() => {
     let isMounted = true;
+    setCallbackActive(true);
 
-    // Show a helpful escape hatch if sign-in takes longer than 4 seconds
+    // Show a helpful escape hatch if sign-in takes longer than 8 seconds
     const slowTimer = setTimeout(() => {
       if (isMounted) setShowSlowNotice(true);
-    }, 4000);
+    }, 8000);
 
     async function processIncomingUrl(url: string | null) {
       if (!url || hasRedirectedRef.current) return;
@@ -119,10 +137,21 @@ export default function AuthCallbackScreen() {
           if (hasRedirectedRef.current) return;
         }
 
-        // 5. Polling fallback for concurrent completion
-        for (let attempt = 0; attempt < 8; attempt++) {
-          await new Promise((r) => setTimeout(r, 400));
+        // 5. Polling fallback for concurrent code exchange / session arrival (up to 15 seconds)
+        for (let attempt = 0; attempt < 25; attempt++) {
+          await new Promise((r) => setTimeout(r, 600));
           if (!isMounted || hasRedirectedRef.current) return;
+
+          // Retry exchanging code if code was provided in params and session not yet present
+          if (params.code) {
+            try {
+              const res = await safeExchangeCodeForSession(params.code);
+              if (res?.session) {
+                await navigateToHomeSafely(res.session);
+                return;
+              }
+            } catch {}
+          }
 
           const { data: pollSession } = await supabase.auth.getSession();
           if (pollSession?.session) {
@@ -156,6 +185,7 @@ export default function AuthCallbackScreen() {
 
     return () => {
       isMounted = false;
+      setCallbackActive(false);
       clearTimeout(slowTimer);
       linkSubscription.remove();
     };

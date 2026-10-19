@@ -8,7 +8,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { Colors, Typography, Radius, Spacing, CommonStyles } from '../../utils/theme';
 import { ScaleBounce } from './ScaleBounce';
 
-import { showError } from '../../utils/errorHandler';
 
 // ─── Button ──────────────────────────────────────────────────────────────────
 interface ButtonProps {
@@ -39,8 +38,6 @@ export const Button: React.FC<ButtonProps> = ({
       setInternalTimeout(true);
       if (onTimeout) {
         onTimeout();
-      } else {
-        showError(new Error('Request timed out. Please try again.'), 'Operation Timed Out');
       }
     }, 20000);
     return () => clearTimeout(timer);

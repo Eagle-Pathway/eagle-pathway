@@ -271,8 +271,9 @@ export default function SignupScreen() {
               if (isGoogleLoading) return;
               setIsGoogleLoading(true);
               try {
-                await signInWithGoogle();
-                if (useAuthStore.getState().isAuthenticated) {
+                const res = await signInWithGoogle();
+                // Only navigate directly if callback screen is NOT actively handling the navigation
+                if (res?.session && !res?.handledByCallback && useAuthStore.getState().isAuthenticated) {
                   router.replace('/(tabs)/home');
                 }
               } catch (e: any) {
@@ -282,7 +283,6 @@ export default function SignupScreen() {
                 }
               } finally {
                 setIsGoogleLoading(false);
-                setLoading(false);
               }
             }}
             activeOpacity={0.82}

@@ -25,13 +25,16 @@ interface AuthState {
   signUp: (email: string, password: string, fullName: string, phone: string, role: UserRole, attribution?: SignupAttribution) => Promise<void>;
   verifySignup: (email: string, token: string) => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
-  signInWithGoogle: () => Promise<void>;
+  signInWithGoogle: () => Promise<any>;
   loadProfile: () => Promise<void>;
   updateProfile: (updates: Partial<User>) => Promise<void>;
   uploadAvatar: (fileUri: string, fileName: string) => Promise<void>;
   signOut: () => Promise<void>;
   deleteAccount: () => Promise<void>;
 }
+
+// Deduplication mutex for profile loading across onAuthStateChange, callback screen, and OAuth returns
+let inFlightProfileLoad: Promise<void> | null = null;
 
 export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
@@ -181,118 +184,141 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   signInWithGoogle: async () => {
-    set({ isLoading: true });
     try {
       const res = await googleAuthService.signInWithGoogle();
-      if (res.session) {
+      if (res?.session) {
         set({ session: res.session });
         await get().loadProfile();
       }
-    } finally {
-      set({ isLoading: false });
+      return res;
+    } catch (err) {
+      throw err;
     }
   },
 
   loadProfile: async () => {
-    const { session, user } = get();
-
-    // Dev bypass: don’t let “no session” kick you out
-    if (BYPASS_PHONE_VERIFY) {
-      if (!user) {
-        set({
-          user: {
-            id: '00000000-0000-0000-0000-000000000000',
-            full_name: 'Dev User',
-            phone: '+10000000000',
-            role: 'STUDENT' as UserRole,
-            email: 'dev@test.com',
-          } as unknown as User,
-          isAuthenticated: true,
-        });
-      }
-      return;
+    if (inFlightProfileLoad) {
+      return inFlightProfileLoad;
     }
 
-    if (!session?.user?.id) return;
+    inFlightProfileLoad = (async () => {
+      const { session, user } = get();
 
-    set({ isLoading: true });
-    try {
-      let profile = await authService.getProfile(session.user.id);
-
-      // If user profile has no avatar but Google provided one in auth metadata, sync it
-      const googleAvatar = session.user.user_metadata?.avatar_url || session.user.user_metadata?.picture;
-      if (googleAvatar && !profile.avatar_url) {
-        authService.updateProfile(session.user.id, { avatar_url: googleAvatar }).catch(() => {});
-        profile = { ...profile, avatar_url: googleAvatar };
-      }
-
-      set({ user: profile, isAuthenticated: true });
-    } catch {
-      // Profile missing in public.users - create profile from session metadata
-      const u = session.user;
-      const metadata = u.user_metadata || {};
-      const fullName = metadata.full_name || metadata.name || u.email?.split('@')[0] || 'Eagle User';
-      const email = u.email || '';
-      const role = (metadata.role as UserRole) || 'student';
-      const avatarUrl = metadata.avatar_url || metadata.picture || null;
-
-      try {
-        const profile = await authService.createProfile(
-          u.id,
-          fullName,
-          metadata.phone || u.phone || '',
-          role,
-          email,
-          {
-            referral_code: metadata.referral_code,
-            signup_source: metadata.signup_source || 'google_oauth',
-            utm_source: metadata.utm_source,
-            utm_medium: metadata.utm_medium,
-            utm_campaign: metadata.utm_campaign,
-            utm_content: metadata.utm_content,
-            first_landing_url: metadata.first_landing_url,
-          }
-        );
-        if (avatarUrl && profile && !profile.avatar_url) {
-          authService.updateProfile(u.id, { avatar_url: avatarUrl }).catch(() => {});
+      // Dev bypass: don’t let “no session” kick you out
+      if (BYPASS_PHONE_VERIFY) {
+        if (!user) {
+          set({
+            user: {
+              id: '00000000-0000-0000-0000-000000000000',
+              full_name: 'Dev User',
+              phone: '+10000000000',
+              role: 'STUDENT' as UserRole,
+              email: 'dev@test.com',
+            } as unknown as User,
+            isAuthenticated: true,
+          });
         }
-        const finalUser: User = profile || {
-          id: u.id,
-          email,
-          full_name: fullName,
-          avatar_url: avatarUrl,
-          phone: '',
-          role,
-          roles: [role],
-          active_role: role,
-          created_at: new Date().toISOString(),
-        };
-        set({ user: finalUser, isAuthenticated: true });
-      } catch (createErr) {
-        console.error('[loadProfile] createProfile failed, using session fallback user:', createErr);
-        const fallbackUser: User = {
-          id: u.id,
-          email,
-          full_name: fullName,
-          avatar_url: avatarUrl,
-          phone: '',
-          role,
-          roles: [role],
-          active_role: role,
-          created_at: new Date().toISOString(),
-        };
-        set({ user: fallbackUser, isAuthenticated: true });
+        return;
       }
-    } finally {
-      set({ isLoading: false });
 
-      // Automatically register / refresh push token for existing signed-in users on app open
-      const currentUserId = session?.user?.id;
-      if (currentUserId) {
-        notificationsService.requestPermission().then(granted => {
-          if (granted) notificationsService.registerPushToken(currentUserId);
-        }).catch(() => {});
+      if (!session?.user?.id) return;
+
+      set({ isLoading: true });
+      try {
+        let profile = await authService.getProfile(session.user.id);
+
+        // If user profile has no avatar but Google provided one in auth metadata, sync it
+        const googleAvatar = session.user.user_metadata?.avatar_url || session.user.user_metadata?.picture;
+        if (googleAvatar && !profile.avatar_url) {
+          authService.updateProfile(session.user.id, { avatar_url: googleAvatar }).catch(() => {});
+          profile = { ...profile, avatar_url: googleAvatar };
+        }
+
+        set({ user: profile, isAuthenticated: true });
+      } catch {
+        // Profile missing in public.users - create profile from session metadata
+        const u = session.user;
+        const metadata = u.user_metadata || {};
+        const fullName = metadata.full_name || metadata.name || u.email?.split('@')[0] || 'Eagle User';
+        const email = u.email || '';
+        const role = (metadata.role as UserRole) || 'student';
+        const avatarUrl = metadata.avatar_url || metadata.picture || null;
+
+        try {
+          const profile = await authService.createProfile(
+            u.id,
+            fullName,
+            metadata.phone || u.phone || '',
+            role,
+            email,
+            {
+              referral_code: metadata.referral_code,
+              signup_source: metadata.signup_source || 'google_oauth',
+              utm_source: metadata.utm_source,
+              utm_medium: metadata.utm_medium,
+              utm_campaign: metadata.utm_campaign,
+              utm_content: metadata.utm_content,
+              first_landing_url: metadata.first_landing_url,
+            }
+          );
+          if (avatarUrl && profile && !profile.avatar_url) {
+            authService.updateProfile(u.id, { avatar_url: avatarUrl }).catch(() => {});
+          }
+          const finalUser: User = profile || {
+            id: u.id,
+            email,
+            full_name: fullName,
+            avatar_url: avatarUrl,
+            phone: '',
+            role,
+            roles: [role],
+            active_role: role,
+            created_at: new Date().toISOString(),
+          };
+          set({ user: finalUser, isAuthenticated: true });
+        } catch (createErr) {
+          console.error('[loadProfile] createProfile failed, checking if created concurrently or fallback:', createErr);
+          // If created concurrently by another listener, fetch it now
+          try {
+            const recheck = await authService.getProfile(u.id);
+            if (recheck) {
+              set({ user: recheck, isAuthenticated: true });
+              return;
+            }
+          } catch {
+            // Fallback user from session metadata
+          }
+
+          const fallbackUser: User = {
+            id: u.id,
+            email,
+            full_name: fullName,
+            avatar_url: avatarUrl,
+            phone: '',
+            role,
+            roles: [role],
+            active_role: role,
+            created_at: new Date().toISOString(),
+          };
+          set({ user: fallbackUser, isAuthenticated: true });
+        }
+      } finally {
+        set({ isLoading: false });
+
+        // Automatically register / refresh push token for existing signed-in users on app open
+        const currentUserId = session?.user?.id;
+        if (currentUserId) {
+          notificationsService.requestPermission().then(granted => {
+            if (granted) notificationsService.registerPushToken(currentUserId);
+          }).catch(() => {});
+        }
       }
+    })();
+
+    try {
+      await inFlightProfileLoad;
+    } finally {
+      inFlightProfileLoad = null;
     }
   },
 
