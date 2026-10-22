@@ -41,26 +41,18 @@ export default function Sidebar() {
       const [
         { count: msgCount },
         { count: financeCount },
-        { data: tutorUsers },
-        { data: verifiedTutors },
+        { count: pendingTutorTotal },
         { count: docCount },
       ] = await Promise.all([
         supabase.from('messages').select('*', { count: 'exact', head: true }).eq('recipient_id', user.id).eq('is_read', false),
         supabase.from('payments').select('*', { count: 'exact', head: true }).in('verification_status', ['manual_review', 'pending_verification']),
-        supabase.from('users').select('id, role, active_role, roles'),
-        supabase.from('tutors').select('user_id').eq('is_verified', true),
+        supabase.from('tutors').select('*', { count: 'exact', head: true }).eq('is_verified', false),
         supabase.from('documents').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
       ]);
 
-      const verifiedSet = new Set((verifiedTutors || []).map((t: any) => t.user_id));
-      const pendingTutorTotal = (tutorUsers || []).filter((u: any) => 
-        (u.role === 'tutor' || u.active_role === 'tutor' || (Array.isArray(u.roles) && u.roles.includes('tutor'))) &&
-        !verifiedSet.has(u.id)
-      ).length;
-
       setUnreadCount(msgCount || 0);
       setPendingFinanceCount(financeCount || 0);
-      setPendingTutorCount(pendingTutorTotal);
+      setPendingTutorCount(pendingTutorTotal || 0);
       setPendingDocCount(docCount || 0);
     } catch (e) {
       console.warn('Sidebar operational counts fetch fallback:', e);
@@ -76,15 +68,19 @@ export default function Sidebar() {
         .on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, () => fetchOperationalCounts())
         .on('postgres_changes', { event: '*', schema: 'public', table: 'payments' }, () => fetchOperationalCounts())
         .on('postgres_changes', { event: '*', schema: 'public', table: 'tutor_applications' }, () => fetchOperationalCounts())
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'tutors' }, () => fetchOperationalCounts())
         .on('postgres_changes', { event: '*', schema: 'public', table: 'documents' }, () => fetchOperationalCounts())
         .subscribe();
 
       const handleChatRead = () => fetchOperationalCounts();
+      const handleTutorUpdate = () => fetchOperationalCounts();
       window.addEventListener('chat_read_event', handleChatRead);
+      window.addEventListener('tutor_count_updated', handleTutorUpdate);
 
       return () => {
         supabase.removeChannel(channel);
         window.removeEventListener('chat_read_event', handleChatRead);
+        window.removeEventListener('tutor_count_updated', handleTutorUpdate);
       };
     }
   }, [user]);

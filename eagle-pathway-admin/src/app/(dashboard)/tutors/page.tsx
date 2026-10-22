@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase';
-import { CheckCircle, XCircle, Search, Shield, ShieldAlert, FileText, Download, Eye, UserCheck, UserX } from 'lucide-react';
+import { CheckCircle, XCircle, Search, Shield, ShieldAlert, FileText, Download, Eye, UserCheck, UserX, ChevronLeft, ChevronRight } from 'lucide-react';
 import { exportToCSV } from '@/utils/export';
 import { TableSkeleton } from '@/components/ui/TableSkeleton';
 import { useToast, useConfirm } from '@/components/ui/Feedback';
@@ -65,6 +65,7 @@ export default function TutorsPage() {
   const [tutorApps, setTutorApps] = useState<TutorApplication[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [selectedApp, setSelectedApp] = useState<TutorApplication | null>(null);
   const [showRejectModal, setShowRejectModal] = useState(false);
@@ -138,6 +139,7 @@ export default function TutorsPage() {
       if (!res.ok) throw new Error(resData.error || 'Failed to update tutor approval');
 
       showToast('success', willBeVerified ? 'Tutor approved successfully! 🎉' : 'Tutor verification revoked.');
+      window.dispatchEvent(new Event('tutor_count_updated'));
       await Promise.all([fetchTutors(), fetchTutorApplications()]);
     } catch (err: any) {
       showToast('error', `Failed to update: ${err.message}`);
@@ -177,6 +179,7 @@ export default function TutorsPage() {
 
       showToast('success', `${app.tutor?.full_name} approved!`);
       setSelectedApp(null);
+      window.dispatchEvent(new Event('tutor_count_updated'));
       await Promise.all([fetchTutorApplications(), fetchTutors()]);
     } catch (err: any) {
       showToast('error', `Failed to approve: ${err.message}`);
@@ -217,6 +220,7 @@ export default function TutorsPage() {
       showToast('success', 'Application rejected & notification sent');
       setShowRejectModal(false);
       setSelectedApp(null);
+      window.dispatchEvent(new Event('tutor_count_updated'));
       await Promise.all([fetchTutorApplications(), fetchTutors()]);
     } catch (err: any) {
       showToast('error', `Failed to reject: ${err.message}`);
@@ -232,7 +236,10 @@ export default function TutorsPage() {
       .from('tutor_applications')
       .update({ status: 'pending', rejection_reason: null, rejection_reason_category: null, reviewed_by: null, reviewed_at: null })
       .eq('id', app.id);
-    if (error) { showToast('error', 'Failed to reset'); } else { showToast('success', 'Ready for re-review'); }
+    if (error) { showToast('error', 'Failed to reset'); } else { 
+      showToast('success', 'Ready for re-review'); 
+      window.dispatchEvent(new Event('tutor_count_updated'));
+    }
     await fetchTutorApplications();
     setActionLoading(null);
   }
@@ -260,6 +267,12 @@ export default function TutorsPage() {
     a.tutor?.phone?.includes(search)
   );
 
+  const itemsPerPage = 10;
+  const currentList = activeTab === 'profiles' ? filteredTutors : filteredApps;
+  const totalPages = Math.max(1, Math.ceil(currentList.length / itemsPerPage));
+  const paginatedTutors = filteredTutors.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+  const paginatedApps = filteredApps.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
   const statusBadge = (status: string) => {
     const map: Record<string, { cls: string; label: string }> = {
       pending: { cls: 'bg-amber-50 text-amber-700', label: 'Pending' },
@@ -281,13 +294,13 @@ export default function TutorsPage() {
 
       <div className="flex gap-1 bg-gray-100 p-1 rounded-xl w-max">
         <button
-          onClick={() => setActiveTab('profiles')}
+          onClick={() => { setActiveTab('profiles'); setCurrentPage(1); }}
           className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${activeTab === 'profiles' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
         >
           Tutor Profiles
         </button>
         <button
-          onClick={() => setActiveTab('applications')}
+          onClick={() => { setActiveTab('applications'); setCurrentPage(1); }}
           className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${activeTab === 'applications' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
         >
           Tutor Applications
@@ -301,7 +314,7 @@ export default function TutorsPage() {
               <Search className="h-4 w-4 text-gray-400" />
             </div>
             <input type="text" placeholder="Search by name or phone..." value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => { setSearch(e.target.value); setCurrentPage(1); }}
               className="block w-full pl-10 pr-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-brand-blue focus:border-brand-blue" />
           </div>
           {activeTab === 'profiles' && (
@@ -327,7 +340,7 @@ export default function TutorsPage() {
               <tbody className="bg-white divide-y divide-gray-200">
                 {loading ? <TableSkeleton cols={5} rows={5} avatarCol={true} /> : filteredTutors.length === 0 ? (
                   <tr><td colSpan={5} className="px-6 py-10 text-center text-sm text-gray-500">No tutors found.</td></tr>
-                ) : filteredTutors.map((tutor) => {
+                ) : paginatedTutors.map((tutor) => {
                   const matchingApp = tutorApps.find(a => a.tutor_id === tutor.user_id);
                   return (
                   <tr key={tutor.user_id} className="hover:bg-gray-50/50 transition-colors">
@@ -426,7 +439,7 @@ export default function TutorsPage() {
               <tbody className="bg-white divide-y divide-gray-200">
                 {loading ? <TableSkeleton cols={6} rows={5} avatarCol={true} /> : filteredApps.length === 0 ? (
                   <tr><td colSpan={6} className="px-6 py-10 text-center text-sm text-gray-500">No tutor applications found.</td></tr>
-                ) : filteredApps.map((app) => (
+                ) : paginatedApps.map((app) => (
                   <tr key={app.id} className="hover:bg-gray-50/50 transition-colors cursor-pointer" onClick={() => setSelectedApp(app)}>
                     <td className="px-6 py-4">
                       <div className="flex items-center">
@@ -455,6 +468,34 @@ export default function TutorsPage() {
                 ))}
               </tbody>
             </table>
+          </div>
+        )}
+
+        {/* Pagination Controls */}
+        {!loading && currentList.length > 0 && (
+          <div className="px-6 py-4 border-t border-gray-100 bg-gray-50 flex items-center justify-between">
+            <div className="text-sm text-gray-500">
+              Showing <span className="font-medium text-gray-900">{(currentPage - 1) * itemsPerPage + 1}</span> to <span className="font-medium text-gray-900">{Math.min(currentPage * itemsPerPage, currentList.length)}</span> of <span className="font-medium text-gray-900">{currentList.length}</span> {activeTab === 'profiles' ? 'tutors' : 'applications'}
+            </div>
+            <div className="flex items-center space-x-2">
+              <button 
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="p-1.5 rounded-lg border border-gray-200 text-gray-500 hover:bg-white hover:text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                <ChevronLeft className="w-5 h-5" />
+              </button>
+              <div className="text-sm font-medium text-gray-700 mx-2">
+                Page {currentPage} of {totalPages}
+              </div>
+              <button 
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+                className="p-1.5 rounded-lg border border-gray-200 text-gray-500 hover:bg-white hover:text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                <ChevronRight className="w-5 h-5" />
+              </button>
+            </div>
           </div>
         )}
       </div>
