@@ -25,7 +25,6 @@
     "zustand": "^5.0.12"
   },
   "devDependencies": {
-    "@next/swc-win32-x64-msvc": "^16.2.1",
     "@tailwindcss/postcss": "^4.2.4",
     "@testing-library/react": "^16.0.0",
     "@types/node": "^20",
