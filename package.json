@@ -4,6 +4,7 @@
   "workspaces": [
     "eagle-pathway-admin",
     "eagle-pathway-mobile",
+    "eagle-pathway-web",
     "packages/*"
   ],
   "dependencies": {
