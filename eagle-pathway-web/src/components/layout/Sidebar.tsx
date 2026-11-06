@@ -11,7 +11,6 @@ import {
   Users,
   Briefcase,
   FolderOpen,
-  Package,
   MessageSquare,
   Sparkles,
   ClipboardList,
@@ -19,15 +18,12 @@ import {
   LogOut,
   ChevronLeft,
   ChevronRight,
-  User as UserIcon,
-  Shield,
   Wallet,
   Wand2,
   Award,
   BookOpen,
   Star,
   Settings,
-  UserPlus,
   FileCheck,
   Smartphone,
 } from 'lucide-react';
@@ -38,6 +34,7 @@ interface NavItem {
   icon: any;
   highlight?: boolean;
   badge?: string;
+  badgeColor?: string;
 }
 
 interface NavSection {
@@ -61,12 +58,12 @@ export default function Sidebar({ unreadMessages = 0 }: SidebarProps) {
   // Navigation Items per Role
   const studentSections: NavSection[] = [
     {
-      title: 'Main Hub',
+      title: 'Menu',
       items: [
         { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
         { name: 'Scholarships', href: '/scholarships', icon: GraduationCap },
         { name: 'Find Tutors', href: '/tutors', icon: Users },
-        { name: 'Request Tutor', href: '/request-tutor', icon: Sparkles, badge: 'New' },
+        { name: 'Request Tutor', href: '/request-tutor', icon: Sparkles, badge: 'New', badgeColor: 'bg-brand-gold' },
         { name: 'Tracker', href: '/tracker', icon: Briefcase },
         { name: 'Sessions', href: '/bookings', icon: Calendar },
       ],
@@ -96,7 +93,7 @@ export default function Sidebar({ unreadMessages = 0 }: SidebarProps) {
       title: 'Teaching Hub',
       items: [
         { name: 'Tutor Dashboard', href: '/dashboard', icon: LayoutDashboard },
-        { name: 'Tutoring Jobs', href: '/tutor-jobs', icon: ClipboardList, badge: 'Live' },
+        { name: 'Tutoring Jobs', href: '/tutor-jobs', icon: ClipboardList, badge: 'Live', badgeColor: 'bg-emerald-600' },
         { name: 'My Sessions', href: '/bookings', icon: Calendar },
         { name: 'Earnings & Payouts', href: '/earnings', icon: Wallet, highlight: true },
       ],
@@ -116,7 +113,7 @@ export default function Sidebar({ unreadMessages = 0 }: SidebarProps) {
       title: 'Family Portal',
       items: [
         { name: 'Parent Dashboard', href: '/dashboard', icon: LayoutDashboard },
-        { name: 'My Children', href: '/parent/children', icon: Users, badge: 'Track' },
+        { name: 'My Children', href: '/parent/children', icon: Users, badge: 'Track', badgeColor: 'bg-brand-blue' },
         { name: 'Book a Tutor', href: '/request-tutor', icon: Sparkles, highlight: true },
         { name: 'Children Sessions', href: '/bookings', icon: Calendar },
         { name: 'Find Tutors', href: '/tutors', icon: Users },
@@ -136,49 +133,50 @@ export default function Sidebar({ unreadMessages = 0 }: SidebarProps) {
 
   return (
     <aside
-      className={`hidden md:flex flex-col h-screen bg-[#0B2A5B] text-white border-r border-[#1E4D9B]/40 transition-all duration-300 relative z-30 select-none ${
+      className={`hidden md:flex flex-col h-screen bg-white border-r border-gray-200 shadow-sm transition-all duration-300 relative z-30 select-none ${
         isCollapsed ? 'w-20' : 'w-64'
       }`}
     >
-      {/* Collapse Toggle */}
+      {/* Collapse Toggle Button */}
       <button
         onClick={() => setIsCollapsed(!isCollapsed)}
-        className="absolute -right-3 top-8 bg-white text-[#0B2A5B] border border-gray-200 rounded-full p-1 shadow-md hover:bg-gray-100 transition-transform hover:scale-110 z-40"
+        className="absolute -right-3 top-10 bg-white border border-gray-200 rounded-full p-1 shadow-sm hover:bg-gray-50 text-gray-500 z-30 transition-transform hover:scale-110"
         aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
       >
-        {isCollapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
+        {isCollapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
       </button>
 
       {/* Brand Header */}
-      <div className={`h-20 flex items-center ${isCollapsed ? 'justify-center px-0' : 'px-6 gap-3'} border-b border-white/10 flex-shrink-0`}>
-        <div className="relative w-10 h-10 flex-shrink-0">
+      <div className={`h-20 flex items-center ${isCollapsed ? 'justify-center px-0' : 'px-6'} border-b border-gray-100 overflow-hidden flex-shrink-0`}>
+        {isCollapsed ? (
           <Image
             src="/brand/icon-light.svg"
             alt="Eagle Pathway"
             width={40}
             height={40}
-            className="w-10 h-10 object-contain"
+            className="h-10 w-10 flex-shrink-0"
+            unoptimized
             priority
           />
-        </div>
-        {!isCollapsed && (
-          <div className="flex flex-col overflow-hidden">
-            <span className="font-bold text-lg tracking-tight text-white leading-none">
-              Eagle Pathway
-            </span>
-            <span className="text-[11px] text-[#C9A84C] font-semibold tracking-wider uppercase mt-1">
-              {isTutor ? 'Tutor Portal' : isParent ? 'Parent Portal' : 'Student Portal'}
-            </span>
-          </div>
+        ) : (
+          <Image
+            src="/brand/logo-light-no-global.svg"
+            alt="Eagle Pathway"
+            width={180}
+            height={48}
+            className="h-12 w-auto flex-shrink-0 animate-in fade-in duration-300"
+            unoptimized
+            priority
+          />
         )}
       </div>
 
       {/* Navigation Sections */}
-      <nav className={`flex-1 py-4 ${isCollapsed ? 'px-2' : 'px-3'} space-y-4 overflow-y-auto`}>
+      <nav className={`flex-1 py-5 ${isCollapsed ? 'px-2' : 'px-4'} space-y-4 overflow-y-auto overflow-x-hidden`}>
         {sections.map((section, sIdx) => (
           <div key={sIdx} className="space-y-1">
             {!isCollapsed && (
-              <div className="text-[10px] font-bold text-white/40 uppercase tracking-wider px-3 mb-1.5">
+              <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 px-2">
                 {section.title}
               </div>
             )}
@@ -191,28 +189,27 @@ export default function Sidebar({ unreadMessages = 0 }: SidebarProps) {
                   key={item.name}
                   href={item.href}
                   title={isCollapsed ? item.name : undefined}
-                  className={`flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold transition-all group relative ${
+                  className={`flex items-center ${isCollapsed ? 'justify-center' : 'px-3'} py-2.5 rounded-xl transition-all duration-200 group relative ${
                     isActive
-                      ? 'bg-gradient-to-r from-[#C9A84C] to-[#DFBE60] text-[#0B2A5B] font-bold shadow-md'
-                      : item.highlight
-                      ? 'bg-white/10 text-white hover:bg-white/15'
-                      : 'text-white/80 hover:bg-white/10 hover:text-white'
+                      ? 'bg-brand-blue/10 text-brand-blue font-semibold'
+                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900 font-medium'
                   }`}
                 >
                   <Icon
-                    size={17}
-                    className={`flex-shrink-0 transition-transform group-hover:scale-110 ${
-                      isActive ? 'text-[#0B2A5B]' : item.highlight ? 'text-[#C9A84C]' : 'text-white/70'
+                    className={`${isCollapsed ? '' : 'mr-3'} h-5 w-5 flex-shrink-0 transition-transform group-hover:scale-105 ${
+                      isActive ? 'text-brand-blue' : 'text-gray-400 group-hover:text-gray-600'
                     }`}
                   />
-                  {!isCollapsed && <span className="truncate flex-1">{item.name}</span>}
+                  {!isCollapsed && (
+                    <span className="flex-1 truncate text-xs animate-in slide-in-from-left-2 duration-300">
+                      {item.name}
+                    </span>
+                  )}
 
                   {!isCollapsed && item.badge && (
                     <span
-                      className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full uppercase tracking-wider ${
-                        isActive
-                          ? 'bg-[#0B2A5B] text-white'
-                          : 'bg-[#C9A84C] text-[#0B2A5B]'
+                      className={`ml-2 px-2 py-0.5 text-white text-[10px] font-bold rounded-full shadow-xs ${
+                        item.badgeColor || 'bg-brand-blue'
                       }`}
                     >
                       {item.badge}
@@ -224,21 +221,35 @@ export default function Sidebar({ unreadMessages = 0 }: SidebarProps) {
           </div>
         ))}
 
-        {/* Global Chat Link */}
-        <div className="pt-2 border-t border-white/10 space-y-1">
+        {/* Global Links (Messages, Settings, Mobile App) */}
+        <div className="pt-3 border-t border-gray-100 space-y-1">
+          {!isCollapsed && (
+            <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 px-2">
+              Communication & App
+            </div>
+          )}
+
           <Link
             href="/chat"
             title={isCollapsed ? 'Messages' : undefined}
-            className={`flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold transition-all group ${
+            className={`flex items-center ${isCollapsed ? 'justify-center' : 'px-3'} py-2.5 rounded-xl transition-all duration-200 group relative ${
               pathname === '/chat'
-                ? 'bg-gradient-to-r from-[#C9A84C] to-[#DFBE60] text-[#0B2A5B] font-bold shadow-md'
-                : 'text-white/80 hover:bg-white/10 hover:text-white'
+                ? 'bg-brand-blue/10 text-brand-blue font-semibold'
+                : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900 font-medium'
             }`}
           >
-            <MessageSquare size={17} className={pathname === '/chat' ? 'text-[#0B2A5B]' : 'text-white/70'} />
-            {!isCollapsed && <span className="truncate flex-1">Messages</span>}
+            <MessageSquare
+              className={`${isCollapsed ? '' : 'mr-3'} h-5 w-5 flex-shrink-0 ${
+                pathname === '/chat' ? 'text-brand-blue' : 'text-gray-400 group-hover:text-gray-600'
+              }`}
+            />
+            {!isCollapsed && <span className="flex-1 truncate text-xs">Messages</span>}
             {unreadMessages > 0 && (
-              <span className="w-5 h-5 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center">
+              <span
+                className={`${
+                  isCollapsed ? 'absolute top-1 right-1' : 'ml-2'
+                } px-2 py-0.5 bg-red-500 text-white text-[10px] font-bold rounded-full animate-pulse shadow-xs`}
+              >
                 {unreadMessages > 9 ? '9+' : unreadMessages}
               </span>
             )}
@@ -247,14 +258,18 @@ export default function Sidebar({ unreadMessages = 0 }: SidebarProps) {
           <Link
             href="/settings"
             title={isCollapsed ? 'Settings' : undefined}
-            className={`flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold transition-all group ${
+            className={`flex items-center ${isCollapsed ? 'justify-center' : 'px-3'} py-2.5 rounded-xl transition-all duration-200 group relative ${
               pathname === '/settings'
-                ? 'bg-gradient-to-r from-[#C9A84C] to-[#DFBE60] text-[#0B2A5B] font-bold shadow-md'
-                : 'text-white/80 hover:bg-white/10 hover:text-white'
+                ? 'bg-brand-blue/10 text-brand-blue font-semibold'
+                : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900 font-medium'
             }`}
           >
-            <Settings size={17} className={pathname === '/settings' ? 'text-[#0B2A5B]' : 'text-white/70'} />
-            {!isCollapsed && <span className="truncate flex-1">Settings</span>}
+            <Settings
+              className={`${isCollapsed ? '' : 'mr-3'} h-5 w-5 flex-shrink-0 ${
+                pathname === '/settings' ? 'text-brand-blue' : 'text-gray-400 group-hover:text-gray-600'
+              }`}
+            />
+            {!isCollapsed && <span className="flex-1 truncate text-xs">Settings</span>}
           </Link>
 
           <a
@@ -262,47 +277,44 @@ export default function Sidebar({ unreadMessages = 0 }: SidebarProps) {
             target="_blank"
             rel="noopener noreferrer"
             title={isCollapsed ? 'Get Android App' : undefined}
-            className="flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold text-emerald-400 hover:bg-white/10 hover:text-emerald-300 transition-all group"
+            className={`flex items-center ${isCollapsed ? 'justify-center' : 'px-3'} py-2.5 rounded-xl text-emerald-700 hover:bg-emerald-50 transition-colors font-medium group`}
           >
-            <Smartphone size={17} className="text-emerald-400" />
-            {!isCollapsed && <span className="truncate flex-1 font-bold">Get Android App</span>}
+            <Smartphone className={`${isCollapsed ? '' : 'mr-3'} h-5 w-5 flex-shrink-0 text-emerald-600`} />
+            {!isCollapsed && <span className="flex-1 truncate text-xs font-semibold">Get Android App</span>}
           </a>
         </div>
       </nav>
 
-      {/* User Footer */}
-      <div className="p-3 border-t border-white/10 bg-[#081F44] flex-shrink-0">
-        <div className={`flex items-center ${isCollapsed ? 'justify-center' : 'justify-between gap-3'}`}>
-          <Link
-            href="/profile"
-            className="flex items-center gap-2.5 overflow-hidden group"
-            title={isCollapsed ? user?.full_name || 'Profile' : undefined}
-          >
-            <div className="w-9 h-9 rounded-full bg-[#1E4D9B] text-[#C9A84C] font-bold text-xs flex items-center justify-center border border-white/20 flex-shrink-0 group-hover:ring-2 group-hover:ring-[#C9A84C] transition-all">
-              {user?.full_name ? user.full_name[0].toUpperCase() : 'U'}
-            </div>
-            {!isCollapsed && (
-              <div className="flex flex-col overflow-hidden">
-                <span className="text-xs font-semibold text-white truncate group-hover:text-[#C9A84C] transition-colors">
-                  {user?.full_name || 'Account'}
-                </span>
-                <span className="text-[10px] text-white/50 capitalize truncate">
-                  {role}
-                </span>
-              </div>
-            )}
-          </Link>
-
+      {/* User Footer matching Admin Sidebar exactly */}
+      <div className="p-4 border-t border-gray-100 overflow-hidden flex-shrink-0">
+        <Link
+          href="/profile"
+          className={`flex items-center ${isCollapsed ? 'justify-center px-0' : 'px-2'} py-2 mb-2 rounded-xl hover:bg-gray-50 transition-colors group`}
+        >
+          <div className="h-8 w-8 rounded-full bg-brand-gold/20 flex items-center justify-center flex-shrink-0">
+            <span className="text-brand-gold text-xs font-bold">
+              {user?.full_name?.charAt(0).toUpperCase() || user?.email?.charAt(0).toUpperCase() || 'U'}
+            </span>
+          </div>
           {!isCollapsed && (
-            <button
-              onClick={() => signOut()}
-              className="p-1.5 rounded-lg text-white/60 hover:text-red-400 hover:bg-white/5 transition-colors"
-              title="Sign Out"
-            >
-              <LogOut size={16} />
-            </button>
+            <div className="ml-3 flex-1 min-w-0 animate-in fade-in duration-300">
+              <p className="text-sm font-medium text-gray-900 truncate">
+                {user?.full_name || user?.email}
+              </p>
+              <p className="text-xs text-gray-500 truncate capitalize">
+                {isTutor ? 'Verified Tutor' : isParent ? 'Guardian / Parent' : 'Scholar Student'}
+              </p>
+            </div>
           )}
-        </div>
+        </Link>
+        <button
+          onClick={() => signOut()}
+          title={isCollapsed ? 'Log out' : ''}
+          className={`flex w-full items-center ${isCollapsed ? 'justify-center' : 'px-3'} py-2 text-sm font-medium text-red-600 rounded-xl hover:bg-red-50 transition-colors`}
+        >
+          <LogOut className={`${isCollapsed ? '' : 'mr-3'} h-4 w-4 flex-shrink-0`} />
+          {!isCollapsed && <span className="animate-in fade-in duration-300">Log out</span>}
+        </button>
       </div>
     </aside>
   );

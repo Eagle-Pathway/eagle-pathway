@@ -10,7 +10,6 @@ import {
   Users,
   Briefcase,
   FolderOpen,
-  Package,
   MessageSquare,
   Sparkles,
   ClipboardList,
@@ -34,6 +33,7 @@ interface NavItem {
   icon: any;
   highlight?: boolean;
   badge?: string;
+  badgeColor?: string;
 }
 
 interface MobileNavProps {
@@ -56,7 +56,7 @@ export default function MobileNav({ isOpen, onClose, unreadMessages = 0 }: Mobil
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
     { name: 'Scholarships', href: '/scholarships', icon: GraduationCap },
     { name: 'Find Tutors', href: '/tutors', icon: Users },
-    { name: 'Request Tutor', href: '/request-tutor', icon: Sparkles },
+    { name: 'Request Tutor', href: '/request-tutor', icon: Sparkles, badge: 'New', badgeColor: 'bg-brand-gold' },
     { name: 'Applications Tracker', href: '/tracker', icon: Briefcase },
     { name: 'Tutoring Sessions', href: '/bookings', icon: Calendar },
     { name: 'Eagle AI Assistant', href: '/assistant', icon: Sparkles, highlight: true },
@@ -71,7 +71,7 @@ export default function MobileNav({ isOpen, onClose, unreadMessages = 0 }: Mobil
 
   const tutorItems: NavItem[] = [
     { name: 'Tutor Dashboard', href: '/dashboard', icon: LayoutDashboard },
-    { name: 'Tutoring Jobs', href: '/tutor-jobs', icon: ClipboardList, badge: 'Live' },
+    { name: 'Tutoring Jobs', href: '/tutor-jobs', icon: ClipboardList, badge: 'Live', badgeColor: 'bg-emerald-600' },
     { name: 'My Sessions', href: '/bookings', icon: Calendar },
     { name: 'Earnings & Payouts', href: '/earnings', icon: Wallet, highlight: true },
     { name: 'Scholarships', href: '/scholarships', icon: GraduationCap },
@@ -81,7 +81,7 @@ export default function MobileNav({ isOpen, onClose, unreadMessages = 0 }: Mobil
 
   const parentItems: NavItem[] = [
     { name: 'Parent Dashboard', href: '/dashboard', icon: LayoutDashboard },
-    { name: 'My Children', href: '/parent/children', icon: Users, badge: 'Track' },
+    { name: 'My Children', href: '/parent/children', icon: Users, badge: 'Track', badgeColor: 'bg-brand-blue' },
     { name: 'Book a Tutor', href: '/request-tutor', icon: Sparkles, highlight: true },
     { name: 'Children Sessions', href: '/bookings', icon: Calendar },
     { name: 'Find Tutors', href: '/tutors', icon: Users },
@@ -95,32 +95,32 @@ export default function MobileNav({ isOpen, onClose, unreadMessages = 0 }: Mobil
     <div className="fixed inset-0 z-50 md:hidden flex">
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-black/50 backdrop-blur-sm transition-opacity"
+        className="fixed inset-0 bg-black/50 backdrop-blur-xs transition-opacity"
         onClick={onClose}
       />
 
       {/* Drawer */}
-      <div className="relative w-72 max-w-[85%] bg-[#0B2A5B] text-white h-full flex flex-col z-10 shadow-2xl animate-in slide-in-from-left duration-200">
+      <div className="relative w-72 max-w-[85%] bg-white text-gray-900 h-full flex flex-col z-10 shadow-2xl border-r border-gray-200 animate-in slide-in-from-left duration-200">
         {/* Header */}
-        <div className="h-20 flex items-center justify-between px-5 border-b border-white/10 flex-shrink-0">
+        <div className="h-20 flex items-center justify-between px-5 border-b border-gray-100 flex-shrink-0">
           <div className="flex items-center gap-3">
             <Image
               src="/brand/icon-light.svg"
               alt="Eagle Pathway"
-              width={34}
-              height={34}
+              width={36}
+              height={36}
               className="object-contain"
             />
             <div className="flex flex-col">
-              <span className="font-bold text-sm text-white">Eagle Pathway</span>
-              <span className="text-[10px] text-[#C9A84C] font-semibold uppercase">
+              <span className="font-bold text-sm text-gray-900">Eagle Pathway</span>
+              <span className="text-[10px] text-brand-gold font-semibold uppercase tracking-wider">
                 {isTutor ? 'Tutor Portal' : isParent ? 'Parent Portal' : 'Student Portal'}
               </span>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg text-white/70 hover:text-white hover:bg-white/10"
+            className="p-1.5 rounded-lg text-gray-500 hover:text-gray-900 hover:bg-gray-100"
           >
             <X size={20} />
           </button>
@@ -139,19 +139,21 @@ export default function MobileNav({ isOpen, onClose, unreadMessages = 0 }: Mobil
                 onClick={onClose}
                 className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all ${
                   isActive
-                    ? 'bg-gradient-to-r from-[#C9A84C] to-[#DFBE60] text-[#0B2A5B] font-bold shadow-md'
-                    : item.highlight
-                    ? 'bg-white/10 text-white'
-                    : 'text-white/80 hover:bg-white/10 hover:text-white'
+                    ? 'bg-brand-blue/10 text-brand-blue font-bold shadow-xs'
+                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                 }`}
               >
                 <Icon
                   size={18}
-                  className={isActive ? 'text-[#0B2A5B]' : item.highlight ? 'text-[#C9A84C]' : 'text-white/70'}
+                  className={isActive ? 'text-brand-blue' : 'text-gray-400'}
                 />
                 <span className="flex-1 truncate">{item.name}</span>
                 {item.badge && (
-                  <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-[#C9A84C] text-[#0B2A5B] uppercase">
+                  <span
+                    className={`text-[9px] font-bold px-2 py-0.5 rounded-full text-white uppercase shadow-xs ${
+                      item.badgeColor || 'bg-brand-blue'
+                    }`}
+                  >
                     {item.badge}
                   </span>
                 )}
@@ -159,16 +161,20 @@ export default function MobileNav({ isOpen, onClose, unreadMessages = 0 }: Mobil
             );
           })}
 
-          <div className="pt-2 border-t border-white/10 space-y-1">
+          <div className="pt-3 border-t border-gray-100 space-y-1">
             <Link
               href="/chat"
               onClick={onClose}
-              className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold text-white/80 hover:bg-white/10"
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-colors ${
+                pathname === '/chat'
+                  ? 'bg-brand-blue/10 text-brand-blue font-bold'
+                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+              }`}
             >
-              <MessageSquare size={18} className="text-white/70" />
+              <MessageSquare size={18} className={pathname === '/chat' ? 'text-brand-blue' : 'text-gray-400'} />
               <span className="flex-1">Messages</span>
               {unreadMessages > 0 && (
-                <span className="w-5 h-5 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center">
+                <span className="w-5 h-5 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center animate-pulse">
                   {unreadMessages}
                 </span>
               )}
@@ -177,9 +183,13 @@ export default function MobileNav({ isOpen, onClose, unreadMessages = 0 }: Mobil
             <Link
               href="/settings"
               onClick={onClose}
-              className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold text-white/80 hover:bg-white/10"
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-colors ${
+                pathname === '/settings'
+                  ? 'bg-brand-blue/10 text-brand-blue font-bold'
+                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+              }`}
             >
-              <Settings size={18} className="text-white/70" />
+              <Settings size={18} className={pathname === '/settings' ? 'text-brand-blue' : 'text-gray-400'} />
               <span>Settings</span>
             </Link>
 
@@ -188,31 +198,35 @@ export default function MobileNav({ isOpen, onClose, unreadMessages = 0 }: Mobil
               target="_blank"
               rel="noopener noreferrer"
               onClick={onClose}
-              className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold text-emerald-400 hover:bg-white/10"
+              className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold text-emerald-700 hover:bg-emerald-50 transition-colors"
             >
-              <Smartphone size={18} className="text-emerald-400" />
+              <Smartphone size={18} className="text-emerald-600" />
               <span>Get Android App</span>
             </a>
 
             <Link
               href="/profile"
               onClick={onClose}
-              className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold text-white/80 hover:bg-white/10"
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-colors ${
+                pathname === '/profile'
+                  ? 'bg-brand-blue/10 text-brand-blue font-bold'
+                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+              }`}
             >
-              <UserIcon size={18} className="text-white/70" />
+              <UserIcon size={18} className={pathname === '/profile' ? 'text-brand-blue' : 'text-gray-400'} />
               <span>My Profile</span>
             </Link>
           </div>
         </nav>
 
         {/* Footer */}
-        <div className="p-4 border-t border-white/10 bg-[#081F44] flex items-center justify-between">
-          <div className="flex items-center gap-2 overflow-hidden">
-            <div className="w-8 h-8 rounded-full bg-[#1E4D9B] text-[#C9A84C] font-bold text-xs flex items-center justify-center">
+        <div className="p-4 border-t border-gray-100 bg-gray-50/50 flex items-center justify-between">
+          <div className="flex items-center gap-2.5 overflow-hidden">
+            <div className="w-8 h-8 rounded-full bg-brand-gold/20 text-brand-gold font-bold text-xs flex items-center justify-center">
               {user?.full_name ? user.full_name[0].toUpperCase() : 'U'}
             </div>
-            <span className="text-xs font-medium text-white truncate max-w-[120px]">
-              {user?.full_name || 'Account'}
+            <span className="text-xs font-medium text-gray-900 truncate max-w-[120px]">
+              {user?.full_name || user?.email || 'Account'}
             </span>
           </div>
 
@@ -221,7 +235,7 @@ export default function MobileNav({ isOpen, onClose, unreadMessages = 0 }: Mobil
               onClose();
               signOut();
             }}
-            className="p-2 text-white/70 hover:text-red-400"
+            className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
             title="Sign Out"
           >
             <LogOut size={16} />

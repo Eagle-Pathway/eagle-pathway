@@ -61,70 +61,79 @@ const STORIES = [
 
 export default function SuccessStoriesPage() {
   return (
-    <div className="space-y-8 max-w-6xl mx-auto pb-12">
-      {/* Hero Banner */}
-      <div className="bg-gradient-to-br from-[#0B2A5B] to-[#1E4D9B] text-white rounded-3xl p-8 md:p-10 shadow-lg relative overflow-hidden">
-        <div className="absolute right-0 top-0 w-80 h-80 bg-[#C9A84C]/10 rounded-full blur-3xl pointer-events-none" />
-
-        <div className="max-w-2xl relative z-10 space-y-4">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#C9A84C]/20 text-[#DFBE60] text-xs font-bold border border-[#C9A84C]/30">
-            <Sparkles size={13} />
-            <span>Hall of Fame &amp; Verified Scholars</span>
+    <div className="space-y-6 max-w-6xl mx-auto pb-16">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-200/80 pb-4">
+        <div>
+          <div className="inline-flex items-center gap-1.5 text-xs font-semibold text-brand-blue mb-1">
+            <Award size={14} className="text-brand-gold" />
+            <span>Alumni Hall of Fame</span>
           </div>
-
-          <h1 className="text-3xl md:text-4xl font-black tracking-tight leading-tight">
-            Ethiopian Students Soaring to the World&apos;s Top Universities
+          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
+            Ethiopian Students at World-Class Universities
           </h1>
-          <p className="text-xs md:text-sm text-slate-300 leading-relaxed">
+          <p className="text-xs text-slate-500 mt-1">
             Read inspiring stories from students who prepared with Eagle Pathway tutors, mastered their admissions essays, and earned life-changing international scholarships.
           </p>
+        </div>
+      </div>
 
-          <div className="grid grid-cols-3 gap-4 pt-4 border-t border-white/10">
-            <div>
-              <div className="text-2xl font-black text-[#C9A84C]">$4.8M+</div>
-              <div className="text-[11px] text-slate-300">Scholarships Secured</div>
-            </div>
-            <div>
-              <div className="text-2xl font-black text-white">250+</div>
-              <div className="text-[11px] text-slate-300">Scholars Admitted</div>
-            </div>
-            <div>
-              <div className="text-2xl font-black text-emerald-400">98%</div>
-              <div className="text-[11px] text-slate-300">Visa Success Rate</div>
-            </div>
-          </div>
+      {/* Verified Metrics Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+        <div className="bg-white border border-slate-200/80 rounded-xl p-4 shadow-xs">
+          <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">
+            Scholarships Secured
+          </span>
+          <div className="text-2xl font-bold text-slate-900 tracking-tight mt-1">$4.8M+</div>
+          <div className="text-[11px] text-slate-400 mt-0.5">Verified financial aid grants</div>
+        </div>
+
+        <div className="bg-white border border-slate-200/80 rounded-xl p-4 shadow-xs">
+          <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">
+            Scholars Admitted
+          </span>
+          <div className="text-2xl font-bold text-brand-blue tracking-tight mt-1">250+</div>
+          <div className="text-[11px] text-slate-400 mt-0.5">Global university placements</div>
+        </div>
+
+        <div className="bg-white border border-slate-200/80 rounded-xl p-4 shadow-xs">
+          <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block">
+            Visa Success Rate
+          </span>
+          <div className="text-2xl font-bold text-emerald-700 tracking-tight mt-1">98%</div>
+          <div className="text-[11px] text-slate-400 mt-0.5">Embassy interview clearances</div>
         </div>
       </div>
 
       {/* Stories Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {STORIES.map((story) => (
           <div
             key={story.id}
-            className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-xs flex flex-col justify-between hover:shadow-md transition-shadow relative"
+            className="bg-white rounded-xl border border-slate-200/80 p-5 shadow-xs flex flex-col justify-between hover:border-slate-300 hover:shadow-xs transition-all"
           >
             <div>
-              <div className="flex items-center justify-between mb-4">
-                <span className="px-3 py-1 rounded-full text-xs font-bold bg-[#C9A84C]/15 text-[#9A7B2C] border border-[#C9A84C]/30">
+              <div className="flex items-center justify-between mb-3">
+                <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-blue-50 text-brand-blue border border-blue-200/60 uppercase">
                   {story.badge}
                 </span>
                 <div className="flex text-amber-400">
                   {[...Array(5)].map((_, i) => (
-                    <Star key={i} size={14} fill="currentColor" />
+                    <Star key={i} size={13} fill="currentColor" />
                   ))}
                 </div>
               </div>
 
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-12 h-12 rounded-2xl bg-[#0B2A5B] text-[#C9A84C] font-black text-base flex items-center justify-center flex-shrink-0 shadow-xs">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-10 h-10 rounded-full bg-brand-gold/20 text-brand-gold font-bold text-xs flex items-center justify-center flex-shrink-0">
                   {story.name
                     .split(' ')
                     .map((n) => n[0])
                     .join('')}
                 </div>
                 <div>
-                  <h3 className="font-bold text-base text-slate-900">{story.name}</h3>
-                  <p className="text-xs font-semibold text-[#0B2A5B] flex items-center gap-1">
+                  <h3 className="font-semibold text-sm text-slate-900">{story.name}</h3>
+                  <p className="text-xs font-medium text-brand-blue flex items-center gap-1">
                     <GraduationCap size={13} />
                     <span>{story.institution}</span>
                   </p>
@@ -132,21 +141,21 @@ export default function SuccessStoriesPage() {
                 </div>
               </div>
 
-              <div className="p-3 bg-slate-50 rounded-xl mb-4 border border-slate-100">
-                <div className="text-[11px] font-bold text-slate-700">Awarded Scholarship:</div>
+              <div className="p-2.5 bg-slate-50/70 rounded-lg mb-3 border border-slate-100">
+                <div className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Awarded Scholarship:</div>
                 <div className="text-xs font-semibold text-emerald-700 mt-0.5">
                   {story.scholarship}
                 </div>
               </div>
 
-              <blockquote className="text-xs text-slate-600 italic leading-relaxed relative pl-6 border-l-2 border-[#C9A84C]">
+              <blockquote className="text-xs text-slate-600 italic leading-relaxed relative pl-4 border-l-2 border-brand-blue">
                 &quot;{story.quote}&quot;
               </blockquote>
             </div>
 
-            <div className="pt-4 mt-4 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-400">
+            <div className="pt-3 mt-3 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-400">
               <span>{story.highSchool}</span>
-              <span className="flex items-center gap-1 text-emerald-600 font-semibold">
+              <span className="flex items-center gap-1 text-emerald-600 font-semibold text-[10px]">
                 <ShieldCheck size={12} /> Verified Scholar
               </span>
             </div>
@@ -155,24 +164,24 @@ export default function SuccessStoriesPage() {
       </div>
 
       {/* CTA Box */}
-      <div className="bg-slate-50 border border-slate-200 rounded-3xl p-8 text-center max-w-xl mx-auto space-y-4">
-        <h3 className="text-lg font-bold text-slate-900">
+      <div className="bg-white border border-slate-200/80 rounded-xl p-6 text-center max-w-xl mx-auto space-y-3 shadow-xs">
+        <h3 className="text-base font-bold text-slate-900">
           Ready to Write Your Own Success Story?
         </h3>
         <p className="text-xs text-slate-500 leading-relaxed">
           Book a 1-on-1 verified tutor for your exams or explore 100+ fully funded international scholarships open right now.
         </p>
 
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-2.5 pt-1">
           <Link
             href="/request-tutor"
-            className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-[#0B2A5B] text-white text-xs font-bold hover:bg-[#1E4D9B] shadow-sm"
+            className="w-full sm:w-auto px-4 py-2 rounded-xl bg-brand-blue text-white text-xs font-semibold hover:bg-brand-blue/90 shadow-xs"
           >
             Request 1-on-1 Tutor
           </Link>
           <Link
             href="/scholarships"
-            className="w-full sm:w-auto px-5 py-2.5 rounded-xl border border-slate-300 text-xs font-semibold text-slate-700 hover:bg-white"
+            className="w-full sm:w-auto px-4 py-2 rounded-xl border border-slate-200 text-xs font-medium text-slate-700 hover:bg-slate-50 shadow-xs"
           >
             Browse Scholarships
           </Link>
@@ -181,4 +190,3 @@ export default function SuccessStoriesPage() {
     </div>
   );
 }
-

@@ -127,7 +127,7 @@ export default function ScholarshipDetailPage() {
   if (loading) {
     return (
       <div className="py-24 flex flex-col items-center justify-center gap-3">
-        <div className="w-10 h-10 border-4 border-[#0B2A5B]/20 border-t-[#0B2A5B] rounded-full animate-spin" />
+        <div className="w-8 h-8 border-3 border-brand-blue/20 border-t-brand-blue rounded-full animate-spin" />
         <p className="text-xs text-slate-500 font-semibold">Loading scholarship details...</p>
       </div>
     );
@@ -135,13 +135,13 @@ export default function ScholarshipDetailPage() {
 
   if (!scholarship) {
     return (
-      <div className="py-20 text-center space-y-4">
-        <AlertCircle size={40} className="mx-auto text-amber-500" />
-        <h2 className="text-xl font-bold text-slate-900">Scholarship Not Found</h2>
+      <div className="py-20 text-center space-y-4 bg-white rounded-xl border border-slate-200/80 p-8 shadow-xs">
+        <AlertCircle size={36} className="mx-auto text-amber-500" />
+        <h2 className="text-lg font-bold text-slate-900">Scholarship Not Found</h2>
         <p className="text-xs text-slate-500">The scholarship you requested may have expired or was removed.</p>
         <Link
           href="/scholarships"
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#0B2A5B] text-white text-xs font-bold"
+          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-brand-blue text-white text-xs font-semibold hover:bg-brand-blue/90 shadow-xs"
         >
           <ArrowLeft size={14} />
           <span>Back to Scholarships Hub</span>
@@ -157,77 +157,80 @@ export default function ScholarshipDetailPage() {
   return (
     <div className="space-y-6 max-w-5xl mx-auto animate-in fade-in duration-200">
       {/* Back button */}
-      <Link
-        href="/scholarships"
-        className="inline-flex items-center gap-2 text-xs font-bold text-slate-600 hover:text-[#0B2A5B] transition-colors"
-      >
-        <ArrowLeft size={16} />
-        <span>Back to All Scholarships</span>
-      </Link>
+      <div>
+        <Link
+          href="/scholarships"
+          className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-600 hover:text-brand-blue transition-colors"
+        >
+          <ArrowLeft size={14} />
+          <span>Back to All Scholarships</span>
+        </Link>
+      </div>
 
       {actionSuccess && (
-        <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-center gap-3 text-emerald-800 text-xs font-bold animate-in fade-in duration-150">
-          <CheckCircle2 size={18} className="text-emerald-600 flex-shrink-0" />
+        <div className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200/70 flex items-center gap-2.5 text-emerald-800 text-xs font-semibold shadow-xs animate-in fade-in duration-150">
+          <CheckCircle2 size={16} className="text-emerald-600 flex-shrink-0" />
           <span>{actionSuccess}</span>
         </div>
       )}
 
       {/* Main Hero Card */}
-      <div className="bg-white rounded-3xl border border-slate-200/80 p-8 shadow-sm space-y-6">
+      <div className="bg-white rounded-xl border border-slate-200/80 p-6 md:p-8 shadow-xs space-y-6">
         <div className="flex flex-col md:flex-row md:items-start justify-between gap-6">
           <div className="space-y-3 flex-1">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="px-3 py-1 rounded-full text-xs font-extrabold bg-emerald-50 text-emerald-700 border border-emerald-200">
+              <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200/60">
                 {scholarship.funding_type || 'Fully Funded'}
               </span>
-              <span className="px-3 py-1 rounded-full text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200 capitalize">
+              <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-blue-50 text-brand-blue border border-blue-200/60 capitalize">
                 {scholarship.degree_levels?.[0] || (scholarship as any).degree_level || 'All Degree Levels'}
               </span>
               {scholarship.country && (
-                <span className="px-3 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-700">
+                <span className="px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-slate-100 text-slate-700">
                   📍 {scholarship.country}
                 </span>
               )}
             </div>
 
-            <h1 className="text-2xl md:text-3xl font-extrabold text-[#0B2A5B] tracking-tight leading-tight">
+            <h1 className="text-xl md:text-2xl font-bold text-slate-900 tracking-tight leading-snug">
               {scholarship.name || (scholarship as any).title}
             </h1>
 
-            <div className="flex items-center gap-2 text-sm text-slate-600 font-medium">
-              <MapPin size={16} className="text-slate-400" />
+            <div className="flex items-center gap-2 text-xs text-slate-600 font-medium">
+              <MapPin size={15} className="text-slate-400" />
               <span>{scholarship.organization || (scholarship as any).host_institution || scholarship.country || 'Global Host'}</span>
             </div>
           </div>
 
           {/* Quick Actions Header */}
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2.5">
             <button
               onClick={handleToggleSave}
-              className={`p-3 rounded-2xl border transition-all flex items-center gap-2 text-xs font-bold ${isSaved
-                ? 'border-[#C9A84C] bg-[#C9A84C]/10 text-[#0B2A5B]'
-                : 'border-slate-200 hover:border-slate-300 text-slate-700'
-                }`}
+              className={`px-3.5 py-2 rounded-xl border transition-all flex items-center gap-2 text-xs font-semibold shadow-xs ${
+                isSaved
+                  ? 'border-brand-gold bg-brand-gold/10 text-slate-900'
+                  : 'border-slate-200 hover:border-slate-300 text-slate-700 bg-white'
+              }`}
             >
-              {isSaved ? <BookmarkCheck size={18} className="text-[#C9A84C]" /> : <Bookmark size={18} />}
+              {isSaved ? <BookmarkCheck size={16} className="text-brand-gold" /> : <Bookmark size={16} />}
               <span>{isSaved ? 'Saved' : 'Save'}</span>
             </button>
           </div>
         </div>
 
         {/* Deadline alert banner */}
-        <div className="p-4 rounded-2xl bg-amber-50/80 border border-amber-200/80 flex items-center justify-between gap-4">
+        <div className="p-4 rounded-xl bg-amber-50/70 border border-amber-200/70 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <Calendar size={20} className="text-amber-600" />
+            <Calendar size={18} className="text-amber-600 flex-shrink-0" />
             <div>
-              <p className="text-xs font-bold text-amber-900">
+              <p className="text-xs font-semibold text-amber-950">
                 Application Deadline:{' '}
                 {scholarship.deadline
                   ? formatDate(new Date(scholarship.deadline), 'MMMM d, yyyy')
                   : 'Open Rolling Admissions'}
               </p>
               {daysLeft !== null && (
-                <p className="text-[11px] text-amber-700 font-medium">
+                <p className="text-[11px] text-amber-800 font-medium mt-0.5">
                   {daysLeft > 0 ? `${daysLeft} calendar days remaining to apply` : 'Applications closing very soon'}
                 </p>
               )}
@@ -238,10 +241,11 @@ export default function ScholarshipDetailPage() {
             <button
               onClick={handleAddToTracker}
               disabled={hasApplied}
-              className={`px-4 py-2.5 rounded-xl text-xs font-bold transition-all ${hasApplied
-                ? 'bg-emerald-100 text-emerald-800 cursor-default'
-                : 'bg-[#0B2A5B] hover:bg-[#1E4D9B] text-white shadow-sm'
-                }`}
+              className={`px-3.5 py-2 rounded-xl text-xs font-semibold transition-all shadow-xs ${
+                hasApplied
+                  ? 'bg-emerald-100 text-emerald-800 cursor-default'
+                  : 'bg-brand-blue hover:bg-brand-blue/90 text-white'
+              }`}
             >
               {hasApplied ? 'In Application Tracker ✓' : '+ Add to Tracker'}
             </button>
@@ -249,9 +253,10 @@ export default function ScholarshipDetailPage() {
         </div>
 
         {/* Detailed Description */}
-        <div className="space-y-4 pt-4 border-t border-slate-100">
-          <h2 className="text-lg font-bold text-slate-900">Program Overview</h2>
-          <div className="text-sm text-slate-700 leading-relaxed whitespace-pre-line">
+        <div className="space-y-3 pt-4 border-t border-slate-100">
+          <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Scholarship Details</p>
+          <h2 className="text-base font-bold text-slate-900">Program Overview</h2>
+          <div className="text-xs sm:text-sm text-slate-700 leading-relaxed whitespace-pre-line">
             {scholarship.description ||
               'This international scholarship program provides comprehensive tuition coverage and academic support for qualifying undergraduate and graduate scholars.'}
           </div>
@@ -259,9 +264,10 @@ export default function ScholarshipDetailPage() {
 
         {/* Eligibility & Requirements */}
         {scholarship.requirements && (
-          <div className="space-y-4 pt-4 border-t border-slate-100">
-            <h2 className="text-lg font-bold text-slate-900">Eligibility &amp; Criteria</h2>
-            <div className="text-sm text-slate-700 leading-relaxed whitespace-pre-line bg-slate-50 p-5 rounded-2xl border border-slate-200/80">
+          <div className="space-y-3 pt-4 border-t border-slate-100">
+            <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Criteria &amp; Qualifications</p>
+            <h2 className="text-base font-bold text-slate-900">Eligibility &amp; Criteria</h2>
+            <div className="text-xs sm:text-sm text-slate-700 leading-relaxed whitespace-pre-line bg-slate-50/60 p-4 sm:p-5 rounded-xl border border-slate-200/80">
               {scholarship.requirements}
             </div>
           </div>
@@ -277,15 +283,15 @@ export default function ScholarshipDetailPage() {
               href={scholarship.application_url}
               target="_blank"
               rel="noopener noreferrer"
-              className="w-full sm:w-auto px-6 py-3 rounded-2xl bg-gradient-to-r from-[#C9A84C] to-[#DFBE60] text-[#0B2A5B] font-extrabold text-xs shadow-md hover:brightness-105 flex items-center justify-center gap-2 transition-transform hover:-translate-y-0.5"
+              className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-brand-blue text-white font-semibold text-xs shadow-xs hover:bg-brand-blue/90 flex items-center justify-center gap-2 transition-all"
             >
               <span>Visit Official Application Portal</span>
-              <ExternalLink size={15} />
+              <ExternalLink size={14} />
             </a>
           ) : (
             <button
               onClick={handleAddToTracker}
-              className="w-full sm:w-auto px-6 py-3 rounded-2xl bg-[#0B2A5B] text-white font-extrabold text-xs shadow-md hover:bg-[#1E4D9B]"
+              className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-brand-blue text-white font-semibold text-xs shadow-xs hover:bg-brand-blue/90"
             >
               <span>Start Application in Tracker</span>
             </button>

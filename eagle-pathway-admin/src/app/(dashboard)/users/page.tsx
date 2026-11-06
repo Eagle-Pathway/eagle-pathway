@@ -36,7 +36,7 @@ export default function UsersPage() {
   const [cityFilter, setCityFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
   const [savingRole, setSavingRole] = useState<string | null>(null);
-  
+
   // Interactive menu & detail modal state
   const [activeMenuUserId, setActiveMenuUserId] = useState<string | null>(null);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
@@ -301,22 +301,22 @@ export default function UsersPage() {
   }, []);
 
   const filtered = users.filter(u => {
-    const matchesSearch = 
-      u.full_name?.toLowerCase().includes(search.toLowerCase()) || 
+    const matchesSearch =
+      u.full_name?.toLowerCase().includes(search.toLowerCase()) ||
       u.email?.toLowerCase().includes(search.toLowerCase()) ||
       u.phone?.includes(search);
     const matchesRole = roleFilter === 'all' || roleOf(u) === roleFilter;
     const matchesCity = cityFilter === 'all' || u.city === cityFilter;
-    const matchesStatus = 
+    const matchesStatus =
       statusFilter === 'all'
         ? !u.is_deleted
         : statusFilter === 'suspended'
-        ? u.is_suspended && !u.is_deleted
-        : statusFilter === 'active'
-        ? !u.is_suspended && !u.is_deleted
-        : statusFilter === 'deleted'
-        ? u.is_deleted
-        : true;
+          ? u.is_suspended && !u.is_deleted
+          : statusFilter === 'active'
+            ? !u.is_suspended && !u.is_deleted
+            : statusFilter === 'deleted'
+              ? u.is_deleted
+              : true;
 
     return matchesSearch && matchesRole && matchesCity && matchesStatus;
   });
@@ -326,7 +326,7 @@ export default function UsersPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 8;
   const totalPages = Math.ceil(filtered.length / itemsPerPage);
-  
+
   const paginatedUsers = filtered.slice(
     (currentPage - 1) * itemsPerPage,
     currentPage * itemsPerPage
@@ -337,37 +337,92 @@ export default function UsersPage() {
     setCurrentPage(1);
   }, [search, roleFilter, cityFilter, statusFilter]);
 
+  const totalUsersCount = users.filter(u => !u.is_deleted).length;
+  const totalStudentsCount = users.filter(u => !u.is_deleted && roleOf(u) === 'student').length;
+  const totalTutorsCount = users.filter(u => !u.is_deleted && roleOf(u) === 'tutor').length;
+  const totalSuspendedCount = users.filter(u => u.is_suspended && !u.is_deleted).length;
+
   return (
-    <div className="space-y-6 animate-in fade-in duration-500">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+    <div className="space-y-6 animate-in fade-in duration-200">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-200/80 pb-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Users</h1>
-          <p className="mt-1 text-sm text-gray-500">View and manage all registered users</p>
+          <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">User Directory</p>
+          <h1 className="text-xl md:text-2xl font-bold text-slate-900 tracking-tight">Registered Users</h1>
+          <p className="text-xs text-slate-500 mt-1">View, manage roles, and review accounts across students, tutors, and parents.</p>
         </div>
       </div>
 
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-        <div className="p-4 border-b border-gray-100 bg-gray-50/50">
+      {/* Overview-style KPI Metric Summary Cards */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="bg-white border border-slate-200/80 rounded-xl p-4 shadow-xs hover:border-slate-300 transition-all">
+          <div className="flex items-center justify-between">
+            <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Total Users</p>
+            <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-blue-50 text-brand-blue border border-blue-200/60">Active</span>
+          </div>
+          <div className="mt-1 flex items-baseline gap-2">
+            <span className="text-2xl font-bold text-slate-900 tracking-tight">{totalUsersCount}</span>
+            <span className="text-xs text-slate-400 font-medium">accounts</span>
+          </div>
+        </div>
+
+        <div className="bg-white border border-slate-200/80 rounded-xl p-4 shadow-xs hover:border-slate-300 transition-all">
+          <div className="flex items-center justify-between">
+            <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Students</p>
+            <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200/60">Learners</span>
+          </div>
+          <div className="mt-1 flex items-baseline gap-2">
+            <span className="text-2xl font-bold text-slate-900 tracking-tight">{totalStudentsCount}</span>
+            <span className="text-xs text-slate-400 font-medium">enrolled</span>
+          </div>
+        </div>
+
+        <div className="bg-white border border-slate-200/80 rounded-xl p-4 shadow-xs hover:border-slate-300 transition-all">
+          <div className="flex items-center justify-between">
+            <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Tutors</p>
+            <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-purple-50 text-purple-700 border border-purple-200/60">Instructors</span>
+          </div>
+          <div className="mt-1 flex items-baseline gap-2">
+            <span className="text-2xl font-bold text-slate-900 tracking-tight">{totalTutorsCount}</span>
+            <span className="text-xs text-slate-400 font-medium">registered</span>
+          </div>
+        </div>
+
+        <div className="bg-white border border-slate-200/80 rounded-xl p-4 shadow-xs hover:border-slate-300 transition-all">
+          <div className="flex items-center justify-between">
+            <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Suspended</p>
+            <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${totalSuspendedCount > 0 ? 'bg-rose-50 text-rose-700 border border-rose-200/60' : 'bg-slate-100 text-slate-600'}`}>
+              {totalSuspendedCount > 0 ? 'Action' : 'Clean'}
+            </span>
+          </div>
+          <div className="mt-1 flex items-baseline gap-2">
+            <span className="text-2xl font-bold text-slate-900 tracking-tight">{totalSuspendedCount}</span>
+            <span className="text-xs text-slate-400 font-medium">blocked</span>
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-xl shadow-xs border border-slate-200/80 overflow-hidden">
+        <div className="p-4 border-b border-slate-200/80 bg-slate-50/50">
           <div className="flex flex-col sm:flex-row gap-3">
             <div className="relative flex-1 max-w-md">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <Search className="h-4 w-4 text-gray-400" />
+                <Search className="h-4 w-4 text-slate-400" />
               </div>
               <input
                 type="text"
                 placeholder="Search by name, email, or phone..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="block w-full pl-10 pr-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-brand-blue focus:border-brand-blue"
+                className="block w-full pl-9 pr-3 py-2 bg-white border border-slate-200 rounded-xl text-xs placeholder-slate-400 text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-blue/20 focus:border-brand-blue transition-all"
               />
             </div>
 
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="px-3 py-2 border border-gray-200 rounded-lg text-sm font-medium focus:ring-brand-blue focus:border-brand-blue bg-white"
+              className="px-3 py-2 border border-slate-200 rounded-xl text-xs font-medium text-slate-700 focus:ring-2 focus:ring-brand-blue/20 focus:border-brand-blue bg-white"
             >
-              <option value="all">All Users</option>
+              <option value="all">All Statuses</option>
               <option value="active">Active Only</option>
               <option value="suspended">Suspended Only</option>
               <option value="deleted">Deleted / Archived</option>
@@ -376,7 +431,7 @@ export default function UsersPage() {
             <select
               value={roleFilter}
               onChange={(e) => setRoleFilter(e.target.value)}
-              className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-brand-blue focus:border-brand-blue bg-white"
+              className="px-3 py-2 border border-slate-200 rounded-xl text-xs font-medium text-slate-700 focus:ring-2 focus:ring-brand-blue/20 focus:border-brand-blue bg-white"
             >
               <option value="all">All Roles</option>
               <option value="student">Students</option>
@@ -386,28 +441,28 @@ export default function UsersPage() {
             <select
               value={cityFilter}
               onChange={(e) => setCityFilter(e.target.value)}
-              className="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-brand-blue focus:border-brand-blue bg-white"
+              className="px-3 py-2 border border-slate-200 rounded-xl text-xs font-medium text-slate-700 focus:ring-2 focus:ring-brand-blue/20 focus:border-brand-blue bg-white"
             >
               <option value="all">All Cities</option>
               {cities.map(city => (
                 <option key={city} value={city}>{city}</option>
               ))}
             </select>
-            <button 
+            <button
               onClick={() => exportToCSV(
                 selectedUserIds.size > 0 ? users.filter(u => selectedUserIds.has(u.id)) : filtered,
                 'users_export'
               )}
-              className="flex items-center px-4 py-2 bg-white text-gray-700 border border-gray-200 rounded-lg shadow-sm hover:bg-gray-50 transition-colors text-sm font-medium whitespace-nowrap"
+              className="flex items-center px-3.5 py-2 bg-white text-slate-700 border border-slate-200 rounded-xl shadow-xs hover:bg-slate-50 transition-colors text-xs font-semibold whitespace-nowrap"
             >
-              <Download className="w-4 h-4 mr-2 text-gray-500" />
+              <Download className="w-3.5 h-3.5 mr-1.5 text-slate-500" />
               {selectedUserIds.size > 0 ? `Export (${selectedUserIds.size})` : 'Export CSV'}
             </button>
           </div>
 
           {/* Floating Bulk Action Bar */}
           {selectedUserIds.size > 0 && (
-            <div className="mt-3 p-3 bg-brand-blue/10 border border-brand-blue/20 rounded-xl flex flex-wrap items-center justify-between gap-2 animate-in fade-in slide-in-from-top-2 duration-200">
+            <div className="mt-3 p-3 bg-brand-blue/5 border border-brand-blue/20 rounded-xl flex flex-wrap items-center justify-between gap-2 animate-in fade-in slide-in-from-top-2 duration-200">
               <div className="flex items-center space-x-3 text-xs font-semibold text-brand-blue">
                 <div className="flex items-center space-x-1.5">
                   <span className="bg-brand-blue text-white px-2 py-0.5 rounded-full font-bold">{selectedUserIds.size}</span>
@@ -426,7 +481,7 @@ export default function UsersPage() {
                 <button
                   onClick={() => setShowBulkNotifyModal(true)}
                   disabled={bulkActionLoading}
-                  className="px-3 py-1.5 text-xs font-semibold text-white bg-brand-blue hover:bg-blue-700 rounded-lg shadow-sm flex items-center transition-colors"
+                  className="px-3 py-1.5 text-xs font-semibold text-white bg-brand-blue hover:bg-brand-blue/90 rounded-xl shadow-xs flex items-center transition-all"
                 >
                   <Send className="w-3.5 h-3.5 mr-1.5" />
                   Send Push Notification
@@ -434,7 +489,7 @@ export default function UsersPage() {
                 <button
                   onClick={handleBulkSuspend}
                   disabled={bulkActionLoading}
-                  className="px-3 py-1.5 text-xs font-semibold text-white bg-amber-600 hover:bg-amber-700 rounded-lg shadow-sm flex items-center transition-colors"
+                  className="px-3 py-1.5 text-xs font-semibold text-white bg-amber-600 hover:bg-amber-700 rounded-xl shadow-xs flex items-center transition-all"
                 >
                   <Shield className="w-3.5 h-3.5 mr-1.5" />
                   Suspend Selected
@@ -442,14 +497,14 @@ export default function UsersPage() {
                 <button
                   onClick={handleBulkReactivate}
                   disabled={bulkActionLoading}
-                  className="px-3 py-1.5 text-xs font-semibold text-white bg-green-600 hover:bg-green-700 rounded-lg shadow-sm flex items-center transition-colors"
+                  className="px-3 py-1.5 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl shadow-xs flex items-center transition-all"
                 >
                   <RotateCcw className="w-3.5 h-3.5 mr-1.5" />
                   Reactivate Selected
                 </button>
                 <button
                   onClick={() => setSelectedUserIds(new Set())}
-                  className="px-2 py-1.5 text-xs text-gray-500 hover:text-gray-700 hover:bg-gray-200/50 rounded-lg"
+                  className="px-2.5 py-1.5 text-xs font-semibold text-slate-500 hover:text-slate-700 hover:bg-slate-200/50 rounded-xl transition-colors"
                 >
                   Clear Selection
                 </button>
@@ -457,10 +512,10 @@ export default function UsersPage() {
             </div>
           )}
         </div>
-        
+
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+          <table className="min-w-full divide-y divide-slate-100">
+            <thead className="bg-slate-50/70 border-b border-slate-200/80">
               <tr>
                 <th scope="col" className="px-4 py-3 text-left">
                   <input
@@ -474,228 +529,225 @@ export default function UsersPage() {
                       }
                     }}
                     title="Select all filtered users"
-                    className="rounded border-gray-300 text-brand-blue focus:ring-brand-blue h-4 w-4 cursor-pointer"
+                    className="rounded border-slate-300 text-brand-blue focus:ring-brand-blue h-4 w-4 cursor-pointer"
                   />
                 </th>
-                <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contact</th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role & City</th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Joined</th>
-                <th scope="col" className="relative px-6 py-3"><span className="sr-only">Actions</span></th>
+                <th scope="col" className="px-4 py-3 text-left text-[11px] font-semibold text-slate-500 uppercase tracking-wider">User</th>
+                <th scope="col" className="px-6 py-3 text-left text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Contact</th>
+                <th scope="col" className="px-6 py-3 text-left text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Role & City</th>
+                <th scope="col" className="px-6 py-3 text-left text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Joined</th>
+                <th scope="col" className="relative px-6 py-3 text-right"><span className="sr-only">Actions</span></th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="bg-white divide-y divide-slate-100">
               {loading ? (
                 <TableSkeleton cols={6} rows={5} />
               ) : filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-6 py-10 text-center text-sm text-gray-500">No users found.</td>
+                  <td colSpan={6} className="px-6 py-10 text-center text-xs text-slate-500">No users found.</td>
                 </tr>
               ) : (
                 paginatedUsers.map((user) => {
                   const primaryRole = roleOf(user);
                   const isSelected = selectedUserIds.has(user.id);
                   return (
-                  <tr key={user.id} className={`hover:bg-gray-50/50 transition-colors ${
-                    isSelected ? 'bg-blue-50/40' : user.is_deleted ? 'bg-gray-100/50 opacity-75' : user.is_suspended ? 'bg-red-50/30' : ''
-                  }`}>
-                    <td className="px-4 py-4 whitespace-nowrap">
-                      <input
-                        type="checkbox"
-                        checked={isSelected}
-                        onChange={() => toggleSelectUser(user.id)}
-                        className="rounded border-gray-300 text-brand-blue focus:ring-brand-blue h-4 w-4"
-                      />
-                    </td>
-                    <td className="px-4 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <div className="h-10 w-10 flex-shrink-0 bg-brand-gold/20 rounded-full flex items-center justify-center">
-                          <span className="text-brand-gold font-bold text-sm">
+                    <tr key={user.id} className={`hover:bg-slate-50/60 transition-colors ${isSelected ? 'bg-brand-blue/5' : user.is_deleted ? 'bg-slate-100/60 opacity-75' : user.is_suspended ? 'bg-rose-50/40' : ''
+                      }`}>
+                      <td className="px-4 py-3.5 whitespace-nowrap">
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => toggleSelectUser(user.id)}
+                          className="rounded border-slate-300 text-brand-blue focus:ring-brand-blue h-4 w-4"
+                        />
+                      </td>
+                      <td className="px-4 py-3.5 whitespace-nowrap">
+                        <div className="flex items-center">
+                          <div className="h-9 w-9 flex-shrink-0 bg-brand-gold/15 text-brand-gold ring-1 ring-brand-gold/30 rounded-full flex items-center justify-center font-bold text-xs">
                             {user.full_name?.charAt(0) || '?'}
-                          </span>
-                        </div>
-                        <div className="ml-4">
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm font-medium text-gray-900">{user.full_name || 'Unknown Name'}</span>
-                            {user.is_deleted ? (
-                              <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-gray-200 text-gray-700 uppercase tracking-wide border border-gray-300">
-                                Archived
-                              </span>
-                            ) : user.is_suspended ? (
-                              <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-red-100 text-red-700 uppercase tracking-wide border border-red-200">
-                                Suspended
-                              </span>
-                            ) : null}
                           </div>
-                          <div className="text-xs text-gray-500">ID: {user.id.slice(0, 8)}...</div>
+                          <div className="ml-3">
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs font-semibold text-slate-900">{user.full_name || 'Unknown Name'}</span>
+                              {user.is_deleted ? (
+                                <span className="px-2 py-0.5 text-[10px] font-semibold rounded-full bg-slate-100 text-slate-600 uppercase tracking-wider border border-slate-200">
+                                  Archived
+                                </span>
+                              ) : user.is_suspended ? (
+                                <span className="px-2 py-0.5 text-[10px] font-semibold rounded-full bg-rose-50 text-rose-700 uppercase tracking-wider border border-rose-200/60">
+                                  Suspended
+                                </span>
+                              ) : null}
+                            </div>
+                            <div className="text-[11px] text-slate-400">ID: {user.id.slice(0, 8)}...</div>
+                          </div>
                         </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900 flex items-center">
-                        <Mail className="w-3.5 h-3.5 mr-1.5 text-gray-400" /> {user.email || 'No email'}
-                      </div>
-                      <div className="text-sm text-gray-500 mt-1 flex items-center">
-                         <Phone className="w-3.5 h-3.5 mr-1.5 text-gray-400" /> {user.phone || 'No phone'}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <select
-                        value={user.is_deleted ? 'archived' : primaryRole}
-                        disabled={savingRole === user.id || user.is_deleted}
-                        onChange={(e) => changeRole(user, e.target.value)}
-                        className="text-xs font-semibold rounded-lg border border-gray-200 px-2 py-1 capitalize bg-white disabled:opacity-50 focus:ring-2 focus:ring-brand-blue focus:outline-none"
-                        title="Change role"
-                      >
-                        {['student', 'parent', 'tutor', 'admin', 'archived'].map((r) => (
-                          <option key={r} value={r}>{r}</option>
-                        ))}
-                      </select>
-                      <div className="text-sm text-gray-500 mt-1 flex items-center">
-                         <MapPin className="w-3.5 h-3.5 mr-1.5 text-gray-400" /> {user.city || 'Unknown'}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {new Date(user.created_at).toLocaleDateString()}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium relative">
-                      <div className="flex items-center justify-end space-x-2">
-                        <button 
-                          onClick={() => router.push(`/chat?userId=${user.id}`)}
-                          className="inline-flex items-center p-1.5 rounded-full hover:bg-gray-100 text-gray-500 hover:text-brand-blue transition-colors"
-                          title="Chat with user"
+                      </td>
+                      <td className="px-6 py-3.5 whitespace-nowrap">
+                        <div className="text-xs text-slate-900 flex items-center font-medium">
+                          <Mail className="w-3.5 h-3.5 mr-1.5 text-slate-400" /> {user.email || 'No email'}
+                        </div>
+                        <div className="text-[11px] text-slate-500 mt-0.5 flex items-center">
+                          <Phone className="w-3.5 h-3.5 mr-1.5 text-slate-400" /> {user.phone || 'No phone'}
+                        </div>
+                      </td>
+                      <td className="px-6 py-3.5 whitespace-nowrap">
+                        <select
+                          value={user.is_deleted ? 'archived' : primaryRole}
+                          disabled={savingRole === user.id || user.is_deleted}
+                          onChange={(e) => changeRole(user, e.target.value)}
+                          className="text-xs font-semibold rounded-lg border border-slate-200 px-2 py-1 capitalize bg-white disabled:opacity-50 focus:ring-2 focus:ring-brand-blue/20 focus:border-brand-blue focus:outline-none"
+                          title="Change role"
                         >
-                          <MessageSquare className="h-4 w-4" />
-                        </button>
-                        
-                        <div className="relative">
-                          <button 
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setActiveMenuUserId(activeMenuUserId === user.id ? null : user.id);
-                            }}
-                            className="text-gray-400 hover:text-gray-600 p-1.5 inline-flex items-center rounded-full hover:bg-gray-100 transition-colors"
-                            title="Actions"
+                          {['student', 'parent', 'tutor', 'admin', 'archived'].map((r) => (
+                            <option key={r} value={r}>{r}</option>
+                          ))}
+                        </select>
+                        <div className="text-[11px] text-slate-500 mt-1 flex items-center">
+                          <MapPin className="w-3.5 h-3.5 mr-1.5 text-slate-400" /> {user.city || 'Unknown'}
+                        </div>
+                      </td>
+                      <td className="px-6 py-3.5 whitespace-nowrap text-xs text-slate-500">
+                        {new Date(user.created_at).toLocaleDateString()}
+                      </td>
+                      <td className="px-6 py-3.5 whitespace-nowrap text-right text-xs font-medium relative">
+                        <div className="flex items-center justify-end space-x-1.5">
+                          <button
+                            onClick={() => router.push(`/chat?userId=${user.id}`)}
+                            className="inline-flex items-center p-1.5 rounded-lg hover:bg-slate-100 text-slate-500 hover:text-brand-blue transition-colors"
+                            title="Chat with user"
                           >
-                            <MoreVertical className="h-5 w-5" />
+                            <MessageSquare className="h-4 w-4" />
                           </button>
 
-                          {/* Dropdown Menu */}
-                          {activeMenuUserId === user.id && (
-                            <div 
-                              className="absolute right-0 mt-2 w-52 bg-white rounded-xl shadow-lg border border-gray-100 py-1.5 z-40 text-left animate-in fade-in zoom-in-95 duration-100"
-                              onClick={(e) => e.stopPropagation()}
+                          <div className="relative">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setActiveMenuUserId(activeMenuUserId === user.id ? null : user.id);
+                              }}
+                              className="text-slate-400 hover:text-slate-600 p-1.5 inline-flex items-center rounded-lg hover:bg-slate-100 transition-colors"
+                              title="Actions"
                             >
-                              <button
-                                onClick={() => {
-                                  setSelectedUserId(user.id);
-                                  setActiveMenuUserId(null);
-                                }}
-                                className="w-full text-left px-4 py-2 text-xs font-medium text-gray-700 hover:bg-gray-50 flex items-center"
+                              <MoreVertical className="h-4 w-4" />
+                            </button>
+
+                            {/* Dropdown Menu */}
+                            {activeMenuUserId === user.id && (
+                              <div
+                                className="absolute right-0 mt-2 w-52 bg-white rounded-xl shadow-lg border border-gray-100 py-1.5 z-40 text-left animate-in fade-in zoom-in-95 duration-100"
+                                onClick={(e) => e.stopPropagation()}
                               >
-                                <Eye className="w-3.5 h-3.5 mr-2 text-brand-blue" />
-                                View Full Profile
-                              </button>
+                                <button
+                                  onClick={() => {
+                                    setSelectedUserId(user.id);
+                                    setActiveMenuUserId(null);
+                                  }}
+                                  className="w-full text-left px-4 py-2 text-xs font-medium text-gray-700 hover:bg-gray-50 flex items-center"
+                                >
+                                  <Eye className="w-3.5 h-3.5 mr-2 text-brand-blue" />
+                                  View Full Profile
+                                </button>
 
-                              <button
-                                onClick={() => {
-                                  router.push(`/chat?userId=${user.id}`);
-                                  setActiveMenuUserId(null);
-                                }}
-                                className="w-full text-left px-4 py-2 text-xs font-medium text-gray-700 hover:bg-gray-50 flex items-center"
-                              >
-                                <MessageSquare className="w-3.5 h-3.5 mr-2 text-green-600" />
-                                Direct Message
-                              </button>
+                                <button
+                                  onClick={() => {
+                                    router.push(`/chat?userId=${user.id}`);
+                                    setActiveMenuUserId(null);
+                                  }}
+                                  className="w-full text-left px-4 py-2 text-xs font-medium text-gray-700 hover:bg-gray-50 flex items-center"
+                                >
+                                  <MessageSquare className="w-3.5 h-3.5 mr-2 text-green-600" />
+                                  Direct Message
+                                </button>
 
-                              {user.is_deleted ? (
-                                <>
-                                  <div className="my-1 border-t border-gray-100" />
-                                  <button
-                                    onClick={() => {
-                                      handleRestoreUser(user);
-                                      setActiveMenuUserId(null);
-                                    }}
-                                    className="w-full text-left px-4 py-2 text-xs font-medium text-green-700 hover:bg-green-50 flex items-center"
-                                  >
-                                    <RotateCcw className="w-3.5 h-3.5 mr-2 text-green-600" />
-                                    Restore Account
-                                  </button>
-                                  <button
-                                    onClick={() => {
-                                      handlePurgeUser(user);
-                                      setActiveMenuUserId(null);
-                                    }}
-                                    className="w-full text-left px-4 py-2 text-xs font-medium text-red-600 hover:bg-red-50 flex items-center"
-                                  >
-                                    <Trash2 className="w-3.5 h-3.5 mr-2 text-red-500" />
-                                    Permanently Purge
-                                  </button>
-                                </>
-                              ) : (
-                                <>
-                                  <button
-                                    onClick={() => {
-                                      handleToggleSuspension(user);
-                                      setActiveMenuUserId(null);
-                                    }}
-                                    className="w-full text-left px-4 py-2 text-xs font-medium text-amber-700 hover:bg-amber-50 flex items-center"
-                                  >
-                                    <Shield className="w-3.5 h-3.5 mr-2 text-amber-600" />
-                                    {user.is_suspended ? 'Reactivate Account' : 'Suspend Account'}
-                                  </button>
+                                {user.is_deleted ? (
+                                  <>
+                                    <div className="my-1 border-t border-gray-100" />
+                                    <button
+                                      onClick={() => {
+                                        handleRestoreUser(user);
+                                        setActiveMenuUserId(null);
+                                      }}
+                                      className="w-full text-left px-4 py-2 text-xs font-medium text-green-700 hover:bg-green-50 flex items-center"
+                                    >
+                                      <RotateCcw className="w-3.5 h-3.5 mr-2 text-green-600" />
+                                      Restore Account
+                                    </button>
+                                    <button
+                                      onClick={() => {
+                                        handlePurgeUser(user);
+                                        setActiveMenuUserId(null);
+                                      }}
+                                      className="w-full text-left px-4 py-2 text-xs font-medium text-red-600 hover:bg-red-50 flex items-center"
+                                    >
+                                      <Trash2 className="w-3.5 h-3.5 mr-2 text-red-500" />
+                                      Permanently Purge
+                                    </button>
+                                  </>
+                                ) : (
+                                  <>
+                                    <button
+                                      onClick={() => {
+                                        handleToggleSuspension(user);
+                                        setActiveMenuUserId(null);
+                                      }}
+                                      className="w-full text-left px-4 py-2 text-xs font-medium text-amber-700 hover:bg-amber-50 flex items-center"
+                                    >
+                                      <Shield className="w-3.5 h-3.5 mr-2 text-amber-600" />
+                                      {user.is_suspended ? 'Reactivate Account' : 'Suspend Account'}
+                                    </button>
 
-                                  <div className="my-1 border-t border-gray-100" />
+                                    <div className="my-1 border-t border-gray-100" />
 
-                                  <button
-                                    onClick={() => {
-                                      handleSoftDeleteUser(user);
-                                      setActiveMenuUserId(null);
-                                    }}
-                                    className="w-full text-left px-4 py-2 text-xs font-medium text-red-600 hover:bg-red-50 flex items-center"
-                                  >
-                                    <Trash2 className="w-3.5 h-3.5 mr-2 text-red-500" />
-                                    Archive Account
-                                  </button>
-                                </>
-                              )}
-                            </div>
-                          )}
+                                    <button
+                                      onClick={() => {
+                                        handleSoftDeleteUser(user);
+                                        setActiveMenuUserId(null);
+                                      }}
+                                      className="w-full text-left px-4 py-2 text-xs font-medium text-red-600 hover:bg-red-50 flex items-center"
+                                    >
+                                      <Trash2 className="w-3.5 h-3.5 mr-2 text-red-500" />
+                                      Archive Account
+                                    </button>
+                                  </>
+                                )}
+                              </div>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    </td>
-                  </tr>
+                      </td>
+                    </tr>
                   );
                 })
               )}
             </tbody>
           </table>
         </div>
-        
+
         {/* Pagination Controls */}
         {!loading && filtered.length > 0 && (
-          <div className="px-6 py-4 border-t border-gray-100 bg-gray-50 flex items-center justify-between">
-            <div className="text-sm text-gray-500">
-               Showing <span className="font-medium text-gray-900">{(currentPage - 1) * itemsPerPage + 1}</span> to <span className="font-medium text-gray-900">{Math.min(currentPage * itemsPerPage, filtered.length)}</span> of <span className="font-medium text-gray-900">{filtered.length}</span> users
+          <div className="px-5 py-3.5 border-t border-slate-200/80 bg-slate-50/50 flex items-center justify-between text-xs">
+            <div className="text-slate-500">
+              Showing <span className="font-semibold text-slate-900">{(currentPage - 1) * itemsPerPage + 1}</span> to <span className="font-semibold text-slate-900">{Math.min(currentPage * itemsPerPage, filtered.length)}</span> of <span className="font-semibold text-slate-900">{filtered.length}</span> users
             </div>
-            <div className="flex items-center space-x-2">
-               <button 
-                 onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
-                 disabled={currentPage === 1}
-                 className="p-1.5 rounded-lg border border-gray-200 text-gray-500 hover:bg-white hover:text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-               >
-                 <ChevronLeft className="w-5 h-5" />
-               </button>
-               <div className="text-sm font-medium text-gray-700 mx-2">
-                 Page {currentPage} of {totalPages}
-               </div>
-               <button 
-                 onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
-                 disabled={currentPage === totalPages}
-                 className="p-1.5 rounded-lg border border-gray-200 text-gray-500 hover:bg-white hover:text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-               >
-                 <ChevronRight className="w-5 h-5" />
-               </button>
+            <div className="flex items-center space-x-1.5">
+              <button
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="p-1.5 rounded-xl border border-slate-200 text-slate-500 hover:bg-white hover:text-slate-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors shadow-2xs"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <div className="text-xs font-semibold text-slate-700 px-2">
+                Page {currentPage} of {totalPages}
+              </div>
+              <button
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+                className="p-1.5 rounded-xl border border-slate-200 text-slate-500 hover:bg-white hover:text-slate-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors shadow-2xs"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
             </div>
           </div>
         )}
@@ -712,39 +764,42 @@ export default function UsersPage() {
 
       {/* Bulk Push Notification Modal */}
       {showBulkNotifyModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 animate-in fade-in duration-200">
-          <div className="bg-white rounded-2xl shadow-xl max-w-lg w-full overflow-hidden p-6 space-y-4">
-            <div className="flex items-center justify-between border-b border-gray-100 pb-3">
-              <h3 className="text-lg font-bold text-gray-900">
-                Send Push Notification to {selectedUserIds.size} Users
-              </h3>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-2xs p-4 animate-in fade-in duration-150">
+          <div className="bg-white rounded-xl shadow-xl max-w-lg w-full border border-slate-200/80 overflow-hidden p-6 space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div>
+                <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Broadcast Action</p>
+                <h3 className="text-base font-bold text-slate-900">
+                  Send Push Notification to {selectedUserIds.size} Users
+                </h3>
+              </div>
               <button
                 onClick={() => setShowBulkNotifyModal(false)}
-                className="text-gray-400 hover:text-gray-600 p-1 rounded-lg"
+                className="text-slate-400 hover:text-slate-600 p-1 rounded-lg"
               >
                 ✕
               </button>
             </div>
             <form onSubmit={handleBulkSendNotifySubmit} className="space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1">Title</label>
+                <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Title</label>
                 <input
                   type="text"
                   placeholder="Notification title (e.g. Platform Update)"
                   value={bulkNotifyTitle}
                   onChange={(e) => setBulkNotifyTitle(e.target.value)}
-                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-brand-blue focus:border-brand-blue"
+                  className="w-full px-3.5 py-2 text-xs border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-blue/20 focus:border-brand-blue"
                   required
                 />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-gray-700 mb-1">Message Body</label>
+                <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Message Body</label>
                 <textarea
                   placeholder="Enter notification body..."
                   value={bulkNotifyMessage}
                   onChange={(e) => setBulkNotifyMessage(e.target.value)}
                   rows={3}
-                  className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-brand-blue focus:border-brand-blue"
+                  className="w-full px-3.5 py-2 text-xs border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-brand-blue/20 focus:border-brand-blue"
                   required
                 />
               </div>
@@ -752,16 +807,16 @@ export default function UsersPage() {
                 <button
                   type="button"
                   onClick={() => setShowBulkNotifyModal(false)}
-                  className="px-4 py-2 text-xs font-medium text-gray-600 hover:bg-gray-100 rounded-lg"
+                  className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={bulkActionLoading}
-                  className="px-4 py-2 text-xs font-semibold text-white bg-brand-blue hover:bg-blue-700 rounded-lg shadow-sm"
+                  className="px-4 py-2 text-xs font-semibold text-white bg-brand-blue hover:bg-brand-blue/90 rounded-xl shadow-xs transition-all disabled:opacity-50"
                 >
-                  Send to {selectedUserIds.size} Users
+                  {bulkActionLoading ? 'Sending...' : 'Send Broadcast'}
                 </button>
               </div>
             </form>

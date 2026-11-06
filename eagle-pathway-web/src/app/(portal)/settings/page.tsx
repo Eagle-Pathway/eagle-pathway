@@ -88,23 +88,23 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="space-y-6 max-w-4xl mx-auto pb-12">
+    <div className="space-y-6 max-w-4xl mx-auto pb-12 animate-in fade-in duration-200">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
-          <Settings className="text-[#0B2A5B]" size={26} />
-          <span>Account Settings &amp; Preferences</span>
+      <div className="border-b border-slate-200/80 pb-4">
+        <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Preferences</p>
+        <h1 className="text-xl md:text-2xl font-bold text-slate-900 tracking-tight">
+          Account Settings &amp; Security
         </h1>
-        <p className="text-xs text-slate-500">
+        <p className="text-xs text-slate-500 mt-1">
           Manage your personal credentials, contact numbers, notification preferences, and password.
         </p>
       </div>
 
       {/* Profile Form */}
-      <div className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-xs space-y-4">
+      <div className="bg-white rounded-xl border border-slate-200/80 p-5 md:p-6 shadow-xs space-y-4">
         <div className="flex items-center justify-between border-b border-slate-100 pb-3">
           <h2 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-            <User size={16} className="text-[#0B2A5B]" />
+            <User size={16} className="text-brand-blue" />
             <span>Profile Information</span>
           </h2>
           {profileSuccess && (
@@ -117,36 +117,42 @@ export default function SettingsPage() {
         <form onSubmit={handleUpdateProfile} className="space-y-4 text-xs">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block font-semibold text-slate-700 mb-1">Full Name</label>
+              <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5">
+                Full Name
+              </label>
               <input
                 type="text"
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
-                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0B2A5B]/20 font-medium"
+                className="w-full px-3.5 py-2.5 bg-slate-50/50 border border-slate-200 rounded-xl text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-blue/20 focus:border-brand-blue font-medium transition-all"
               />
             </div>
 
             <div>
-              <label className="block font-semibold text-slate-700 mb-1">Registered Phone</label>
+              <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5">
+                Registered Phone
+              </label>
               <input
                 type="tel"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
                 placeholder="e.g. 0911234567"
-                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0B2A5B]/20"
+                className="w-full px-3.5 py-2.5 bg-slate-50/50 border border-slate-200 rounded-xl text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-blue/20 focus:border-brand-blue transition-all"
               />
             </div>
           </div>
 
           <div>
-            <label className="block font-semibold text-slate-700 mb-1">Email Address</label>
+            <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5">
+              Email Address
+            </label>
             <input
               type="email"
               value={user?.email || ''}
               disabled
-              className="w-full px-3.5 py-2.5 bg-slate-100 border border-slate-200 rounded-xl text-slate-500 cursor-not-allowed"
+              className="w-full px-3.5 py-2.5 bg-slate-100/70 border border-slate-200 rounded-xl text-slate-500 cursor-not-allowed"
             />
-            <span className="text-[10px] text-slate-400 mt-0.5 block">
+            <span className="text-[11px] text-slate-400 mt-1 block">
               Email cannot be changed directly for security reasons.
             </span>
           </div>
@@ -155,9 +161,9 @@ export default function SettingsPage() {
             <button
               type="submit"
               disabled={profileSaving}
-              className="px-5 py-2.5 rounded-xl bg-[#0B2A5B] text-white text-xs font-bold hover:bg-[#1E4D9B] transition-colors shadow-xs flex items-center gap-1.5 disabled:opacity-50"
+              className="px-5 py-2.5 rounded-xl bg-brand-blue text-white text-xs font-semibold hover:bg-brand-blue/90 transition-all shadow-xs flex items-center gap-1.5 disabled:opacity-50"
             >
-              <Save size={13} />
+              <Save size={14} />
               <span>{profileSaving ? 'Saving...' : 'Save Profile Changes'}</span>
             </button>
           </div>
@@ -165,10 +171,10 @@ export default function SettingsPage() {
       </div>
 
       {/* Password Change */}
-      <div className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-xs space-y-4">
+      <div className="bg-white rounded-xl border border-slate-200/80 p-5 md:p-6 shadow-xs space-y-4">
         <div className="flex items-center justify-between border-b border-slate-100 pb-3">
           <h2 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-            <KeyRound size={16} className="text-[#0B2A5B]" />
+            <KeyRound size={16} className="text-brand-blue" />
             <span>Update Password</span>
           </h2>
           {passwordSuccess && (
@@ -187,26 +193,30 @@ export default function SettingsPage() {
 
         <form onSubmit={handleUpdatePassword} className="space-y-4 text-xs max-w-lg">
           <div>
-            <label className="block font-semibold text-slate-700 mb-1">New Password</label>
+            <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5">
+              New Password
+            </label>
             <input
               type="password"
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
               placeholder="Minimum 6 characters"
               required
-              className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0B2A5B]/20"
+              className="w-full px-3.5 py-2.5 bg-slate-50/50 border border-slate-200 rounded-xl text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-blue/20 focus:border-brand-blue transition-all"
             />
           </div>
 
           <div>
-            <label className="block font-semibold text-slate-700 mb-1">Confirm New Password</label>
+            <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5">
+              Confirm New Password
+            </label>
             <input
               type="password"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               placeholder="Re-enter password"
               required
-              className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0B2A5B]/20"
+              className="w-full px-3.5 py-2.5 bg-slate-50/50 border border-slate-200 rounded-xl text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-blue/20 focus:border-brand-blue transition-all"
             />
           </div>
 
@@ -214,7 +224,7 @@ export default function SettingsPage() {
             <button
               type="submit"
               disabled={passwordLoading}
-              className="px-5 py-2.5 rounded-xl bg-[#0B2A5B] text-white text-xs font-bold hover:bg-[#1E4D9B] transition-colors shadow-xs disabled:opacity-50"
+              className="px-5 py-2.5 rounded-xl bg-brand-blue text-white text-xs font-semibold hover:bg-brand-blue/90 transition-all shadow-xs disabled:opacity-50"
             >
               {passwordLoading ? 'Updating Password...' : 'Change Password'}
             </button>
@@ -223,9 +233,9 @@ export default function SettingsPage() {
       </div>
 
       {/* Notifications */}
-      <div className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-xs space-y-4">
+      <div className="bg-white rounded-xl border border-slate-200/80 p-5 md:p-6 shadow-xs space-y-4">
         <h2 className="text-sm font-bold text-slate-900 flex items-center gap-2 border-b border-slate-100 pb-3">
-          <Bell size={16} className="text-[#0B2A5B]" />
+          <Bell size={16} className="text-brand-blue" />
           <span>Notification Preferences</span>
         </h2>
 
@@ -252,17 +262,17 @@ export default function SettingsPage() {
           ].map((item, i) => (
             <div
               key={i}
-              className="flex items-center justify-between p-3.5 rounded-xl bg-slate-50 border border-slate-100"
+              className="flex items-center justify-between p-3.5 rounded-xl bg-slate-50/60 border border-slate-100 hover:border-slate-200 transition-colors"
             >
               <div>
-                <div className="font-bold text-slate-900">{item.title}</div>
+                <div className="font-semibold text-slate-900">{item.title}</div>
                 <div className="text-[11px] text-slate-500 mt-0.5">{item.desc}</div>
               </div>
               <input
                 type="checkbox"
                 checked={item.checked}
                 onChange={item.toggle}
-                className="w-4 h-4 rounded-md accent-[#0B2A5B] cursor-pointer"
+                className="w-4 h-4 rounded text-brand-blue focus:ring-brand-blue accent-brand-blue cursor-pointer"
               />
             </div>
           ))}
@@ -270,11 +280,11 @@ export default function SettingsPage() {
       </div>
 
       {/* Sign Out Action */}
-      <div className="pt-4 flex justify-between items-center text-xs">
+      <div className="pt-2 flex justify-between items-center text-xs">
         <span className="text-slate-400">Eagle Pathway v1.0 • Web Portal</span>
         <button
           onClick={() => signOut()}
-          className="px-4 py-2 rounded-xl text-red-600 hover:bg-red-50 font-bold transition-colors flex items-center gap-1.5"
+          className="px-4 py-2 rounded-xl text-rose-600 hover:bg-rose-50 font-semibold transition-colors flex items-center gap-1.5"
         >
           <LogOut size={14} />
           <span>Sign Out</span>

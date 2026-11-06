@@ -187,28 +187,31 @@ export default function ChatPage() {
   );
 
   return (
-    <div className="h-[calc(100vh-140px)] bg-white rounded-3xl border border-slate-200/80 shadow-sm overflow-hidden flex flex-col md:flex-row animate-in fade-in duration-200">
+    <div className="h-[calc(100vh-140px)] bg-white rounded-xl border border-slate-200/80 shadow-xs overflow-hidden flex flex-col md:flex-row animate-in fade-in duration-200">
       {/* Left Column: Conversations List */}
-      <div className="w-full md:w-80 lg:w-96 border-r border-slate-100 flex flex-col bg-white">
-        <div className="p-4 border-b border-slate-100 space-y-3">
+      <div className="w-full md:w-80 lg:w-96 border-r border-slate-200/80 flex flex-col bg-white">
+        <div className="p-4 border-b border-slate-200/80 space-y-3">
           <div className="flex items-center justify-between">
-            <h2 className="text-base font-extrabold text-[#0B2A5B]">Messages</h2>
-            <span className="text-xs text-slate-400 font-bold">{conversations.length} Threads</span>
+            <div>
+              <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Direct Inbox</p>
+              <h2 className="text-base font-bold text-slate-900">Messages</h2>
+            </div>
+            <span className="text-xs px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600 font-semibold">{conversations.length} Threads</span>
           </div>
 
           <div className="relative">
-            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search conversations..."
-              className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs placeholder-slate-400 text-slate-900 focus:outline-none"
+              className="w-full pl-9 pr-3 py-2 bg-slate-50/50 border border-slate-200 rounded-xl text-xs placeholder-slate-400 text-slate-900 focus:outline-none focus:border-brand-blue focus:ring-2 focus:ring-brand-blue/15"
             />
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto divide-y divide-slate-50">
+        <div className="flex-1 overflow-y-auto divide-y divide-slate-100">
           {filteredConversations.length === 0 ? (
             <div className="p-8 text-center space-y-2">
               <MessageSquare size={32} className="mx-auto text-slate-300" />
@@ -224,10 +227,11 @@ export default function ChatPage() {
                 <button
                   key={conv.partnerId}
                   onClick={() => setActivePartnerId(conv.partnerId)}
-                  className={`w-full p-4 flex items-center gap-3.5 text-left transition-colors ${isSelected ? 'bg-blue-50/70 border-l-4 border-[#0B2A5B]' : 'hover:bg-slate-50'
-                    }`}
+                  className={`w-full p-4 flex items-center gap-3.5 text-left transition-colors ${
+                    isSelected ? 'bg-brand-blue/5 border-l-4 border-brand-blue' : 'hover:bg-slate-50/70'
+                  }`}
                 >
-                  <div className="w-11 h-11 rounded-full bg-[#0B2A5B] text-white flex items-center justify-center font-bold text-sm shadow-sm flex-shrink-0 overflow-hidden">
+                  <div className="w-10 h-10 rounded-full bg-brand-gold/15 text-brand-gold ring-1 ring-brand-gold/30 flex items-center justify-center font-bold text-xs flex-shrink-0 overflow-hidden">
                     {conv.avatarUrl ? (
                       <img
                         src={conv.avatarUrl}
@@ -241,10 +245,10 @@ export default function ChatPage() {
 
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between">
-                      <h4 className="text-xs font-bold text-slate-900 truncate">
+                      <h4 className={`text-xs truncate ${isSelected ? 'font-bold text-brand-blue' : 'font-semibold text-slate-900'}`}>
                         {conv.partnerName}
                       </h4>
-                      <span className="text-[10px] text-slate-400">
+                      <span className="text-[10px] text-slate-400 font-medium">
                         {conv.lastMessageTime
                           ? formatDate(new Date(conv.lastMessageTime), 'h:mm a')
                           : ''}
@@ -261,13 +265,13 @@ export default function ChatPage() {
       </div>
 
       {/* Right Column: Message Thread */}
-      <div className="flex-1 flex flex-col bg-slate-50/50">
+      <div className="flex-1 flex flex-col bg-slate-50/40">
         {activePartnerId && activePartner ? (
           <>
             {/* Thread Header */}
-            <div className="h-16 px-6 bg-white border-b border-slate-100 flex items-center justify-between flex-shrink-0">
+            <div className="h-16 px-6 bg-white border-b border-slate-200/80 flex items-center justify-between flex-shrink-0">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-[#0B2A5B] text-white flex items-center justify-center font-bold text-sm">
+                <div className="w-10 h-10 rounded-full bg-brand-gold/15 text-brand-gold ring-1 ring-brand-gold/30 flex items-center justify-center font-bold text-xs">
                   {activePartner.avatarUrl ? (
                     <img
                       src={activePartner.avatarUrl}
@@ -282,7 +286,7 @@ export default function ChatPage() {
                   <h3 className="text-sm font-bold text-slate-900">
                     {activePartner.partnerName}
                   </h3>
-                  <span className="text-[11px] text-slate-400 capitalize font-medium">
+                  <span className="text-[11px] text-slate-500 capitalize font-medium">
                     {activePartner.partnerRole}
                   </span>
                 </div>
@@ -299,14 +303,15 @@ export default function ChatPage() {
                     className={`flex flex-col max-w-md ${isMine ? 'ml-auto items-end' : 'items-start'}`}
                   >
                     <div
-                      className={`p-3.5 rounded-2xl text-xs sm:text-sm leading-relaxed shadow-xs ${isMine
-                        ? 'bg-[#0B2A5B] text-white rounded-tr-none'
-                        : 'bg-white border border-slate-200/80 text-slate-800 rounded-tl-none'
-                        }`}
+                      className={`p-3.5 rounded-xl text-xs sm:text-sm leading-relaxed shadow-xs ${
+                        isMine
+                          ? 'bg-brand-blue text-white rounded-tr-none'
+                          : 'bg-white border border-slate-200/80 text-slate-800 rounded-tl-none'
+                      }`}
                     >
                       {m.content}
                     </div>
-                    <span className="text-[10px] text-slate-400 mt-1 px-1">
+                    <span className="text-[10px] text-slate-400 mt-1 px-1 font-medium">
                       {m.created_at ? formatDate(new Date(m.created_at), 'h:mm a') : ''}
                     </span>
                   </div>
@@ -316,29 +321,29 @@ export default function ChatPage() {
             </div>
 
             {/* Input Bar */}
-            <div className="p-4 bg-white border-t border-slate-100 flex-shrink-0">
+            <div className="p-4 bg-white border-t border-slate-200/80 flex-shrink-0">
               <form onSubmit={handleSendMessage} className="flex items-center gap-2">
                 <input
                   type="text"
                   value={inputText}
                   onChange={(e) => setInputText(e.target.value)}
                   placeholder="Type your message..."
-                  className="flex-1 px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0B2A5B]/20"
+                  className="flex-1 px-4 py-2.5 bg-slate-50/50 border border-slate-200 rounded-xl text-xs sm:text-sm text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-blue/20 focus:border-brand-blue transition-all"
                 />
                 <button
                   type="submit"
                   disabled={!inputText.trim()}
-                  className="p-3 rounded-xl bg-[#0B2A5B] hover:bg-[#1E4D9B] text-white disabled:opacity-40 transition-colors shadow-sm"
+                  className="p-3 rounded-xl bg-brand-blue hover:bg-brand-blue/90 text-white disabled:opacity-40 transition-all shadow-xs flex items-center justify-center"
                 >
-                  <Send size={16} />
+                  <Send size={15} />
                 </button>
               </form>
             </div>
           </>
         ) : (
           <div className="flex-1 flex flex-col items-center justify-center p-8 text-center space-y-3">
-            <MessageSquare size={48} className="text-slate-300" />
-            <h3 className="text-base font-bold text-slate-800">Select a Conversation</h3>
+            <MessageSquare size={44} className="text-slate-300" />
+            <h3 className="text-base font-bold text-slate-900">Select a Conversation</h3>
             <p className="text-xs text-slate-500 max-w-sm">
               Choose a thread from the list on the left to review your chat history or send a direct message.
             </p>

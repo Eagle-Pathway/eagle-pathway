@@ -36,7 +36,6 @@ export default function BookingsPage() {
           .order('session_date', { ascending: false });
 
         if (isTutor) {
-          // If tutor, filter where tutor.user_id = user.id
           query.eq('tutor.user_id', user.id);
         } else {
           query.eq('student_id', user!.id);
@@ -65,13 +64,17 @@ export default function BookingsPage() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div className="space-y-6 pb-16">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-200/80 pb-4">
         <div>
-          <h1 className="text-2xl md:text-3xl font-extrabold text-[#0B2A5B] tracking-tight">
+          <div className="inline-flex items-center gap-1.5 text-xs font-semibold text-brand-blue mb-1">
+            <Calendar size={14} />
+            <span>Instruction Schedule</span>
+          </div>
+          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
             Tutoring Sessions &amp; Bookings
           </h1>
-          <p className="text-sm text-slate-500 mt-1">
+          <p className="text-xs text-slate-500 mt-1">
             Manage your scheduled 1-on-1 sessions, video conference links, and lesson confirmations.
           </p>
         </div>
@@ -79,23 +82,23 @@ export default function BookingsPage() {
         {!isTutor && (
           <Link
             href="/tutors"
-            className="px-5 py-2.5 rounded-xl bg-[#0B2A5B] hover:bg-[#1E4D9B] text-white text-xs font-bold shadow-sm inline-flex items-center gap-2"
+            className="px-3.5 py-2 rounded-xl bg-brand-blue hover:bg-brand-blue/90 text-white text-xs font-semibold shadow-xs inline-flex items-center gap-1.5 transition-colors self-start sm:self-auto"
           >
             <span>Book New Session</span>
-            <ArrowRight size={14} />
+            <ArrowRight size={13} />
           </Link>
         )}
       </div>
 
       {loading ? (
         <div className="py-20 flex flex-col items-center justify-center gap-3">
-          <div className="w-10 h-10 border-4 border-[#0B2A5B]/20 border-t-[#0B2A5B] rounded-full animate-spin" />
-          <p className="text-xs text-slate-500 font-semibold">Loading your scheduled sessions...</p>
+          <div className="w-8 h-8 border-3 border-brand-blue/20 border-t-brand-blue rounded-full animate-spin" />
+          <p className="text-xs text-slate-500 font-medium">Loading your scheduled sessions...</p>
         </div>
       ) : bookings.length === 0 ? (
-        <div className="py-16 text-center bg-white rounded-3xl border border-slate-200/80 p-8 space-y-4">
-          <Calendar size={40} className="mx-auto text-slate-300" />
-          <h3 className="text-base font-bold text-slate-800">No Sessions Scheduled</h3>
+        <div className="py-16 text-center bg-white rounded-xl border border-slate-200/80 p-8 space-y-3 shadow-xs">
+          <Calendar size={36} className="mx-auto text-slate-300" />
+          <h3 className="text-sm font-bold text-slate-800">No Sessions Scheduled</h3>
           <p className="text-xs text-slate-500 max-w-sm mx-auto">
             {isTutor
               ? 'You do not have any upcoming tutoring sessions scheduled yet.'
@@ -104,14 +107,14 @@ export default function BookingsPage() {
           {!isTutor && (
             <Link
               href="/tutors"
-              className="inline-block mt-2 px-5 py-2.5 rounded-xl bg-[#0B2A5B] text-white text-xs font-bold"
+              className="inline-block mt-2 px-4 py-2 rounded-xl bg-brand-blue text-white text-xs font-semibold hover:bg-brand-blue/90 shadow-xs"
             >
               Browse Tutors
             </Link>
           )}
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {bookings.map((b) => {
             const partner = isTutor ? (b as any).student : (b as any).tutor?.user;
             const status = b.status || 'pending';
@@ -119,41 +122,42 @@ export default function BookingsPage() {
             return (
               <div
                 key={b.id}
-                className="bg-white rounded-3xl border border-slate-200/80 p-6 shadow-sm hover:shadow-md transition-all flex flex-col justify-between space-y-4"
+                className="bg-white rounded-xl border border-slate-200/80 p-4 md:p-5 shadow-xs hover:border-slate-300 hover:shadow-xs transition-all flex flex-col justify-between space-y-3.5"
               >
-                <div className="space-y-4">
+                <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <span
-                      className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${status === 'confirmed'
-                        ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                        : status === 'completed'
-                          ? 'bg-blue-50 text-blue-700 border border-blue-200'
+                      className={`px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wider ${
+                        status === 'confirmed'
+                          ? 'bg-emerald-50 text-emerald-700 border border-emerald-200/60'
+                          : status === 'completed'
+                          ? 'bg-blue-50 text-brand-blue border border-blue-200/60'
                           : status === 'cancelled'
-                            ? 'bg-red-50 text-red-700 border border-red-200'
-                            : 'bg-amber-50 text-amber-700 border border-amber-200'
-                        }`}
+                          ? 'bg-rose-50 text-rose-700 border border-rose-200/60'
+                          : 'bg-amber-50 text-amber-700 border border-amber-200/60'
+                      }`}
                     >
                       {status}
                     </span>
 
-                    <span className="text-xs font-bold text-[#0B2A5B]">
+                    <span className="text-xs font-bold text-slate-900">
                       {b.total_amount ? `${b.total_amount} ETB` : ''}
                     </span>
                   </div>
 
                   <div>
-                    <h3 className="font-extrabold text-base text-slate-900">
+                    <h3 className="font-semibold text-sm text-slate-900 leading-snug">
                       {b.subject || 'Academic Tutoring'}
                     </h3>
-                    <p className="text-xs text-slate-500 mt-0.5">
+                    <p className="text-[11px] text-slate-500 mt-0.5">
                       {isTutor ? 'Student:' : 'Instructor:'}{' '}
-                      <span className="font-bold text-slate-800">{partner?.full_name || 'Member'}</span>
+                      <span className="font-semibold text-slate-700">{partner?.full_name || 'Member'}</span>
                     </p>
                   </div>
 
-                  <div className="space-y-2 text-xs text-slate-600 bg-slate-50 p-3.5 rounded-2xl border border-slate-200/60">
+                  <div className="space-y-1.5 text-xs text-slate-600 bg-slate-50/50 p-3 rounded-lg border border-slate-200/60">
                     <div className="flex items-center gap-2">
-                      <Calendar size={14} className="text-slate-400" />
+                      <Calendar size={13} className="text-slate-400" />
                       <span>
                         {b.session_date
                           ? formatDate(new Date(b.session_date), 'EEEE, MMMM d, yyyy')
@@ -162,7 +166,7 @@ export default function BookingsPage() {
                     </div>
 
                     <div className="flex items-center gap-2">
-                      <Clock size={14} className="text-slate-400" />
+                      <Clock size={13} className="text-slate-400" />
                       <span>
                         {b.session_date ? formatDate(new Date(b.session_date), 'h:mm a') : ''} ({(b as any).duration_minutes || (b.duration_hours ? b.duration_hours * 60 : 60)} mins)
                       </span>
@@ -171,12 +175,12 @@ export default function BookingsPage() {
                     <div className="flex items-center gap-2">
                       {b.session_type === 'in_person' ? (
                         <>
-                          <MapPin size={14} className="text-slate-400" />
+                          <MapPin size={13} className="text-slate-400" />
                           <span>In-Person (Addis Ababa)</span>
                         </>
                       ) : (
                         <>
-                          <Video size={14} className="text-slate-400" />
+                          <Video size={13} className="text-slate-400" />
                           <span>Online Video Session (Google Meet)</span>
                         </>
                       )}
@@ -188,13 +192,13 @@ export default function BookingsPage() {
                   <div className="pt-3 border-t border-slate-100 flex items-center gap-2">
                     <button
                       onClick={() => handleUpdateStatus(b.id, 'confirmed')}
-                      className="flex-1 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-sm"
+                      className="flex-1 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold shadow-xs"
                     >
                       Confirm Session
                     </button>
                     <button
                       onClick={() => handleUpdateStatus(b.id, 'cancelled')}
-                      className="py-2 px-3 rounded-xl bg-red-50 hover:bg-red-100 text-red-600 text-xs font-bold"
+                      className="py-1.5 px-3 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-semibold border border-rose-200/60"
                     >
                       Decline
                     </button>

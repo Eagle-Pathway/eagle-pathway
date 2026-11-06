@@ -71,32 +71,33 @@ export default function ProfilePage() {
   };
 
   return (
-    <div className="space-y-6 max-w-4xl mx-auto">
-      <div>
-        <h1 className="text-2xl md:text-3xl font-extrabold text-[#0B2A5B] tracking-tight">
-          Profile &amp; Academic Background
+    <div className="space-y-6 max-w-4xl mx-auto animate-in fade-in duration-200">
+      <div className="border-b border-slate-200/80 pb-4">
+        <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Student Profile</p>
+        <h1 className="text-xl md:text-2xl font-bold text-slate-900 tracking-tight">
+          Profile &amp; Academic Credentials
         </h1>
-        <p className="text-sm text-slate-500 mt-1">
-          Manage your personal details and academic credentials for scholarship matching.
+        <p className="text-xs text-slate-500 mt-1">
+          Manage your personal details and academic credentials for scholarship matching and tutor pairing.
         </p>
       </div>
 
       {saveSuccess && (
-        <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-center gap-3 text-emerald-800 text-xs font-bold animate-in fade-in duration-150">
-          <CheckCircle2 size={18} className="text-emerald-600 flex-shrink-0" />
+        <div className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200/70 flex items-center gap-3 text-emerald-800 text-xs font-semibold shadow-xs animate-in fade-in duration-150">
+          <CheckCircle2 size={16} className="text-emerald-600 flex-shrink-0" />
           <span>Your profile information has been saved successfully!</span>
         </div>
       )}
 
       <form onSubmit={handleSave} className="space-y-6">
         {/* Basic Information Card */}
-        <div className="bg-white rounded-3xl border border-slate-200/80 p-6 md:p-8 shadow-sm space-y-6">
-          <h2 className="text-base font-bold text-slate-900 border-b border-slate-100 pb-3">
+        <div className="bg-white rounded-xl border border-slate-200/80 p-5 md:p-6 shadow-xs space-y-6">
+          <h2 className="text-sm font-bold text-slate-900 border-b border-slate-100 pb-3">
             Personal Details
           </h2>
 
-          <div className="flex items-center gap-6">
-            <div className="w-20 h-20 rounded-2xl bg-[#0B2A5B] text-white flex items-center justify-center font-bold text-2xl shadow-sm overflow-hidden flex-shrink-0">
+          <div className="flex items-center gap-5">
+            <div className="w-16 h-16 rounded-full bg-brand-gold/15 text-brand-gold ring-1 ring-brand-gold/30 flex items-center justify-center font-bold text-base shadow-xs overflow-hidden flex-shrink-0">
               {user?.avatar_url ? (
                 <img
                   src={user.avatar_url}
@@ -111,7 +112,7 @@ export default function ProfilePage() {
             <div>
               <p className="text-sm font-bold text-slate-900">{fullName || 'Eagle Scholar'}</p>
               <p className="text-xs text-slate-500">{user?.email}</p>
-              <span className="inline-block mt-1 px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600 text-[11px] font-bold capitalize">
+              <span className="inline-block mt-1 px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600 text-[10px] font-bold uppercase tracking-wider">
                 Role: {user?.role || 'student'}
               </span>
             </div>
@@ -119,54 +120,54 @@ export default function ProfilePage() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+              <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5">
                 Full Name
               </label>
               <div className="relative">
-                <UserIcon size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                <UserIcon size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
                 <input
                   type="text"
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
                   required
-                  className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none"
+                  className="w-full pl-10 pr-4 py-2.5 bg-slate-50/50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-blue/20 focus:border-brand-blue transition-all"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+              <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5">
                 Email Address (Account ID)
               </label>
               <div className="relative">
-                <Mail size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                <Mail size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
                 <input
                   type="email"
                   value={user?.email || ''}
                   disabled
-                  className="w-full pl-10 pr-4 py-2.5 bg-slate-100 border border-slate-200 rounded-xl text-xs text-slate-500 cursor-not-allowed"
+                  className="w-full pl-10 pr-4 py-2.5 bg-slate-100/70 border border-slate-200 rounded-xl text-xs text-slate-500 cursor-not-allowed"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+              <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5">
                 Phone Number
               </label>
               <div className="relative">
-                <Phone size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                <Phone size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
                 <input
                   type="tel"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
                   required
-                  className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none"
+                  className="w-full pl-10 pr-4 py-2.5 bg-slate-50/50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-blue/20 focus:border-brand-blue transition-all"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+              <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5">
                 City / Region
               </label>
               <input
@@ -174,27 +175,27 @@ export default function ProfilePage() {
                 value={city}
                 onChange={(e) => setCity(e.target.value)}
                 placeholder="Addis Ababa"
-                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none"
+                className="w-full px-3.5 py-2.5 bg-slate-50/50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-blue/20 focus:border-brand-blue transition-all"
               />
             </div>
           </div>
         </div>
 
         {/* Academic Profile Card */}
-        <div className="bg-white rounded-3xl border border-slate-200/80 p-6 md:p-8 shadow-sm space-y-6">
-          <h2 className="text-base font-bold text-slate-900 border-b border-slate-100 pb-3">
+        <div className="bg-white rounded-xl border border-slate-200/80 p-5 md:p-6 shadow-xs space-y-6">
+          <h2 className="text-sm font-bold text-slate-900 border-b border-slate-100 pb-3">
             Academic Background &amp; Target Goals
           </h2>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+              <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5">
                 Target Degree Level
               </label>
               <select
                 value={targetDegree}
                 onChange={(e) => setTargetDegree(e.target.value)}
-                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800"
+                className="w-full px-3.5 py-2.5 bg-slate-50/50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-blue/20 focus:border-brand-blue"
               >
                 <option value="high_school">High School Diploma / Grade 12</option>
                 <option value="bachelors">Bachelor&apos;s Degree (Undergraduate)</option>
@@ -204,7 +205,7 @@ export default function ProfilePage() {
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+              <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5">
                 Cumulative GPA (e.g. 3.8 / 4.0)
               </label>
               <input
@@ -215,12 +216,12 @@ export default function ProfilePage() {
                 value={gpa}
                 onChange={(e) => setGpa(e.target.value)}
                 placeholder="3.85"
-                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none"
+                className="w-full px-3.5 py-2.5 bg-slate-50/50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-blue/20 focus:border-brand-blue transition-all"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+              <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5">
                 Current School / University / Grade
               </label>
               <input
@@ -228,7 +229,7 @@ export default function ProfilePage() {
                 value={gradeLevel}
                 onChange={(e) => setGradeLevel(e.target.value)}
                 placeholder="e.g. Grade 12 or Addis Ababa University 3rd year"
-                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none"
+                className="w-full px-3.5 py-2.5 bg-slate-50/50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-blue/20 focus:border-brand-blue transition-all"
               />
             </div>
 
@@ -238,7 +239,7 @@ export default function ProfilePage() {
                 id="ielts"
                 checked={hasIelts}
                 onChange={(e) => setHasIelts(e.target.checked)}
-                className="w-4 h-4 rounded text-[#0B2A5B] focus:ring-[#0B2A5B]"
+                className="w-4 h-4 rounded text-brand-blue focus:ring-brand-blue border-slate-300"
               />
               <label htmlFor="ielts" className="text-xs font-semibold text-slate-700">
                 I have taken IELTS / TOEFL English Proficiency Exam
@@ -247,7 +248,7 @@ export default function ProfilePage() {
           </div>
 
           <div>
-            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+            <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5">
               Academic Interests &amp; Career Summary
             </label>
             <textarea
@@ -255,7 +256,7 @@ export default function ProfilePage() {
               onChange={(e) => setAcademicSummary(e.target.value)}
               placeholder="Describe your academic interests, preferred majors (e.g. Computer Science, Public Health, Mechanical Engineering), and career aspirations..."
               rows={4}
-              className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none"
+              className="w-full px-3.5 py-2.5 bg-slate-50/50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-blue/20 focus:border-brand-blue transition-all"
             />
           </div>
         </div>
@@ -264,9 +265,9 @@ export default function ProfilePage() {
           <button
             type="submit"
             disabled={saving}
-            className="px-6 py-3 rounded-2xl bg-[#0B2A5B] hover:bg-[#1E4D9B] text-white text-xs font-bold shadow-md flex items-center gap-2 transition-all disabled:opacity-50"
+            className="px-5 py-2.5 rounded-xl bg-brand-blue hover:bg-brand-blue/90 text-white text-xs font-semibold shadow-xs flex items-center gap-2 transition-all disabled:opacity-50"
           >
-            {saving ? <Loader2 size={16} className="animate-spin text-[#C9A84C]" /> : <Save size={16} />}
+            {saving ? <Loader2 size={15} className="animate-spin text-brand-gold" /> : <Save size={15} />}
             <span>Save Profile Changes</span>
           </button>
         </div>

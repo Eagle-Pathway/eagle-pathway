@@ -98,60 +98,57 @@ export default function CareerPackagesPage() {
   };
 
   return (
-    <div className="space-y-8 max-w-6xl mx-auto">
+    <div className="space-y-6 max-w-6xl mx-auto animate-in fade-in duration-200">
       {/* Header */}
-      <div className="text-center max-w-2xl mx-auto space-y-3">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#C9A84C]/15 text-[#9A7B2C] text-xs font-bold border border-[#C9A84C]/30">
-          <Sparkles size={14} className="text-[#C9A84C]" />
-          <span>Tailored Admissions Consulting</span>
-        </div>
-        <h1 className="text-3xl md:text-4xl font-extrabold text-[#0B2A5B] tracking-tight">
+      <div className="border-b border-slate-200/80 pb-4">
+        <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Admissions Consulting</p>
+        <h1 className="text-xl md:text-2xl font-bold text-slate-900 tracking-tight">
           Admissions Counseling &amp; Study Packages
         </h1>
-        <p className="text-sm text-slate-500 leading-relaxed">
+        <p className="text-xs text-slate-500 mt-1">
           Accelerate your acceptance rates with 1-on-1 guidance from international alumni, certified essay editors, and expert test instructors.
         </p>
       </div>
 
       {/* Tier Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-stretch">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-5 items-stretch">
         {TIERS.map((tier) => (
           <div
             key={tier.id}
-            className={`rounded-3xl p-8 flex flex-col justify-between transition-all relative ${
+            className={`rounded-xl p-6 flex flex-col justify-between transition-all relative ${
               tier.popular
-                ? 'bg-[#0B2A5B] text-white shadow-xl ring-2 ring-[#C9A84C]'
-                : 'bg-white border border-slate-200/80 text-slate-900 shadow-sm hover:shadow-md'
+                ? 'bg-slate-900 text-white shadow-md ring-2 ring-brand-gold/60'
+                : 'bg-white border border-slate-200/80 text-slate-900 shadow-xs hover:border-slate-300'
             }`}
           >
             {tier.popular && (
-              <span className="absolute -top-3.5 left-1/2 -translate-x-1/2 px-3.5 py-1 rounded-full bg-gradient-to-r from-[#C9A84C] to-[#DFBE60] text-[#0B2A5B] text-xs font-extrabold shadow-md">
-                ★ MOST POPULAR
+              <span className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full bg-brand-gold text-slate-950 text-[10px] font-extrabold uppercase tracking-wider shadow-xs">
+                ★ Most Popular
               </span>
             )}
 
-            <div className="space-y-6">
+            <div className="space-y-5">
               <div>
-                <h3 className="text-xl font-extrabold">{tier.name}</h3>
-                <p className={`text-xs mt-2 ${tier.popular ? 'text-slate-300' : 'text-slate-500'}`}>
+                <h3 className="text-base font-bold">{tier.name}</h3>
+                <p className={`text-xs mt-1.5 leading-relaxed ${tier.popular ? 'text-slate-300' : 'text-slate-500'}`}>
                   {tier.desc}
                 </p>
               </div>
 
               <div>
-                <span className="text-3xl font-extrabold">{tier.price}</span>
-                <span className={`text-xs ml-1 ${tier.popular ? 'text-slate-300' : 'text-slate-500'}`}>
+                <span className="text-2xl font-bold tracking-tight">{tier.price}</span>
+                <span className={`text-xs ml-1 font-medium ${tier.popular ? 'text-slate-400' : 'text-slate-500'}`}>
                   / {tier.period}
                 </span>
               </div>
 
-              <div className="space-y-3 pt-4 border-t border-slate-200/20 text-xs">
+              <div className="space-y-2.5 pt-4 border-t border-slate-200/20 text-xs">
                 {tier.features.map((f, i) => (
                   <div key={i} className="flex items-start gap-2.5">
                     <CheckCircle2
-                      size={16}
+                      size={15}
                       className={`flex-shrink-0 mt-0.5 ${
-                        tier.popular ? 'text-[#C9A84C]' : 'text-emerald-600'
+                        tier.popular ? 'text-brand-gold' : 'text-emerald-600'
                       }`}
                     />
                     <span className={tier.popular ? 'text-slate-200' : 'text-slate-700'}>{f}</span>
@@ -165,10 +162,10 @@ export default function CareerPackagesPage() {
                 setSelectedTier(tier);
                 setSubmitted(false);
               }}
-              className={`w-full mt-8 py-3.5 px-4 rounded-xl text-xs font-extrabold transition-all shadow-md flex items-center justify-center gap-2 ${
+              className={`w-full mt-6 py-2.5 px-4 rounded-xl text-xs font-semibold transition-all shadow-xs flex items-center justify-center gap-1.5 ${
                 tier.popular
-                  ? 'bg-gradient-to-r from-[#C9A84C] to-[#DFBE60] text-[#0B2A5B] hover:brightness-105'
-                  : 'bg-[#0B2A5B] text-white hover:bg-[#1E4D9B]'
+                  ? 'bg-brand-gold text-slate-950 hover:brightness-105'
+                  : 'bg-brand-blue text-white hover:bg-brand-blue/90'
               }`}
             >
               <span>Get Started</span>
@@ -180,22 +177,25 @@ export default function CareerPackagesPage() {
 
       {/* Inquiry Modal */}
       {selectedTier && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-150">
-          <div className="bg-white rounded-3xl p-6 md:p-8 max-w-md w-full shadow-2xl border border-slate-100 space-y-4">
-            <h3 className="text-lg font-bold text-[#0B2A5B]">
-              Inquire About {selectedTier.name}
-            </h3>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs animate-in fade-in duration-150">
+          <div className="bg-white rounded-xl p-6 max-w-md w-full shadow-xl border border-slate-200/80 space-y-4">
+            <div>
+              <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Plan Consultation</p>
+              <h3 className="text-base font-bold text-slate-900">
+                Inquire About {selectedTier.name}
+              </h3>
+            </div>
 
             {submitted ? (
-              <div className="p-6 rounded-2xl bg-emerald-50 border border-emerald-200 text-center space-y-3">
-                <CheckCircle2 size={40} className="text-emerald-500 mx-auto" />
-                <h4 className="text-sm font-bold text-emerald-900">Inquiry Received!</h4>
-                <p className="text-xs text-emerald-700 leading-relaxed">
+              <div className="p-5 rounded-xl bg-emerald-50 border border-emerald-200/70 text-center space-y-3">
+                <CheckCircle2 size={36} className="text-emerald-600 mx-auto" />
+                <h4 className="text-sm font-bold text-emerald-950">Inquiry Received!</h4>
+                <p className="text-xs text-emerald-800 leading-relaxed">
                   Our academic admissions advisor will call you within 2 business hours to review your target programs and finalize your onboarding.
                 </p>
                 <button
                   onClick={() => setSelectedTier(null)}
-                  className="mt-3 px-5 py-2 rounded-xl bg-[#0B2A5B] text-white text-xs font-bold"
+                  className="mt-2 px-4 py-2 rounded-xl bg-brand-blue text-white text-xs font-semibold shadow-xs hover:bg-brand-blue/90"
                 >
                   Close
                 </button>
@@ -203,11 +203,11 @@ export default function CareerPackagesPage() {
             ) : (
               <form onSubmit={handleInquirySubmit} className="space-y-4">
                 <p className="text-xs text-slate-500">
-                  Tier Price: <strong>{selectedTier.price}</strong>. Enter your phone number below, and an advisor will contact you directly.
+                  Tier Price: <strong className="text-slate-900 font-bold">{selectedTier.price}</strong>. Enter your phone number below, and an advisor will contact you directly.
                 </p>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                  <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5">
                     Contact Phone Number
                   </label>
                   <input
@@ -216,12 +216,12 @@ export default function CareerPackagesPage() {
                     onChange={(e) => setPhoneNumber(e.target.value)}
                     placeholder="+251 91 234 5678"
                     required
-                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800"
+                    className="w-full px-3.5 py-2.5 bg-slate-50/50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-blue/20 focus:border-brand-blue transition-all"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                  <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5">
                     Target Degree &amp; Country
                   </label>
                   <textarea
@@ -229,24 +229,24 @@ export default function CareerPackagesPage() {
                     onChange={(e) => setNotes(e.target.value)}
                     placeholder="e.g. Master's in Computer Science in Germany or USA undergraduate..."
                     rows={3}
-                    className="w-full px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800"
+                    className="w-full px-3.5 py-2 bg-slate-50/50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-blue/20 focus:border-brand-blue transition-all"
                   />
                 </div>
 
-                <div className="flex items-center justify-end gap-3 pt-2">
+                <div className="flex items-center justify-end gap-2.5 pt-2">
                   <button
                     type="button"
                     onClick={() => setSelectedTier(null)}
-                    className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100"
+                    className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 transition-colors"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
                     disabled={loading}
-                    className="px-5 py-2.5 rounded-xl bg-[#0B2A5B] hover:bg-[#1E4D9B] text-white text-xs font-bold shadow-sm flex items-center gap-1.5"
+                    className="px-4 py-2 rounded-xl bg-brand-blue hover:bg-brand-blue/90 text-white text-xs font-semibold shadow-xs flex items-center gap-1.5 transition-all"
                   >
-                    {loading ? <Loader2 size={15} className="animate-spin" /> : <Send size={14} />}
+                    {loading ? <Loader2 size={14} className="animate-spin text-brand-gold" /> : <Send size={14} />}
                     <span>Submit Inquiry</span>
                   </button>
                 </div>

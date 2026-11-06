@@ -80,41 +80,45 @@ export default function TutorsPage() {
   }, [tutors, searchQuery, selectedSubject, selectedMode]);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-16">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-200/80 pb-4">
         <div>
-          <h1 className="text-2xl md:text-3xl font-extrabold text-[#0B2A5B] tracking-tight">
+          <div className="inline-flex items-center gap-1.5 text-xs font-semibold text-brand-blue mb-1">
+            <Users size={14} />
+            <span>Faculty Directory</span>
+          </div>
+          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
             1-on-1 Expert Tutors Marketplace
           </h1>
-          <p className="text-sm text-slate-500 mt-1">
+          <p className="text-xs text-slate-500 mt-1">
             Book certified educators for STEM subjects, SAT/IELTS prep, and university essay coaching.
           </p>
         </div>
-        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-50 text-amber-800 text-xs font-bold border border-amber-200">
-          <Star size={15} className="fill-amber-500 text-amber-500" />
+        <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded bg-amber-50 text-amber-800 text-[11px] font-semibold border border-amber-200/60 self-start sm:self-auto">
+          <Star size={13} className="fill-amber-500 text-amber-500" />
           <span>{filtered.length} Verified Instructors</span>
         </div>
       </div>
 
       {/* Filter Bar */}
-      <div className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-sm space-y-3">
-        <div className="flex flex-col md:flex-row gap-3">
+      <div className="bg-white rounded-xl border border-slate-200/80 p-3.5 shadow-xs space-y-3">
+        <div className="flex flex-col md:flex-row gap-2.5">
           <div className="relative flex-1">
-            <Search size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+            <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search by tutor name, subject (e.g. SAT Math, Chemistry), or bio..."
-              className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm placeholder-slate-400 text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0B2A5B]/20 focus:border-[#0B2A5B] transition-all"
+              className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs placeholder-slate-400 text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-blue/20 focus:border-brand-blue transition-all"
             />
           </div>
 
           <select
             value={selectedSubject}
             onChange={(e) => setSelectedSubject(e.target.value)}
-            className="px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#0B2A5B]/20"
+            className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-blue/20"
           >
             <option value="all">All Academic Subjects</option>
             {subjects.map((s) => (
@@ -127,7 +131,7 @@ export default function TutorsPage() {
           <select
             value={selectedMode}
             onChange={(e) => setSelectedMode(e.target.value)}
-            className="px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#0B2A5B]/20"
+            className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-blue/20"
           >
             <option value="all">All Delivery Modes</option>
             <option value="online">Online Only (Google Meet / Zoom)</option>
@@ -139,50 +143,50 @@ export default function TutorsPage() {
       {/* Tutors Grid */}
       {loading ? (
         <div className="py-20 flex flex-col items-center justify-center gap-3">
-          <div className="w-10 h-10 border-4 border-[#0B2A5B]/20 border-t-[#0B2A5B] rounded-full animate-spin" />
-          <p className="text-xs text-slate-500 font-semibold">Loading verified tutors...</p>
+          <div className="w-8 h-8 border-3 border-brand-blue/20 border-t-brand-blue rounded-full animate-spin" />
+          <p className="text-xs text-slate-500 font-medium">Loading verified tutors...</p>
         </div>
       ) : filtered.length === 0 ? (
-        <div className="py-16 text-center bg-white rounded-3xl border border-slate-200/80 p-8 space-y-3">
-          <Users size={40} className="mx-auto text-slate-300" />
-          <h3 className="text-base font-bold text-slate-800">No Tutors Match Your Criteria</h3>
+        <div className="py-16 text-center bg-white rounded-xl border border-slate-200/80 p-8 space-y-3 shadow-xs">
+          <Users size={36} className="mx-auto text-slate-300" />
+          <h3 className="text-sm font-bold text-slate-800">No Tutors Match Your Criteria</h3>
           <p className="text-xs text-slate-500 max-w-sm mx-auto">
             Try adjusting your subject or delivery mode to see other top-rated instructors.
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filtered.map((t) => (
             <div
               key={t.id}
-              className="bg-white rounded-3xl border border-slate-200/80 p-6 shadow-sm hover:shadow-md hover:border-[#C9A84C]/40 transition-all flex flex-col justify-between group"
+              className="bg-white rounded-xl border border-slate-200/80 p-4 md:p-5 shadow-xs hover:border-slate-300 hover:shadow-xs transition-all flex flex-col justify-between group"
             >
-              <div className="space-y-4">
+              <div className="space-y-3.5">
                 {/* Tutor Profile Header */}
-                <div className="flex items-start gap-4">
-                  <div className="w-14 h-14 rounded-2xl bg-[#0B2A5B] text-white flex items-center justify-center font-bold text-lg shadow-sm overflow-hidden flex-shrink-0">
+                <div className="flex items-start gap-3">
+                  <div className="w-10 h-10 rounded-full bg-brand-gold/20 text-brand-gold flex items-center justify-center font-bold text-xs flex-shrink-0">
                     {t.user?.avatar_url ? (
                       <img
                         src={t.user.avatar_url}
                         alt={t.user.full_name || 'Tutor'}
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-cover rounded-full"
                       />
                     ) : (
-                      (t.user?.full_name || 'Tutor').slice(0, 2).toUpperCase()
+                      (t.user?.full_name || 'T').charAt(0).toUpperCase()
                     )}
                   </div>
 
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-1.5">
-                      <h3 className="font-extrabold text-base text-slate-900 group-hover:text-[#0B2A5B] truncate">
+                      <h3 className="font-semibold text-sm text-slate-900 group-hover:text-brand-blue transition-colors truncate">
                         {t.user?.full_name || 'Verified Tutor'}
                       </h3>
-                      <CheckCircle2 size={16} className="text-blue-600 flex-shrink-0" />
+                      <CheckCircle2 size={14} className="text-brand-blue flex-shrink-0" />
                     </div>
 
-                    <div className="flex items-center gap-2 text-xs text-slate-500 mt-1">
-                      <div className="flex items-center gap-1 text-amber-500 font-bold">
-                        <Star size={13} className="fill-amber-400 text-amber-400" />
+                    <div className="flex items-center gap-2 text-xs text-slate-500 mt-0.5">
+                      <div className="flex items-center gap-1 text-amber-500 font-semibold">
+                        <Star size={12} className="fill-amber-400 text-amber-400" />
                         <span>{(t.rating || 4.9).toFixed(1)}</span>
                       </div>
                       <span>•</span>
@@ -199,15 +203,15 @@ export default function TutorsPage() {
                 )}
 
                 {/* Subjects tags */}
-                <div className="space-y-1.5">
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                <div className="space-y-1">
+                  <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
                     Subjects Taught
                   </p>
-                  <div className="flex flex-wrap gap-1.5">
+                  <div className="flex flex-wrap gap-1">
                     {(t.subjects || ['Math', 'Physics']).map((s) => (
                       <span
                         key={s}
-                        className="px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700 text-xs font-semibold"
+                        className="px-2 py-0.5 rounded bg-slate-50 border border-slate-100 text-slate-700 text-[11px] font-medium"
                       >
                         {s}
                       </span>
@@ -216,16 +220,16 @@ export default function TutorsPage() {
                 </div>
 
                 {/* Delivery Mode Pills */}
-                <div className="flex items-center gap-2 text-xs text-slate-600">
+                <div className="flex items-center gap-1.5 text-xs text-slate-600">
                   {t.is_online && (
-                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-700 text-[11px] font-semibold">
-                      <Globe size={12} />
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-blue-50 text-brand-blue text-[10px] font-semibold border border-blue-200/60">
+                      <Globe size={11} />
                       <span>Online</span>
                     </span>
                   )}
                   {t.is_in_person && (
-                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-purple-50 text-purple-700 text-[11px] font-semibold">
-                      <Home size={12} />
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-purple-50 text-purple-700 text-[10px] font-semibold border border-purple-200/60">
+                      <Home size={11} />
                       <span>Addis Ababa</span>
                     </span>
                   )}
@@ -233,20 +237,20 @@ export default function TutorsPage() {
               </div>
 
               {/* Rate & Book Session Action */}
-              <div className="pt-5 mt-5 border-t border-slate-100 flex items-center justify-between">
+              <div className="pt-3.5 mt-4 border-t border-slate-100 flex items-center justify-between">
                 <div>
-                  <span className="text-base font-extrabold text-[#0B2A5B]">
+                  <span className="text-sm font-bold text-slate-900">
                     {t.hourly_rate ? `${t.hourly_rate} ETB` : 'Flexible'}
                   </span>
-                  <span className="text-xs text-slate-400 font-medium"> / hr</span>
+                  <span className="text-[11px] text-slate-400 font-medium"> / hr</span>
                 </div>
 
                 <Link
                   href={`/tutors/${t.id}`}
-                  className="px-5 py-2.5 rounded-xl bg-[#0B2A5B] hover:bg-[#1E4D9B] text-white text-xs font-extrabold shadow-sm transition-all flex items-center gap-1.5"
+                  className="px-3.5 py-1.5 rounded-lg bg-brand-blue hover:bg-brand-blue/90 text-white text-xs font-semibold shadow-xs transition-colors flex items-center gap-1.5"
                 >
                   <span>Book Session</span>
-                  <ArrowRight size={14} />
+                  <ArrowRight size={13} />
                 </Link>
               </div>
             </div>
@@ -256,4 +260,3 @@ export default function TutorsPage() {
     </div>
   );
 }
-

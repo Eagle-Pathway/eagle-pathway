@@ -1,9 +1,9 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
-import { 
-  Send, Users, Bell, Loader2, CheckCircle2, History, 
-  ExternalLink, GraduationCap, FileText, Briefcase, Link as LinkIcon 
+import {
+  Send, Users, Bell, Loader2, CheckCircle2, History,
+  ExternalLink, GraduationCap, FileText, Briefcase, Link as LinkIcon
 } from 'lucide-react';
 
 interface BroadcastLog {
@@ -28,7 +28,7 @@ export default function NotificationsPage() {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState('');
   const [error, setError] = useState('');
-  
+
   const [formData, setFormData] = useState({
     title: '',
     body: '',
@@ -149,7 +149,7 @@ export default function NotificationsPage() {
 
       // Refresh logs
       fetchLogs();
-      
+
     } catch (err: any) {
       setError(err.message || 'Failed to send broadcast');
     } finally {
@@ -158,241 +158,242 @@ export default function NotificationsPage() {
   };
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500 max-w-5xl">
-      <div>
-        <h1 className="text-3xl font-bold text-gray-900">Push Notifications & Broadcasts</h1>
-        <p className="mt-1 text-sm text-gray-500">Broadcast instant push notifications and in-app alerts with targeted deep linking.</p>
+    <div className="space-y-6 animate-in fade-in duration-500 max-w-5xl">
+      {/* Page Header */}
+      <div className="border-b border-slate-200/80 pb-4">
+        <div className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">Broadcast Station</div>
+        <h1 className="text-xl md:text-2xl font-bold text-slate-900 tracking-tight">Push Notifications & Broadcasts</h1>
+        <p className="mt-1 text-xs text-slate-500">Broadcast instant push notifications and in-app alerts with targeted deep linking</p>
       </div>
 
-      <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
-        <div className="p-8 border-b border-gray-50">
-          <div className="flex items-center mb-6">
-             <div className="h-12 w-12 bg-purple-100 rounded-xl flex items-center justify-center mr-4 text-purple-600">
-               <Bell className="h-6 w-6" />
-             </div>
-             <div>
-               <h2 className="text-xl font-bold text-gray-900">Create Broadcast</h2>
-               <p className="text-sm text-gray-500">Draft an announcement to students or tutors</p>
-             </div>
+      <div className="bg-white rounded-xl shadow-xs border border-slate-200/80 overflow-hidden">
+        <div className="p-5 md:p-6 border-b border-slate-200/80 bg-slate-50/30">
+          <div className="flex items-center mb-5">
+            <div className="h-10 w-10 bg-brand-blue/10 rounded-xl flex items-center justify-center mr-3 text-brand-blue">
+              <Bell className="h-5 w-5" />
+            </div>
+            <div>
+              <h2 className="text-sm font-bold text-slate-900">Create Broadcast</h2>
+              <p className="text-xs text-slate-500">Draft an announcement to students or tutors</p>
+            </div>
           </div>
-          
+
           {error && (
-            <div className="mb-6 p-4 bg-red-50/80 border border-red-200 text-red-600 rounded-xl text-sm flex items-center">
-               <div className="flex-1">{error}</div>
+            <div className="mb-5 p-3.5 bg-rose-50 border border-rose-200 text-rose-700 rounded-xl text-xs flex items-center">
+              <div className="flex-1 font-medium">{error}</div>
             </div>
           )}
-          
+
           {success && (
-            <div className="mb-6 p-4 bg-green-50/80 border border-green-200 text-green-700 rounded-xl text-sm flex items-center">
-               <CheckCircle2 className="w-5 h-5 mr-2" />
-               <div className="flex-1 font-medium">{success}</div>
+            <div className="mb-5 p-3.5 bg-emerald-50 border border-emerald-200 text-emerald-700 rounded-xl text-xs flex items-center">
+              <CheckCircle2 className="w-4 h-4 mr-2 text-emerald-600" />
+              <div className="flex-1 font-medium">{success}</div>
             </div>
           )}
 
-          <form onSubmit={handleBroadcast} className="space-y-6">
-             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-               <div className="md:col-span-2">
-                 <label className="block text-sm font-semibold text-gray-700 mb-1.5">Notification Title</label>
-                 <input 
-                   required type="text" name="title" value={formData.title} onChange={handleChange} 
-                   className="w-full px-4 py-3 bg-gray-50/50 rounded-xl border border-gray-200 focus:ring-2 focus:ring-purple-600/20 focus:border-purple-600 transition-colors font-medium text-gray-900 placeholder-gray-400" 
-                   placeholder="e.g. New Master's Scholarship Open for Application!" 
-                 />
-               </div>
+          <form onSubmit={handleBroadcast} className="space-y-5">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="md:col-span-2">
+                <label className="block text-xs font-semibold text-slate-700 mb-1">Notification Title</label>
+                <input
+                  required type="text" name="title" value={formData.title} onChange={handleChange}
+                  className="w-full px-3.5 py-2.5 bg-white rounded-xl border border-slate-200/80 focus:ring-2 focus:ring-brand-blue/20 focus:border-brand-blue transition-colors text-xs font-medium text-slate-900 placeholder:text-slate-400 outline-none"
+                  placeholder="e.g. New Master's Scholarship Open for Application!"
+                />
+              </div>
 
-               <div className="md:col-span-2">
-                 <label className="block text-sm font-semibold text-gray-700 mb-1.5">Message Content</label>
-                 <textarea 
-                   required name="body" value={formData.body} onChange={handleChange} rows={3} 
-                   className="w-full px-4 py-3 bg-gray-50/50 rounded-xl border border-gray-200 focus:ring-2 focus:ring-purple-600/20 focus:border-purple-600 transition-colors resize-none text-gray-900 placeholder-gray-400" 
-                   placeholder="Detailed message that appears when users open or preview the notification..."
-                 />
-               </div>
+              <div className="md:col-span-2">
+                <label className="block text-xs font-semibold text-slate-700 mb-1">Message Content</label>
+                <textarea
+                  required name="body" value={formData.body} onChange={handleChange} rows={3}
+                  className="w-full px-3.5 py-2.5 bg-white rounded-xl border border-slate-200/80 focus:ring-2 focus:ring-brand-blue/20 focus:border-brand-blue transition-colors resize-none text-xs text-slate-900 placeholder:text-slate-400 outline-none"
+                  placeholder="Detailed message that appears when users open or preview the notification..."
+                />
+              </div>
 
-               <div>
-                 <label className="block text-sm font-semibold text-gray-700 mb-1.5">Target Audience</label>
-                 <div className="relative">
-                   <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
-                     <Users className="h-4 w-4" />
-                   </div>
-                   <select 
-                     name="audience" value={formData.audience} onChange={handleChange} 
-                     className="w-full pl-10 pr-4 py-3 bg-gray-50/50 rounded-xl border border-gray-200 focus:ring-2 focus:ring-purple-600/20 focus:border-purple-600 appearance-none text-gray-900 font-medium"
-                   >
-                     <option value="all">Everyone (Students & Tutors)</option>
-                     <option value="student">Students Only</option>
-                     <option value="tutor">Tutors Only</option>
-                   </select>
-                 </div>
-               </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">Target Audience</label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                    <Users className="h-4 w-4" />
+                  </div>
+                  <select
+                    name="audience" value={formData.audience} onChange={handleChange}
+                    className="w-full pl-9 pr-3 py-2 bg-white rounded-xl border border-slate-200/80 focus:ring-2 focus:ring-brand-blue/20 focus:border-brand-blue text-xs text-slate-900 font-medium outline-none cursor-pointer"
+                  >
+                    <option value="all">Everyone (Students & Tutors)</option>
+                    <option value="student">Students Only</option>
+                    <option value="tutor">Tutors Only</option>
+                  </select>
+                </div>
+              </div>
 
-               <div>
-                 <label className="block text-sm font-semibold text-gray-700 mb-1.5">Notification Category</label>
-                 <div className="relative">
-                   <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-gray-400">
-                     <Bell className="h-4 w-4" />
-                   </div>
-                   <select 
-                     name="type" value={formData.type} onChange={handleChange} 
-                     className="w-full pl-10 pr-4 py-3 bg-gray-50/50 rounded-xl border border-gray-200 focus:ring-2 focus:ring-purple-600/20 focus:border-purple-600 appearance-none text-gray-900 font-medium"
-                   >
-                     <option value="application_update">General Announcement</option>
-                     <option value="scholarship_alert">Scholarship Alert</option>
-                     <option value="new_resource">Resource Update</option>
-                   </select>
-                 </div>
-               </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">Notification Category</label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
+                    <Bell className="h-4 w-4" />
+                  </div>
+                  <select
+                    name="type" value={formData.type} onChange={handleChange}
+                    className="w-full pl-9 pr-3 py-2 bg-white rounded-xl border border-slate-200/80 focus:ring-2 focus:ring-brand-blue/20 focus:border-brand-blue text-xs text-slate-900 font-medium outline-none cursor-pointer"
+                  >
+                    <option value="application_update">General Announcement</option>
+                    <option value="scholarship_alert">Scholarship Alert</option>
+                    <option value="new_resource">Resource Update</option>
+                  </select>
+                </div>
+              </div>
 
-               {/* Deep Link Target Destination */}
-               <div className="md:col-span-2 p-5 bg-purple-50/40 rounded-2xl border border-purple-100">
-                 <label className="block text-sm font-bold text-gray-900 mb-2">
-                   Deep Link Action (When User Taps Notification)
-                 </label>
-                 <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 mb-3">
-                   {[
-                     { id: 'notifications', label: 'In-App Alert', icon: Bell },
-                     { id: 'scholarship', label: 'Scholarship', icon: GraduationCap },
-                     { id: 'documents', label: 'Documents', icon: FileText },
-                     { id: 'jobs', label: 'Tutor Jobs', icon: Briefcase },
-                     { id: 'custom', label: 'Custom URL', icon: LinkIcon },
-                   ].map(dest => {
-                     const Icon = dest.icon;
-                     const active = destinationMode === dest.id;
-                     return (
-                       <button
-                         key={dest.id}
-                         type="button"
-                         onClick={() => setDestinationMode(dest.id as any)}
-                         className={`flex flex-col items-center justify-center p-3 rounded-xl border text-xs font-semibold transition-all ${
-                           active 
-                             ? 'bg-purple-600 text-white border-purple-600 shadow-sm' 
-                             : 'bg-white text-gray-700 border-gray-200 hover:border-purple-300'
-                         }`}
-                       >
-                         <Icon className="w-4 h-4 mb-1" />
-                         <span>{dest.label}</span>
-                       </button>
-                     );
-                   })}
-                 </div>
+              {/* Deep Link Target Destination */}
+              <div className="md:col-span-2 p-4 bg-slate-50/60 rounded-xl border border-slate-200/80">
+                <label className="block text-xs font-bold text-slate-900 mb-2">
+                  Deep Link Action (When User Taps Notification)
+                </label>
+                <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 mb-3">
+                  {[
+                    { id: 'notifications', label: 'In-App Alert', icon: Bell },
+                    { id: 'scholarship', label: 'Scholarship', icon: GraduationCap },
+                    { id: 'documents', label: 'Documents', icon: FileText },
+                    { id: 'jobs', label: 'Tutor Jobs', icon: Briefcase },
+                    { id: 'custom', label: 'Custom URL', icon: LinkIcon },
+                  ].map(dest => {
+                    const Icon = dest.icon;
+                    const active = destinationMode === dest.id;
+                    return (
+                      <button
+                        key={dest.id}
+                        type="button"
+                        onClick={() => setDestinationMode(dest.id as any)}
+                        className={`flex flex-col items-center justify-center p-2.5 rounded-xl border text-[11px] font-semibold transition-all ${active
+                          ? 'bg-brand-blue text-white border-brand-blue shadow-xs'
+                          : 'bg-white text-slate-700 border-slate-200/80 hover:border-slate-300'
+                          }`}
+                      >
+                        <Icon className="w-3.5 h-3.5 mb-1" />
+                        <span>{dest.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
 
-                 {destinationMode === 'scholarship' && (
-                   <div className="mt-3">
-                     <label className="block text-xs font-semibold text-gray-600 mb-1">Select Scholarship Target</label>
-                     <select
-                       value={selectedScholarshipId}
-                       onChange={e => setSelectedScholarshipId(e.target.value)}
-                       className="w-full px-4 py-2.5 bg-white rounded-xl border border-gray-200 text-sm font-medium text-gray-900"
-                     >
-                       {scholarships.length === 0 ? (
-                         <option value="">No active scholarships found</option>
-                       ) : (
-                         scholarships.map(s => (
-                           <option key={s.id} value={s.id}>
-                             {s.name} ({s.country})
-                           </option>
-                         ))
-                       )}
-                     </select>
-                     <p className="mt-1 text-xs text-purple-700">Tapping this notification will open the scholarship detail directly.</p>
-                   </div>
-                 )}
+                {destinationMode === 'scholarship' && (
+                  <div className="mt-3">
+                    <label className="block text-[11px] font-semibold text-slate-600 mb-1">Select Scholarship Target</label>
+                    <select
+                      value={selectedScholarshipId}
+                      onChange={e => setSelectedScholarshipId(e.target.value)}
+                      className="w-full px-3 py-2 bg-white rounded-xl border border-slate-200/80 text-xs font-medium text-slate-900 outline-none"
+                    >
+                      {scholarships.length === 0 ? (
+                        <option value="">No active scholarships found</option>
+                      ) : (
+                        scholarships.map(s => (
+                          <option key={s.id} value={s.id}>
+                            {s.name} ({s.country})
+                          </option>
+                        ))
+                      )}
+                    </select>
+                    <p className="mt-1 text-[11px] text-brand-blue">Tapping this notification will open the scholarship detail directly.</p>
+                  </div>
+                )}
 
-                 {destinationMode === 'custom' && (
-                   <div className="mt-3">
-                     <label className="block text-xs font-semibold text-gray-600 mb-1">Custom In-App Path or Web URL</label>
-                     <input
-                       type="text"
-                       value={customUrl}
-                       onChange={e => setCustomUrl(e.target.value)}
-                       placeholder="e.g. /resources or https://eaglespathway.com"
-                       className="w-full px-4 py-2.5 bg-white rounded-xl border border-gray-200 text-sm text-gray-900 font-mono"
-                     />
-                   </div>
-                 )}
-               </div>
-             </div>
+                {destinationMode === 'custom' && (
+                  <div className="mt-3">
+                    <label className="block text-[11px] font-semibold text-slate-600 mb-1">Custom In-App Path or Web URL</label>
+                    <input
+                      type="text"
+                      value={customUrl}
+                      onChange={e => setCustomUrl(e.target.value)}
+                      placeholder="e.g. /resources or https://eaglespathway.com"
+                      className="w-full px-3 py-2 bg-white rounded-xl border border-slate-200/80 text-xs text-slate-900 font-mono outline-none"
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
 
-             <div className="pt-2 flex justify-end">
-               <button 
-                 type="submit" disabled={loading || !formData.title || !formData.body} 
-                 className="flex items-center justify-center px-8 py-3.5 text-sm font-semibold text-white bg-purple-600 rounded-xl hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-600/50 shadow-lg shadow-purple-600/20 transition-all disabled:opacity-60 disabled:cursor-not-allowed transform active:scale-95"
-               >
-                 {loading ? <Loader2 className="w-5 h-5 animate-spin mr-2" /> : <Send className="w-4 h-4 mr-2" />}
-                 Send Broadcast Now
-               </button>
-             </div>
+            <div className="pt-2 flex justify-end">
+              <button
+                type="submit" disabled={loading || !formData.title || !formData.body}
+                className="flex items-center justify-center px-6 py-2.5 text-xs font-semibold text-white bg-slate-900 rounded-lg hover:bg-slate-800 focus:outline-none shadow-xs transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {loading ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Send className="w-4 h-4 mr-2" />}
+                Send Broadcast Now
+              </button>
+            </div>
           </form>
         </div>
       </div>
 
       {/* Broadcast History Table */}
-      <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden">
-        <div className="p-6 border-b border-gray-50 flex items-center justify-between">
+      <div className="bg-white rounded-xl shadow-xs border border-slate-200/80 overflow-hidden">
+        <div className="p-4 border-b border-slate-200/80 bg-slate-50/50 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="h-10 w-10 bg-gray-100 rounded-xl flex items-center justify-center text-gray-600">
-              <History className="h-5 w-5" />
+            <div className="h-9 w-9 bg-slate-100 rounded-xl flex items-center justify-center text-slate-600">
+              <History className="h-4 w-4" />
             </div>
             <div>
-              <h3 className="text-lg font-bold text-gray-900">Broadcast History</h3>
-              <p className="text-xs text-gray-500">Record of recent broadcasts sent across mobile devices</p>
+              <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">Broadcast History</h3>
+              <p className="text-[11px] text-slate-500">Record of recent broadcasts sent across devices</p>
             </div>
           </div>
           <button
             onClick={() => fetchLogs()}
-            className="text-xs text-purple-600 font-semibold hover:underline"
+            className="text-xs text-brand-blue font-semibold hover:underline"
           >
             Refresh Logs
           </button>
         </div>
 
         {logsLoading ? (
-          <div className="p-8 text-center text-gray-500">
-            <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2 text-purple-600" />
-            <p className="text-sm">Loading broadcast history...</p>
+          <div className="p-8 text-center text-xs text-slate-400">
+            <Loader2 className="w-5 h-5 animate-spin mx-auto mb-2 text-brand-blue" />
+            <p>Loading broadcast history...</p>
           </div>
         ) : logs.length === 0 ? (
-          <div className="p-8 text-center text-gray-500">
-            <Bell className="w-8 h-8 text-gray-300 mx-auto mb-2" />
-            <p className="text-sm font-medium text-gray-600">No broadcasts sent yet</p>
-            <p className="text-xs text-gray-400 mt-1">Broadcasts will appear here with delivery counts once sent.</p>
+          <div className="p-8 text-center text-xs text-slate-400">
+            <Bell className="w-6 h-6 text-slate-300 mx-auto mb-2" />
+            <p className="font-semibold text-slate-700">No broadcasts sent yet</p>
+            <p className="text-[11px] text-slate-400 mt-1">Broadcasts will appear here with delivery counts once sent.</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse text-sm">
+            <table className="w-full text-left border-collapse text-xs">
               <thead>
-                <tr className="bg-gray-50/50 border-b border-gray-100 text-gray-500 text-xs font-semibold uppercase tracking-wider">
-                  <th className="py-3 px-6">Date</th>
-                  <th className="py-3 px-6">Announcement</th>
-                  <th className="py-3 px-6">Audience</th>
-                  <th className="py-3 px-6">Deep Link</th>
-                  <th className="py-3 px-6 text-right">Recipients</th>
+                <tr className="bg-slate-50/70 border-b border-slate-200/80 text-slate-500 text-[11px] font-semibold uppercase tracking-wider">
+                  <th className="py-3 px-5">Date</th>
+                  <th className="py-3 px-5">Announcement</th>
+                  <th className="py-3 px-5">Audience</th>
+                  <th className="py-3 px-5">Deep Link</th>
+                  <th className="py-3 px-5 text-right">Recipients</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
+              <tbody className="divide-y divide-slate-100">
                 {logs.map((log) => (
-                  <tr key={log.id} className="hover:bg-gray-50/50 transition-colors">
-                    <td className="py-3.5 px-6 whitespace-nowrap text-xs text-gray-500">
-                      {new Date(log.created_at).toLocaleString(undefined, { 
-                        month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' 
+                  <tr key={log.id} className="hover:bg-slate-50/60 transition-colors">
+                    <td className="py-3.5 px-5 whitespace-nowrap text-xs text-slate-500">
+                      {new Date(log.created_at).toLocaleString(undefined, {
+                        month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
                       })}
                     </td>
-                    <td className="py-3.5 px-6">
-                      <p className="font-semibold text-gray-900">{log.title}</p>
-                      <p className="text-xs text-gray-500 truncate max-w-xs">{log.body}</p>
+                    <td className="py-3.5 px-5">
+                      <p className="font-semibold text-slate-900">{log.title}</p>
+                      <p className="text-[11px] text-slate-500 truncate max-w-xs">{log.body}</p>
                     </td>
-                    <td className="py-3.5 px-6 whitespace-nowrap">
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-50 text-purple-700 capitalize">
+                    <td className="py-3.5 px-5 whitespace-nowrap">
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-blue-50 text-brand-blue border border-blue-100 capitalize">
                         {log.audience}
                       </span>
                     </td>
-                    <td className="py-3.5 px-6 whitespace-nowrap text-xs text-gray-500 font-mono">
+                    <td className="py-3.5 px-5 whitespace-nowrap text-xs text-slate-500 font-mono">
                       {log.target_url || '/notifications'}
                     </td>
-                    <td className="py-3.5 px-6 whitespace-nowrap text-right">
-                      <span className="text-xs font-bold text-gray-900">{log.notified_count} in-app</span>
+                    <td className="py-3.5 px-5 whitespace-nowrap text-right">
+                      <span className="text-xs font-bold text-slate-900">{log.notified_count} in-app</span>
                       {log.push_count > 0 && (
-                        <span className="text-xs text-green-600 block">({log.push_count} push)</span>
+                        <span className="text-[11px] text-emerald-600 font-semibold block">({log.push_count} push)</span>
                       )}
                     </td>
                   </tr>

@@ -11,7 +11,6 @@ import {
   AlertCircle,
   Building,
   CreditCard,
-  DollarSign,
   TrendingUp,
   History,
   Plus,
@@ -66,7 +65,6 @@ export default function TutorEarningsPage() {
     async function fetchEarningsData() {
       if (!user?.id) return;
       try {
-        // Fetch tutor bookings for total earnings and completed hours
         const { data: bookingsData } = await supabase
           .from('bookings')
           .select('duration_hours, total_amount, status')
@@ -80,7 +78,6 @@ export default function TutorEarningsPage() {
           setTotalEarned(earned);
         }
 
-        // Fetch payout requests
         const { data: payoutsData, error: payoutsErr } = await supabase
           .from('payout_requests')
           .select('*')
@@ -163,98 +160,107 @@ export default function TutorEarningsPage() {
   };
 
   return (
-    <div className="space-y-6 max-w-6xl mx-auto pb-12">
+    <div className="space-y-6 pb-16">
       {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-200/80 pb-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
-            <Wallet className="text-[#0B2A5B]" size={26} />
-            <span>Tutor Earnings &amp; Payouts</span>
+          <div className="inline-flex items-center gap-1.5 text-xs font-semibold text-brand-blue mb-1">
+            <Wallet size={14} />
+            <span>Educator Treasury</span>
+          </div>
+          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
+            Tutor Earnings &amp; Payouts
           </h1>
-          <p className="text-xs text-slate-500">
+          <p className="text-xs text-slate-500 mt-1">
             Track your tutoring revenue, completed teaching hours, and withdraw your funds to Ethiopian bank accounts or Telebirr.
           </p>
         </div>
 
         <button
           onClick={() => setShowModal(true)}
-          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#0B2A5B] to-[#1E4D9B] text-white text-xs font-bold hover:brightness-110 transition-all shadow-sm"
+          className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-brand-blue text-white text-xs font-semibold hover:bg-brand-blue/90 transition-colors shadow-xs self-start sm:self-auto"
         >
-          <ArrowUpRight size={15} />
+          <ArrowUpRight size={14} />
           <span>Request Payout</span>
         </button>
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm">
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3.5">
+        <div className="bg-white border border-slate-200/80 rounded-xl p-4 flex flex-col justify-between hover:border-slate-300 hover:shadow-xs transition-all relative overflow-hidden">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider truncate">
               Total Earned
             </span>
-            <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
-              <TrendingUp size={16} />
-            </div>
+            <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200/60">
+              Gross
+            </span>
           </div>
-          <div className="text-2xl font-black text-slate-900">
-            {totalEarned.toLocaleString()} <span className="text-xs font-semibold text-slate-400">ETB</span>
+          <div className="mt-2">
+            <span className="text-2xl font-bold text-slate-900 tracking-tight">
+              {totalEarned.toLocaleString()}
+            </span>
+            <span className="text-xs text-slate-400 font-medium block mt-0.5">ETB lifetime sessions</span>
           </div>
-          <div className="text-[11px] text-slate-500 mt-1">Lifetime completed sessions</div>
         </div>
 
-        <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm">
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+        <div className="bg-white border border-slate-200/80 rounded-xl p-4 flex flex-col justify-between hover:border-slate-300 hover:shadow-xs transition-all relative overflow-hidden">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider truncate">
               Available Balance
             </span>
-            <div className="w-8 h-8 rounded-xl bg-[#0B2A5B]/10 text-[#0B2A5B] flex items-center justify-center">
-              <Wallet size={16} />
-            </div>
+            <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-blue-50 text-brand-blue border border-blue-200/60">
+              Withdrawable
+            </span>
           </div>
-          <div className="text-2xl font-black text-[#0B2A5B]">
-            {availableBalance.toLocaleString()} <span className="text-xs font-semibold text-slate-400">ETB</span>
+          <div className="mt-2">
+            <span className="text-2xl font-bold text-brand-blue tracking-tight">
+              {availableBalance.toLocaleString()}
+            </span>
+            <span className="text-xs text-slate-400 font-medium block mt-0.5">ETB ready for transfer</span>
           </div>
-          <div className="text-[11px] text-emerald-600 font-semibold mt-1">Ready for withdrawal</div>
         </div>
 
-        <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm">
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+        <div className="bg-white border border-slate-200/80 rounded-xl p-4 flex flex-col justify-between hover:border-slate-300 hover:shadow-xs transition-all relative overflow-hidden">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider truncate">
               Pending Payouts
             </span>
-            <div className="w-8 h-8 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
-              <Clock size={16} />
-            </div>
+            <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-200/60">
+              In Review
+            </span>
           </div>
-          <div className="text-2xl font-black text-amber-700">
-            {pendingPayout.toLocaleString()} <span className="text-xs font-semibold text-slate-400">ETB</span>
+          <div className="mt-2">
+            <span className="text-2xl font-bold text-amber-700 tracking-tight">
+              {pendingPayout.toLocaleString()}
+            </span>
+            <span className="text-xs text-slate-400 font-medium block mt-0.5">ETB bank transfer queue</span>
           </div>
-          <div className="text-[11px] text-slate-500 mt-1">Processing to bank / Telebirr</div>
         </div>
 
-        <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm">
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+        <div className="bg-white border border-slate-200/80 rounded-xl p-4 flex flex-col justify-between hover:border-slate-300 hover:shadow-xs transition-all relative overflow-hidden">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider truncate">
               Teaching Hours
             </span>
-            <div className="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
-              <Clock size={16} />
-            </div>
+            <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-slate-100 text-slate-600">
+              Logged
+            </span>
           </div>
-          <div className="text-2xl font-black text-slate-900">
-            {completedHours} <span className="text-xs font-semibold text-slate-400">Hours</span>
+          <div className="mt-2">
+            <span className="text-2xl font-bold text-slate-900 tracking-tight">{completedHours} hrs</span>
+            <span className="text-xs text-slate-400 font-medium block mt-0.5">1-on-1 instruction</span>
           </div>
-          <div className="text-[11px] text-slate-500 mt-1">1-on-1 student instruction</div>
         </div>
       </div>
 
       {/* Payout History */}
-      <div className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-sm">
-        <div className="flex items-center justify-between mb-5">
-          <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
-            <History size={18} className="text-[#0B2A5B]" />
-            <span>Withdrawal &amp; Payout History</span>
-          </h2>
+      <div className="bg-white rounded-xl border border-slate-200/80 p-5 shadow-xs space-y-4">
+        <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+          <div className="flex items-center gap-2">
+            <History size={16} className="text-brand-blue" />
+            <h3 className="text-sm font-bold text-slate-900">Withdrawal &amp; Payout History</h3>
+          </div>
           <span className="text-xs text-slate-500 font-medium">
             {payouts.length} total requests
           </span>
@@ -264,18 +270,18 @@ export default function TutorEarningsPage() {
           <div className="py-12 text-center text-xs text-slate-400">Loading payout records...</div>
         ) : payouts.length === 0 ? (
           <div className="py-12 text-center">
-            <div className="w-12 h-12 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center mx-auto mb-3">
-              <CreditCard size={22} />
+            <div className="w-10 h-10 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center mx-auto mb-2.5">
+              <CreditCard size={20} />
             </div>
-            <p className="text-xs text-slate-500 font-medium">No payout requests yet.</p>
-            <p className="text-[11px] text-slate-400 mt-1">
+            <p className="text-xs text-slate-500 font-semibold">No payout requests yet.</p>
+            <p className="text-[11px] text-slate-400 mt-0.5">
               Once you conduct completed sessions, click &quot;Request Payout&quot; to transfer earnings to CBE or Telebirr.
             </p>
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead className="bg-slate-50 text-slate-500 border-b border-slate-200">
+            <table className="w-full text-left text-xs text-slate-600">
+              <thead className="bg-slate-50/75 border-b border-slate-200 text-slate-500 font-semibold uppercase tracking-wider text-[10px]">
                 <tr>
                   <th className="py-3 px-4 font-semibold">Date</th>
                   <th className="py-3 px-4 font-semibold">Bank / Provider</th>
@@ -285,30 +291,29 @@ export default function TutorEarningsPage() {
                   <th className="py-3 px-4 font-semibold text-right">Status</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-slate-100 font-medium">
                 {payouts.map((p) => {
-                  const statusColors = {
-                    pending: 'bg-amber-50 text-amber-700 border-amber-200',
-                    approved: 'bg-blue-50 text-blue-700 border-blue-200',
-                    paid: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-                    rejected: 'bg-red-50 text-red-700 border-red-200',
-                  };
-
                   return (
-                    <tr key={p.id} className="hover:bg-slate-50/50">
-                      <td className="py-3.5 px-4 text-slate-600">
+                    <tr key={p.id} className="hover:bg-slate-50/60 transition-colors">
+                      <td className="py-3 px-4 text-slate-600">
                         {p.created_at ? formatDate(p.created_at) : 'Recent'}
                       </td>
-                      <td className="py-3.5 px-4 font-medium text-slate-900">{p.bank_name}</td>
-                      <td className="py-3.5 px-4 font-mono text-slate-600">{p.account_number}</td>
-                      <td className="py-3.5 px-4 text-slate-800">{p.account_name}</td>
-                      <td className="py-3.5 px-4 font-bold text-slate-900">
+                      <td className="py-3 px-4 font-semibold text-slate-900">{p.bank_name}</td>
+                      <td className="py-3 px-4 font-mono text-slate-600">{p.account_number}</td>
+                      <td className="py-3 px-4 text-slate-800">{p.account_name}</td>
+                      <td className="py-3 px-4 font-bold text-slate-900">
                         {Number(p.amount).toLocaleString()} ETB
                       </td>
-                      <td className="py-3.5 px-4 text-right">
+                      <td className="py-3 px-4 text-right">
                         <span
-                          className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold border uppercase tracking-wider ${
-                            statusColors[p.status] || 'bg-slate-100 text-slate-700 border-slate-200'
+                          className={`inline-block px-2 py-0.5 rounded text-[10px] font-semibold border uppercase tracking-wider ${
+                            p.status === 'paid'
+                              ? 'bg-emerald-50 text-emerald-700 border-emerald-200/60'
+                              : p.status === 'approved'
+                              ? 'bg-blue-50 text-brand-blue border-blue-200/60'
+                              : p.status === 'rejected'
+                              ? 'bg-rose-50 text-rose-700 border-rose-200/60'
+                              : 'bg-amber-50 text-amber-700 border-amber-200/60'
                           }`}
                         >
                           {p.status}
@@ -325,8 +330,8 @@ export default function TutorEarningsPage() {
 
       {/* Payout Modal */}
       {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl border border-slate-200 relative">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs animate-in fade-in duration-150">
+          <div className="bg-white rounded-xl max-w-md w-full p-6 shadow-xl border border-slate-200 relative">
             <button
               onClick={() => setShowModal(false)}
               className="absolute right-4 top-4 text-slate-400 hover:text-slate-600"
@@ -335,7 +340,7 @@ export default function TutorEarningsPage() {
             </button>
 
             <div className="flex items-center gap-2 mb-4">
-              <div className="w-8 h-8 rounded-xl bg-[#0B2A5B]/10 text-[#0B2A5B] flex items-center justify-center">
+              <div className="w-8 h-8 rounded-lg bg-blue-50 text-brand-blue flex items-center justify-center">
                 <Building size={16} />
               </div>
               <div>
@@ -348,29 +353,29 @@ export default function TutorEarningsPage() {
 
             {modalSuccess ? (
               <div className="py-8 text-center text-emerald-600 space-y-2">
-                <CheckCircle2 size={40} className="mx-auto" />
+                <CheckCircle2 size={36} className="mx-auto" />
                 <h4 className="font-bold text-sm text-slate-900">Payout Submitted!</h4>
                 <p className="text-xs text-slate-500">
                   Our finance team has received your withdrawal request.
                 </p>
               </div>
             ) : (
-              <form onSubmit={handleRequestPayout} className="space-y-4">
+              <form onSubmit={handleRequestPayout} className="space-y-3.5">
                 {modalError && (
-                  <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-xs text-red-700 flex items-center gap-2">
+                  <div className="p-3 rounded-lg bg-rose-50 border border-rose-200 text-xs text-rose-700 flex items-center gap-2">
                     <AlertCircle size={14} className="flex-shrink-0" />
                     <span>{modalError}</span>
                   </div>
                 )}
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  <label className="block text-[11px] font-semibold text-slate-600 uppercase tracking-wider mb-1">
                     Select Bank / Mobile Provider *
                   </label>
                   <select
                     value={bankName}
                     onChange={(e) => setBankName(e.target.value)}
-                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800"
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800"
                   >
                     {SUPPORTED_BANKS.map((b) => (
                       <option key={b} value={b}>
@@ -381,7 +386,7 @@ export default function TutorEarningsPage() {
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  <label className="block text-[11px] font-semibold text-slate-600 uppercase tracking-wider mb-1">
                     Account Number or Telebirr Phone *
                   </label>
                   <input
@@ -390,12 +395,12 @@ export default function TutorEarningsPage() {
                     onChange={(e) => setAccountNumber(e.target.value)}
                     placeholder="e.g. 1000123456789 or 0911234567"
                     required
-                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 font-mono focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0B2A5B]/20"
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 font-mono focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-blue/20"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  <label className="block text-[11px] font-semibold text-slate-600 uppercase tracking-wider mb-1">
                     Account Holder Full Name *
                   </label>
                   <input
@@ -404,13 +409,13 @@ export default function TutorEarningsPage() {
                     onChange={(e) => setAccountName(e.target.value)}
                     placeholder="e.g. Abebe Kebede"
                     required
-                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0B2A5B]/20"
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-blue/20"
                   />
                 </div>
 
                 <div>
                   <div className="flex justify-between items-center mb-1">
-                    <label className="text-xs font-semibold text-slate-700">
+                    <label className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider">
                       Withdrawal Amount (ETB) *
                     </label>
                     <span className="text-[11px] text-slate-500">
@@ -426,9 +431,9 @@ export default function TutorEarningsPage() {
                       onChange={(e) => setAmount(e.target.value)}
                       placeholder="e.g. 1500"
                       required
-                      className="w-full pl-3 pr-14 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0B2A5B]/20"
+                      className="w-full pl-3 pr-14 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-blue/20"
                     />
-                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-slate-400">
                       ETB
                     </span>
                   </div>
@@ -438,14 +443,14 @@ export default function TutorEarningsPage() {
                   <button
                     type="button"
                     onClick={() => setShowModal(false)}
-                    className="px-4 py-2.5 rounded-xl border border-slate-300 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                    className="px-3.5 py-2 rounded-xl text-xs font-medium text-slate-600 hover:bg-slate-100 transition-colors"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
                     disabled={modalLoading}
-                    className="px-5 py-2.5 rounded-xl bg-[#0B2A5B] text-white text-xs font-bold hover:bg-[#1E4D9B] disabled:opacity-50"
+                    className="px-4 py-2 rounded-xl bg-brand-blue text-white text-xs font-semibold hover:bg-brand-blue/90 disabled:opacity-50 shadow-xs transition-colors"
                   >
                     {modalLoading ? 'Submitting...' : 'Confirm Withdrawal'}
                   </button>
@@ -458,4 +463,3 @@ export default function TutorEarningsPage() {
     </div>
   );
 }
-

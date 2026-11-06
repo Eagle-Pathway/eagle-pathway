@@ -19,12 +19,17 @@ import { formatDate } from '@/lib/date';
 interface TutorJob {
   id: string;
   student_id: string;
-  subject: string;
+  subject?: string;
+  subjects?: string[];
+  grade?: string;
   grade_level?: string;
+  place?: string;
   location?: string;
   schedule_details?: string;
   budget_range?: string;
+  hourly_rate?: number;
   description?: string;
+  notes?: string;
   status: string;
   created_at: string;
 }
@@ -85,120 +90,131 @@ export default function TutorJobsPage() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div className="space-y-6 pb-16">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-200/80 pb-4">
         <div>
-          <h1 className="text-2xl md:text-3xl font-extrabold text-[#0B2A5B] tracking-tight">
+          <div className="inline-flex items-center gap-1.5 text-xs font-semibold text-brand-blue mb-1">
+            <ClipboardList size={14} />
+            <span>Marketplace Dispatch</span>
+          </div>
+          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
             Tutor Job Opportunities
           </h1>
-          <p className="text-sm text-slate-500 mt-1">
+          <p className="text-xs text-slate-500 mt-1">
             Browse open 1-on-1 student tutoring requests and submit teaching proposals.
           </p>
         </div>
 
-        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-blue-50 text-blue-700 text-xs font-bold border border-blue-200">
-          <ClipboardList size={16} />
+        <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded bg-blue-50 text-brand-blue text-[11px] font-semibold border border-blue-200/60 self-start sm:self-auto">
+          <ClipboardList size={14} />
           <span>{jobs.length} Open Requests</span>
         </div>
       </div>
 
       {applySuccess && (
-        <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-center gap-3 text-emerald-800 text-xs font-bold animate-in fade-in duration-150">
-          <CheckCircle2 size={18} className="text-emerald-600 flex-shrink-0" />
+        <div className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200/60 flex items-center gap-2.5 text-emerald-800 text-xs font-semibold animate-in fade-in duration-150">
+          <CheckCircle2 size={16} className="text-emerald-600 flex-shrink-0" />
           <span>{applySuccess}</span>
         </div>
       )}
 
       {loading ? (
         <div className="py-20 flex flex-col items-center justify-center gap-3">
-          <div className="w-10 h-10 border-4 border-[#0B2A5B]/20 border-t-[#0B2A5B] rounded-full animate-spin" />
-          <p className="text-xs text-slate-500 font-semibold">Loading open tutoring requests...</p>
+          <div className="w-8 h-8 border-3 border-brand-blue/20 border-t-brand-blue rounded-full animate-spin" />
+          <p className="text-xs text-slate-500 font-medium">Loading open tutoring requests...</p>
         </div>
       ) : jobs.length === 0 ? (
-        <div className="py-16 text-center bg-white rounded-3xl border border-slate-200/80 p-8 space-y-3">
-          <ClipboardList size={40} className="mx-auto text-slate-300" />
-          <h3 className="text-base font-bold text-slate-800">No Open Student Requests</h3>
+        <div className="py-16 text-center bg-white rounded-xl border border-slate-200/80 p-8 space-y-3 shadow-xs">
+          <ClipboardList size={36} className="mx-auto text-slate-300" />
+          <h3 className="text-sm font-bold text-slate-800">No Open Student Requests</h3>
           <p className="text-xs text-slate-500 max-w-sm mx-auto">
             New tutoring job posts are published here as students submit requests. Check back soon!
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {jobs.map((job) => (
-            <div
-              key={job.id}
-              className="bg-white rounded-3xl border border-slate-200/80 p-6 shadow-sm hover:shadow-md transition-all flex flex-col justify-between space-y-4"
-            >
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <span className="px-3 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200">
-                    {job.grade_level || 'Grade 11/12'}
-                  </span>
-                  <span className="text-[11px] text-slate-400 font-medium">
-                    {job.created_at ? formatDate(new Date(job.created_at), 'MMM d') : 'Recent'}
-                  </span>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {jobs.map((job) => {
+            const subjectLabel = job.subject || (Array.isArray(job.subjects) ? job.subjects.join(', ') : 'STEM Tutoring');
+            const placeLabel = job.location || job.place || 'Addis Ababa';
+            const rateLabel = job.hourly_rate || job.budget_range;
+
+            return (
+              <div
+                key={job.id}
+                className="bg-white rounded-xl border border-slate-200/80 p-4 md:p-5 shadow-xs hover:border-slate-300 hover:shadow-xs transition-all flex flex-col justify-between space-y-3.5"
+              >
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-amber-50 text-amber-700 border border-amber-200/60">
+                      {job.grade_level || job.grade || 'Grade 11/12'}
+                    </span>
+                    <span className="text-[11px] text-slate-400 font-medium">
+                      {job.created_at ? formatDate(job.created_at, 'MMM d') : 'Recent'}
+                    </span>
+                  </div>
+
+                  <div>
+                    <h3 className="font-semibold text-sm text-slate-900 leading-snug">
+                      {subjectLabel}
+                    </h3>
+                    {placeLabel && (
+                      <div className="flex items-center gap-1.5 text-xs text-slate-500 mt-1">
+                        <MapPin size={13} className="text-slate-400" />
+                        <span>{placeLabel}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {(job.description || job.notes) && (
+                    <p className="text-xs text-slate-600 leading-relaxed line-clamp-3">
+                      {job.description || job.notes}
+                    </p>
+                  )}
+
+                  <div className="p-2.5 rounded-lg bg-slate-50/60 border border-slate-200/60 text-xs text-slate-600 space-y-1">
+                    {job.schedule_details && (
+                      <div className="flex items-center gap-1.5 text-[11px]">
+                        <Clock size={12} className="text-slate-400" />
+                        <span>{job.schedule_details}</span>
+                      </div>
+                    )}
+                    {rateLabel && (
+                      <div className="flex items-center gap-1 text-[11px] font-semibold text-emerald-700">
+                        <span>Rate: {rateLabel} ETB/hr</span>
+                      </div>
+                    )}
+                  </div>
                 </div>
 
-                <div>
-                  <h3 className="font-extrabold text-base text-slate-900 leading-tight">
-                    {job.subject || 'STEM Tutoring'}
-                  </h3>
-                  {job.location && (
-                    <div className="flex items-center gap-1.5 text-xs text-slate-500 mt-1.5">
-                      <MapPin size={13} className="text-slate-400" />
-                      <span>{job.location}</span>
-                    </div>
-                  )}
-                </div>
-
-                {job.description && (
-                  <p className="text-xs text-slate-600 leading-relaxed line-clamp-3">
-                    {job.description}
-                  </p>
-                )}
-
-                <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200/60 text-xs text-slate-600 space-y-1">
-                  {job.schedule_details && (
-                    <div className="flex items-center gap-1.5">
-                      <Clock size={13} className="text-slate-400" />
-                      <span>{job.schedule_details}</span>
-                    </div>
-                  )}
-                  {job.budget_range && (
-                    <div className="flex items-center gap-1.5 font-bold text-[#0B2A5B]">
-                      <DollarSign size={13} className="text-[#C9A84C]" />
-                      <span>Budget: {job.budget_range} ETB</span>
-                    </div>
-                  )}
+                <div className="pt-3 border-t border-slate-100">
+                  <button
+                    onClick={() => setApplyingJobId(job.id)}
+                    className="w-full py-2 px-3.5 rounded-lg bg-brand-blue hover:bg-brand-blue/90 text-white text-xs font-semibold shadow-xs transition-colors flex items-center justify-center gap-1.5"
+                  >
+                    <Send size={13} />
+                    <span>Submit Proposal</span>
+                  </button>
                 </div>
               </div>
-
-              <div className="pt-4 border-t border-slate-100">
-                <button
-                  onClick={() => setApplyingJobId(job.id)}
-                  className="w-full py-2.5 px-4 rounded-xl bg-[#0B2A5B] hover:bg-[#1E4D9B] text-white text-xs font-extrabold shadow-sm transition-all flex items-center justify-center gap-1.5"
-                >
-                  <Send size={14} className="text-[#C9A84C]" />
-                  <span>Submit Teaching Proposal</span>
-                </button>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
       {/* Apply Proposal Modal */}
       {applyingJobId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-150">
-          <div className="bg-white rounded-3xl p-6 md:p-8 max-w-md w-full shadow-2xl border border-slate-100 space-y-4">
-            <h3 className="text-lg font-bold text-[#0B2A5B]">Submit Proposal to Student</h3>
-            <p className="text-xs text-slate-500">
-              Introduce yourself, highlight your teaching experience, and proposed schedule.
-            </p>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs animate-in fade-in duration-150">
+          <div className="bg-white rounded-xl p-6 max-w-md w-full shadow-xl border border-slate-200 space-y-4">
+            <div>
+              <h3 className="text-base font-bold text-slate-900">Submit Proposal to Student</h3>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Introduce yourself, highlight your teaching experience, and proposed schedule.
+              </p>
+            </div>
 
-            <form onSubmit={handleApplyProposal} className="space-y-4 pt-2">
+            <form onSubmit={handleApplyProposal} className="space-y-3.5 pt-1">
               <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                <label className="block text-[11px] font-semibold text-slate-600 uppercase tracking-wider mb-1">
                   Cover Note &amp; Experience
                 </label>
                 <textarea
@@ -207,24 +223,24 @@ export default function TutorJobsPage() {
                   placeholder="I have 3+ years teaching SAT Math and can meet on Tuesdays &amp; Thursdays..."
                   rows={4}
                   required
-                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none"
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none"
                 />
               </div>
 
-              <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
                 <button
                   type="button"
                   onClick={() => setApplyingJobId(null)}
-                  className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100"
+                  className="px-3.5 py-2 rounded-xl text-xs font-medium text-slate-600 hover:bg-slate-100 transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={applyLoading}
-                  className="px-5 py-2.5 rounded-xl bg-[#0B2A5B] hover:bg-[#1E4D9B] text-white text-xs font-bold shadow-sm flex items-center gap-1.5"
+                  className="px-4 py-2 rounded-xl bg-brand-blue hover:bg-brand-blue/90 text-white text-xs font-semibold shadow-xs flex items-center gap-1.5 transition-colors"
                 >
-                  {applyLoading ? <Loader2 size={15} className="animate-spin" /> : <Send size={14} />}
+                  {applyLoading ? <Loader2 size={14} className="animate-spin" /> : <Send size={13} />}
                   <span>Send Proposal</span>
                 </button>
               </div>

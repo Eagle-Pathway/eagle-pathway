@@ -179,64 +179,104 @@ export default function SuccessStoriesPage() {
   const field = (k: keyof SuccessStory, v: any) =>
     setEditing(e => ({ ...(e || {}), [k]: v }));
 
+  const totalPublishedStories = stories.filter(s => s.is_published).length;
+  const totalWithEvidence = stories.filter(s => s.screenshot_url || s.video_url || s.telegram_voice_url).length;
+
   return (
-    <div className="space-y-6 animate-in fade-in duration-500">
-      <div className="flex justify-between items-center gap-4">
+    <div className="space-y-6 animate-in fade-in duration-200">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-200/80 pb-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Success Stories</h1>
-          <p className="mt-1 text-sm text-gray-500">
-            Curate student testimonials, message screenshots, TikTok videos, and Telegram voice notes
+          <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Alumni Spotlight</p>
+          <h1 className="text-xl md:text-2xl font-bold text-slate-900 tracking-tight">Success Stories &amp; Testimonials</h1>
+          <p className="text-xs text-slate-500 mt-1">
+            Curate student testimonials, message screenshots, TikTok videos, and Telegram voice notes.
           </p>
         </div>
         <button
           onClick={openNew}
-          className="flex items-center px-4 py-2.5 bg-brand-blue text-white rounded-xl shadow-md hover:bg-blue-800 transition-colors text-sm font-medium"
+          className="flex items-center px-4 py-2 bg-slate-900 text-white rounded-lg shadow-xs hover:bg-slate-800 transition-all text-xs font-semibold"
         >
-          <Plus className="w-4 h-4 mr-2" /> Add Story
+          <Plus className="w-4 h-4 mr-1.5" /> Add Story
         </button>
       </div>
 
+      {/* Overview-style KPI Metric Summary Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="bg-white border border-slate-200/80 rounded-xl p-4 shadow-xs hover:border-slate-300 transition-all">
+          <div className="flex items-center justify-between">
+            <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Total Testimonials</p>
+            <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-blue-50 text-brand-blue border border-blue-200/60">Alumni</span>
+          </div>
+          <div className="mt-1 flex items-baseline gap-2">
+            <span className="text-2xl font-bold text-slate-900 tracking-tight">{stories.length}</span>
+            <span className="text-xs text-slate-400 font-medium">stories</span>
+          </div>
+        </div>
+
+        <div className="bg-white border border-slate-200/80 rounded-xl p-4 shadow-xs hover:border-slate-300 transition-all">
+          <div className="flex items-center justify-between">
+            <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Published Live</p>
+            <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200/60">Public</span>
+          </div>
+          <div className="mt-1 flex items-baseline gap-2">
+            <span className="text-2xl font-bold text-slate-900 tracking-tight">{totalPublishedStories}</span>
+            <span className="text-xs text-slate-400 font-medium">visible to students</span>
+          </div>
+        </div>
+
+        <div className="bg-white border border-slate-200/80 rounded-xl p-4 shadow-xs hover:border-slate-300 transition-all">
+          <div className="flex items-center justify-between">
+            <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Social Evidence</p>
+            <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-purple-50 text-purple-700 border border-purple-200/60">Verified</span>
+          </div>
+          <div className="mt-1 flex items-baseline gap-2">
+            <span className="text-2xl font-bold text-slate-900 tracking-tight">{totalWithEvidence}</span>
+            <span className="text-xs text-slate-400 font-medium">with media proof</span>
+          </div>
+        </div>
+      </div>
+
       {loading ? (
-        <div className="text-center text-gray-400 py-16">Loading…</div>
+        <div className="text-center text-slate-400 py-16 text-xs">Loading…</div>
       ) : stories.length === 0 ? (
-        <div className="text-center text-gray-500 py-16 border border-dashed rounded-2xl bg-white">
-          No success stories yet. Click "Add Story" to create the first one.
+        <div className="text-center text-slate-500 py-16 border border-dashed border-slate-200 rounded-xl bg-white text-xs">
+          No success stories yet. Click &quot;Add Story&quot; to create the first one.
         </div>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2">
           {stories.map(s => (
-            <div key={s.id} className="bg-white rounded-2xl border border-gray-200 p-5 flex flex-col justify-between shadow-2xs hover:shadow-xs transition-shadow">
+            <div key={s.id} className="bg-white rounded-xl border border-slate-200/80 p-5 flex flex-col justify-between shadow-xs hover:border-slate-300 transition-all">
               <div>
                 <div className="flex justify-between items-start gap-2">
                   <div>
-                    <p className="font-bold text-gray-900 text-base">{s.student_name}</p>
-                    <p className="text-xs text-gray-500 mt-0.5">
+                    <p className="font-bold text-slate-900 text-sm">{s.student_name}</p>
+                    <p className="text-[11px] text-slate-500 mt-0.5 font-medium">
                       {s.scholarship_name}{s.year ? ` · ${s.year}` : ''}{s.country ? ` · ${s.country_flag || '🌍'} ${s.country}` : ''}
                     </p>
                   </div>
-                  <span className={`text-xs font-semibold px-2.5 py-0.5 rounded-full ${s.is_published ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+                  <span className={`text-[10px] font-semibold px-2.5 py-0.5 rounded-full ${s.is_published ? 'bg-emerald-50 text-emerald-700 border border-emerald-200/60' : 'bg-slate-100 text-slate-600 border border-slate-200'}`}>
                     {s.is_published ? 'Published' : 'Hidden'}
                   </span>
                 </div>
 
-                <p className="mt-3 text-sm text-gray-800 italic bg-gray-50 p-3 rounded-xl border border-gray-100">
+                <p className="mt-3 text-xs sm:text-sm text-slate-800 italic bg-slate-50/70 p-3 rounded-xl border border-slate-200/60 leading-relaxed">
                   “{s.quote}”
                 </p>
 
                 {s.story && (
-                  <p className="mt-2 text-xs text-gray-600 line-clamp-2">
+                  <p className="mt-2 text-xs text-slate-600 line-clamp-2 leading-relaxed">
                     {s.story}
                   </p>
                 )}
 
                 {/* Media Badges & Previews */}
-                <div className="flex flex-wrap gap-2 mt-3 pt-2 border-t border-gray-100">
+                <div className="flex flex-wrap gap-2 mt-3 pt-2 border-t border-slate-100">
                   {s.screenshot_url && (
                     <a
                       href={s.screenshot_url}
                       target="_blank"
                       rel="noreferrer"
-                      className="inline-flex items-center gap-1 px-2.5 py-1 text-xs bg-purple-50 text-purple-700 rounded-lg border border-purple-200 font-medium hover:bg-purple-100"
+                      className="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] bg-purple-50 text-purple-700 rounded-xl border border-purple-200 font-semibold hover:bg-purple-100 transition-colors"
                     >
                       <ImageIcon className="w-3.5 h-3.5" />
                       <span>DM Screenshot</span>
@@ -249,7 +289,7 @@ export default function SuccessStoriesPage() {
                       href={s.video_url}
                       target="_blank"
                       rel="noreferrer"
-                      className="inline-flex items-center gap-1 px-2.5 py-1 text-xs bg-rose-50 text-rose-700 rounded-lg border border-rose-200 font-medium hover:bg-rose-100"
+                      className="inline-flex items-center gap-1 px-2.5 py-1 text-[11px] bg-rose-50 text-rose-700 rounded-xl border border-rose-200 font-semibold hover:bg-rose-100 transition-colors"
                     >
                       <Video className="w-3.5 h-3.5" />
                       <span>TikTok / Video</span>
@@ -303,218 +343,218 @@ export default function SuccessStoriesPage() {
 
       {/* Modal Form */}
       {isFormOpen && editing && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl w-full max-w-xl max-h-[92vh] overflow-y-auto p-6 shadow-2xl border border-gray-100">
-            <h2 className="text-xl font-bold text-gray-900 mb-1">
-              {editing.id ? 'Edit Success Story' : 'Add Success Story'}
-            </h2>
-            <p className="text-xs text-gray-500 mb-4">
-              Add student background, message screenshots, and TikTok/Telegram media links
-            </p>
+              <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+                <div className="bg-white rounded-xl w-full max-w-xl max-h-[92vh] overflow-y-auto p-6 shadow-xl border border-slate-200/80">
+                  <h2 className="text-base font-bold text-slate-900 mb-1">
+                    {editing.id ? 'Edit Success Story' : 'Add Success Story'}
+                  </h2>
+                    <p className="text-xs text-slate-500 mb-4">
+                      Add student background, message screenshots, and TikTok/Telegram media links
+                    </p>
 
-            <div className="space-y-4">
-              <Input label="Student Name *" placeholder="e.g. Samuel Bekele" value={editing.student_name || ''} onChange={v => field('student_name', v)} />
-              <Input label="Scholarship Name *" placeholder="e.g. DAAD Helmut-Schmidt Programme" value={editing.scholarship_name || ''} onChange={v => field('scholarship_name', v)} />
+                    <div className="space-y-4">
+                      <Input label="Student Name *" placeholder="e.g. Samuel Bekele" value={editing.student_name || ''} onChange={v => field('student_name', v)} />
+                      <Input label="Scholarship Name *" placeholder="e.g. DAAD Helmut-Schmidt Programme" value={editing.scholarship_name || ''} onChange={v => field('scholarship_name', v)} />
 
-              <div className="grid grid-cols-3 gap-3">
-                <Input label="Study Destination Country" placeholder="e.g. Germany" value={editing.country || ''} onChange={v => field('country', v)} />
-                <Input label="Country Flag" placeholder="e.g. 🇩🇪" value={editing.country_flag || ''} onChange={v => field('country_flag', v)} />
-                <Input label="Award Year" type="number" placeholder="2027" value={editing.year != null ? String(editing.year) : ''} onChange={v => field('year', v)} />
-              </div>
-
-              <Textarea label="Student Quote / Key Takeaway *" placeholder="“Eagle Pathway transformed my SOP and guided me every step of the way...”" value={editing.quote || ''} onChange={v => field('quote', v)} rows={2} />
-              <Textarea label="Full Success Story (Optional)" placeholder="Detailed student narrative, journey, and advice for future applicants..." value={editing.story || ''} onChange={v => field('story', v)} rows={3} />
-
-              {/* RICH MEDIA SECTION */}
-              <div className="p-4 bg-gray-50 rounded-xl border border-gray-200 space-y-4">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-xs font-bold text-gray-900 uppercase tracking-wider flex items-center gap-1.5">
-                    <span>Evidence & Social Proof Links</span>
-                  </h3>
-                  <span className="text-[10px] text-brand-blue font-semibold bg-blue-50 px-2 py-0.5 rounded-full">
-                    Zero Video Storage Used
-                  </span>
-                </div>
-
-                {/* 1. Message Screenshot (DM) */}
-                <div>
-                  <label className="block text-xs font-semibold text-gray-700 mb-1 flex items-center gap-1">
-                    <ImageIcon className="w-3.5 h-3.5 text-purple-600" />
-                    <span>Screenshot of Message / DM (Image)</span>
-                  </label>
-
-                  <div className="flex gap-2 items-center">
-                    <input
-                      type="file"
-                      ref={fileInputRef}
-                      accept="image/*"
-                      onChange={handleImageUpload}
-                      className="hidden"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => fileInputRef.current?.click()}
-                      disabled={uploadingImage}
-                      className="px-3 py-2 text-xs font-medium bg-white border border-gray-300 rounded-lg hover:bg-gray-50 flex items-center gap-1.5 shadow-2xs cursor-pointer"
-                    >
-                      <Upload className="w-3.5 h-3.5 text-gray-600" />
-                      <span>{uploadingImage ? 'Uploading...' : 'Upload Image'}</span>
-                    </button>
-                    <input
-                      type="url"
-                      placeholder="Or paste screenshot image URL..."
-                      value={editing.screenshot_url || ''}
-                      onChange={e => field('screenshot_url', e.target.value)}
-                      className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-xs bg-white focus:ring-1 focus:ring-brand-blue focus:outline-none"
-                    />
-                  </div>
-
-                  {editing.screenshot_url && (
-                    <div className="mt-2 flex items-center gap-2 p-2 bg-white rounded-lg border border-gray-200">
-                      <img
-                        src={editing.screenshot_url}
-                        alt="Screenshot Preview"
-                        className="w-12 h-12 object-cover rounded border"
-                      />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-[11px] font-semibold text-gray-800 truncate">Screenshot Attached</p>
-                        <a
-                          href={editing.screenshot_url}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="text-[10px] text-brand-blue hover:underline flex items-center gap-0.5"
-                        >
-                          <span>View Full Image</span>
-                          <ExternalLink className="w-2.5 h-2.5" />
-                        </a>
+                      <div className="grid grid-cols-3 gap-3">
+                        <Input label="Study Destination Country" placeholder="e.g. Germany" value={editing.country || ''} onChange={v => field('country', v)} />
+                        <Input label="Country Flag" placeholder="e.g. 🇩🇪" value={editing.country_flag || ''} onChange={v => field('country_flag', v)} />
+                        <Input label="Award Year" type="number" placeholder="2027" value={editing.year != null ? String(editing.year) : ''} onChange={v => field('year', v)} />
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => field('screenshot_url', '')}
-                        className="text-xs text-red-500 hover:text-red-700 font-bold px-2"
-                      >
-                        Remove
-                      </button>
+
+                      <Textarea label="Student Quote / Key Takeaway *" placeholder="“Eagle Pathway transformed my SOP and guided me every step of the way...”" value={editing.quote || ''} onChange={v => field('quote', v)} rows={2} />
+                      <Textarea label="Full Success Story (Optional)" placeholder="Detailed student narrative, journey, and advice for future applicants..." value={editing.story || ''} onChange={v => field('story', v)} rows={3} />
+
+                      {/* RICH MEDIA SECTION */}
+                      <div className="p-4 bg-gray-50 rounded-xl border border-gray-200 space-y-4">
+                        <div className="flex items-center justify-between">
+                          <h3 className="text-xs font-bold text-gray-900 uppercase tracking-wider flex items-center gap-1.5">
+                            <span>Evidence & Social Proof Links</span>
+                          </h3>
+                          <span className="text-[10px] text-brand-blue font-semibold bg-blue-50 px-2 py-0.5 rounded-full">
+                            Zero Video Storage Used
+                          </span>
+                        </div>
+
+                        {/* 1. Message Screenshot (DM) */}
+                        <div>
+                          <label className="block text-xs font-semibold text-gray-700 mb-1 flex items-center gap-1">
+                            <ImageIcon className="w-3.5 h-3.5 text-purple-600" />
+                            <span>Screenshot of Message / DM (Image)</span>
+                          </label>
+
+                          <div className="flex gap-2 items-center">
+                            <input
+                              type="file"
+                              ref={fileInputRef}
+                              accept="image/*"
+                              onChange={handleImageUpload}
+                              className="hidden"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => fileInputRef.current?.click()}
+                              disabled={uploadingImage}
+                              className="px-3 py-2 text-xs font-medium bg-white border border-gray-300 rounded-lg hover:bg-gray-50 flex items-center gap-1.5 shadow-2xs cursor-pointer"
+                            >
+                              <Upload className="w-3.5 h-3.5 text-gray-600" />
+                              <span>{uploadingImage ? 'Uploading...' : 'Upload Image'}</span>
+                            </button>
+                            <input
+                              type="url"
+                              placeholder="Or paste screenshot image URL..."
+                              value={editing.screenshot_url || ''}
+                              onChange={e => field('screenshot_url', e.target.value)}
+                              className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-xs bg-white focus:ring-1 focus:ring-brand-blue focus:outline-none"
+                            />
+                          </div>
+
+                          {editing.screenshot_url && (
+                            <div className="mt-2 flex items-center gap-2 p-2 bg-white rounded-lg border border-gray-200">
+                              <img
+                                src={editing.screenshot_url}
+                                alt="Screenshot Preview"
+                                className="w-12 h-12 object-cover rounded border"
+                              />
+                              <div className="flex-1 min-w-0">
+                                <p className="text-[11px] font-semibold text-gray-800 truncate">Screenshot Attached</p>
+                                <a
+                                  href={editing.screenshot_url}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="text-[10px] text-brand-blue hover:underline flex items-center gap-0.5"
+                                >
+                                  <span>View Full Image</span>
+                                  <ExternalLink className="w-2.5 h-2.5" />
+                                </a>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => field('screenshot_url', '')}
+                                className="text-xs text-red-500 hover:text-red-700 font-bold px-2"
+                              >
+                                Remove
+                              </button>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* 2. TikTok / Video Link */}
+                        <div>
+                          <label className="block text-xs font-semibold text-gray-700 mb-1 flex items-center justify-between">
+                            <span className="flex items-center gap-1">
+                              <Video className="w-3.5 h-3.5 text-rose-600" />
+                              <span>Video Link (TikTok / YouTube / Reel)</span>
+                            </span>
+                            {editing.video_url && (
+                              <a
+                                href={editing.video_url}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="text-[10px] text-rose-600 font-semibold hover:underline flex items-center gap-0.5"
+                              >
+                                <Play className="w-2.5 h-2.5" /> Test Video
+                              </a>
+                            )}
+                          </label>
+                          <input
+                            type="url"
+                            placeholder="https://www.tiktok.com/@eaglespathway/video/... or YouTube link"
+                            value={editing.video_url || ''}
+                            onChange={e => field('video_url', e.target.value)}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-xs bg-white focus:ring-1 focus:ring-brand-blue focus:outline-none"
+                          />
+                        </div>
+
+                        {/* 3. Telegram Voice Message / Post Link */}
+                        <div>
+                          <label className="block text-xs font-semibold text-gray-700 mb-1 flex items-center justify-between">
+                            <span className="flex items-center gap-1">
+                              <Mic className="w-3.5 h-3.5 text-sky-600" />
+                              <span>Voice Message / Telegram Post Link</span>
+                            </span>
+                            {editing.telegram_voice_url && (
+                              <a
+                                href={editing.telegram_voice_url}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="text-[10px] text-sky-600 font-semibold hover:underline flex items-center gap-0.5"
+                              >
+                                <Send className="w-2.5 h-2.5" /> Test Link
+                              </a>
+                            )}
+                          </label>
+                          <input
+                            type="url"
+                            placeholder="https://t.me/eaglepathway/123 (Voice note or message link)"
+                            value={editing.telegram_voice_url || ''}
+                            onChange={e => field('telegram_voice_url', e.target.value)}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-xs bg-white focus:ring-1 focus:ring-brand-blue focus:outline-none"
+                          />
+                        </div>
+                      </div>
+
+                      <label className="flex items-center gap-2 text-xs font-semibold text-gray-800 cursor-pointer pt-1">
+                        <input
+                          type="checkbox"
+                          checked={editing.is_published ?? true}
+                          onChange={e => field('is_published', e.target.checked)}
+                          className="rounded text-brand-blue"
+                        />
+                        <span>Published (Visible to students in the mobile app)</span>
+                      </label>
                     </div>
-                  )}
+
+                      <div className="flex gap-2 mt-6 pt-3 border-t border-slate-200/80">
+                        <button
+                          type="button"
+                          onClick={() => { setIsFormOpen(false); setEditing(null); }}
+                          className="flex-1 py-2 rounded-lg border border-slate-200 text-slate-600 text-xs font-semibold hover:bg-slate-50 transition-colors"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          type="button"
+                          onClick={save}
+                          disabled={saving || uploadingImage}
+                          className="flex-1 py-2 rounded-lg bg-slate-900 text-white text-xs font-semibold hover:bg-slate-800 disabled:opacity-60 shadow-xs transition-colors"
+                        >
+                          {saving ? 'Saving…' : 'Save Story'}
+                        </button>
+                      </div>
+                    </div>
                 </div>
-
-                {/* 2. TikTok / Video Link */}
-                <div>
-                  <label className="block text-xs font-semibold text-gray-700 mb-1 flex items-center justify-between">
-                    <span className="flex items-center gap-1">
-                      <Video className="w-3.5 h-3.5 text-rose-600" />
-                      <span>Video Link (TikTok / YouTube / Reel)</span>
-                    </span>
-                    {editing.video_url && (
-                      <a
-                        href={editing.video_url}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="text-[10px] text-rose-600 font-semibold hover:underline flex items-center gap-0.5"
-                      >
-                        <Play className="w-2.5 h-2.5" /> Test Video
-                      </a>
-                    )}
-                  </label>
-                  <input
-                    type="url"
-                    placeholder="https://www.tiktok.com/@eaglespathway/video/... or YouTube link"
-                    value={editing.video_url || ''}
-                    onChange={e => field('video_url', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-xs bg-white focus:ring-1 focus:ring-brand-blue focus:outline-none"
-                  />
-                </div>
-
-                {/* 3. Telegram Voice Message / Post Link */}
-                <div>
-                  <label className="block text-xs font-semibold text-gray-700 mb-1 flex items-center justify-between">
-                    <span className="flex items-center gap-1">
-                      <Mic className="w-3.5 h-3.5 text-sky-600" />
-                      <span>Voice Message / Telegram Post Link</span>
-                    </span>
-                    {editing.telegram_voice_url && (
-                      <a
-                        href={editing.telegram_voice_url}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="text-[10px] text-sky-600 font-semibold hover:underline flex items-center gap-0.5"
-                      >
-                        <Send className="w-2.5 h-2.5" /> Test Link
-                      </a>
-                    )}
-                  </label>
-                  <input
-                    type="url"
-                    placeholder="https://t.me/eaglepathway/123 (Voice note or message link)"
-                    value={editing.telegram_voice_url || ''}
-                    onChange={e => field('telegram_voice_url', e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-xs bg-white focus:ring-1 focus:ring-brand-blue focus:outline-none"
-                  />
-                </div>
-              </div>
-
-              <label className="flex items-center gap-2 text-xs font-semibold text-gray-800 cursor-pointer pt-1">
-                <input
-                  type="checkbox"
-                  checked={editing.is_published ?? true}
-                  onChange={e => field('is_published', e.target.checked)}
-                  className="rounded text-brand-blue"
-                />
-                <span>Published (Visible to students in the mobile app)</span>
-              </label>
-            </div>
-
-            <div className="flex gap-2 mt-6 pt-3 border-t border-gray-100">
-              <button
-                type="button"
-                onClick={() => { setIsFormOpen(false); setEditing(null); }}
-                className="flex-1 py-2.5 rounded-xl border border-gray-300 text-gray-700 text-xs font-semibold hover:bg-gray-50"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={save}
-                disabled={saving || uploadingImage}
-                className="flex-1 py-2.5 rounded-xl bg-brand-blue text-white text-xs font-semibold hover:bg-blue-800 disabled:opacity-60 shadow-xs"
-              >
-                {saving ? 'Saving…' : 'Save Story'}
-              </button>
-            </div>
-          </div>
-        </div>
       )}
-    </div>
-  );
+              </div>
+              );
 }
 
-function Input({ label, value, onChange, placeholder = '', type = 'text' }: { label: string; value: string; onChange: (v: string) => void; placeholder?: string; type?: string }) {
+              function Input({label, value, onChange, placeholder = '', type = 'text'}: {label: string; value: string; onChange: (v: string) => void; placeholder?: string; type?: string }) {
   return (
-    <div>
-      <label className="block text-xs font-semibold text-gray-700 mb-1">{label}</label>
-      <input
-        type={type}
-        placeholder={placeholder}
-        value={value}
-        onChange={e => onChange(e.target.value)}
-        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-xs focus:ring-1 focus:ring-brand-blue focus:outline-none"
-      />
-    </div>
-  );
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">{label}</label>
+                <input
+                  type={type}
+                  placeholder={placeholder}
+                  value={value}
+                  onChange={e => onChange(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-xs focus:ring-1 focus:ring-brand-blue focus:outline-none"
+                />
+              </div>
+              );
 }
 
-function Textarea({ label, value, onChange, placeholder = '', rows = 2 }: { label: string; value: string; onChange: (v: string) => void; placeholder?: string; rows?: number }) {
+              function Textarea({label, value, onChange, placeholder = '', rows = 2}: {label: string; value: string; onChange: (v: string) => void; placeholder?: string; rows?: number }) {
   return (
-    <div>
-      <label className="block text-xs font-semibold text-gray-700 mb-1">{label}</label>
-      <textarea
-        placeholder={placeholder}
-        value={value}
-        onChange={e => onChange(e.target.value)}
-        rows={rows}
-        className="w-full px-3 py-2 border border-gray-300 rounded-lg text-xs focus:ring-1 focus:ring-brand-blue focus:outline-none"
-      />
-    </div>
-  );
+              <div>
+                <label className="block text-xs font-semibold text-gray-700 mb-1">{label}</label>
+                <textarea
+                  placeholder={placeholder}
+                  value={value}
+                  onChange={e => onChange(e.target.value)}
+                  rows={rows}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-xs focus:ring-1 focus:ring-brand-blue focus:outline-none"
+                />
+              </div>
+              );
 }

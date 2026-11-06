@@ -67,9 +67,9 @@ export default function PortalLayout({
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#F8FAFC]">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50/50">
         <div className="flex flex-col items-center gap-3">
-          <div className="w-12 h-12 rounded-full border-4 border-[#0B2A5B]/20 border-t-[#0B2A5B] animate-spin" />
+          <div className="w-10 h-10 rounded-full border-4 border-brand-blue/20 border-t-brand-blue animate-spin" />
           <p className="text-xs font-semibold text-slate-500 tracking-wide">
             Loading Eagle Pathway...
           </p>
@@ -79,7 +79,7 @@ export default function PortalLayout({
   }
 
   return (
-    <div className="flex h-screen overflow-hidden bg-[#F8FAFC]">
+    <div className="flex h-screen overflow-hidden bg-gray-50/50 text-gray-900">
       {/* Desktop Left Sidebar */}
       <Sidebar unreadMessages={unreadMsgCount} />
 
@@ -97,8 +97,8 @@ export default function PortalLayout({
           unreadNotifications={unreadNotifCount}
         />
 
-        <main className="flex-1 overflow-y-auto px-4 py-6 md:px-8 md:py-8">
-          <div className="max-w-7xl mx-auto w-full">{children}</div>
+        <main className="flex-1 overflow-y-auto px-6 py-6 md:px-10 md:py-8 bg-gray-50/50">
+          <div className="max-w-6xl mx-auto w-full">{children}</div>
         </main>
       </div>
     </div>

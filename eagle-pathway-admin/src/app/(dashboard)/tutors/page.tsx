@@ -82,7 +82,7 @@ export default function TutorsPage() {
 
     if (!error && tutorProfiles) {
       const existingUserIds = new Set(tutorProfiles.map((t: any) => t.user_id));
-      const tutorUsersList = (tutorUsers || []).filter(u => 
+      const tutorUsersList = (tutorUsers || []).filter(u =>
         u.role === 'tutor' || u.active_role === 'tutor' || (Array.isArray(u.roles) && u.roles.includes('tutor'))
       );
       const missingUsers = tutorUsersList.filter(u => !existingUserIds.has(u.id));
@@ -236,8 +236,8 @@ export default function TutorsPage() {
       .from('tutor_applications')
       .update({ status: 'pending', rejection_reason: null, rejection_reason_category: null, reviewed_by: null, reviewed_at: null })
       .eq('id', app.id);
-    if (error) { showToast('error', 'Failed to reset'); } else { 
-      showToast('success', 'Ready for re-review'); 
+    if (error) { showToast('error', 'Failed to reset'); } else {
+      showToast('success', 'Ready for re-review');
       window.dispatchEvent(new Event('tutor_count_updated'));
     }
     await fetchTutorApplications();
@@ -275,193 +275,255 @@ export default function TutorsPage() {
 
   const statusBadge = (status: string) => {
     const map: Record<string, { cls: string; label: string }> = {
-      pending: { cls: 'bg-amber-50 text-amber-700', label: 'Pending' },
-      approved: { cls: 'bg-green-50 text-green-700', label: 'Approved' },
-      rejected: { cls: 'bg-red-50 text-red-700', label: 'Rejected' },
+      pending: { cls: 'bg-amber-50 text-amber-700 border border-amber-200/60', label: 'Pending' },
+      approved: { cls: 'bg-emerald-50 text-emerald-700 border border-emerald-200/60', label: 'Approved' },
+      rejected: { cls: 'bg-rose-50 text-rose-700 border border-rose-200/60', label: 'Rejected' },
     };
-    const s = map[status] || { cls: 'bg-gray-50 text-gray-600', label: status };
-    return <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${s.cls}`}>{s.label}</span>;
+    const s = map[status] || { cls: 'bg-slate-50 text-slate-600 border border-slate-200/60', label: status };
+    return <span className={`px-2.5 py-0.5 rounded-full text-[11px] font-semibold ${s.cls}`}>{s.label}</span>;
   };
 
+  const totalTutorsCount = tutors.length;
+  const verifiedTutorsCount = tutors.filter(t => t.is_verified).length;
+  const pendingAppsCount = tutorApps.filter(a => a.status === 'pending').length;
+  const rejectedAppsCount = tutorApps.filter(a => a.status === 'rejected').length;
+
   return (
-    <div className="space-y-6 animate-in fade-in duration-500">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+    <div className="space-y-6 animate-in fade-in duration-200">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-200/80 pb-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Tutor Approvals</h1>
-          <p className="mt-1 text-sm text-gray-500">Verify tutor profiles and manage tutor applications</p>
+          <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Tutor Network</p>
+          <h1 className="text-xl md:text-2xl font-bold text-slate-900 tracking-tight">Tutor Approvals &amp; Applications</h1>
+          <p className="text-xs text-slate-500 mt-1">Verify educator profiles, inspect academic credentials, and manage onboarding applications.</p>
         </div>
       </div>
 
-      <div className="flex gap-1 bg-gray-100 p-1 rounded-xl w-max">
+      {/* Overview-style KPI Metric Summary Cards */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="bg-white border border-slate-200/80 rounded-xl p-4 shadow-xs hover:border-slate-300 transition-all">
+          <div className="flex items-center justify-between">
+            <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Total Tutors</p>
+            <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-blue-50 text-brand-blue border border-blue-200/60">Faculty</span>
+          </div>
+          <div className="mt-1 flex items-baseline gap-2">
+            <span className="text-2xl font-bold text-slate-900 tracking-tight">{totalTutorsCount}</span>
+            <span className="text-xs text-slate-400 font-medium">registered</span>
+          </div>
+        </div>
+
+        <div className="bg-white border border-slate-200/80 rounded-xl p-4 shadow-xs hover:border-slate-300 transition-all">
+          <div className="flex items-center justify-between">
+            <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Verified Tutors</p>
+            <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200/60">Verified</span>
+          </div>
+          <div className="mt-1 flex items-baseline gap-2">
+            <span className="text-2xl font-bold text-slate-900 tracking-tight">{verifiedTutorsCount}</span>
+            <span className="text-xs text-slate-400 font-medium">active teaching</span>
+          </div>
+        </div>
+
+        <div className="bg-white border border-slate-200/80 rounded-xl p-4 shadow-xs hover:border-slate-300 transition-all">
+          <div className="flex items-center justify-between">
+            <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Pending Review</p>
+            <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${pendingAppsCount > 0 ? 'bg-amber-50 text-amber-700 border border-amber-200/60' : 'bg-slate-100 text-slate-600'}`}>
+              {pendingAppsCount > 0 ? 'Action Req' : 'Clear'}
+            </span>
+          </div>
+          <div className="mt-1 flex items-baseline gap-2">
+            <span className="text-2xl font-bold text-slate-900 tracking-tight">{pendingAppsCount}</span>
+            <span className="text-xs text-slate-400 font-medium">dossiers</span>
+          </div>
+        </div>
+
+        <div className="bg-white border border-slate-200/80 rounded-xl p-4 shadow-xs hover:border-slate-300 transition-all">
+          <div className="flex items-center justify-between">
+            <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Rejected</p>
+            <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-rose-50 text-rose-700 border border-rose-200/60">Filtered</span>
+          </div>
+          <div className="mt-1 flex items-baseline gap-2">
+            <span className="text-2xl font-bold text-slate-900 tracking-tight">{rejectedAppsCount}</span>
+            <span className="text-xs text-slate-400 font-medium">unapproved</span>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex gap-1.5 bg-slate-100 p-1 rounded-xl w-max border border-slate-200/70">
         <button
           onClick={() => { setActiveTab('profiles'); setCurrentPage(1); }}
-          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${activeTab === 'profiles' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+          className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${activeTab === 'profiles' ? 'bg-slate-900 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
+            }`}
         >
           Tutor Profiles
         </button>
         <button
           onClick={() => { setActiveTab('applications'); setCurrentPage(1); }}
-          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${activeTab === 'applications' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+          className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all ${activeTab === 'applications' ? 'bg-slate-900 text-white shadow-xs' : 'text-slate-600 hover:text-slate-900'
+            }`}
         >
-          Tutor Applications
+          Tutor Applications {pendingAppsCount > 0 && `(${pendingAppsCount})`}
         </button>
       </div>
 
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-        <div className="p-4 border-b border-gray-100 bg-gray-50/50 flex items-center gap-4">
+      <div className="bg-white rounded-xl shadow-xs border border-slate-200/80 overflow-hidden">
+        <div className="p-4 border-b border-slate-200/80 bg-slate-50/50 flex items-center justify-between gap-4">
           <div className="relative w-full max-w-md">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <Search className="h-4 w-4 text-gray-400" />
+              <Search className="h-4 w-4 text-slate-400" />
             </div>
-            <input type="text" placeholder="Search by name or phone..." value={search}
+            <input
+              type="text"
+              placeholder="Search by name or phone..."
+              value={search}
               onChange={(e) => { setSearch(e.target.value); setCurrentPage(1); }}
-              className="block w-full pl-10 pr-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-brand-blue focus:border-brand-blue" />
+              className="block w-full pl-9 pr-3 py-2 bg-white border border-slate-200 rounded-xl text-xs placeholder-slate-400 text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-blue/20 focus:border-brand-blue transition-all"
+            />
           </div>
           {activeTab === 'profiles' && (
-            <button onClick={() => exportToCSV(filteredTutors.map(t => ({ ID: t.user_id, Name: t.users?.full_name, Phone: t.users?.phone, Email: t.users?.email, Verified: t.is_verified, Rate: t.hourly_rate, Location: t.location })), 'tutors_export')}
-              className="flex items-center px-4 py-2 bg-white text-gray-700 border border-gray-200 rounded-lg shadow-sm hover:bg-gray-50 text-sm font-medium">
-              <Download className="w-4 h-4 mr-2 text-gray-500" /> Export CSV
+            <button
+              onClick={() => exportToCSV(filteredTutors.map(t => ({ ID: t.user_id, Name: t.users?.full_name, Phone: t.users?.phone, Email: t.users?.email, Verified: t.is_verified, Rate: t.hourly_rate, Location: t.location })), 'tutors_export')}
+              className="flex items-center px-3.5 py-2 bg-white text-slate-700 border border-slate-200 rounded-xl shadow-xs hover:bg-slate-50 transition-colors text-xs font-semibold whitespace-nowrap"
+            >
+              <Download className="w-3.5 h-3.5 mr-1.5 text-slate-500" /> Export CSV
             </button>
           )}
         </div>
 
         {activeTab === 'profiles' ? (
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
+            <table className="min-w-full divide-y divide-slate-100">
+              <thead className="bg-slate-50/70 border-b border-slate-200/80">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tutor Info</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Expertise & Rate</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Verification</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Documents</th>
-                  <th className="relative px-6 py-3"><span className="sr-only">Actions</span></th>
+                  <th className="px-5 py-3 text-left text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Tutor Info</th>
+                  <th className="px-5 py-3 text-left text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Expertise &amp; Rate</th>
+                  <th className="px-5 py-3 text-left text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Verification</th>
+                  <th className="px-5 py-3 text-left text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Documents</th>
+                  <th className="relative px-5 py-3 text-right"><span className="sr-only">Actions</span></th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="bg-white divide-y divide-slate-100">
                 {loading ? <TableSkeleton cols={5} rows={5} avatarCol={true} /> : filteredTutors.length === 0 ? (
-                  <tr><td colSpan={5} className="px-6 py-10 text-center text-sm text-gray-500">No tutors found.</td></tr>
+                  <tr><td colSpan={5} className="px-6 py-10 text-center text-xs text-slate-500">No tutors found.</td></tr>
                 ) : paginatedTutors.map((tutor) => {
                   const matchingApp = tutorApps.find(a => a.tutor_id === tutor.user_id);
                   return (
-                  <tr key={tutor.user_id} className="hover:bg-gray-50/50 transition-colors">
-                    <td className="px-6 py-4">
-                      <div className="flex items-center">
-                        <div className="h-10 w-10 flex-shrink-0 bg-blue-100 rounded-full flex items-center justify-center">
-                          <span className="text-brand-blue font-bold text-sm">{tutor.users?.full_name?.charAt(0) || '?'}</span>
+                    <tr key={tutor.user_id} className="hover:bg-slate-50/60 transition-colors">
+                      <td className="px-5 py-3.5 whitespace-nowrap">
+                        <div className="flex items-center">
+                          <div className="h-9 w-9 flex-shrink-0 bg-brand-gold/15 text-brand-gold ring-1 ring-brand-gold/30 rounded-full flex items-center justify-center font-bold text-xs">
+                            {tutor.users?.full_name?.charAt(0) || '?'}
+                          </div>
+                          <div className="ml-3">
+                            <div className="text-xs font-semibold text-slate-900">{tutor.users?.full_name || 'Unknown'}</div>
+                            <div className="text-[11px] text-slate-500 mt-0.5">{tutor.users?.phone || 'No phone'}</div>
+                          </div>
                         </div>
-                        <div className="ml-4">
-                          <div className="text-sm font-medium text-gray-900">{tutor.users?.full_name || 'Unknown'}</div>
-                          <div className="text-sm text-gray-500">{tutor.users?.phone || 'No phone'}</div>
+                      </td>
+                      <td className="px-5 py-3.5">
+                        <div className="text-xs text-slate-900 max-w-xs truncate font-medium">{tutor.subjects?.join(', ') || 'None'}</div>
+                        <div className="text-[11px] font-semibold text-brand-gold mt-0.5">{tutor.hourly_rate} ETB / hr</div>
+                      </td>
+                      <td className="px-5 py-3.5 whitespace-nowrap">
+                        {tutor.is_verified ? (
+                          <div className="flex items-center text-emerald-700 bg-emerald-50 border border-emerald-200/60 px-2.5 py-0.5 rounded-full text-[11px] font-semibold w-max">
+                            <Shield className="w-3 h-3 mr-1" /> Verified
+                          </div>
+                        ) : (
+                          <div className="flex items-center text-amber-700 bg-amber-50 border border-amber-200/60 px-2.5 py-0.5 rounded-full text-[11px] font-semibold w-max">
+                            <ShieldAlert className="w-3 h-3 mr-1" /> Pending
+                          </div>
+                        )}
+                        <div className="text-[11px] text-slate-400 mt-1 flex items-center">
+                          <FileText className="w-3 h-3 mr-1" /> {tutor.education || 'No background'}
                         </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="text-sm text-gray-900 max-w-xs truncate">{tutor.subjects?.join(', ') || 'None'}</div>
-                      <div className="text-sm font-medium text-brand-gold mt-1">{tutor.hourly_rate} ETB / hr</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {tutor.is_verified ? (
-                        <div className="flex items-center text-green-700 bg-green-50 px-2.5 py-1 rounded-full text-xs font-medium w-max">
-                          <Shield className="w-3 h-3 mr-1" /> Verified
-                        </div>
-                      ) : (
-                        <div className="flex items-center text-amber-700 bg-amber-50 px-2.5 py-1 rounded-full text-xs font-medium w-max">
-                          <ShieldAlert className="w-3 h-3 mr-1" /> Pending
-                        </div>
-                      )}
-                      <div className="text-xs text-gray-400 mt-1 flex items-center">
-                        <FileText className="w-3 h-3 mr-1" /> {tutor.education || 'No background'}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {matchingApp ? (
-                        <div className="flex items-center space-x-1.5">
-                          {matchingApp.grade10_result_url && (
-                            <button
-                              onClick={() => loadSignedDoc(matchingApp.grade10_result_url, `${matchingApp.id}_g10`, `Grade 10 Result - ${tutor.users?.full_name}`, matchingApp)}
-                              className="px-2 py-1 bg-blue-50 hover:bg-blue-100 text-brand-blue text-[11px] font-semibold rounded border border-blue-200 transition-colors flex items-center"
-                            >
-                              <FileText className="w-3 h-3 mr-1" /> G10
-                            </button>
-                          )}
-                          {matchingApp.grade12_result_url && (
-                            <button
-                              onClick={() => loadSignedDoc(matchingApp.grade12_result_url, `${matchingApp.id}_g12`, `Grade 12 Result - ${tutor.users?.full_name}`, matchingApp)}
-                              className="px-2 py-1 bg-blue-50 hover:bg-blue-100 text-brand-blue text-[11px] font-semibold rounded border border-blue-200 transition-colors flex items-center"
-                            >
-                              <FileText className="w-3 h-3 mr-1" /> G12
-                            </button>
-                          )}
-                          {matchingApp.transcript_url && (
-                            <button
-                              onClick={() => loadSignedDoc(matchingApp.transcript_url, `${matchingApp.id}_trans`, `Transcript - ${tutor.users?.full_name}`, matchingApp)}
-                              className="px-2 py-1 bg-purple-50 hover:bg-purple-100 text-purple-700 text-[11px] font-semibold rounded border border-purple-200 transition-colors flex items-center"
-                            >
-                              <FileText className="w-3 h-3 mr-1" /> Transcript
-                            </button>
-                          )}
-                          {!matchingApp.grade10_result_url && !matchingApp.grade12_result_url && !matchingApp.transcript_url && (
-                            <span className="text-xs text-gray-400">No docs</span>
-                          )}
-                        </div>
-                      ) : (
-                        <span className="text-xs text-gray-400">No application</span>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right">
-                      <button onClick={() => toggleVerification(tutor.user_id, tutor.is_verified)}
-                        disabled={actionLoading === tutor.user_id}
-                        className={`inline-flex items-center px-4 py-2 rounded-lg text-sm font-medium border disabled:opacity-50 ${
-                          tutor.is_verified ? 'text-red-700 bg-red-50 border-red-200 hover:bg-red-100' : 'text-green-700 bg-green-50 border-green-200 hover:bg-green-100'
-                        }`}>
-                        {actionLoading === tutor.user_id ? 'Saving...' : tutor.is_verified ? 'Revoke' : 'Approve'}
-                      </button>
-                    </td>
-                  </tr>
-                );
+                      </td>
+                      <td className="px-5 py-3.5 whitespace-nowrap">
+                        {matchingApp ? (
+                          <div className="flex items-center space-x-1.5">
+                            {matchingApp.grade10_result_url && (
+                              <button
+                                onClick={() => loadSignedDoc(matchingApp.grade10_result_url, `${matchingApp.id}_g10`, `Grade 10 Result - ${tutor.users?.full_name}`, matchingApp)}
+                                className="px-2 py-0.5 bg-blue-50 hover:bg-blue-100 text-brand-blue text-[10px] font-semibold rounded-lg border border-blue-200/60 transition-colors flex items-center"
+                              >
+                                <FileText className="w-3 h-3 mr-1" /> G10
+                              </button>
+                            )}
+                            {matchingApp.grade12_result_url && (
+                              <button
+                                onClick={() => loadSignedDoc(matchingApp.grade12_result_url, `${matchingApp.id}_g12`, `Grade 12 Result - ${tutor.users?.full_name}`, matchingApp)}
+                                className="px-2 py-0.5 bg-blue-50 hover:bg-blue-100 text-brand-blue text-[10px] font-semibold rounded-lg border border-blue-200/60 transition-colors flex items-center"
+                              >
+                                <FileText className="w-3 h-3 mr-1" /> G12
+                              </button>
+                            )}
+                            {matchingApp.transcript_url && (
+                              <button
+                                onClick={() => loadSignedDoc(matchingApp.transcript_url, `${matchingApp.id}_trans`, `Transcript - ${tutor.users?.full_name}`, matchingApp)}
+                                className="px-2 py-0.5 bg-purple-50 hover:bg-purple-100 text-purple-700 text-[10px] font-semibold rounded-lg border border-purple-200/60 transition-colors flex items-center"
+                              >
+                                <FileText className="w-3 h-3 mr-1" /> Transcript
+                              </button>
+                            )}
+                            {!matchingApp.grade10_result_url && !matchingApp.grade12_result_url && !matchingApp.transcript_url && (
+                              <span className="text-[11px] text-slate-400">No docs</span>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-[11px] text-slate-400">No application</span>
+                        )}
+                      </td>
+                      <td className="px-5 py-3.5 whitespace-nowrap text-right">
+                        <button onClick={() => toggleVerification(tutor.user_id, tutor.is_verified)}
+                          disabled={actionLoading === tutor.user_id}
+                          className={`inline-flex items-center px-3.5 py-1.5 rounded-xl text-xs font-semibold border transition-all shadow-xs disabled:opacity-50 ${tutor.is_verified ? 'text-rose-700 bg-rose-50 border-rose-200/70 hover:bg-rose-100' : 'text-emerald-700 bg-emerald-50 border-emerald-200/70 hover:bg-emerald-100'
+                            }`}>
+                          {actionLoading === tutor.user_id ? 'Saving...' : tutor.is_verified ? 'Revoke' : 'Approve'}
+                        </button>
+                      </td>
+                    </tr>
+                  );
                 })}
               </tbody>
             </table>
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
+            <table className="min-w-full divide-y divide-slate-100">
+              <thead className="bg-slate-50/70 border-b border-slate-200/80">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tutor</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">University</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Contact</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
-                  <th className="relative px-6 py-3"><span className="sr-only">Actions</span></th>
+                  <th className="px-5 py-3 text-left text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Tutor</th>
+                  <th className="px-5 py-3 text-left text-[11px] font-semibold text-slate-500 uppercase tracking-wider">University</th>
+                  <th className="px-5 py-3 text-left text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Contact</th>
+                  <th className="px-5 py-3 text-left text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Status</th>
+                  <th className="px-5 py-3 text-left text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Date</th>
+                  <th className="relative px-5 py-3 text-right"><span className="sr-only">Actions</span></th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="bg-white divide-y divide-slate-100">
                 {loading ? <TableSkeleton cols={6} rows={5} avatarCol={true} /> : filteredApps.length === 0 ? (
-                  <tr><td colSpan={6} className="px-6 py-10 text-center text-sm text-gray-500">No tutor applications found.</td></tr>
+                  <tr><td colSpan={6} className="px-6 py-10 text-center text-xs text-slate-500">No tutor applications found.</td></tr>
                 ) : paginatedApps.map((app) => (
-                  <tr key={app.id} className="hover:bg-gray-50/50 transition-colors cursor-pointer" onClick={() => setSelectedApp(app)}>
-                    <td className="px-6 py-4">
+                  <tr key={app.id} className="hover:bg-slate-50/60 transition-colors cursor-pointer" onClick={() => setSelectedApp(app)}>
+                    <td className="px-5 py-3.5">
                       <div className="flex items-center">
-                        <div className="h-10 w-10 flex-shrink-0 bg-blue-100 rounded-full flex items-center justify-center">
-                          <span className="text-brand-blue font-bold text-sm">{app.tutor?.full_name?.charAt(0) || '?'}</span>
+                        <div className="h-9 w-9 flex-shrink-0 bg-brand-gold/15 text-brand-gold ring-1 ring-brand-gold/30 rounded-full flex items-center justify-center font-bold text-xs">
+                          {app.tutor?.full_name?.charAt(0) || '?'}
                         </div>
-                        <div className="ml-4">
-                          <div className="text-sm font-medium text-gray-900">{app.tutor?.full_name || 'Unknown'}</div>
+                        <div className="ml-3">
+                          <div className="text-xs font-semibold text-slate-900">{app.tutor?.full_name || 'Unknown'}</div>
                         </div>
                       </div>
                     </td>
-                    <td className="px-6 py-4 text-sm text-gray-600">{app.university_name || '-'}</td>
-                    <td className="px-6 py-4 text-sm text-gray-600">
+                    <td className="px-5 py-3.5 text-xs text-slate-600">{app.university_name || '-'}</td>
+                    <td className="px-5 py-3.5 text-xs text-slate-600">
                       <div>{app.phone_number || '-'}</div>
-                      {app.telegram_username && <div className="text-xs text-gray-400">@{app.telegram_username}</div>}
+                      {app.telegram_username && <div className="text-[11px] text-slate-400 font-medium">@{app.telegram_username}</div>}
                     </td>
-                    <td className="px-6 py-4">{statusBadge(app.status)}</td>
-                    <td className="px-6 py-4 text-sm text-gray-500 whitespace-nowrap">{new Date(app.created_at).toLocaleDateString()}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right">
+                    <td className="px-5 py-3.5">{statusBadge(app.status)}</td>
+                    <td className="px-5 py-3.5 text-xs text-slate-500 whitespace-nowrap">{new Date(app.created_at).toLocaleDateString()}</td>
+                    <td className="px-5 py-3.5 whitespace-nowrap text-right">
                       <button onClick={(e) => { e.stopPropagation(); setSelectedApp(app); }}
-                        className="inline-flex items-center px-3 py-1.5 text-xs font-medium text-brand-blue bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100">
-                        <Eye className="w-3 h-3 mr-1" /> View
+                        className="inline-flex items-center px-3 py-1.5 text-xs font-semibold text-brand-blue bg-blue-50 border border-blue-200/60 rounded-xl hover:bg-blue-100 transition-colors shadow-2xs">
+                        <Eye className="w-3.5 h-3.5 mr-1" /> View
                       </button>
                     </td>
                   </tr>
@@ -473,27 +535,27 @@ export default function TutorsPage() {
 
         {/* Pagination Controls */}
         {!loading && currentList.length > 0 && (
-          <div className="px-6 py-4 border-t border-gray-100 bg-gray-50 flex items-center justify-between">
-            <div className="text-sm text-gray-500">
-              Showing <span className="font-medium text-gray-900">{(currentPage - 1) * itemsPerPage + 1}</span> to <span className="font-medium text-gray-900">{Math.min(currentPage * itemsPerPage, currentList.length)}</span> of <span className="font-medium text-gray-900">{currentList.length}</span> {activeTab === 'profiles' ? 'tutors' : 'applications'}
+          <div className="px-5 py-3.5 border-t border-slate-200/80 bg-slate-50/50 flex items-center justify-between text-xs">
+            <div className="text-slate-500">
+              Showing <span className="font-semibold text-slate-900">{(currentPage - 1) * itemsPerPage + 1}</span> to <span className="font-semibold text-slate-900">{Math.min(currentPage * itemsPerPage, currentList.length)}</span> of <span className="font-semibold text-slate-900">{currentList.length}</span> {activeTab === 'profiles' ? 'tutors' : 'applications'}
             </div>
-            <div className="flex items-center space-x-2">
-              <button 
+            <div className="flex items-center space-x-1.5">
+              <button
                 onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                 disabled={currentPage === 1}
-                className="p-1.5 rounded-lg border border-gray-200 text-gray-500 hover:bg-white hover:text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="p-1.5 rounded-xl border border-slate-200 text-slate-500 hover:bg-white hover:text-slate-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors shadow-2xs"
               >
-                <ChevronLeft className="w-5 h-5" />
+                <ChevronLeft className="w-4 h-4" />
               </button>
-              <div className="text-sm font-medium text-gray-700 mx-2">
+              <div className="text-xs font-semibold text-slate-700 px-2">
                 Page {currentPage} of {totalPages}
               </div>
-              <button 
+              <button
                 onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
                 disabled={currentPage === totalPages}
-                className="p-1.5 rounded-lg border border-gray-200 text-gray-500 hover:bg-white hover:text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="p-1.5 rounded-xl border border-slate-200 text-slate-500 hover:bg-white hover:text-slate-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors shadow-2xs"
               >
-                <ChevronRight className="w-5 h-5" />
+                <ChevronRight className="w-4 h-4" />
               </button>
             </div>
           </div>
@@ -555,9 +617,8 @@ export default function TutorsPage() {
                       <button
                         onClick={() => loadSignedDoc(doc.path, `${selectedApp.id}_${doc.key}`)}
                         disabled={!doc.path}
-                        className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium ${
-                          doc.path ? 'text-brand-blue bg-blue-50 hover:bg-blue-100 border border-blue-200' : 'text-gray-400 bg-gray-100 cursor-not-allowed'
-                        }`}
+                        className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-medium ${doc.path ? 'text-brand-blue bg-blue-50 hover:bg-blue-100 border border-blue-200' : 'text-gray-400 bg-gray-100 cursor-not-allowed'
+                          }`}
                       >
                         <FileText className="w-3 h-3" />
                         {doc.path ? 'View Document' : 'Not uploaded'}
@@ -625,9 +686,8 @@ export default function TutorsPage() {
             <div className="p-6 space-y-4">
               <p className="text-sm text-gray-500">Select a reason for rejection:</p>
               {REJECTION_CATEGORIES.map(cat => (
-                <label key={cat} className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
-                  rejectCategory === cat ? 'border-red-300 bg-red-50' : 'border-gray-200 hover:bg-gray-50'
-                }`}>
+                <label key={cat} className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${rejectCategory === cat ? 'border-red-300 bg-red-50' : 'border-gray-200 hover:bg-gray-50'
+                  }`}>
                   <input type="radio" name="rejectCategory" value={cat} checked={rejectCategory === cat}
                     onChange={e => setRejectCategory(e.target.value)} className="accent-red-600" />
                   <span className="text-sm">{cat}</span>

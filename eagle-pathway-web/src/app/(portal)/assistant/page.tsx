@@ -147,18 +147,18 @@ export default function AssistantPage() {
   };
 
   return (
-    <div className="h-[calc(100vh-140px)] flex flex-col bg-white rounded-3xl border border-slate-200/80 shadow-sm overflow-hidden animate-in fade-in duration-200">
+    <div className="h-[calc(100vh-140px)] flex flex-col bg-white rounded-xl border border-slate-200/80 shadow-xs overflow-hidden animate-in fade-in duration-200">
       {/* Header */}
-      <div className="h-16 border-b border-slate-100 px-6 flex items-center justify-between bg-white z-10 flex-shrink-0">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-[#0B2A5B] to-[#1E4D9B] text-[#C9A84C] flex items-center justify-center shadow-sm">
-            <Sparkles size={20} />
+      <div className="h-14 border-b border-gray-100 px-5 flex items-center justify-between bg-white z-10 flex-shrink-0">
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-full bg-brand-gold/20 text-brand-gold flex items-center justify-center font-bold">
+            <Sparkles size={16} />
           </div>
           <div>
-            <h2 className="text-sm font-bold text-slate-900 leading-tight">Eagle AI Advisor</h2>
+            <h2 className="text-xs font-bold text-slate-900 leading-tight">Eagle AI Advisor</h2>
             <div className="flex items-center gap-1.5 mt-0.5">
-              <span className="w-2 h-2 rounded-full bg-emerald-500" />
-              <span className="text-[11px] text-slate-500 font-medium">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+              <span className="text-[10px] text-slate-500 font-medium">
                 Admissions, Essays &amp; Tutoring Assistant
               </span>
             </div>
@@ -168,40 +168,40 @@ export default function AssistantPage() {
         <button
           onClick={handleClear}
           title="Clear Chat"
-          className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-colors"
+          className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
         >
-          <Trash2 size={16} />
+          <Trash2 size={15} />
         </button>
       </div>
 
       {/* Message List */}
-      <div className="flex-1 overflow-y-auto p-6 space-y-6">
+      <div className="flex-1 overflow-y-auto p-5 space-y-4">
         {messages.map((m) => {
           const isUser = m.role === 'user';
           return (
             <div
               key={m.id}
-              className={`flex gap-3.5 max-w-3xl ${isUser ? 'ml-auto flex-row-reverse' : ''}`}
+              className={`flex gap-3 max-w-3xl ${isUser ? 'ml-auto flex-row-reverse' : ''}`}
             >
               <div
-                className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 text-sm font-bold shadow-sm ${isUser
-                  ? 'bg-[#0B2A5B] text-white'
-                  : 'bg-[#C9A84C]/15 text-[#9A7B2C] border border-[#C9A84C]/30'
+                className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold ${isUser
+                  ? 'bg-brand-blue text-white'
+                  : 'bg-brand-gold/20 text-brand-gold'
                   }`}
               >
-                {isUser ? <User size={16} /> : <Bot size={18} />}
+                {isUser ? <User size={13} /> : <Bot size={14} />}
               </div>
 
               <div
-                className={`group relative rounded-2xl p-4.5 text-xs sm:text-sm leading-relaxed shadow-sm ${isUser
-                  ? 'bg-[#0B2A5B] text-white rounded-tr-none'
-                  : 'bg-slate-50 border border-slate-200/80 text-slate-800 rounded-tl-none whitespace-pre-line'
+                className={`group relative rounded-xl p-3.5 text-xs leading-relaxed shadow-xs ${isUser
+                  ? 'bg-brand-blue text-white rounded-tr-none'
+                  : 'bg-slate-50/80 border border-slate-200/70 text-slate-800 rounded-tl-none whitespace-pre-line'
                   }`}
               >
                 <div>{m.content}</div>
 
                 <div
-                  className={`flex items-center justify-between gap-3 mt-2 pt-1 text-[10px] ${isUser ? 'text-white/60' : 'text-slate-400'
+                  className={`flex items-center justify-between gap-3 mt-1.5 pt-1 text-[10px] ${isUser ? 'text-white/60' : 'text-slate-400'
                     }`}
                 >
                   <span>{m.timestamp}</span>
@@ -213,12 +213,12 @@ export default function AssistantPage() {
                     >
                       {copiedId === m.id ? (
                         <>
-                          <Check size={12} className="text-emerald-500" />
+                          <Check size={11} className="text-emerald-500" />
                           <span>Copied</span>
                         </>
                       ) : (
                         <>
-                          <Copy size={12} />
+                          <Copy size={11} />
                           <span>Copy</span>
                         </>
                       )}
@@ -231,12 +231,12 @@ export default function AssistantPage() {
         })}
 
         {loading && (
-          <div className="flex gap-3.5 max-w-3xl">
-            <div className="w-9 h-9 rounded-xl bg-[#C9A84C]/15 text-[#9A7B2C] border border-[#C9A84C]/30 flex items-center justify-center flex-shrink-0 shadow-sm">
-              <Bot size={18} />
+          <div className="flex gap-3 max-w-3xl">
+            <div className="w-7 h-7 rounded-full bg-brand-gold/20 text-brand-gold flex items-center justify-center flex-shrink-0">
+              <Bot size={14} />
             </div>
-            <div className="bg-slate-50 border border-slate-200/80 rounded-2xl rounded-tl-none p-4 flex items-center gap-2 text-xs text-slate-500 font-medium">
-              <Loader2 size={16} className="animate-spin text-[#C9A84C]" />
+            <div className="bg-slate-50 border border-slate-200/70 rounded-xl rounded-tl-none p-3 flex items-center gap-2 text-xs text-slate-500 font-medium">
+              <Loader2 size={14} className="animate-spin text-brand-gold" />
               <span>Eagle AI is thinking...</span>
             </div>
           </div>
@@ -247,8 +247,8 @@ export default function AssistantPage() {
 
       {/* Suggested Prompt Pills */}
       {messages.length <= 2 && (
-        <div className="px-6 py-2 border-t border-slate-100 flex items-center gap-2 overflow-x-auto bg-slate-50/50">
-          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider whitespace-nowrap">
+        <div className="px-5 py-2 border-t border-slate-100 flex items-center gap-1.5 overflow-x-auto bg-slate-50/40 scrollbar-none">
+          <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider whitespace-nowrap">
             Suggestions:
           </span>
           {PROMPT_PILLS.map((p, i) => {
@@ -257,9 +257,9 @@ export default function AssistantPage() {
               <button
                 key={i}
                 onClick={() => handleSend(p.prompt)}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white border border-slate-200 hover:border-[#0B2A5B]/40 hover:bg-slate-50 text-xs font-semibold text-slate-700 whitespace-nowrap transition-all shadow-2xs"
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white border border-slate-200 hover:border-brand-blue/30 hover:bg-slate-50 text-[11px] font-medium text-slate-700 whitespace-nowrap transition-all shadow-xs"
               >
-                <Icon size={13} className="text-[#0B2A5B]" />
+                <Icon size={12} className="text-brand-blue" />
                 <span>{p.label}</span>
               </button>
             );
@@ -268,31 +268,30 @@ export default function AssistantPage() {
       )}
 
       {/* Bottom Input Field */}
-      <div className="p-4 bg-white border-t border-slate-100 flex-shrink-0">
+      <div className="p-3.5 bg-white border-t border-slate-100 flex-shrink-0">
         <form
           onSubmit={(e) => {
             e.preventDefault();
             handleSend();
           }}
-          className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-2xl p-2 focus-within:ring-2 focus-within:ring-[#0B2A5B]/20 focus-within:border-[#0B2A5B] transition-all"
+          className="flex items-center gap-2 bg-slate-50 border border-slate-200 rounded-xl p-1.5 focus-within:ring-2 focus-within:ring-brand-blue/20 focus-within:border-brand-blue transition-all"
         >
           <input
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder="Ask about scholarships, essays, exam preparation, or finding a tutor..."
-            className="flex-1 px-3 py-2 bg-transparent text-xs sm:text-sm text-slate-900 placeholder-slate-400 focus:outline-none"
+            className="flex-1 px-2.5 py-1.5 bg-transparent text-xs text-slate-900 placeholder-slate-400 focus:outline-none"
           />
           <button
             type="submit"
             disabled={!input.trim() || loading}
-            className="p-2.5 rounded-xl bg-[#0B2A5B] hover:bg-[#1E4D9B] text-white disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-sm"
+            className="p-2 rounded-lg bg-brand-blue hover:bg-brand-blue/90 text-white disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-xs"
           >
-            <Send size={16} />
+            <Send size={14} />
           </button>
         </form>
       </div>
     </div>
   );
 }
-

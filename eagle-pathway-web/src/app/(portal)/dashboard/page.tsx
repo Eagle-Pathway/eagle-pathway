@@ -179,92 +179,117 @@ export default function DashboardPage() {
   // ==========================================
   if (isTutor) {
     return (
-      <div className="space-y-8 max-w-7xl mx-auto pb-12">
-        {/* Tutor Hero Banner */}
-        <div className="bg-gradient-to-r from-[#0B2A5B] to-[#1E4D9B] rounded-3xl p-6 md:p-8 text-white shadow-md relative overflow-hidden">
-          <div className="absolute right-0 top-0 w-80 h-80 bg-[#C9A84C]/15 rounded-full blur-3xl pointer-events-none" />
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 relative z-10">
-            <div>
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 text-[#C9A84C] text-xs font-bold mb-2">
-                <ShieldCheck size={13} />
-                <span>Verified Educator Workspace</span>
-              </div>
-              <h1 className="text-2xl md:text-3xl font-black">
-                {timeGreeting}, {firstName}!
-              </h1>
-              <p className="text-xs md:text-sm text-slate-200 mt-1">
-                You have {tutorJobs.length} open student tutoring requests waiting for proposals in Addis Ababa &amp; Online.
-              </p>
+      <div className="space-y-6 pb-16">
+        {/* Tutor Header Bar */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-200/80 pb-4">
+          <div>
+            <div className="inline-flex items-center gap-1.5 text-xs font-semibold text-brand-blue mb-1">
+              <ShieldCheck size={14} />
+              <span>Verified Educator Workspace</span>
             </div>
+            <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
+              {timeGreeting}, {firstName}!
+            </h1>
+            <p className="text-xs text-slate-500 mt-1">
+              You have {tutorJobs.length} open student tutoring requests waiting for proposals in Addis Ababa &amp; Online.
+            </p>
+          </div>
 
-            <div className="flex items-center gap-3">
-              <Link
-                href="/tutor-jobs"
-                className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#C9A84C] to-[#DFBE60] text-[#0B2A5B] text-xs font-bold hover:brightness-105 shadow-sm"
-              >
-                Browse Student Requests
-              </Link>
-              <Link
-                href="/earnings"
-                className="px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/15 text-white text-xs font-semibold"
-              >
-                Withdraw Funds
-              </Link>
-            </div>
+          <div className="flex items-center gap-2 self-start sm:self-auto">
+            <Link
+              href="/tutor-jobs"
+              className="px-3.5 py-2 rounded-xl bg-brand-blue text-white text-xs font-semibold hover:bg-brand-blue/90 shadow-xs transition-colors"
+            >
+              Browse Student Requests
+            </Link>
+            <Link
+              href="/earnings"
+              className="px-3.5 py-2 rounded-xl bg-white border border-slate-200 text-slate-700 text-xs font-medium hover:bg-slate-50 hover:border-slate-300 shadow-xs transition-colors"
+            >
+              Earnings &amp; Payouts
+            </Link>
           </div>
         </div>
 
-        {/* Tutor KPI Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs">
-            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">
-              Upcoming Sessions
-            </span>
-            <div className="text-2xl font-black text-slate-900">{bookings.length}</div>
-            <div className="text-[11px] text-slate-400 mt-1">Confirmed student classes</div>
-          </div>
-
-          <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs">
-            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">
-              Open Tutoring Jobs
-            </span>
-            <div className="text-2xl font-black text-[#0B2A5B]">{tutorJobs.length}</div>
-            <div className="text-[11px] text-emerald-600 font-semibold mt-1">Ready for proposals</div>
-          </div>
-
-          <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs">
-            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">
-              Total Earned
-            </span>
-            <div className="text-2xl font-black text-emerald-700">
-              {tutorEarnings.total.toLocaleString()} <span className="text-xs font-normal">ETB</span>
+        {/* Tutor KPI Cards (Admin Overview Sparkline Standard) */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3.5">
+          <div className="bg-white border border-slate-200/80 rounded-xl p-4 flex flex-col justify-between hover:border-slate-300 hover:shadow-xs transition-all relative overflow-hidden">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider truncate">
+                Upcoming Sessions
+              </span>
+              <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200/60">
+                Active
+              </span>
             </div>
-            <div className="text-[11px] text-slate-400 mt-1">Completed instruction</div>
+            <div className="mt-2">
+              <span className="text-2xl font-bold text-slate-900 tracking-tight">{bookings.length}</span>
+              <span className="text-xs text-slate-400 font-medium block mt-0.5">Confirmed student classes</span>
+            </div>
           </div>
 
-          <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs">
-            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">
-              Teaching Hours
-            </span>
-            <div className="text-2xl font-black text-slate-900">{tutorEarnings.hours} hrs</div>
-            <div className="text-[11px] text-slate-400 mt-1">1-on-1 tutoring sessions</div>
+          <div className="bg-white border border-slate-200/80 rounded-xl p-4 flex flex-col justify-between hover:border-slate-300 hover:shadow-xs transition-all relative overflow-hidden">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider truncate">
+                Open Tutoring Jobs
+              </span>
+              <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-blue-50 text-brand-blue border border-blue-200/60">
+                Live
+              </span>
+            </div>
+            <div className="mt-2">
+              <span className="text-2xl font-bold text-slate-900 tracking-tight">{tutorJobs.length}</span>
+              <span className="text-xs text-slate-400 font-medium block mt-0.5">Ready for proposals</span>
+            </div>
+          </div>
+
+          <div className="bg-white border border-slate-200/80 rounded-xl p-4 flex flex-col justify-between hover:border-slate-300 hover:shadow-xs transition-all relative overflow-hidden">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider truncate">
+                Total Earned
+              </span>
+              <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200/60">
+                ETB
+              </span>
+            </div>
+            <div className="mt-2">
+              <span className="text-2xl font-bold text-slate-900 tracking-tight">
+                {tutorEarnings.total.toLocaleString()}
+              </span>
+              <span className="text-xs text-slate-400 font-medium block mt-0.5">Completed instruction</span>
+            </div>
+          </div>
+
+          <div className="bg-white border border-slate-200/80 rounded-xl p-4 flex flex-col justify-between hover:border-slate-300 hover:shadow-xs transition-all relative overflow-hidden">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider truncate">
+                Teaching Hours
+              </span>
+              <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-slate-100 text-slate-600">
+                Logged
+              </span>
+            </div>
+            <div className="mt-2">
+              <span className="text-2xl font-bold text-slate-900 tracking-tight">{tutorEarnings.hours} hrs</span>
+              <span className="text-xs text-slate-400 font-medium block mt-0.5">1-on-1 tutoring sessions</span>
+            </div>
           </div>
         </div>
 
         {/* 2-Column Grid: Open Student Requests & Upcoming Teaching Sessions */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
           {/* Left: Open Student Jobs */}
-          <div className="lg:col-span-7 bg-white rounded-2xl border border-slate-200/80 p-6 shadow-xs space-y-4">
+          <div className="lg:col-span-7 bg-white rounded-xl border border-slate-200/80 p-5 shadow-xs space-y-4">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                <ClipboardList size={18} className="text-[#0B2A5B]" />
-                <span>Open Student Requests</span>
-              </h2>
+              <div className="flex items-center gap-2">
+                <ClipboardList className="w-4 h-4 text-brand-blue" />
+                <h3 className="text-sm font-bold text-slate-900">Open Student Requests</h3>
+              </div>
               <Link
                 href="/tutor-jobs"
-                className="text-xs font-bold text-[#0B2A5B] hover:text-[#1E4D9B] flex items-center gap-1"
+                className="text-xs font-semibold text-brand-blue hover:text-brand-blue/80 flex items-center gap-1"
               >
-                <span>View All Jobs</span>
+                <span>View All</span>
                 <ArrowRight size={13} />
               </Link>
             </div>
@@ -274,19 +299,19 @@ export default function DashboardPage() {
                 No open student requests right now. Check back soon!
               </div>
             ) : (
-              <div className="space-y-3">
+              <div className="space-y-2.5">
                 {tutorJobs.map((job) => (
                   <div
                     key={job.id}
-                    className="p-4 rounded-xl border border-slate-200/80 bg-slate-50/50 hover:bg-slate-50 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs"
+                    className="p-3.5 rounded-xl border border-slate-200/70 bg-slate-50/50 hover:bg-slate-50 transition-colors flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs"
                   >
                     <div className="space-y-1">
-                      <div className="font-bold text-sm text-slate-900">
+                      <div className="font-semibold text-slate-900">
                         {Array.isArray(job.subjects) ? job.subjects.join(', ') : 'All Subjects'}
                       </div>
-                      <div className="text-slate-500 flex items-center gap-3 text-[11px]">
+                      <div className="text-slate-500 flex items-center gap-2.5 text-[11px]">
                         <span className="flex items-center gap-1">
-                          <MapPin size={11} /> {job.place || 'Addis Ababa'}
+                          <MapPin size={11} className="text-slate-400" /> {job.place || 'Addis Ababa'}
                         </span>
                         <span>•</span>
                         <span>{job.grade || 'Grade 11-12'}</span>
@@ -297,9 +322,9 @@ export default function DashboardPage() {
 
                     <Link
                       href="/tutor-jobs"
-                      className="px-4 py-2 rounded-xl bg-[#0B2A5B] text-white font-bold text-xs hover:bg-[#1E4D9B] text-center shadow-xs"
+                      className="px-3.5 py-1.5 rounded-lg bg-brand-blue text-white font-semibold text-xs hover:bg-brand-blue/90 text-center shadow-xs self-start sm:self-auto"
                     >
-                      Apply to Job
+                      Apply
                     </Link>
                   </div>
                 ))}
@@ -308,44 +333,39 @@ export default function DashboardPage() {
           </div>
 
           {/* Right: Upcoming Sessions */}
-          <div className="lg:col-span-5 bg-white rounded-2xl border border-slate-200/80 p-6 shadow-xs space-y-4">
+          <div className="lg:col-span-5 bg-white rounded-xl border border-slate-200/80 p-5 shadow-xs space-y-4">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                <Calendar size={18} className="text-[#0B2A5B]" />
-                <span>My Teaching Schedule</span>
-              </h2>
+              <div className="flex items-center gap-2">
+                <Calendar className="w-4 h-4 text-emerald-600" />
+                <h3 className="text-sm font-bold text-slate-900">My Teaching Schedule</h3>
+              </div>
               <Link
                 href="/bookings"
-                className="text-xs font-bold text-[#0B2A5B] hover:text-[#1E4D9B] flex items-center gap-1"
+                className="text-xs font-semibold text-brand-blue hover:text-brand-blue/80 flex items-center gap-1"
               >
-                <span>Full Calendar</span>
+                <span>Full Schedule</span>
                 <ArrowRight size={13} />
               </Link>
             </div>
 
             {bookings.length === 0 ? (
               <div className="py-12 text-center text-xs text-slate-400">
-                No teaching appointments booked for this week.
+                No sessions booked yet. Apply to jobs to schedule classes.
               </div>
             ) : (
-              <div className="space-y-3">
+              <div className="space-y-2.5">
                 {bookings.map((b: any) => (
                   <div
                     key={b.id}
-                    className="p-3.5 rounded-xl border border-slate-200/80 bg-slate-50/50 space-y-2 text-xs"
+                    className="p-3.5 rounded-xl border border-slate-200/70 bg-slate-50/50 hover:bg-slate-50 transition-colors flex items-center justify-between gap-3 text-xs"
                   >
-                    <div className="flex items-center justify-between">
-                      <span className="font-bold text-slate-900">
-                        {b.subject || '1-on-1 Session'}
-                      </span>
-                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-700 uppercase">
-                        {b.status}
-                      </span>
-                    </div>
-
-                    <div className="text-slate-500 text-[11px] flex justify-between">
-                      <span>Date: {formatDate(b.session_date)}</span>
-                      <span>{b.duration_hours || 1} Hour</span>
+                    <div>
+                      <div className="font-semibold text-slate-900">
+                        {b.student?.full_name || 'Student'}
+                      </div>
+                      <div className="text-[11px] text-slate-500 mt-0.5">
+                        {b.session_date ? formatDate(b.session_date) : 'Scheduled Date'}
+                      </div>
                     </div>
 
                     {b.meeting_link && (
@@ -353,10 +373,10 @@ export default function DashboardPage() {
                         href={b.meeting_link}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 text-white font-bold text-[11px] hover:bg-emerald-700"
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 text-white font-semibold text-xs hover:bg-emerald-700 shadow-xs"
                       >
                         <Video size={12} />
-                        <span>Join Google Meet</span>
+                        <span>Meet</span>
                       </a>
                     )}
                   </div>
@@ -374,87 +394,113 @@ export default function DashboardPage() {
   // ==========================================
   if (isParent) {
     return (
-      <div className="space-y-8 max-w-7xl mx-auto pb-12">
-        {/* Parent Hero Banner */}
-        <div className="bg-gradient-to-r from-[#0B2A5B] to-[#1E4D9B] rounded-3xl p-6 md:p-8 text-white shadow-md relative overflow-hidden">
-          <div className="absolute right-0 top-0 w-80 h-80 bg-[#C9A84C]/15 rounded-full blur-3xl pointer-events-none" />
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 relative z-10">
-            <div>
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 text-[#C9A84C] text-xs font-bold mb-2">
-                <span>Family &amp; Guardian Workspace</span>
-              </div>
-              <h1 className="text-2xl md:text-3xl font-black">
-                {timeGreeting}, {firstName} 👨‍👩‍👧
-              </h1>
-              <p className="text-xs md:text-sm text-slate-200 mt-1">
-                Monitor your children&apos;s scholarship progress, tutor attendance, and university admissions roadmap.
-              </p>
+      <div className="space-y-6 pb-16">
+        {/* Parent Header Bar */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-200/80 pb-4">
+          <div>
+            <div className="inline-flex items-center gap-1.5 text-xs font-semibold text-brand-blue mb-1">
+              <Users size={14} />
+              <span>Family &amp; Guardian Workspace</span>
             </div>
+            <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
+              {timeGreeting}, {firstName}
+            </h1>
+            <p className="text-xs text-slate-500 mt-1">
+              Monitor your children&apos;s scholarship progress, tutor attendance, and university admissions roadmap.
+            </p>
+          </div>
 
-            <div className="flex items-center gap-3">
-              <Link
-                href="/request-tutor"
-                className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#C9A84C] to-[#DFBE60] text-[#0B2A5B] text-xs font-bold hover:brightness-105 shadow-sm"
-              >
-                Book Tutor for Child
-              </Link>
-              <Link
-                href="/parent/children"
-                className="px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/15 text-white text-xs font-semibold"
-              >
-                Manage Children
-              </Link>
-            </div>
+          <div className="flex items-center gap-2 self-start sm:self-auto">
+            <Link
+              href="/request-tutor"
+              className="px-3.5 py-2 rounded-xl bg-brand-blue text-white text-xs font-semibold hover:bg-brand-blue/90 shadow-xs transition-colors"
+            >
+              Book Tutor for Child
+            </Link>
+            <Link
+              href="/parent/children"
+              className="px-3.5 py-2 rounded-xl bg-white border border-slate-200 text-slate-700 text-xs font-medium hover:bg-slate-50 hover:border-slate-300 shadow-xs transition-colors"
+            >
+              Manage Children
+            </Link>
           </div>
         </div>
 
         {/* Parent KPI Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs">
-            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">
-              Linked Children
-            </span>
-            <div className="text-2xl font-black text-slate-900">{linkedChildren.length}</div>
-            <div className="text-[11px] text-slate-400 mt-1">Active student profiles</div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3.5">
+          <div className="bg-white border border-slate-200/80 rounded-xl p-4 flex flex-col justify-between hover:border-slate-300 hover:shadow-xs transition-all relative overflow-hidden">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider truncate">
+                Linked Children
+              </span>
+              <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-blue-50 text-brand-blue border border-blue-200/60">
+                Profiles
+              </span>
+            </div>
+            <div className="mt-2">
+              <span className="text-2xl font-bold text-slate-900 tracking-tight">{linkedChildren.length}</span>
+              <span className="text-xs text-slate-400 font-medium block mt-0.5">Active student accounts</span>
+            </div>
           </div>
 
-          <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs">
-            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">
-              Applications Tracked
-            </span>
-            <div className="text-2xl font-black text-[#0B2A5B]">{applications.length}</div>
-            <div className="text-[11px] text-slate-400 mt-1">University submissions</div>
+          <div className="bg-white border border-slate-200/80 rounded-xl p-4 flex flex-col justify-between hover:border-slate-300 hover:shadow-xs transition-all relative overflow-hidden">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider truncate">
+                Applications Tracked
+              </span>
+              <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200/60">
+                Tracked
+              </span>
+            </div>
+            <div className="mt-2">
+              <span className="text-2xl font-bold text-slate-900 tracking-tight">{applications.length}</span>
+              <span className="text-xs text-slate-400 font-medium block mt-0.5">University submissions</span>
+            </div>
           </div>
 
-          <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs">
-            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">
-              Upcoming Classes
-            </span>
-            <div className="text-2xl font-black text-emerald-700">{bookings.length}</div>
-            <div className="text-[11px] text-slate-400 mt-1">Tutoring sessions scheduled</div>
+          <div className="bg-white border border-slate-200/80 rounded-xl p-4 flex flex-col justify-between hover:border-slate-300 hover:shadow-xs transition-all relative overflow-hidden">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider truncate">
+                Upcoming Classes
+              </span>
+              <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200/60">
+                Sessions
+              </span>
+            </div>
+            <div className="mt-2">
+              <span className="text-2xl font-bold text-slate-900 tracking-tight">{bookings.length}</span>
+              <span className="text-xs text-slate-400 font-medium block mt-0.5">Tutoring sessions scheduled</span>
+            </div>
           </div>
 
-          <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs">
-            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">
-              Admissions Guides
-            </span>
-            <div className="text-2xl font-black text-slate-900">12+</div>
-            <div className="text-[11px] text-slate-400 mt-1">Parent SAT &amp; Aid Toolkits</div>
+          <div className="bg-white border border-slate-200/80 rounded-xl p-4 flex flex-col justify-between hover:border-slate-300 hover:shadow-xs transition-all relative overflow-hidden">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider truncate">
+                Admissions Guides
+              </span>
+              <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-slate-100 text-slate-600">
+                Resources
+              </span>
+            </div>
+            <div className="mt-2">
+              <span className="text-2xl font-bold text-slate-900 tracking-tight">12+</span>
+              <span className="text-xs text-slate-400 font-medium block mt-0.5">Parent SAT &amp; Aid Toolkits</span>
+            </div>
           </div>
         </div>
 
         {/* Linked Children Overview */}
-        <div className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-xs space-y-4">
+        <div className="bg-white rounded-xl border border-slate-200/80 p-5 shadow-xs space-y-4">
           <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-            <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
-              <Users size={18} className="text-[#0B2A5B]" />
-              <span>Children Academic Roadmap</span>
-            </h2>
+            <div className="flex items-center gap-2">
+              <Users className="w-4 h-4 text-brand-blue" />
+              <h3 className="text-sm font-bold text-slate-900">Children Academic Roadmap</h3>
+            </div>
             <Link
               href="/parent/children"
-              className="text-xs font-bold text-[#0B2A5B] hover:text-[#1E4D9B] flex items-center gap-1"
+              className="text-xs font-semibold text-brand-blue hover:text-brand-blue/80 flex items-center gap-1"
             >
-              <span>View Details</span>
+              <span>Manage Details</span>
               <ArrowRight size={13} />
             </Link>
           </div>
@@ -465,33 +511,32 @@ export default function DashboardPage() {
               <p>No children linked yet. Connect your child&apos;s account to monitor their applications.</p>
               <Link
                 href="/parent/children"
-                className="inline-block px-4 py-2 rounded-xl bg-[#0B2A5B] text-white font-bold text-xs"
+                className="inline-block px-4 py-2 rounded-xl bg-brand-blue text-white font-semibold text-xs shadow-xs"
               >
                 Link Child Account
               </Link>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
               {linkedChildren.map((kid) => (
                 <div
                   key={kid.id}
-                  className="p-4 rounded-xl border border-slate-200/80 bg-slate-50/50 flex items-center justify-between gap-3 text-xs"
+                  className="p-4 rounded-xl border border-slate-200/70 bg-slate-50/50 flex items-center justify-between gap-3 text-xs"
                 >
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-[#0B2A5B] text-[#C9A84C] font-bold text-sm flex items-center justify-center">
-                      {kid.full_name[0]}
+                    <div className="w-9 h-9 rounded-full bg-brand-gold/20 text-brand-gold font-bold flex items-center justify-center flex-shrink-0">
+                      {kid.full_name ? kid.full_name[0] : 'S'}
                     </div>
                     <div>
-                      <div className="font-bold text-slate-900">{kid.full_name}</div>
-                      <div className="text-[11px] text-slate-500">{kid.grade_level || 'Student'}</div>
+                      <div className="font-semibold text-slate-900">{kid.full_name}</div>
+                      <div className="text-[11px] text-slate-500">{kid.email}</div>
                     </div>
                   </div>
-
                   <Link
-                    href="/parent/children"
-                    className="px-3 py-1.5 rounded-lg bg-white border border-slate-200 font-bold text-[#0B2A5B] hover:bg-slate-50"
+                    href={`/parent/children?id=${kid.id}`}
+                    className="px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-slate-700 font-medium hover:bg-slate-50 text-xs shadow-xs"
                   >
-                    View Status
+                    View Progress
                   </Link>
                 </div>
               ))}
@@ -512,49 +557,111 @@ export default function DashboardPage() {
   });
 
   return (
-    <div className="space-y-8 max-w-7xl mx-auto pb-12">
-      {/* Student Hero Banner */}
-      <div className="bg-gradient-to-r from-[#0B2A5B] to-[#1E4D9B] rounded-3xl p-6 md:p-8 text-white shadow-md relative overflow-hidden">
-        <div className="absolute right-0 top-0 w-80 h-80 bg-[#C9A84C]/15 rounded-full blur-3xl pointer-events-none" />
-
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
-          <div className="space-y-2 max-w-2xl">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 text-[#C9A84C] text-xs font-bold border border-white/10 backdrop-blur-xs">
-              <Sparkles size={13} />
-              <span>International Education &amp; Tutoring Portal</span>
-            </div>
-
-            <h1 className="text-2xl md:text-3xl font-black tracking-tight leading-tight">
-              {timeGreeting}, {firstName}!
-            </h1>
-            <p className="text-xs md:text-sm text-slate-200 leading-relaxed">
-              Explore 100+ verified scholarships, connect with expert STEM and English educators, and craft winning statements of purpose with Eagle AI.
-            </p>
+    <div className="space-y-6 pb-16">
+      {/* Student Header Bar */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-200/80 pb-4">
+        <div>
+          <div className="inline-flex items-center gap-1.5 text-xs font-semibold text-brand-blue mb-1">
+            <Sparkles size={14} className="text-brand-gold" />
+            <span>International Education &amp; Tutoring Portal</span>
           </div>
+          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
+            {timeGreeting}, {firstName}!
+          </h1>
+          <p className="text-xs text-slate-500 mt-1">
+            Explore 100+ verified scholarships, connect with expert STEM and English educators, and craft winning statements of purpose with Eagle AI.
+          </p>
+        </div>
 
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 flex-shrink-0">
-            <Link
-              href="/request-tutor"
-              className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#C9A84C] to-[#DFBE60] text-[#0B2A5B] text-xs font-bold hover:brightness-105 transition-all text-center shadow-sm"
-            >
-              Request 1-on-1 Tutor
-            </Link>
-            <Link
-              href="/scholarships"
-              className="px-5 py-2.5 rounded-xl bg-white/10 hover:bg-white/15 text-white text-xs font-semibold text-center border border-white/20 transition-all"
-            >
-              Browse Scholarships
-            </Link>
+        <div className="flex items-center gap-2 self-start sm:self-auto">
+          <Link
+            href="/request-tutor"
+            className="px-3.5 py-2 rounded-xl bg-brand-blue text-white text-xs font-semibold hover:bg-brand-blue/90 shadow-xs transition-colors"
+          >
+            Request 1-on-1 Tutor
+          </Link>
+          <Link
+            href="/scholarships"
+            className="px-3.5 py-2 rounded-xl bg-white border border-slate-200 text-slate-700 text-xs font-medium hover:bg-slate-50 hover:border-slate-300 shadow-xs transition-colors"
+          >
+            Browse Scholarships
+          </Link>
+        </div>
+      </div>
+
+      {/* 4 Metric Cards (Matching Admin Sparkline Card Style) */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3.5">
+        <div className="bg-white border border-slate-200/80 rounded-xl p-4 flex flex-col justify-between hover:border-slate-300 hover:shadow-xs transition-all relative overflow-hidden">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider truncate">
+              Verified Scholarships
+            </span>
+            <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200/60">
+              Active
+            </span>
+          </div>
+          <div className="mt-2">
+            <span className="text-2xl font-bold text-slate-900 tracking-tight">
+              {scholarships.length > 0 ? `${scholarships.length}+` : '100+'}
+            </span>
+            <span className="text-xs text-slate-400 font-medium block mt-0.5">International funding opportunities</span>
+          </div>
+        </div>
+
+        <div className="bg-white border border-slate-200/80 rounded-xl p-4 flex flex-col justify-between hover:border-slate-300 hover:shadow-xs transition-all relative overflow-hidden">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider truncate">
+              Active Applications
+            </span>
+            <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-blue-50 text-brand-blue border border-blue-200/60">
+              Pipeline
+            </span>
+          </div>
+          <div className="mt-2">
+            <span className="text-2xl font-bold text-slate-900 tracking-tight">{applications.length}</span>
+            <span className="text-xs text-slate-400 font-medium block mt-0.5">Tracked university admissions</span>
+          </div>
+        </div>
+
+        <div className="bg-white border border-slate-200/80 rounded-xl p-4 flex flex-col justify-between hover:border-slate-300 hover:shadow-xs transition-all relative overflow-hidden">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider truncate">
+              Tutoring Sessions
+            </span>
+            <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200/60">
+              Scheduled
+            </span>
+          </div>
+          <div className="mt-2">
+            <span className="text-2xl font-bold text-slate-900 tracking-tight">{bookings.length}</span>
+            <span className="text-xs text-slate-400 font-medium block mt-0.5">1-on-1 expert classes</span>
+          </div>
+        </div>
+
+        <div className="bg-white border border-slate-200/80 rounded-xl p-4 flex flex-col justify-between hover:border-slate-300 hover:shadow-xs transition-all relative overflow-hidden">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider truncate">
+              Verified Educators
+            </span>
+            <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-slate-100 text-slate-600">
+              Available
+            </span>
+          </div>
+          <div className="mt-2">
+            <span className="text-2xl font-bold text-slate-900 tracking-tight">
+              {tutors.length > 0 ? `${tutors.length}+` : '75+'}
+            </span>
+            <span className="text-xs text-slate-400 font-medium block mt-0.5">Top STEM &amp; Language mentors</span>
           </div>
         </div>
       </div>
 
       {/* Urgent Deadline Alert */}
       {urgentDeadlineScholarship && (
-        <div className="bg-amber-50 border border-amber-200/80 rounded-2xl p-4 flex items-center justify-between gap-4">
+        <div className="bg-amber-50 border border-amber-200/80 rounded-xl p-4 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-600 flex items-center justify-center flex-shrink-0">
-              <Clock size={20} />
+            <div className="w-9 h-9 rounded-lg bg-amber-500/10 text-amber-600 flex items-center justify-center flex-shrink-0">
+              <Clock size={18} />
             </div>
             <div>
               <div className="text-xs font-bold text-amber-900">
@@ -568,117 +675,117 @@ export default function DashboardPage() {
           </div>
           <Link
             href={`/scholarships/${urgentDeadlineScholarship.id}`}
-            className="px-3.5 py-1.5 rounded-lg bg-amber-600 text-white text-xs font-bold hover:bg-amber-700 flex-shrink-0"
+            className="px-3 py-1.5 rounded-lg bg-amber-600 text-white text-xs font-semibold hover:bg-amber-700 flex-shrink-0 shadow-xs"
           >
-            Review &amp; Apply
+            Review
           </Link>
         </div>
       )}
 
       {/* AI Suite Quick Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
         <Link
           href="/tools/sop"
-          className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs hover:border-[#0B2A5B]/30 hover:shadow-md transition-all group"
+          className="bg-white rounded-xl p-4 border border-slate-200/80 shadow-xs hover:border-slate-300 hover:shadow-xs transition-all group"
         >
-          <div className="flex items-center justify-between mb-3">
-            <div className="w-9 h-9 rounded-xl bg-[#0B2A5B]/10 text-[#0B2A5B] flex items-center justify-center group-hover:scale-110 transition-transform">
-              <Award size={18} />
+          <div className="flex items-center justify-between mb-2">
+            <div className="w-8 h-8 rounded-lg bg-blue-50 text-brand-blue flex items-center justify-center group-hover:scale-105 transition-transform">
+              <Award size={16} />
             </div>
-            <span className="text-[10px] font-bold text-[#9A7B2C] bg-[#C9A84C]/15 px-2 py-0.5 rounded-full">
-              AI Powered
+            <span className="text-[10px] font-semibold text-brand-blue bg-blue-50 border border-blue-200/60 px-1.5 py-0.5 rounded">
+              AI Reviewer
             </span>
           </div>
-          <h3 className="font-bold text-sm text-slate-900 group-hover:text-[#0B2A5B] transition-colors">
+          <h3 className="font-semibold text-xs text-slate-900 group-hover:text-brand-blue transition-colors">
             AI SOP Reviewer
           </h3>
-          <p className="text-xs text-slate-500 mt-1">
+          <p className="text-[11px] text-slate-500 mt-0.5 leading-relaxed">
             Committee scoring, strength highlights, and line-by-line rewrite suggestions.
           </p>
         </Link>
 
         <Link
           href="/tools/interview"
-          className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs hover:border-[#0B2A5B]/30 hover:shadow-md transition-all group"
+          className="bg-white rounded-xl p-4 border border-slate-200/80 shadow-xs hover:border-slate-300 hover:shadow-xs transition-all group"
         >
-          <div className="flex items-center justify-between mb-3">
-            <div className="w-9 h-9 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center group-hover:scale-110 transition-transform">
-              <Sparkles size={18} />
+          <div className="flex items-center justify-between mb-2">
+            <div className="w-8 h-8 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center group-hover:scale-105 transition-transform">
+              <Sparkles size={16} />
             </div>
-            <span className="text-[10px] font-bold text-purple-700 bg-purple-100 px-2 py-0.5 rounded-full">
+            <span className="text-[10px] font-semibold text-purple-700 bg-purple-50 border border-purple-200/60 px-1.5 py-0.5 rounded">
               Mock Simulator
             </span>
           </div>
-          <h3 className="font-bold text-sm text-slate-900 group-hover:text-[#0B2A5B] transition-colors">
+          <h3 className="font-semibold text-xs text-slate-900 group-hover:text-brand-blue transition-colors">
             Scholarship Mock Interview
           </h3>
-          <p className="text-xs text-slate-500 mt-1">
+          <p className="text-[11px] text-slate-500 mt-0.5 leading-relaxed">
             Simulate 5 realistic committee questions with real-time feedback and sample answers.
           </p>
         </Link>
 
         <Link
           href="/tools/magic-draft"
-          className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs hover:border-[#0B2A5B]/30 hover:shadow-md transition-all group"
+          className="bg-white rounded-xl p-4 border border-slate-200/80 shadow-xs hover:border-slate-300 hover:shadow-xs transition-all group"
         >
-          <div className="flex items-center justify-between mb-3">
-            <div className="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center group-hover:scale-110 transition-transform">
-              <Wand2 size={18} />
+          <div className="flex items-center justify-between mb-2">
+            <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center group-hover:scale-105 transition-transform">
+              <Wand2 size={16} />
             </div>
-            <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full">
-              Instant Drafter
+            <span className="text-[10px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200/60 px-1.5 py-0.5 rounded">
+              Magic Drafter
             </span>
           </div>
-          <h3 className="font-bold text-sm text-slate-900 group-hover:text-[#0B2A5B] transition-colors">
+          <h3 className="font-semibold text-xs text-slate-900 group-hover:text-brand-blue transition-colors">
             Magic Draft
           </h3>
-          <p className="text-xs text-slate-500 mt-1">
+          <p className="text-[11px] text-slate-500 mt-0.5 leading-relaxed">
             Generate an authentic, high-impact personal statement tailored to your background.
           </p>
         </Link>
       </div>
 
       {/* Featured Scholarships & Top Educators */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
         {/* Left: Featured Scholarships */}
-        <div className="lg:col-span-7 space-y-4">
+        <div className="lg:col-span-7 space-y-3">
           <div className="flex items-center justify-between">
-            <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
-              <GraduationCap size={18} className="text-[#0B2A5B]" />
-              <span>Featured Scholarships</span>
-            </h2>
+            <div className="flex items-center gap-2">
+              <GraduationCap className="w-4 h-4 text-brand-blue" />
+              <h3 className="text-sm font-bold text-slate-900">Featured Scholarships</h3>
+            </div>
             <Link
               href="/scholarships"
-              className="text-xs font-bold text-[#0B2A5B] hover:text-[#1E4D9B] flex items-center gap-1"
+              className="text-xs font-semibold text-brand-blue hover:text-brand-blue/80 flex items-center gap-1"
             >
               <span>Explore All</span>
               <ArrowRight size={13} />
             </Link>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
             {scholarships.slice(0, 4).map((s) => (
               <Link
                 key={s.id}
                 href={`/scholarships/${s.id}`}
-                className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-xs hover:border-[#0B2A5B]/30 hover:shadow-md transition-all flex flex-col justify-between"
+                className="bg-white rounded-xl p-4 border border-slate-200/80 shadow-xs hover:border-slate-300 hover:shadow-xs transition-all flex flex-col justify-between"
               >
                 <div>
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700">
+                    <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-slate-100 text-slate-700">
                       {s.country || 'Global'}
                     </span>
-                    <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">
+                    <span className="text-[10px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200/60 px-1.5 py-0.5 rounded">
                       {s.funding_type || 'Full'}
                     </span>
                   </div>
-                  <h3 className="font-bold text-sm text-slate-900 line-clamp-2 leading-snug">
+                  <h4 className="font-semibold text-xs text-slate-900 line-clamp-2 leading-snug">
                     {s.name}
-                  </h3>
-                  <p className="text-[11px] text-slate-500 mt-1">{s.organization}</p>
+                  </h4>
+                  <p className="text-[11px] text-slate-500 mt-0.5">{s.organization}</p>
                 </div>
 
-                <div className="pt-3 mt-3 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-400">
+                <div className="pt-2.5 mt-2.5 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-400">
                   <span>Deadline: {s.deadline ? formatDate(s.deadline) : 'Rolling'}</span>
                   <ArrowRight size={13} className="text-slate-400" />
                 </div>
@@ -688,34 +795,34 @@ export default function DashboardPage() {
         </div>
 
         {/* Right: Top Verified Educators */}
-        <div className="lg:col-span-5 space-y-4">
+        <div className="lg:col-span-5 space-y-3">
           <div className="flex items-center justify-between">
-            <h2 className="text-base font-bold text-slate-900 flex items-center gap-2">
-              <Users size={18} className="text-[#0B2A5B]" />
-              <span>Top Verified Educators</span>
-            </h2>
+            <div className="flex items-center gap-2">
+              <Users className="w-4 h-4 text-emerald-600" />
+              <h3 className="text-sm font-bold text-slate-900">Top Verified Educators</h3>
+            </div>
             <Link
               href="/tutors"
-              className="text-xs font-bold text-[#0B2A5B] hover:text-[#1E4D9B] flex items-center gap-1"
+              className="text-xs font-semibold text-brand-blue hover:text-brand-blue/80 flex items-center gap-1"
             >
               <span>Browse All</span>
               <ArrowRight size={13} />
             </Link>
           </div>
 
-          <div className="space-y-3">
+          <div className="space-y-2.5">
             {tutors.slice(0, 3).map((t: any) => (
               <Link
                 key={t.id}
                 href={`/tutors/${t.id}`}
-                className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-xs hover:border-[#0B2A5B]/30 hover:shadow-md transition-all flex items-center justify-between gap-3"
+                className="bg-white rounded-xl p-3.5 border border-slate-200/80 shadow-xs hover:border-slate-300 hover:shadow-xs transition-all flex items-center justify-between gap-3"
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-11 h-11 rounded-2xl bg-[#0B2A5B] text-[#C9A84C] font-bold text-sm flex items-center justify-center flex-shrink-0">
+                  <div className="w-9 h-9 rounded-full bg-brand-gold/20 text-brand-gold font-bold text-xs flex items-center justify-center flex-shrink-0">
                     {t.user?.full_name ? t.user.full_name[0] : 'T'}
                   </div>
                   <div>
-                    <h3 className="font-bold text-xs text-slate-900">{t.user?.full_name || 'Educator'}</h3>
+                    <h4 className="font-semibold text-xs text-slate-900">{t.user?.full_name || 'Educator'}</h4>
                     <p className="text-[11px] text-slate-500 line-clamp-1">
                       {t.subjects?.join(', ') || 'Math, Physics, English'}
                     </p>

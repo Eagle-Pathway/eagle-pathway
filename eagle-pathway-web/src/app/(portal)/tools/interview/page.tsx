@@ -120,28 +120,31 @@ export default function MockInterviewPage() {
   const averageScore = totalScores.length > 0 ? (totalScores.reduce((a, b) => a + b, 0) / totalScores.length).toFixed(1) : 0;
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6 pb-12">
+    <div className="max-w-4xl mx-auto space-y-6 pb-16">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-200/80 pb-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
-            <Award className="text-[#C9A84C]" size={26} />
-            <span>AI Scholarship Mock Interview</span>
+          <div className="inline-flex items-center gap-1.5 text-xs font-semibold text-brand-blue mb-1">
+            <Award size={14} className="text-brand-gold" />
+            <span>AI Simulation Suite</span>
+          </div>
+          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
+            Scholarship Mock Interview Simulator
           </h1>
-          <p className="text-xs text-slate-500">
+          <p className="text-xs text-slate-500 mt-1">
             Simulate realistic admissions committee interviews with instant real-time AI scoring and exemplar answers.
           </p>
         </div>
       </div>
 
       {phase === 'intro' && (
-        <div className="bg-white rounded-2xl border border-slate-200/80 p-8 shadow-xs text-center max-w-xl mx-auto space-y-6">
-          <div className="w-16 h-16 rounded-2xl bg-[#0B2A5B]/10 text-[#0B2A5B] flex items-center justify-center mx-auto">
-            <MessageSquare size={32} />
+        <div className="bg-white rounded-xl border border-slate-200/80 p-6 md:p-8 shadow-xs text-center max-w-xl mx-auto space-y-5">
+          <div className="w-12 h-12 rounded-full bg-blue-50 text-brand-blue flex items-center justify-center mx-auto shadow-xs">
+            <MessageSquare size={22} />
           </div>
 
           <div>
-            <h2 className="text-lg font-bold text-slate-900 mb-1">
+            <h2 className="text-base font-bold text-slate-900 mb-1">
               Admissions Interview Simulator
             </h2>
             <p className="text-xs text-slate-500 max-w-md mx-auto leading-relaxed">
@@ -149,8 +152,8 @@ export default function MockInterviewPage() {
             </p>
           </div>
 
-          <div className="text-left space-y-1.5 max-w-md mx-auto">
-            <label className="text-xs font-semibold text-slate-700">
+          <div className="text-left space-y-1 max-w-md mx-auto">
+            <label className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider">
               Select or Enter Target Scholarship
             </label>
             <input
@@ -158,24 +161,24 @@ export default function MockInterviewPage() {
               value={scholarshipName}
               onChange={(e) => setScholarshipName(e.target.value)}
               placeholder="e.g. Turkiye Burslari, DAAD Germany, Fulbright, Oxford Rhodes"
-              className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0B2A5B]/20 font-medium"
+              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-blue/20 font-medium"
             />
           </div>
 
           <button
             onClick={handleStartInterview}
             disabled={loadingQuestions || !scholarshipName.trim()}
-            className="w-full max-w-md mx-auto py-3 px-6 rounded-xl bg-gradient-to-r from-[#0B2A5B] to-[#1E4D9B] text-white text-xs font-bold hover:brightness-110 transition-all shadow-md flex items-center justify-center gap-2 disabled:opacity-50"
+            className="w-full max-w-md mx-auto py-2.5 px-5 rounded-xl bg-brand-blue hover:bg-brand-blue/90 text-white text-xs font-semibold shadow-xs flex items-center justify-center gap-2 disabled:opacity-50 transition-colors"
           >
             {loadingQuestions ? (
               <>
-                <RotateCw size={15} className="animate-spin" />
+                <RotateCw size={14} className="animate-spin" />
                 <span>Generating Customized Questions...</span>
               </>
             ) : (
               <>
                 <span>Start Mock Interview</span>
-                <ArrowRight size={15} />
+                <ArrowRight size={14} />
               </>
             )}
           </button>
@@ -183,11 +186,11 @@ export default function MockInterviewPage() {
       )}
 
       {phase === 'interview' && (
-        <div className="space-y-6">
+        <div className="space-y-5">
           {/* Progress Bar */}
-          <div className="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-xs flex items-center justify-between text-xs font-semibold text-slate-700">
+          <div className="bg-white rounded-xl p-3.5 border border-slate-200/80 shadow-xs flex items-center justify-between text-xs font-semibold text-slate-700">
             <div className="flex items-center gap-2">
-              <span className="w-6 h-6 rounded-full bg-[#0B2A5B] text-white flex items-center justify-center text-[11px]">
+              <span className="w-5 h-5 rounded-full bg-brand-blue text-white flex items-center justify-center text-[10px]">
                 {currentIndex + 1}
               </span>
               <span>Question {currentIndex + 1} of {questions.length}</span>
@@ -197,35 +200,36 @@ export default function MockInterviewPage() {
               {questions.map((_, idx) => (
                 <div
                   key={idx}
-                  className={`w-6 h-2 rounded-full transition-all ${idx === currentIndex
-                    ? 'bg-[#0B2A5B] w-8'
-                    : feedbackHistory[idx]
+                  className={`w-5 h-1.5 rounded-full transition-all ${
+                    idx === currentIndex
+                      ? 'bg-brand-blue w-7'
+                      : feedbackHistory[idx]
                       ? 'bg-emerald-500'
                       : 'bg-slate-200'
-                    }`}
+                  }`}
                 />
               ))}
             </div>
           </div>
 
           {/* Question Card */}
-          <div className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-xs space-y-4">
+          <div className="bg-white rounded-xl border border-slate-200/80 p-5 md:p-6 shadow-xs space-y-3.5">
             <div className="flex items-start gap-3">
-              <div className="w-8 h-8 rounded-xl bg-[#C9A84C]/15 text-[#9A7B2C] flex items-center justify-center flex-shrink-0 mt-0.5">
-                <HelpCircle size={18} />
+              <div className="w-8 h-8 rounded-lg bg-blue-50 text-brand-blue flex items-center justify-center flex-shrink-0 mt-0.5">
+                <HelpCircle size={16} />
               </div>
               <div>
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">
                   Committee Interviewer
                 </span>
-                <h3 className="text-base font-bold text-slate-900 mt-0.5 leading-snug">
+                <h3 className="text-sm font-bold text-slate-900 mt-0.5 leading-snug">
                   {questions[currentIndex]}
                 </h3>
               </div>
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+              <label className="block text-[11px] font-semibold text-slate-600 uppercase tracking-wider mb-1">
                 Your Spoken or Written Response:
               </label>
               <textarea
@@ -233,19 +237,19 @@ export default function MockInterviewPage() {
                 value={currentAnswer}
                 onChange={(e) => setCurrentAnswer(e.target.value)}
                 placeholder="Formulate your response using the STAR framework (Situation, Task, Action, Result)..."
-                className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 leading-relaxed focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0B2A5B]/20"
+                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 leading-relaxed focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-blue/20"
               />
             </div>
 
-            <div className="flex items-center justify-between pt-2">
-              <span className="text-xs text-slate-400">
+            <div className="flex items-center justify-between pt-1">
+              <span className="text-[11px] text-slate-400">
                 {currentAnswer.trim().split(/\s+/).filter(Boolean).length} words
               </span>
 
               <button
                 onClick={handleEvaluateAnswer}
                 disabled={loadingFeedback || !currentAnswer.trim()}
-                className="px-5 py-2.5 rounded-xl bg-[#0B2A5B] text-white text-xs font-bold hover:bg-[#1E4D9B] transition-colors shadow-sm disabled:opacity-50 flex items-center gap-1.5"
+                className="px-4 py-2 rounded-xl bg-brand-blue hover:bg-brand-blue/90 text-white text-xs font-semibold shadow-xs disabled:opacity-50 flex items-center gap-1.5 transition-colors"
               >
                 {loadingFeedback ? (
                   <>
@@ -254,7 +258,7 @@ export default function MockInterviewPage() {
                   </>
                 ) : (
                   <>
-                    <Sparkles size={13} />
+                    <Sparkles size={13} className="text-brand-gold" />
                     <span>{currentFeedback ? 'Re-Evaluate Answer' : 'Submit for AI Feedback'}</span>
                   </>
                 )}
@@ -264,36 +268,36 @@ export default function MockInterviewPage() {
 
           {/* Feedback Card */}
           {currentFeedback && (
-            <div className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-xs space-y-4 animate-in fade-in">
+            <div className="bg-white rounded-xl border border-slate-200/80 p-5 shadow-xs space-y-3.5 animate-in fade-in">
               <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                <h4 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                  <Award size={16} className="text-[#C9A84C]" />
+                <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
+                  <Award size={15} className="text-brand-gold" />
                   <span>Answer Assessment</span>
                 </h4>
-                <div className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-slate-100 text-slate-800 font-bold text-xs">
+                <div className="flex items-center gap-1.5 px-2.5 py-0.5 rounded bg-blue-50 text-brand-blue border border-blue-200/60 font-semibold text-xs">
                   <span>Score:</span>
-                  <span className="text-[#0B2A5B] font-black">{currentFeedback.score} / 10</span>
+                  <span className="font-bold">{currentFeedback.score} / 10</span>
                 </div>
               </div>
 
-              <div className="space-y-3 text-xs">
+              <div className="space-y-2.5 text-xs">
                 <div>
-                  <span className="font-bold text-emerald-700 block mb-0.5">Strengths:</span>
-                  <p className="text-slate-600 bg-emerald-50/50 p-2.5 rounded-xl border border-emerald-100">
+                  <span className="font-semibold text-emerald-700 block mb-0.5 text-[11px] uppercase tracking-wider">Strengths:</span>
+                  <p className="text-slate-600 bg-emerald-50/50 p-2.5 rounded-lg border border-emerald-100 leading-relaxed">
                     {currentFeedback.strengths}
                   </p>
                 </div>
 
                 <div>
-                  <span className="font-bold text-amber-700 block mb-0.5">Ways to Improve:</span>
-                  <p className="text-slate-600 bg-amber-50/50 p-2.5 rounded-xl border border-amber-100">
+                  <span className="font-semibold text-amber-700 block mb-0.5 text-[11px] uppercase tracking-wider">Ways to Improve:</span>
+                  <p className="text-slate-600 bg-amber-50/50 p-2.5 rounded-lg border border-amber-100 leading-relaxed">
                     {currentFeedback.improvements}
                   </p>
                 </div>
 
                 <div>
-                  <span className="font-bold text-[#0B2A5B] block mb-0.5">Exemplary Model Answer:</span>
-                  <p className="text-slate-700 bg-blue-50/40 p-3 rounded-xl border border-blue-100 italic leading-relaxed">
+                  <span className="font-semibold text-brand-blue block mb-0.5 text-[11px] uppercase tracking-wider">Exemplary Model Answer:</span>
+                  <p className="text-slate-700 bg-blue-50/40 p-2.5 rounded-lg border border-blue-100 italic leading-relaxed">
                     &quot;{currentFeedback.sampleAnswer}&quot;
                   </p>
                 </div>
@@ -302,10 +306,10 @@ export default function MockInterviewPage() {
               <div className="pt-2 flex justify-end">
                 <button
                   onClick={handleNextQuestion}
-                  className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-[#0B2A5B] to-[#1E4D9B] text-white text-xs font-bold hover:brightness-110 flex items-center gap-2"
+                  className="px-4 py-2 rounded-xl bg-brand-blue hover:bg-brand-blue/90 text-white text-xs font-semibold shadow-xs flex items-center gap-1.5 transition-colors"
                 >
                   <span>{currentIndex < questions.length - 1 ? 'Next Question' : 'View Final Summary'}</span>
-                  <ArrowRight size={14} />
+                  <ArrowRight size={13} />
                 </button>
               </div>
             </div>
@@ -314,13 +318,13 @@ export default function MockInterviewPage() {
       )}
 
       {phase === 'done' && (
-        <div className="bg-white rounded-2xl border border-slate-200/80 p-8 shadow-xs text-center max-w-xl mx-auto space-y-6">
-          <div className="w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto">
-            <CheckCircle2 size={36} />
+        <div className="bg-white rounded-xl border border-slate-200/80 p-8 shadow-xs text-center max-w-xl mx-auto space-y-5">
+          <div className="w-12 h-12 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-200/60 flex items-center justify-center mx-auto">
+            <CheckCircle2 size={28} />
           </div>
 
           <div>
-            <h2 className="text-xl font-bold text-slate-900 mb-1">
+            <h2 className="text-base font-bold text-slate-900 mb-1">
               Mock Interview Completed!
             </h2>
             <p className="text-xs text-slate-500">
@@ -328,28 +332,28 @@ export default function MockInterviewPage() {
             </p>
           </div>
 
-          <div className="bg-slate-50 rounded-2xl p-6 border border-slate-200/80 max-w-sm mx-auto">
-            <span className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1">
+          <div className="bg-slate-50 rounded-xl p-5 border border-slate-200/80 max-w-sm mx-auto">
+            <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider block mb-1">
               Overall Preparedness Score
             </span>
-            <div className="text-4xl font-black text-[#0B2A5B]">
-              {averageScore} <span className="text-sm font-semibold text-slate-400">/ 10</span>
+            <div className="text-3xl font-bold text-slate-900 tracking-tight">
+              {averageScore} <span className="text-xs font-normal text-slate-400">/ 10</span>
             </div>
-            <div className="text-xs text-emerald-600 font-semibold mt-2">
+            <div className="text-xs text-emerald-600 font-semibold mt-1">
               Ready for real university interviews!
             </div>
           </div>
 
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-2.5 pt-1">
             <button
               onClick={() => setPhase('intro')}
-              className="w-full sm:w-auto px-5 py-2.5 rounded-xl border border-slate-300 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+              className="w-full sm:w-auto px-4 py-2 rounded-xl border border-slate-200 text-xs font-medium text-slate-700 hover:bg-slate-50 shadow-xs"
             >
               Practice Another Scholarship
             </button>
             <Link
               href="/dashboard"
-              className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-[#0B2A5B] text-white text-xs font-bold hover:bg-[#1E4D9B]"
+              className="w-full sm:w-auto px-4 py-2 rounded-xl bg-brand-blue text-white text-xs font-semibold hover:bg-brand-blue/90 shadow-xs"
             >
               Back to Dashboard
             </Link>
@@ -359,4 +363,3 @@ export default function MockInterviewPage() {
     </div>
   );
 }
-

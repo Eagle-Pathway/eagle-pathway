@@ -110,7 +110,6 @@ export default function ParentChildrenPage() {
 
     setLinking(true);
     try {
-      // Find student by link code or phone
       let studentQuery = supabase.from('users').select('*').limit(1);
       if (code.length === 6) {
         studentQuery = studentQuery.eq('link_code', code);
@@ -126,7 +125,6 @@ export default function ParentChildrenPage() {
 
       const student = matchedStudents[0];
 
-      // Insert link
       const { error: insertErr } = await supabase.from('parent_student_links').insert({
         parent_id: user?.id,
         student_id: student.id,
@@ -155,52 +153,55 @@ export default function ParentChildrenPage() {
   const activeChild = childrenList.find((c) => c.id === selectedChildId);
 
   return (
-    <div className="space-y-6 max-w-6xl mx-auto pb-12">
+    <div className="space-y-6 pb-16">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-200/80 pb-4">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
-            <Users className="text-[#0B2A5B]" size={26} />
-            <span>Parent Portal: Children Progress</span>
+          <div className="inline-flex items-center gap-1.5 text-xs font-semibold text-brand-blue mb-1">
+            <Users size={14} />
+            <span>Family Management</span>
+          </div>
+          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
+            Children Academic Progress
           </h1>
-          <p className="text-xs text-slate-500">
+          <p className="text-xs text-slate-500 mt-1">
             Monitor your children&apos;s scholarship applications, attend upcoming tutoring sessions, and track their academic roadmap.
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 self-start sm:self-auto">
           <button
             onClick={() => setShowLinkModal(true)}
-            className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl border border-slate-300 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border border-slate-200 bg-white text-xs font-medium text-slate-700 hover:bg-slate-50 shadow-xs transition-colors"
           >
             <UserPlus size={14} />
-            <span>Link Another Child</span>
+            <span>Link Child</span>
           </button>
 
           <Link
             href="/request-tutor"
-            className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#C9A84C] to-[#DFBE60] text-[#0B2A5B] text-xs font-bold hover:brightness-105 shadow-sm"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-brand-blue hover:bg-brand-blue/90 text-white text-xs font-semibold shadow-xs transition-colors"
           >
-            <Sparkles size={14} />
-            <span>Book a Tutor for My Child</span>
+            <Sparkles size={14} className="text-brand-gold" />
+            <span>Book Tutor for Child</span>
           </Link>
         </div>
       </div>
 
       {/* Children Switcher Pills */}
       {childrenList.length > 0 && (
-        <div className="flex gap-2 border-b border-slate-200 pb-3 overflow-x-auto">
+        <div className="flex gap-2 border-b border-slate-200/70 pb-3 overflow-x-auto scrollbar-none">
           {childrenList.map((child) => (
             <button
               key={child.id}
               onClick={() => setSelectedChildId(child.id)}
-              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-2 whitespace-nowrap ${
                 selectedChildId === child.id
-                  ? 'bg-[#0B2A5B] text-white shadow-xs'
+                  ? 'bg-slate-900 text-white shadow-xs'
                   : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-50'
               }`}
             >
-              <span>👨‍🎓 {child.full_name}</span>
+              <span>{child.full_name}</span>
               {child.grade_level && (
                 <span className="text-[10px] opacity-75 font-normal">({child.grade_level})</span>
               )}
@@ -212,34 +213,34 @@ export default function ParentChildrenPage() {
       {loading ? (
         <div className="py-16 text-center text-xs text-slate-400">Loading children profiles...</div>
       ) : childrenList.length === 0 ? (
-        <div className="bg-white rounded-3xl border border-slate-200/80 p-10 text-center max-w-lg mx-auto space-y-4">
-          <div className="w-16 h-16 rounded-full bg-blue-50 text-[#0B2A5B] flex items-center justify-center mx-auto">
-            <Users size={32} />
+        <div className="bg-white rounded-xl border border-slate-200/80 p-8 text-center max-w-lg mx-auto space-y-3 shadow-xs">
+          <div className="w-12 h-12 rounded-full bg-blue-50 text-brand-blue flex items-center justify-center mx-auto">
+            <Users size={24} />
           </div>
-          <h2 className="text-lg font-bold text-slate-900">No Linked Children Yet</h2>
+          <h2 className="text-base font-bold text-slate-900">No Linked Children Yet</h2>
           <p className="text-xs text-slate-500 leading-relaxed">
             Link your child&apos;s Eagle Pathway account by entering their 6-character student code or registered phone number. You will be able to review their scholarship deadlines and booked tutoring hours.
           </p>
 
           <button
             onClick={() => setShowLinkModal(true)}
-            className="px-6 py-2.5 rounded-xl bg-[#0B2A5B] text-white text-xs font-bold hover:bg-[#1E4D9B] shadow-sm"
+            className="px-4 py-2 rounded-xl bg-brand-blue text-white text-xs font-semibold hover:bg-brand-blue/90 shadow-xs"
           >
             Link Child Now
           </button>
         </div>
       ) : (
-        <div className="space-y-6">
+        <div className="space-y-5">
           {/* Active Child Overview Card */}
           {activeChild && (
-            <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="bg-white rounded-xl border border-slate-200/80 p-4 md:p-5 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-2xl bg-[#0B2A5B] text-[#C9A84C] font-black text-lg flex items-center justify-center">
+                <div className="w-10 h-10 rounded-full bg-brand-gold/20 text-brand-gold font-bold text-xs flex items-center justify-center flex-shrink-0">
                   {activeChild.full_name[0]}
                 </div>
                 <div>
-                  <h3 className="font-bold text-base text-slate-900">{activeChild.full_name}</h3>
-                  <p className="text-xs text-slate-500">
+                  <h3 className="font-semibold text-sm text-slate-900">{activeChild.full_name}</h3>
+                  <p className="text-[11px] text-slate-500">
                     {activeChild.grade_level || 'Student'} • Target:{' '}
                     {activeChild.target_major || 'Global Universities'}
                   </p>
@@ -249,26 +250,28 @@ export default function ParentChildrenPage() {
               <div className="flex items-center gap-4 text-xs">
                 <div className="text-right">
                   <div className="font-bold text-slate-900">{childApplications.length}</div>
-                  <div className="text-[11px] text-slate-500">Applications</div>
+                  <div className="text-[10px] text-slate-500 uppercase tracking-wider">Applications</div>
                 </div>
                 <div className="h-6 w-px bg-slate-200" />
                 <div className="text-right">
                   <div className="font-bold text-emerald-700">{childBookings.length}</div>
-                  <div className="text-[11px] text-slate-500">Tutoring Sessions</div>
+                  <div className="text-[10px] text-slate-500 uppercase tracking-wider">Tutoring Sessions</div>
                 </div>
               </div>
             </div>
           )}
 
           {/* 2-Column Split: Applications & Tutoring Sessions */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
             {/* Child's Scholarship Applications */}
-            <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs space-y-4">
+            <div className="bg-white rounded-xl border border-slate-200/80 p-5 shadow-xs space-y-3.5">
               <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                  <Briefcase size={16} className="text-[#0B2A5B]" />
-                  <span>Scholarship Applications ({childApplications.length})</span>
-                </h3>
+                <div className="flex items-center gap-2">
+                  <Briefcase size={16} className="text-brand-blue" />
+                  <h3 className="text-sm font-bold text-slate-900">
+                    Scholarship Applications ({childApplications.length})
+                  </h3>
+                </div>
               </div>
 
               {childApplications.length === 0 ? (
@@ -276,14 +279,14 @@ export default function ParentChildrenPage() {
                   No applications added to tracker yet.
                 </div>
               ) : (
-                <div className="space-y-3">
+                <div className="space-y-2.5">
                   {childApplications.map((app) => (
                     <div
                       key={app.id}
-                      className="p-3.5 rounded-xl border border-slate-200/80 bg-slate-50/50 flex items-center justify-between gap-3 text-xs"
+                      className="p-3 rounded-lg border border-slate-200/70 bg-slate-50/50 flex items-center justify-between gap-3 text-xs"
                     >
                       <div>
-                        <div className="font-bold text-slate-900">
+                        <div className="font-semibold text-slate-900">
                           {app.scholarship?.name || app.scholarship_name || 'Scholarship'}
                         </div>
                         <div className="text-[11px] text-slate-500 mt-0.5">
@@ -291,7 +294,7 @@ export default function ParentChildrenPage() {
                         </div>
                       </div>
 
-                      <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-[#0B2A5B]/10 text-[#0B2A5B] uppercase tracking-wider">
+                      <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-blue-50 text-brand-blue border border-blue-200/60 uppercase tracking-wider">
                         {app.status || 'Draft'}
                       </span>
                     </div>
@@ -301,12 +304,14 @@ export default function ParentChildrenPage() {
             </div>
 
             {/* Child's Booked Tutoring Sessions */}
-            <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs space-y-4">
+            <div className="bg-white rounded-xl border border-slate-200/80 p-5 shadow-xs space-y-3.5">
               <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                  <Calendar size={16} className="text-[#0B2A5B]" />
-                  <span>Tutoring Schedule &amp; Classes ({childBookings.length})</span>
-                </h3>
+                <div className="flex items-center gap-2">
+                  <Calendar size={16} className="text-emerald-600" />
+                  <h3 className="text-sm font-bold text-slate-900">
+                    Tutoring Schedule &amp; Classes ({childBookings.length})
+                  </h3>
+                </div>
               </div>
 
               {childBookings.length === 0 ? (
@@ -314,17 +319,17 @@ export default function ParentChildrenPage() {
                   No upcoming tutoring sessions booked.
                 </div>
               ) : (
-                <div className="space-y-3">
+                <div className="space-y-2.5">
                   {childBookings.map((b) => (
                     <div
                       key={b.id}
-                      className="p-3.5 rounded-xl border border-slate-200/80 bg-slate-50/50 space-y-2 text-xs"
+                      className="p-3 rounded-lg border border-slate-200/70 bg-slate-50/50 space-y-1.5 text-xs"
                     >
                       <div className="flex items-center justify-between">
-                        <span className="font-bold text-slate-900">
+                        <span className="font-semibold text-slate-900">
                           {b.subject || '1-on-1 Tutoring Session'}
                         </span>
-                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 uppercase">
+                        <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200/60 uppercase">
                           {b.status}
                         </span>
                       </div>
@@ -339,10 +344,10 @@ export default function ParentChildrenPage() {
                           href={b.meeting_link}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 text-white font-bold text-[11px] hover:bg-emerald-700"
+                          className="inline-flex items-center gap-1.5 px-3 py-1 rounded-md bg-emerald-600 text-white font-semibold text-xs hover:bg-emerald-700 shadow-xs"
                         >
                           <Video size={12} />
-                          <span>Join Google Meet Room</span>
+                          <span>Join Google Meet</span>
                         </a>
                       )}
                     </div>
@@ -356,8 +361,8 @@ export default function ParentChildrenPage() {
 
       {/* Link Child Modal */}
       {showLinkModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl border border-slate-200 relative">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs animate-in fade-in duration-150">
+          <div className="bg-white rounded-xl max-w-md w-full p-6 shadow-xl border border-slate-200 relative">
             <button
               onClick={() => setShowLinkModal(false)}
               className="absolute right-4 top-4 text-slate-400 hover:text-slate-600"
@@ -366,7 +371,7 @@ export default function ParentChildrenPage() {
             </button>
 
             <div className="flex items-center gap-2 mb-4">
-              <div className="w-8 h-8 rounded-xl bg-[#0B2A5B]/10 text-[#0B2A5B] flex items-center justify-center">
+              <div className="w-8 h-8 rounded-lg bg-blue-50 text-brand-blue flex items-center justify-center">
                 <UserPlus size={16} />
               </div>
               <div>
@@ -379,20 +384,20 @@ export default function ParentChildrenPage() {
 
             {linkSuccess ? (
               <div className="py-8 text-center text-emerald-600 space-y-2">
-                <CheckCircle2 size={40} className="mx-auto" />
+                <CheckCircle2 size={36} className="mx-auto" />
                 <h4 className="font-bold text-sm text-slate-900">Child Linked Successfully!</h4>
               </div>
             ) : (
-              <form onSubmit={handleLinkChild} className="space-y-4">
+              <form onSubmit={handleLinkChild} className="space-y-3.5">
                 {linkError && (
-                  <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-xs text-red-700 flex items-center gap-2">
+                  <div className="p-3 rounded-lg bg-rose-50 border border-rose-200 text-xs text-rose-700 flex items-center gap-2">
                     <AlertCircle size={14} className="flex-shrink-0" />
                     <span>{linkError}</span>
                   </div>
                 )}
 
                 <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  <label className="block text-[11px] font-semibold text-slate-600 uppercase tracking-wider mb-1">
                     Student Link Code (6 Characters) or Phone *
                   </label>
                   <input
@@ -401,10 +406,10 @@ export default function ParentChildrenPage() {
                     onChange={(e) => setLinkCodeInput(e.target.value)}
                     placeholder="e.g. AB12CD or 0911234567"
                     required
-                    className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono font-bold text-slate-900 uppercase tracking-widest focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0B2A5B]/20"
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono font-bold text-slate-900 uppercase tracking-widest focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-blue/20"
                   />
                   <p className="text-[11px] text-slate-400 mt-1">
-                    Your child can find their link code inside their mobile/web profile screen.
+                    Your child can find their link code inside their mobile or web profile screen.
                   </p>
                 </div>
 
@@ -412,14 +417,14 @@ export default function ParentChildrenPage() {
                   <button
                     type="button"
                     onClick={() => setShowLinkModal(false)}
-                    className="px-4 py-2.5 rounded-xl border border-slate-300 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                    className="px-3.5 py-2 rounded-xl text-xs font-medium text-slate-600 hover:bg-slate-100 transition-colors"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
                     disabled={linking}
-                    className="px-5 py-2.5 rounded-xl bg-[#0B2A5B] text-white text-xs font-bold hover:bg-[#1E4D9B] disabled:opacity-50"
+                    className="px-4 py-2 rounded-xl bg-brand-blue text-white text-xs font-semibold hover:bg-brand-blue/90 disabled:opacity-50 shadow-xs transition-colors"
                   >
                     {linking ? 'Verifying...' : 'Link Child'}
                   </button>
@@ -432,4 +437,3 @@ export default function ParentChildrenPage() {
     </div>
   );
 }
-

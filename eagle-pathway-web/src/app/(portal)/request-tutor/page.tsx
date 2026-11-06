@@ -99,48 +99,49 @@ export default function RequestTutorPage() {
       return;
     }
     if (!phone.trim()) {
-      setErrorMsg('Please enter a valid phone number so our team can coordinate with your tutor.');
-      return;
-    }
-    if (deliveryMode !== 'Online' && !area.trim()) {
-      setErrorMsg('Please enter your area or neighborhood in Addis Ababa (e.g. Bole, Kazanchis, Kality).');
+      setErrorMsg('Please provide a valid phone number for educator coordination.');
       return;
     }
     if (selectedSubjects.length === 0) {
-      setErrorMsg('Please select at least one tutoring subject.');
+      setErrorMsg('Please select at least one subject you require help with.');
+      return;
+    }
+    if (deliveryMode !== 'Online' && !area.trim()) {
+      setErrorMsg('Please indicate your neighborhood or area in Addis Ababa.');
       return;
     }
 
     setLoading(true);
+
     try {
       const payload = {
-        posted_by: user?.id || null,
+        requester_id: user?.id || null,
         requester_name: requesterName.trim(),
-        requester_phone: phone.trim(),
-        place: deliveryMode === 'Online' ? 'Online (Google Meet)' : area.trim(),
-        grade: grade,
-        mode: deliveryMode,
+        phone: phone.trim(),
+        grade_level: grade,
+        delivery_mode: deliveryMode,
+        location: deliveryMode === 'Online' ? 'Online' : area.trim(),
         subjects: selectedSubjects,
-        hourly_rate: Number(hourlyBudget) || 500,
+        preferred_days: selectedDays,
         hours_per_session: Number(hoursPerSession) || 2,
+        preferred_time: startTime,
+        budget_per_hour: Number(hourlyBudget) || 500,
         gender_preference: genderPreference,
+        notes: notes.trim(),
         status: 'open',
-        notes: [
-          `Days: ${selectedDays.join(', ') || 'Flexible'}`,
-          `Time: ${startTime}`,
-          notes.trim(),
-        ]
-          .filter(Boolean)
-          .join(' | '),
       };
 
-      const { error } = await supabase.from('tutor_job_posts').insert(payload);
-      if (error) throw error;
+      const { data, error } = await supabase
+        .from('tutor_job_posts')
+        .insert(payload)
+        .select()
+        .single();
 
+      if (error) throw error;
       setSuccess(true);
     } catch (err: any) {
       console.error('Submit tutor request error:', err);
-      setErrorMsg('Failed to post your tutor request. Please verify your connection and try again.');
+      setErrorMsg('Failed to post request. Please check your connection and try again.');
     } finally {
       setLoading(false);
     }
@@ -148,18 +149,18 @@ export default function RequestTutorPage() {
 
   if (success) {
     return (
-      <div className="max-w-2xl mx-auto py-12 px-4 text-center">
-        <div className="w-16 h-16 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-5 shadow-sm">
-          <CheckCircle2 size={36} />
+      <div className="max-w-xl mx-auto py-12 px-4 text-center">
+        <div className="w-12 h-12 bg-emerald-50 text-emerald-600 border border-emerald-200/60 rounded-full flex items-center justify-center mx-auto mb-4 shadow-xs">
+          <CheckCircle2 size={28} />
         </div>
-        <h1 className="text-2xl font-bold text-slate-900 mb-2">
+        <h1 className="text-xl font-bold text-slate-900 mb-1.5">
           Tutor Request Broadcasted Successfully!
         </h1>
-        <p className="text-sm text-slate-600 mb-6 max-w-md mx-auto">
+        <p className="text-xs text-slate-600 mb-6 max-w-md mx-auto leading-relaxed">
           Your request is now live to verified Eagle Pathway educators. Our academic team will also review your request and connect you via phone/WhatsApp within a few hours.
         </p>
 
-        <div className="bg-slate-50 border border-slate-200 rounded-2xl p-5 text-left mb-6 max-w-md mx-auto space-y-2 text-xs">
+        <div className="bg-white border border-slate-200/80 rounded-xl p-4 text-left mb-6 max-w-md mx-auto space-y-2 text-xs shadow-xs">
           <div className="flex justify-between">
             <span className="text-slate-500">Student:</span>
             <span className="font-semibold text-slate-800">{requesterName}</span>
@@ -180,7 +181,7 @@ export default function RequestTutorPage() {
           </div>
         </div>
 
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-2.5">
           <button
             onClick={() => {
               setSuccess(false);
@@ -188,13 +189,13 @@ export default function RequestTutorPage() {
               setArea('');
               setNotes('');
             }}
-            className="w-full sm:w-auto px-5 py-2.5 rounded-xl border border-slate-300 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+            className="w-full sm:w-auto px-4 py-2 rounded-xl border border-slate-200 bg-white text-xs font-medium text-slate-700 hover:bg-slate-50 shadow-xs"
           >
             Post Another Request
           </button>
           <Link
             href="/dashboard"
-            className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-[#0B2A5B] text-white text-xs font-bold hover:bg-[#1E4D9B] shadow-sm"
+            className="w-full sm:w-auto px-4 py-2 rounded-xl bg-brand-blue text-white text-xs font-semibold hover:bg-brand-blue/90 shadow-xs"
           >
             Go to Dashboard
           </Link>
@@ -204,45 +205,46 @@ export default function RequestTutorPage() {
   }
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6 pb-12">
-      <div className="flex items-center gap-2">
+    <div className="max-w-3xl mx-auto space-y-6 pb-16">
+      <div className="flex items-center gap-2 border-b border-slate-200/80 pb-4">
         <Link
           href="/dashboard"
-          className="p-1.5 rounded-lg text-slate-500 hover:text-slate-800 hover:bg-slate-100"
+          className="p-1.5 rounded-lg text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition-colors"
         >
           <ChevronLeft size={18} />
         </Link>
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
+          <div className="inline-flex items-center gap-1.5 text-xs font-semibold text-brand-blue mb-1">
+            <Sparkles size={14} className="text-brand-gold" />
+            <span>Academic Concierge</span>
+          </div>
+          <h1 className="text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
             <span>Request a Verified 1-on-1 Tutor</span>
-            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[#C9A84C]/15 text-[#9A7B2C] border border-[#C9A84C]/30">
-              1-Minute Wizard
-            </span>
           </h1>
-          <p className="text-xs text-slate-500">
+          <p className="text-xs text-slate-500 mt-0.5">
             Tell us your subject needs, schedule, and budget. We match you with top-rated STEM, English, and National Exam educators.
           </p>
         </div>
       </div>
 
       {errorMsg && (
-        <div className="p-4 rounded-xl bg-red-50 border border-red-200 text-xs text-red-700 flex items-center gap-2.5">
-          <AlertCircle size={16} className="flex-shrink-0" />
+        <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-700 flex items-center gap-2">
+          <AlertCircle size={15} className="flex-shrink-0" />
           <span>{errorMsg}</span>
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="bg-white rounded-2xl border border-slate-200/80 p-6 shadow-sm space-y-6">
+      <form onSubmit={handleSubmit} className="bg-white rounded-xl border border-slate-200/80 p-5 md:p-6 shadow-xs space-y-6">
         {/* Contact Info */}
-        <div className="space-y-4 border-b border-slate-100 pb-6">
-          <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
-            <Phone size={15} className="text-[#0B2A5B]" />
+        <div className="space-y-3.5 border-b border-slate-100 pb-5">
+          <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+            <Phone size={14} className="text-brand-blue" />
             <span>1. Contact &amp; Student Details</span>
           </h2>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
             <div>
-              <label className="block text-xs font-medium text-slate-700 mb-1">
+              <label className="block text-[11px] font-semibold text-slate-600 uppercase tracking-wider mb-1">
                 Student or Parent Name *
               </label>
               <input
@@ -251,12 +253,12 @@ export default function RequestTutorPage() {
                 onChange={(e) => setRequesterName(e.target.value)}
                 placeholder="e.g. Selamawit Bekele"
                 required
-                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0B2A5B]/20"
+                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-blue/20"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-slate-700 mb-1">
+              <label className="block text-[11px] font-semibold text-slate-600 uppercase tracking-wider mb-1">
                 Phone Number (WhatsApp or Call) *
               </label>
               <input
@@ -265,19 +267,19 @@ export default function RequestTutorPage() {
                 onChange={(e) => setPhone(e.target.value)}
                 placeholder="e.g. 0911234567"
                 required
-                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0B2A5B]/20"
+                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-blue/20"
               />
             </div>
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-slate-700 mb-1">
+            <label className="block text-[11px] font-semibold text-slate-600 uppercase tracking-wider mb-1">
               Current Grade / Educational Level *
             </label>
             <select
               value={grade}
               onChange={(e) => setGrade(e.target.value)}
-              className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800"
+              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800"
             >
               {GRADE_LEVELS.map((g) => (
                 <option key={g} value={g}>
@@ -289,13 +291,13 @@ export default function RequestTutorPage() {
         </div>
 
         {/* Subjects */}
-        <div className="space-y-4 border-b border-slate-100 pb-6">
-          <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
-            <BookOpen size={15} className="text-[#0B2A5B]" />
+        <div className="space-y-3.5 border-b border-slate-100 pb-5">
+          <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+            <BookOpen size={14} className="text-brand-blue" />
             <span>2. Select Needed Subjects ({selectedSubjects.length} selected)</span>
           </h2>
 
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-1.5">
             {POPULAR_SUBJECTS.map((subj) => {
               const selected = selectedSubjects.includes(subj);
               return (
@@ -303,9 +305,9 @@ export default function RequestTutorPage() {
                   type="button"
                   key={subj}
                   onClick={() => toggleSubject(subj)}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
+                  className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all ${
                     selected
-                      ? 'bg-[#0B2A5B] text-white shadow-sm ring-1 ring-[#0B2A5B]'
+                      ? 'bg-slate-900 text-white shadow-xs'
                       : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                   }`}
                 >
@@ -316,18 +318,18 @@ export default function RequestTutorPage() {
             })}
           </div>
 
-          <div className="flex items-center gap-2 max-w-md pt-2">
+          <div className="flex items-center gap-2 max-w-md pt-1">
             <input
               type="text"
               value={customSubject}
               onChange={(e) => setCustomSubject(e.target.value)}
               placeholder="Other subject (e.g. French, Arabic, Civics)"
-              className="flex-1 px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:bg-white focus:outline-none"
+              className="flex-1 px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:bg-white focus:outline-none"
             />
             <button
               type="button"
               onClick={handleAddCustomSubject}
-              className="px-3.5 py-2 rounded-xl bg-slate-800 text-white text-xs font-semibold hover:bg-slate-700"
+              className="px-3.5 py-1.5 rounded-xl bg-slate-800 text-white text-xs font-semibold hover:bg-slate-700"
             >
               Add
             </button>
@@ -335,13 +337,13 @@ export default function RequestTutorPage() {
         </div>
 
         {/* Delivery Mode & Location */}
-        <div className="space-y-4 border-b border-slate-100 pb-6">
-          <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
-            <MapPin size={15} className="text-[#0B2A5B]" />
+        <div className="space-y-3.5 border-b border-slate-100 pb-5">
+          <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+            <MapPin size={14} className="text-brand-blue" />
             <span>3. Delivery Mode &amp; Location</span>
           </h2>
 
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-3 gap-2.5">
             {[
               { id: 'In-person', label: 'In-Person (Home)', desc: 'Tutor visits your home' },
               { id: 'Online', label: 'Online (Google Meet)', desc: 'Interactive digital classroom' },
@@ -353,11 +355,11 @@ export default function RequestTutorPage() {
                 onClick={() => setDeliveryMode(m.id as any)}
                 className={`p-3 rounded-xl border text-left transition-all ${
                   deliveryMode === m.id
-                    ? 'border-[#0B2A5B] bg-[#0B2A5B]/5 ring-1 ring-[#0B2A5B]'
+                    ? 'border-brand-blue bg-blue-50/50 ring-1 ring-brand-blue'
                     : 'border-slate-200 hover:border-slate-300 bg-white'
                 }`}
               >
-                <div className="font-bold text-xs text-slate-900">{m.label}</div>
+                <div className="font-semibold text-xs text-slate-900">{m.label}</div>
                 <div className="text-[10px] text-slate-500 mt-0.5">{m.desc}</div>
               </button>
             ))}
@@ -365,7 +367,7 @@ export default function RequestTutorPage() {
 
           {deliveryMode !== 'Online' && (
             <div>
-              <label className="block text-xs font-medium text-slate-700 mb-1">
+              <label className="block text-[11px] font-semibold text-slate-600 uppercase tracking-wider mb-1">
                 Neighborhood / Subcity in Addis Ababa *
               </label>
               <input
@@ -374,24 +376,24 @@ export default function RequestTutorPage() {
                 onChange={(e) => setArea(e.target.value)}
                 placeholder="e.g. Bole Medhanialem, Kazanchis, Kality near Crown Hotel"
                 required
-                className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0B2A5B]/20"
+                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-blue/20"
               />
             </div>
           )}
         </div>
 
         {/* Schedule & Budget */}
-        <div className="space-y-4 border-b border-slate-100 pb-6">
-          <h2 className="text-sm font-bold text-slate-800 uppercase tracking-wider flex items-center gap-2">
-            <Calendar size={15} className="text-[#0B2A5B]" />
+        <div className="space-y-3.5 border-b border-slate-100 pb-5">
+          <h2 className="text-xs font-semibold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+            <Calendar size={14} className="text-brand-blue" />
             <span>4. Schedule &amp; Hourly Budget</span>
           </h2>
 
           <div>
-            <label className="block text-xs font-medium text-slate-700 mb-1.5">
+            <label className="block text-[11px] font-semibold text-slate-600 uppercase tracking-wider mb-1.5">
               Preferred Days of the Week
             </label>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-1.5">
               {DAYS.map((d) => {
                 const selected = selectedDays.includes(d);
                 return (
@@ -399,9 +401,9 @@ export default function RequestTutorPage() {
                     type="button"
                     key={d}
                     onClick={() => toggleDay(d)}
-                    className={`w-11 h-9 rounded-xl text-xs font-bold transition-all ${
+                    className={`w-10 h-8 rounded-lg text-xs font-semibold transition-all ${
                       selected
-                        ? 'bg-[#0B2A5B] text-white shadow-sm'
+                        ? 'bg-slate-900 text-white shadow-xs'
                         : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                     }`}
                   >
@@ -412,15 +414,15 @@ export default function RequestTutorPage() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
             <div>
-              <label className="block text-xs font-medium text-slate-700 mb-1">
+              <label className="block text-[11px] font-semibold text-slate-600 uppercase tracking-wider mb-1">
                 Hours Per Session
               </label>
               <select
                 value={hoursPerSession}
                 onChange={(e) => setHoursPerSession(e.target.value)}
-                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800"
+                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800"
               >
                 <option value="1.5">1.5 Hours</option>
                 <option value="2">2 Hours (Standard)</option>
@@ -430,7 +432,7 @@ export default function RequestTutorPage() {
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-slate-700 mb-1">
+              <label className="block text-[11px] font-semibold text-slate-600 uppercase tracking-wider mb-1">
                 Preferred Time
               </label>
               <input
@@ -443,7 +445,7 @@ export default function RequestTutorPage() {
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-slate-700 mb-1">
+              <label className="block text-[11px] font-semibold text-slate-600 uppercase tracking-wider mb-1">
                 Budget (ETB / Hour)
               </label>
               <div className="relative">
@@ -455,7 +457,7 @@ export default function RequestTutorPage() {
                   onChange={(e) => setHourlyBudget(e.target.value)}
                   className="w-full pl-3 pr-12 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-900"
                 />
-                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-400">
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-semibold text-slate-400">
                   ETB/hr
                 </span>
               </div>
@@ -463,10 +465,10 @@ export default function RequestTutorPage() {
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-slate-700 mb-1">
+            <label className="block text-[11px] font-semibold text-slate-600 uppercase tracking-wider mb-1">
               Gender Preference for Educator
             </label>
-            <div className="flex gap-3">
+            <div className="flex gap-4">
               {[
                 { id: 'both', label: 'No Preference' },
                 { id: 'female', label: 'Female Educator' },
@@ -478,7 +480,7 @@ export default function RequestTutorPage() {
                     name="genderPref"
                     checked={genderPreference === g.id}
                     onChange={() => setGenderPreference(g.id as any)}
-                    className="accent-[#0B2A5B]"
+                    className="accent-slate-900"
                   />
                   <span>{g.label}</span>
                 </label>
@@ -487,7 +489,7 @@ export default function RequestTutorPage() {
           </div>
 
           <div>
-            <label className="block text-xs font-medium text-slate-700 mb-1">
+            <label className="block text-[11px] font-semibold text-slate-600 uppercase tracking-wider mb-1">
               Special Learning Goals or Notes (Optional)
             </label>
             <textarea
@@ -495,29 +497,29 @@ export default function RequestTutorPage() {
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               placeholder="e.g. Preparing for upcoming Ethiopian national entrance exam in May, needs extra patience with Calculus integration..."
-              className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none"
+              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none"
             />
           </div>
         </div>
 
         {/* Submit Bar */}
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-2">
-          <div className="flex items-center gap-2 text-xs text-slate-500">
-            <ShieldCheck size={16} className="text-emerald-600" />
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-1">
+          <div className="flex items-center gap-1.5 text-xs text-slate-500">
+            <ShieldCheck size={15} className="text-emerald-600" />
             <span>100% verified educators &amp; satisfaction guaranteed.</span>
           </div>
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full sm:w-auto px-8 py-3 rounded-xl bg-gradient-to-r from-[#0B2A5B] to-[#1E4D9B] text-white text-xs font-bold hover:brightness-110 transition-all shadow-md flex items-center justify-center gap-2 disabled:opacity-50"
+            className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-brand-blue hover:bg-brand-blue/90 text-white text-xs font-semibold shadow-xs flex items-center justify-center gap-2 disabled:opacity-50 transition-colors"
           >
             {loading ? (
               <span>Broadcasting Request...</span>
             ) : (
               <>
                 <span>Post Tutor Request</span>
-                <ArrowRight size={14} />
+                <ArrowRight size={13} />
               </>
             )}
           </button>
@@ -526,4 +528,3 @@ export default function RequestTutorPage() {
     </div>
   );
 }
-

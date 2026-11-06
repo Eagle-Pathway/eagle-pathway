@@ -132,20 +132,25 @@ export default function ResourcesPage() {
   });
 
   return (
-    <div className="space-y-6 max-w-6xl mx-auto pb-12">
+    <div className="space-y-6 max-w-6xl mx-auto pb-16">
       {/* Page Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
-          <BookOpen className="text-[#0B2A5B]" size={26} />
-          <span>Study Guides &amp; Resources Library</span>
-        </h1>
-        <p className="text-xs text-slate-500">
-          Curated exam prep materials, admissions essay blueprints, SAT/IELTS toolkits, and academic guidance for scholars.
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-200/80 pb-4">
+        <div>
+          <div className="inline-flex items-center gap-1.5 text-xs font-semibold text-brand-blue mb-1">
+            <BookOpen size={14} />
+            <span>Academic Library</span>
+          </div>
+          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
+            Study Guides &amp; Resources Library
+          </h1>
+          <p className="text-xs text-slate-500 mt-1">
+            Curated exam prep materials, admissions essay blueprints, SAT/IELTS toolkits, and academic guidance for scholars.
+          </p>
+        </div>
       </div>
 
       {/* Search and Filters */}
-      <div className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-xs space-y-3">
+      <div className="bg-white rounded-xl border border-slate-200/80 p-3.5 shadow-xs space-y-2.5">
         <div className="relative">
           <Search size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
           <input
@@ -153,19 +158,19 @@ export default function ResourcesPage() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search guides by title, exam, or keyword (e.g. SAT, IELTS, SOP)..."
-            className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0B2A5B]/20"
+            className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-blue/20"
           />
         </div>
 
-        <div className="flex flex-wrap gap-2 pt-1">
+        <div className="flex flex-wrap gap-1.5 pt-0.5">
           {categories.map((cat) => (
             <button
               key={cat}
               onClick={() => setSelectedCategory(cat)}
-              className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
                 selectedCategory === cat
-                  ? 'bg-[#0B2A5B] text-white shadow-xs'
-                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                  ? 'bg-slate-900 text-white shadow-xs'
+                  : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-50'
               }`}
             >
               {cat}
@@ -178,7 +183,7 @@ export default function ResourcesPage() {
       {loading ? (
         <div className="py-16 text-center text-xs text-slate-400">Loading resources library...</div>
       ) : filtered.length === 0 ? (
-        <div className="py-16 text-center bg-white rounded-2xl border border-slate-200 p-8">
+        <div className="py-16 text-center bg-white rounded-xl border border-slate-200 p-8 shadow-xs">
           <FileText size={32} className="mx-auto text-slate-300 mb-2" />
           <p className="text-xs font-semibold text-slate-700">No resources found matching your query.</p>
         </div>
@@ -187,11 +192,11 @@ export default function ResourcesPage() {
           {filtered.map((item) => (
             <div
               key={item.id}
-              className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-xs hover:border-[#0B2A5B]/30 transition-all flex flex-col justify-between"
+              className="bg-white rounded-xl border border-slate-200/80 p-4 md:p-5 shadow-xs hover:border-slate-300 hover:shadow-xs transition-all flex flex-col justify-between space-y-3"
             >
               <div>
-                <div className="flex items-center justify-between mb-3">
-                  <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[#0B2A5B]/10 text-[#0B2A5B]">
+                <div className="flex items-center justify-between mb-2.5">
+                  <span className="px-2 py-0.5 rounded text-[10px] font-semibold bg-blue-50 text-brand-blue border border-blue-200/60 uppercase">
                     {item.category}
                   </span>
                   {item.download_count && (
@@ -202,10 +207,10 @@ export default function ResourcesPage() {
                   )}
                 </div>
 
-                <h3 className="font-bold text-sm text-slate-900 leading-snug mb-2">
+                <h3 className="font-semibold text-sm text-slate-900 leading-snug mb-1.5">
                   {item.title}
                 </h3>
-                <p className="text-xs text-slate-500 line-clamp-3 leading-relaxed mb-4">
+                <p className="text-xs text-slate-500 line-clamp-3 leading-relaxed mb-3">
                   {item.description}
                 </p>
               </div>
@@ -220,13 +225,13 @@ export default function ResourcesPage() {
                     href={item.external_url}
                     target={item.external_url.startsWith('http') ? '_blank' : '_self'}
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-slate-50 hover:bg-[#0B2A5B] hover:text-white text-xs font-bold text-slate-700 transition-colors border border-slate-200"
+                    className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 hover:text-brand-blue text-xs font-medium transition-colors shadow-xs"
                   >
                     <span>Open Guide</span>
                     <ExternalLink size={12} />
                   </a>
                 ) : (
-                  <button className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-slate-50 hover:bg-[#0B2A5B] hover:text-white text-xs font-bold text-slate-700 transition-colors border border-slate-200">
+                  <button className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 hover:text-brand-blue text-xs font-medium transition-colors shadow-xs">
                     <Download size={12} />
                     <span>Download</span>
                   </button>
@@ -239,4 +244,3 @@ export default function ResourcesPage() {
     </div>
   );
 }
-
