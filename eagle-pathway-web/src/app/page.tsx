@@ -322,9 +322,9 @@ export default function LandingPage() {
           <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black text-slate-900 tracking-tight leading-[1.1] max-w-4xl mx-auto">
             Soar to World-Class Universities with{' '}
             <span className="bg-gradient-to-r from-[#0B2A5B] via-[#1E4D9B] to-[#C9A84C] bg-clip-text text-transparent">
-              End-to-End Admissions Support
+              Expert guidance
             </span>{' '}
-            &amp; AI Admissions.
+            &amp; End-to-End Admissions Support.
           </h1>
 
           {/* Subtitle */}
