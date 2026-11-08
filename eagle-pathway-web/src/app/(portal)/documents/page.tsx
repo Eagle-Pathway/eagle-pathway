@@ -7,24 +7,25 @@ import {
   FolderOpen,
   Upload,
   FileText,
-  File,
   Download,
   Trash2,
   CheckCircle2,
   AlertCircle,
   Loader2,
-  Filter,
+  X,
 } from 'lucide-react';
 
 interface UserDoc {
   id: string;
-  name: string;
-  type?: string;
-  category?: string;
+  user_id: string;
+  file_name: string;
+  file_path: string;
   file_url: string;
+  document_type: string;
   file_size?: number;
-  created_at: string;
+  mime_type?: string;
   status?: string;
+  created_at: string;
 }
 
 const CATEGORIES = [
@@ -49,6 +50,10 @@ export default function DocumentVaultPage() {
   const [uploadSuccess, setUploadSuccess] = useState<string | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
 
+  // Delete modal state
+  const [deleteTarget, setDeleteTarget] = useState<UserDoc | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
   useEffect(() => {
     async function fetchDocuments() {
       if (!user?.id) return;
@@ -56,7 +61,7 @@ export default function DocumentVaultPage() {
         const { data, error } = await supabase
           .from('documents')
           .select('*')
-          .eq('student_id', user.id)
+          .eq('user_id', user.id)
           .order('created_at', { ascending: false });
 
         if (error) throw error;
@@ -80,10 +85,11 @@ export default function DocumentVaultPage() {
     setUploadSuccess(null);
 
     try {
-      const fileExt = file.name.split('.').pop();
-      const filePath = `${user.id}/${Date.now()}_${file.name.replace(/[^a-zA-Z0-9._-]/g, '_')}`;
+      const fileExt = file.name.split('.').pop() || 'pdf';
+      const cleanName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+      const filePath = `${user.id}/${Date.now()}_${cleanName}`;
 
-      // Upload to Supabase Storage
+      // Upload file to Supabase Storage
       const { error: storageError } = await supabase.storage
         .from('documents')
         .upload(filePath, file, { upsert: true });
@@ -94,16 +100,17 @@ export default function DocumentVaultPage() {
         .from('documents')
         .getPublicUrl(filePath);
 
-      // Save record in documents table
+      // Save document record to database
       const { data: docRecord, error: dbError } = await supabase
         .from('documents')
         .insert({
-          student_id: user.id,
-          name: file.name,
+          user_id: user.id,
+          file_name: file.name,
+          file_path: filePath,
           file_url: publicUrl,
           file_size: file.size,
-          category: uploadCategory,
-          type: fileExt,
+          document_type: uploadCategory,
+          mime_type: file.type || fileExt,
           status: 'verified',
         })
         .select()
@@ -115,27 +122,35 @@ export default function DocumentVaultPage() {
       setUploadSuccess(`Successfully uploaded "${file.name}" to your Document Vault.`);
       setTimeout(() => setUploadSuccess(null), 4000);
     } catch (err: any) {
-      setUploadError('Failed to upload file. Please try again.');
+      setUploadError(err.message || 'Failed to upload document. Please check your network and try again.');
     } finally {
       setUploading(false);
       e.target.value = '';
     }
   };
 
-  const handleDelete = async (docId: string, fileName: string) => {
-    if (!confirm(`Are you sure you want to delete "${fileName}"?`)) return;
-
+  const confirmDelete = async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
     try {
-      await supabase.from('documents').delete().eq('id', docId);
-      setDocuments(documents.filter((d) => d.id !== docId));
+      if (deleteTarget.file_path) {
+        await supabase.storage.from('documents').remove([deleteTarget.file_path]).catch(() => {});
+      }
+      await supabase.from('documents').delete().eq('id', deleteTarget.id);
+      setDocuments(documents.filter((d) => d.id !== deleteTarget.id));
+      setDeleteTarget(null);
+      setUploadSuccess(`"${deleteTarget.file_name}" removed from vault.`);
+      setTimeout(() => setUploadSuccess(null), 3000);
     } catch (err) {
       console.warn('Delete document error:', err);
+    } finally {
+      setDeleting(false);
     }
   };
 
   const filtered = documents.filter((d) => {
     if (selectedCategory === 'All Documents') return true;
-    return d.category === selectedCategory;
+    return d.document_type === selectedCategory;
   });
 
   return (
@@ -208,7 +223,7 @@ export default function DocumentVaultPage() {
               ))}
             </select>
 
-            <label className="cursor-pointer px-4 py-1.5 rounded-xl bg-brand-blue hover:bg-brand-blue/90 text-white text-xs font-semibold shadow-xs transition-colors flex items-center gap-1.5">
+            <label className="cursor-pointer px-4 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold shadow-xs transition-colors flex items-center gap-1.5">
               <Upload size={13} />
               <span>Choose File</span>
               <input
@@ -264,6 +279,8 @@ export default function DocumentVaultPage() {
               ? (doc.file_size / (1024 * 1024)).toFixed(2) + ' MB'
               : 'Document';
 
+            const ext = doc.file_name.split('.').pop()?.toUpperCase() || 'FILE';
+
             return (
               <div
                 key={doc.id}
@@ -275,16 +292,16 @@ export default function DocumentVaultPage() {
                       <FileText size={18} />
                     </div>
                     <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-600 text-[10px] font-semibold uppercase">
-                      {doc.type || 'PDF'}
+                      {ext}
                     </span>
                   </div>
 
                   <div>
-                    <h4 className="font-semibold text-xs text-slate-900 truncate" title={doc.name}>
-                      {doc.name}
+                    <h4 className="font-semibold text-xs text-slate-900 truncate" title={doc.file_name}>
+                      {doc.file_name}
                     </h4>
                     <p className="text-[11px] text-slate-500 mt-0.5 font-medium">
-                      {doc.category || 'General Document'}
+                      {doc.document_type || 'General Document'}
                     </p>
                   </div>
                 </div>
@@ -302,8 +319,8 @@ export default function DocumentVaultPage() {
                       <Download size={14} />
                     </a>
                     <button
-                      onClick={() => handleDelete(doc.id, doc.name)}
-                      className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
+                      onClick={() => setDeleteTarget(doc)}
+                      className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
                       title="Delete file"
                     >
                       <Trash2 size={14} />
@@ -313,6 +330,43 @@ export default function DocumentVaultPage() {
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deleteTarget && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl border border-slate-200 max-w-sm w-full p-5 shadow-lg space-y-4 animate-in zoom-in-95 duration-150">
+            <div className="flex items-start justify-between">
+              <h3 className="font-bold text-sm text-slate-900">Remove Document</h3>
+              <button
+                onClick={() => setDeleteTarget(null)}
+                className="text-slate-400 hover:text-slate-600 p-1 rounded-lg"
+              >
+                <X size={16} />
+              </button>
+            </div>
+            <p className="text-xs text-slate-600 leading-relaxed">
+              Are you sure you want to permanently delete <strong className="text-slate-900">{deleteTarget.file_name}</strong> from your document vault?
+            </p>
+            <div className="flex justify-end gap-2 pt-2">
+              <button
+                onClick={() => setDeleteTarget(null)}
+                disabled={deleting}
+                className="px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmDelete}
+                disabled={deleting}
+                className="px-3 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold shadow-xs transition-colors flex items-center gap-1.5"
+              >
+                {deleting && <Loader2 size={12} className="animate-spin" />}
+                <span>{deleting ? 'Deleting...' : 'Delete Permanently'}</span>
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

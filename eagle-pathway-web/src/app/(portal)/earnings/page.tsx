@@ -20,16 +20,16 @@ import {
 import { formatDate } from '@/lib/date';
 import Link from 'next/link';
 
-interface PayoutRequest {
+interface PayoutRecord {
   id: string;
   tutor_id: string;
   amount: number;
   bank_name: string;
   account_number: string;
-  account_name: string;
-  status: 'pending' | 'approved' | 'paid' | 'rejected';
+  reference?: string;
+  status: 'pending' | 'processing' | 'completed' | 'failed' | 'paid' | 'approved' | 'rejected';
+  notes?: string;
   created_at: string;
-  admin_notes?: string;
 }
 
 const SUPPORTED_BANKS = [
@@ -45,7 +45,8 @@ const SUPPORTED_BANKS = [
 
 export default function TutorEarningsPage() {
   const { user } = useAuthStore();
-  const [payouts, setPayouts] = useState<PayoutRequest[]>([]);
+  const [tutorProfileId, setTutorProfileId] = useState<string | null>(null);
+  const [payouts, setPayouts] = useState<PayoutRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [completedHours, setCompletedHours] = useState(0);
   const [totalEarned, setTotalEarned] = useState(0);
@@ -65,29 +66,41 @@ export default function TutorEarningsPage() {
     async function fetchEarningsData() {
       if (!user?.id) return;
       try {
+        // Resolve Tutor profile ID (tutors.id) from tutors table
+        const { data: tutorProfile } = await supabase
+          .from('tutors')
+          .select('id')
+          .eq('user_id', user.id)
+          .maybeSingle();
+
+        const resolvedTutorId = tutorProfile?.id || user.id;
+        setTutorProfileId(resolvedTutorId);
+
+        // Fetch completed bookings for this tutor
         const { data: bookingsData } = await supabase
           .from('bookings')
-          .select('duration_hours, total_amount, status')
-          .eq('tutor_id', user.id);
+          .select('duration_hours, total_amount, amount, status')
+          .or(`tutor_id.eq.${resolvedTutorId},tutor_id.eq.${user.id}`);
 
         if (bookingsData) {
           const completed = bookingsData.filter((b) => b.status === 'completed');
           const hours = completed.reduce((sum, b) => sum + (Number(b.duration_hours) || 1), 0);
-          const earned = completed.reduce((sum, b) => sum + (Number(b.total_amount) || 0), 0);
+          const earned = completed.reduce((sum, b) => sum + (Number(b.total_amount || b.amount) || 0), 0);
           setCompletedHours(hours);
           setTotalEarned(earned);
         }
 
+        // Fetch payout history from tutor_payouts
         const { data: payoutsData, error: payoutsErr } = await supabase
-          .from('payout_requests')
+          .from('tutor_payouts')
           .select('*')
-          .eq('tutor_id', user.id)
+          .or(`tutor_id.eq.${resolvedTutorId},tutor_id.eq.${user.id}`)
           .order('created_at', { ascending: false });
 
         if (!payoutsErr && payoutsData) {
-          setPayouts(payoutsData);
+          setPayouts(payoutsData as PayoutRecord[]);
           const pending = payoutsData
-            .filter((p) => p.status === 'pending')
+            .filter((p) => p.status === 'pending' || p.status === 'processing')
             .reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
           setPendingPayout(pending);
         }
@@ -124,16 +137,16 @@ export default function TutorEarningsPage() {
     setModalLoading(true);
     try {
       const payload = {
-        tutor_id: user?.id,
+        tutor_id: tutorProfileId || user?.id,
         amount: numAmount,
         bank_name: bankName,
         account_number: accountNumber.trim(),
-        account_name: accountName.trim() || user?.full_name || 'Tutor',
+        notes: `Account Holder: ${accountName.trim() || user?.full_name || 'Tutor'}`,
         status: 'pending',
       };
 
       const { data, error } = await supabase
-        .from('payout_requests')
+        .from('tutor_payouts')
         .insert(payload)
         .select()
         .single();
@@ -141,7 +154,7 @@ export default function TutorEarningsPage() {
       if (error) throw error;
 
       if (data) {
-        setPayouts((prev) => [data, ...prev]);
+        setPayouts((prev) => [data as PayoutRecord, ...prev]);
         setPendingPayout((prev) => prev + numAmount);
       }
 
@@ -267,7 +280,11 @@ export default function TutorEarningsPage() {
         </div>
 
         {loading ? (
-          <div className="py-12 text-center text-xs text-slate-400">Loading payout records...</div>
+          <div className="space-y-3 py-4 animate-pulse">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="h-10 bg-slate-100 rounded-lg w-full" />
+            ))}
+          </div>
         ) : payouts.length === 0 ? (
           <div className="py-12 text-center">
             <div className="w-10 h-10 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center mx-auto mb-2.5">
@@ -300,18 +317,20 @@ export default function TutorEarningsPage() {
                       </td>
                       <td className="py-3 px-4 font-semibold text-slate-900">{p.bank_name}</td>
                       <td className="py-3 px-4 font-mono text-slate-600">{p.account_number}</td>
-                      <td className="py-3 px-4 text-slate-800">{p.account_name}</td>
+                      <td className="py-3 px-4 text-slate-800">
+                        {p.notes ? p.notes.replace('Account Holder: ', '') : user?.full_name || 'Tutor'}
+                      </td>
                       <td className="py-3 px-4 font-bold text-slate-900">
                         {Number(p.amount).toLocaleString()} ETB
                       </td>
                       <td className="py-3 px-4 text-right">
                         <span
                           className={`inline-block px-2 py-0.5 rounded text-[10px] font-semibold border uppercase tracking-wider ${
-                            p.status === 'paid'
+                            p.status === 'completed' || p.status === 'paid'
                               ? 'bg-emerald-50 text-emerald-700 border-emerald-200/60'
-                              : p.status === 'approved'
+                              : p.status === 'approved' || p.status === 'processing'
                               ? 'bg-blue-50 text-brand-blue border-blue-200/60'
-                              : p.status === 'rejected'
+                              : p.status === 'failed' || p.status === 'rejected'
                               ? 'bg-rose-50 text-rose-700 border-rose-200/60'
                               : 'bg-amber-50 text-amber-700 border-amber-200/60'
                           }`}

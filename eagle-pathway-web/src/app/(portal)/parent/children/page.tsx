@@ -51,7 +51,7 @@ export default function ParentChildrenPage() {
       try {
         const { data: links, error: linkErr } = await supabase
           .from('parent_student_links')
-          .select('student_id, student:users!parent_student_links_student_id_fkey(*)')
+          .select('student_id, student:users!student_id(*)')
           .eq('parent_id', user.id);
 
         if (!linkErr && links && links.length > 0) {
@@ -84,7 +84,7 @@ export default function ParentChildrenPage() {
             .order('updated_at', { ascending: false }),
           supabase
             .from('bookings')
-            .select('*, tutor:tutors(*)')
+            .select('*, tutor:tutors(*, user:users(full_name, avatar_url))')
             .eq('student_id', selectedChildId)
             .order('session_date', { ascending: true }),
         ]);
@@ -101,40 +101,42 @@ export default function ParentChildrenPage() {
   const handleLinkChild = async (e: React.FormEvent) => {
     e.preventDefault();
     setLinkError('');
-    const code = linkCodeInput.trim().toUpperCase();
+    const cleanInput = linkCodeInput.trim();
 
-    if (!code) {
-      setLinkError('Please enter your child\'s 6-character linking code or student phone number.');
+    if (!cleanInput) {
+      setLinkError('Please enter your child\'s registered phone number or email address.');
       return;
     }
 
     setLinking(true);
     try {
-      let studentQuery = supabase.from('users').select('*').limit(1);
-      if (code.length === 6) {
-        studentQuery = studentQuery.eq('link_code', code);
-      } else {
-        studentQuery = studentQuery.eq('phone', code);
-      }
+      const { data: matchedStudents, error: findErr } = await supabase
+        .from('users')
+        .select('*')
+        .or(`phone.eq.${cleanInput},email.eq.${cleanInput.toLowerCase()}`)
+        .limit(1);
 
-      const { data: matchedStudents, error: findErr } = await studentQuery;
       if (findErr || !matchedStudents || matchedStudents.length === 0) {
-        setLinkError('No student account found matching this code or phone number.');
+        setLinkError('No student account found with this phone number or email address.');
         return;
       }
 
       const student = matchedStudents[0];
 
-      const { error: insertErr } = await supabase.from('parent_student_links').insert({
-        parent_id: user?.id,
-        student_id: student.id,
-      });
+      if (user?.id) {
+        const { error: insertErr } = await supabase.from('parent_student_links').insert({
+          parent_id: user.id,
+          student_id: student.id,
+          relationship: 'parent',
+          is_verified: true,
+        });
 
-      if (insertErr && !insertErr.message.includes('unique')) {
-        throw insertErr;
+        if (insertErr && !insertErr.message.includes('unique')) {
+          throw insertErr;
+        }
       }
 
-      setChildrenList((prev) => [...prev, student]);
+      setChildrenList((prev) => (prev.some((c) => c.id === student.id) ? prev : [...prev, student]));
       setSelectedChildId(student.id);
       setLinkSuccess(true);
       setTimeout(() => {
@@ -144,7 +146,7 @@ export default function ParentChildrenPage() {
       }, 2000);
     } catch (err: any) {
       console.error(err);
-      setLinkError('Failed to link child. Please verify the code and try again.');
+      setLinkError('Failed to link child. Please verify the contact details and try again.');
     } finally {
       setLinking(false);
     }
@@ -334,6 +336,12 @@ export default function ParentChildrenPage() {
                         </span>
                       </div>
 
+                      {b.tutor?.user?.full_name && (
+                        <div className="text-[11px] font-medium text-slate-600">
+                          Instructor: {b.tutor.user.full_name}
+                        </div>
+                      )}
+
                       <div className="flex items-center justify-between text-slate-500 text-[11px]">
                         <span>Date: {formatDate(b.session_date)}</span>
                         <span>{b.duration_hours || 1} Hour Session</span>
@@ -398,18 +406,18 @@ export default function ParentChildrenPage() {
 
                 <div>
                   <label className="block text-[11px] font-semibold text-slate-600 uppercase tracking-wider mb-1">
-                    Student Link Code (6 Characters) or Phone *
+                    Student Registered Phone or Email *
                   </label>
                   <input
                     type="text"
                     value={linkCodeInput}
                     onChange={(e) => setLinkCodeInput(e.target.value)}
-                    placeholder="e.g. AB12CD or 0911234567"
+                    placeholder="e.g. 0911234567 or student@email.com"
                     required
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono font-bold text-slate-900 uppercase tracking-widest focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-blue/20"
+                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-blue/20"
                   />
                   <p className="text-[11px] text-slate-400 mt-1">
-                    Your child can find their link code inside their mobile or web profile screen.
+                    Enter the exact phone number or email your child registered with on Eagle Pathway.
                   </p>
                 </div>
 

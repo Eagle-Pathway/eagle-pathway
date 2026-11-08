@@ -216,18 +216,10 @@ export function NotificationsScreen() {
                   if (!n.is_read) {
                     handleMarkRead(n.id);
                   }
-
-                  const targetRoute = resolveNotificationRoute(n.data as any, n.type);
-                  if (targetRoute) {
-                    if (targetRoute.params) {
-                      router.push({
-                        pathname: targetRoute.pathname as any,
-                        params: targetRoute.params,
-                      });
-                    } else {
-                      router.push(targetRoute.pathname as any);
-                    }
-                  }
+                  router.push({
+                    pathname: '/notification-detail' as any,
+                    params: { id: n.id },
+                  });
                 }}
               >
                 <View style={[styles.iconWrap, { backgroundColor: iconCfg.bg }]}>
@@ -235,12 +227,13 @@ export function NotificationsScreen() {
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.itemTitle}>{n.title}</Text>
-                  <Text style={styles.itemBody}>{n.body}</Text>
+                  <Text style={styles.itemBody} numberOfLines={2}>{n.body}</Text>
                   <View style={styles.itemMetaRow}>
                     <Text style={styles.itemTime}>{formatRelativeTime(n.created_at)}</Text>
                     {!n.is_read && <View style={styles.unreadDot} />}
                   </View>
                 </View>
+                <Ionicons name="chevron-forward" size={16} color={Colors.textSecondary} style={{ marginHorizontal: 2 }} />
                 <TouchableOpacity 
                   style={styles.deleteBtn}
                   onPress={(e) => {

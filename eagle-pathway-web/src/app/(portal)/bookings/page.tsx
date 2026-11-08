@@ -17,6 +17,7 @@ import {
   ArrowRight,
 } from 'lucide-react';
 import { formatDate } from '@/lib/date';
+import { BookingCardSkeleton } from '@/components/ui/Skeletons';
 
 export default function BookingsPage() {
   const { user } = useAuthStore();
@@ -36,7 +37,19 @@ export default function BookingsPage() {
           .order('session_date', { ascending: false });
 
         if (isTutor) {
-          query.eq('tutor.user_id', user.id);
+          const { data: tutorData } = await supabase
+            .from('tutors')
+            .select('id')
+            .eq('user_id', user!.id)
+            .maybeSingle();
+
+          if (tutorData?.id) {
+            query.eq('tutor_id', tutorData.id);
+          } else {
+            setBookings([]);
+            setLoading(false);
+            return;
+          }
         } else {
           query.eq('student_id', user!.id);
         }
@@ -91,10 +104,7 @@ export default function BookingsPage() {
       </div>
 
       {loading ? (
-        <div className="py-20 flex flex-col items-center justify-center gap-3">
-          <div className="w-8 h-8 border-3 border-brand-blue/20 border-t-brand-blue rounded-full animate-spin" />
-          <p className="text-xs text-slate-500 font-medium">Loading your scheduled sessions...</p>
-        </div>
+        <BookingCardSkeleton />
       ) : bookings.length === 0 ? (
         <div className="py-16 text-center bg-white rounded-xl border border-slate-200/80 p-8 space-y-3 shadow-xs">
           <Calendar size={36} className="mx-auto text-slate-300" />

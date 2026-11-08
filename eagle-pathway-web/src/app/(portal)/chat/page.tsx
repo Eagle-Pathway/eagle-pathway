@@ -53,7 +53,7 @@ export default function ChatPage() {
     async function loadConversations() {
       try {
         const { data, error } = await supabase
-          .from('chat_messages')
+          .from('messages')
           .select('*, sender:users!sender_id(*), recipient:users!recipient_id(*)')
           .or(`sender_id.eq.${user?.id},recipient_id.eq.${user?.id}`)
           .order('created_at', { ascending: false });
@@ -102,7 +102,7 @@ export default function ChatPage() {
     async function loadThread() {
       try {
         const { data, error } = await supabase
-          .from('chat_messages')
+          .from('messages')
           .select('*')
           .or(
             `and(sender_id.eq.${user?.id},recipient_id.eq.${activePartnerId}),and(sender_id.eq.${activePartnerId},recipient_id.eq.${user?.id})`
@@ -115,7 +115,7 @@ export default function ChatPage() {
         // Mark as read
         if (user?.id) {
           await supabase
-            .from('chat_messages')
+            .from('messages')
             .update({ is_read: true })
             .eq('sender_id', activePartnerId)
             .eq('recipient_id', user.id);
@@ -132,7 +132,7 @@ export default function ChatPage() {
       .channel(`chat-${user.id}-${activePartnerId}`)
       .on(
         'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'chat_messages' },
+        { event: 'INSERT', schema: 'public', table: 'messages' },
         (payload) => {
           const newMsg = payload.new as MessageItem;
           if (
@@ -163,7 +163,7 @@ export default function ChatPage() {
 
     try {
       const { data, error } = await supabase
-        .from('chat_messages')
+        .from('messages')
         .insert({
           sender_id: user.id,
           recipient_id: activePartnerId,

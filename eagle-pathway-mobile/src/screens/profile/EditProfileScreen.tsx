@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet,
   TextInput,
@@ -15,6 +15,7 @@ import { showError } from '@/utils/errorHandler';
 import { withTimeout } from '@/utils/asyncUtils';
 import { getUserRole } from '@/utils/role';
 import { DEPARTMENTS, FIELDS_OF_STUDY, COUNTRIES, validatePhone } from '@eagle-pathway/shared';
+import { supabase } from '@/services/supabase';
 
 const CURRENT_LEVEL_OPTIONS: DropdownOption[] = [
   { label: 'High School Student', value: 'High School Student' },
@@ -158,6 +159,7 @@ export function EditProfileScreen() {
     telegram_username: user?.telegram_username || '',
     cgpa: user?.cgpa || '',
     teaching_experience: user?.teaching_experience || '1 – 2 Years',
+    hourly_rate: '400',
     children_count: user?.children_count || 1,
     children_grades: user?.children_grades || ['KG / Elementary (Grades 1-8)'],
     preferred_tutor_gender: user?.preferred_tutor_gender || 'No Preference',
@@ -166,8 +168,30 @@ export function EditProfileScreen() {
     custom_field_of_study: '',
     custom_department: '',
   });
+  const [tutorRecordId, setTutorRecordId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<{ [key: string]: string }>({});
+
+  useEffect(() => {
+    if (isTutor && user?.id) {
+      supabase
+        .from('tutors')
+        .select('id, hourly_rate, subjects')
+        .eq('user_id', user.id)
+        .maybeSingle()
+        .then(({ data }) => {
+          if (data) {
+            setTutorRecordId(data.id);
+            if (data.hourly_rate) {
+              setFormData(f => ({ ...f, hourly_rate: data.hourly_rate.toString() }));
+            }
+            if (Array.isArray(data.subjects) && data.subjects.length > 0) {
+              setFormData(f => ({ ...f, interested_subjects: data.subjects }));
+            }
+          }
+        });
+    }
+  }, [isTutor, user?.id]);
 
   const toggleSubject = (s: string) => {
     setFormData(prev => ({
@@ -260,9 +284,13 @@ export function EditProfileScreen() {
         updates.cgpa = formData.cgpa;
         updates.interested_subjects = formData.interested_subjects;
         updates.academic_summary = formData.academic_summary;
+        updates.teaching_experience = formData.teaching_experience;
       } else if (isParent) {
         updates.living_address = formData.living_address;
         updates.academic_summary = formData.academic_summary;
+        updates.children_grades = formData.children_grades;
+        updates.preferred_tutor_gender = formData.preferred_tutor_gender;
+        updates.preferred_session_format = formData.preferred_session_format;
       } else {
         // Student role
         const finalSubjects = formData.interested_subjects.map(s => (s === 'other' && formData.custom_field_of_study?.trim() ? formData.custom_field_of_study.trim() : s));
@@ -284,6 +312,22 @@ export function EditProfileScreen() {
       }
 
       await withTimeout(updateProfile(updates));
+
+      if (isTutor && user?.id) {
+        const parsedRate = Math.max(50, Math.round(parseFloat(formData.hourly_rate) || 400));
+        const tutorPayload: any = {
+          user_id: user.id,
+          hourly_rate: parsedRate,
+          subjects: formData.interested_subjects,
+          bio: formData.academic_summary || null,
+        };
+        if (tutorRecordId) {
+          await supabase.from('tutors').update(tutorPayload).eq('id', tutorRecordId);
+        } else {
+          await supabase.from('tutors').upsert(tutorPayload, { onConflict: 'user_id' });
+        }
+      }
+
       setLoading(false);
       toast.success('Profile Saved', 'Profile saved successfully!');
       router.back();
@@ -523,6 +567,22 @@ export function EditProfileScreen() {
           searchable
           style={{ marginBottom: Spacing.md }}
         />
+      </Section>
+
+      <Section title="💰 Tutoring Rate">
+        <Text style={editProfStyles.fieldLabel}>Hourly Tutoring Rate (ETB / hour) *</Text>
+        <TextInput
+          style={[editProfStyles.input, errors.hourly_rate && editProfStyles.inputError]}
+          keyboardType="numeric"
+          value={formData.hourly_rate}
+          onChangeText={t => { setErrors(e => ({ ...e, hourly_rate: '' })); setFormData(f => ({ ...f, hourly_rate: t })); }}
+          placeholder="e.g. 500"
+          placeholderTextColor={Colors.textSecondary}
+        />
+        {errors.hourly_rate && <Text style={editProfStyles.fieldError}>{errors.hourly_rate}</Text>}
+        <Text style={{ fontSize: 11, color: Colors.textSecondary, marginTop: 4 }}>
+          This rate is displayed to students and used for session bookings.
+        </Text>
       </Section>
 
       <Section title="✍️ About Yourself">

@@ -16,6 +16,7 @@ export { DocumentsScreen } from './profile/DocumentsScreen';
 export { BookingsScreen } from './profile/BookingsScreen';
 export { ProgressScreen } from './profile/ProgressScreen';
 export { NotificationsScreen } from './profile/NotificationsScreen';
+export { NotificationDetailScreen } from './profile/NotificationDetailScreen';
 export { SettingsScreen } from './profile/SettingsScreen';
 export { EditProfileScreen } from './profile/EditProfileScreen';
 

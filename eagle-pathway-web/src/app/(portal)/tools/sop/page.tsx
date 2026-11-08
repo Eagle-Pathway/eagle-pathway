@@ -14,6 +14,7 @@ import {
   Lightbulb,
   Award,
   BookOpen,
+  X,
 } from 'lucide-react';
 
 interface InlineComment {
@@ -38,6 +39,7 @@ export default function SopReviewerPage() {
   const [isReviewing, setIsReviewing] = useState(false);
   const [report, setReport] = useState<SopReport | null>(null);
   const [savedNotice, setSavedNotice] = useState(false);
+  const [sopNotice, setSopNotice] = useState<string | null>(null);
   const [targetApplicationId, setTargetApplicationId] = useState('');
   const [applications, setApplications] = useState<any[]>([]);
 
@@ -50,7 +52,7 @@ export default function SopReviewerPage() {
       if (!user?.id) return;
       const { data } = await supabase
         .from('applications')
-        .select('id, scholarship_name, scholarship:scholarships(name)')
+        .select('id, scholarship:scholarships(name)')
         .eq('student_id', user.id);
       if (data) setApplications(data);
     }
@@ -68,11 +70,13 @@ export default function SopReviewerPage() {
 
   const handleReviewSop = async () => {
     if (!content.trim() || wordCount < 50) {
-      alert('Please enter at least 50 words to analyze your Statement of Purpose thoroughly.');
+      setSopNotice('Please enter at least 50 words to analyze your Statement of Purpose thoroughly.');
+      setTimeout(() => setSopNotice(null), 5000);
       return;
     }
 
     setIsReviewing(true);
+    setSopNotice(null);
     try {
       const res = await fetch('/api/sop-review', {
         method: 'POST',
@@ -99,7 +103,8 @@ export default function SopReviewerPage() {
       }
     } catch (err) {
       console.error(err);
-      alert('Could not complete SOP review. Please try again.');
+      setSopNotice('Could not complete SOP review. Please check your network and try again.');
+      setTimeout(() => setSopNotice(null), 5000);
     } finally {
       setIsReviewing(false);
     }
@@ -134,7 +139,7 @@ export default function SopReviewerPage() {
           <button
             onClick={handleReviewSop}
             disabled={isReviewing || wordCount < 50}
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-brand-blue hover:bg-brand-blue/90 text-white text-xs font-semibold shadow-xs transition-colors disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold shadow-xs transition-colors disabled:opacity-50 cursor-pointer"
           >
             {isReviewing ? (
               <>
@@ -151,77 +156,109 @@ export default function SopReviewerPage() {
         </div>
       </div>
 
-      {/* Inputs Bar */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-xs">
-        <div>
-          <label className="block text-[11px] font-semibold text-slate-600 uppercase tracking-wider mb-1">
-            Target Scholarship or University
-          </label>
-          <input
-            type="text"
-            value={scholarshipName}
-            onChange={(e) => setScholarshipName(e.target.value)}
-            placeholder="e.g. Turkiye Burslari, DAAD, Fulbright, Oxford Rhodes"
-            className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-blue/20"
-          />
-        </div>
-
-        <div>
-          <label className="block text-[11px] font-semibold text-slate-600 uppercase tracking-wider mb-1">
-            Attach to Tracker Application (Optional)
-          </label>
-          <select
-            value={targetApplicationId}
-            onChange={(e) => setTargetApplicationId(e.target.value)}
-            className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800"
+      {sopNotice && (
+        <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-xs font-semibold flex items-center justify-between shadow-xs animate-in fade-in duration-150">
+          <div className="flex items-center gap-2.5">
+            <AlertCircle size={16} className="text-amber-600 flex-shrink-0" />
+            <span>{sopNotice}</span>
+          </div>
+          <button
+            onClick={() => setSopNotice(null)}
+            className="text-amber-600 hover:text-amber-800 text-xs underline font-bold"
           >
-            <option value="">-- No specific application attached --</option>
-            {applications.map((app) => (
-              <option key={app.id} value={app.id}>
-                {app.scholarship?.name || app.scholarship_name || 'Application'} ({app.id.slice(0, 8)})
-              </option>
-            ))}
-          </select>
+            Dismiss
+          </button>
         </div>
-      </div>
+      )}
 
-      {/* Editor & Analysis Split View */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
-        {/* Left: Textarea Editor */}
-        <div className="lg:col-span-7 bg-white rounded-xl border border-slate-200/80 p-4 md:p-5 shadow-xs flex flex-col min-h-[480px]">
-          <div className="flex items-center justify-between pb-3 border-b border-slate-100 text-xs">
-            <span className="font-semibold text-slate-800 flex items-center gap-1.5">
-              <FileText size={15} className="text-brand-blue" />
-              <span>Essay Text</span>
-            </span>
-            <div className="flex items-center gap-3 text-slate-400 font-medium text-[11px]">
-              <span>{wordCount} words</span>
-              <span>•</span>
-              <span>{charCount} characters</span>
+      {/* Main Grid: Left Editor & Right Scoring Panel */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        {/* Left Column: Editor & Options */}
+        <div className="lg:col-span-7 space-y-4">
+          <div className="bg-white rounded-xl border border-slate-200/80 p-4 md:p-5 shadow-xs space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pb-2 border-b border-slate-100">
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">
+                  Target Scholarship / Program
+                </label>
+                <input
+                  type="text"
+                  value={scholarshipName}
+                  onChange={(e) => setScholarshipName(e.target.value)}
+                  placeholder="e.g. DAAD Germany, Chevening, Fulbright"
+                  className="w-full px-3 py-1.5 bg-slate-50/70 border border-slate-200 rounded-lg text-xs font-medium text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-blue/20"
+                />
+              </div>
+
+              {applications.length > 0 && (
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">
+                    Link to Active Application
+                  </label>
+                  <select
+                    value={targetApplicationId}
+                    onChange={(e) => setTargetApplicationId(e.target.value)}
+                    className="w-full px-3 py-1.5 bg-slate-50/70 border border-slate-200 rounded-lg text-xs font-medium text-slate-900 focus:bg-white focus:outline-none"
+                  >
+                    <option value="">Do not link (Draft only)</option>
+                    {applications.map((app) => (
+                      <option key={app.id} value={app.id}>
+                        {app.scholarship?.name || 'Scholarship Application'}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+            </div>
+
+            {/* Essay Text Area */}
+            <div className="relative">
+              <textarea
+                value={content}
+                onChange={(e) => setContent(e.target.value)}
+                placeholder="Paste or write your Statement of Purpose draft here (minimum 50 words)..."
+                rows={16}
+                className="w-full p-4 bg-slate-50/40 border border-slate-200/90 rounded-xl text-xs md:text-sm text-slate-900 leading-relaxed font-serif focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-blue/20 transition-all resize-y"
+              />
+
+              <div className="flex items-center justify-between text-[11px] text-slate-400 mt-2 px-1">
+                <div className="flex items-center gap-3">
+                  <span>
+                    Words: <strong className="text-slate-700">{wordCount}</strong>
+                  </span>
+                  <span>
+                    Characters: <strong className="text-slate-700">{charCount}</strong>
+                  </span>
+                </div>
+                {wordCount < 50 && (
+                  <span className="text-amber-600 font-medium">
+                    (Need {50 - wordCount} more words to review)
+                  </span>
+                )}
+              </div>
             </div>
           </div>
-
-          <textarea
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            placeholder="Paste or write your Statement of Purpose, Motivation Letter, or Personal Statement here (minimum 50 words)..."
-            className="flex-1 w-full py-3 text-xs md:text-sm text-slate-800 leading-relaxed placeholder-slate-400 resize-none focus:outline-none"
-          />
         </div>
 
-        {/* Right: AI Score & Report */}
+        {/* Right Column: AI Scoring & Rubric */}
         <div className="lg:col-span-5 space-y-4">
           {report ? (
-            <div className="space-y-4">
-              {/* Score Card */}
+            <div className="space-y-4 animate-in fade-in duration-200">
+              {/* Score Summary Card */}
               <div className="bg-white rounded-xl border border-slate-200/80 p-5 shadow-xs">
-                <div className="flex items-center justify-between mb-3.5">
-                  <div className="flex items-center gap-2">
-                    <Award size={18} className="text-brand-gold" />
-                    <h3 className="font-bold text-xs text-slate-900 uppercase tracking-wider">Evaluation Score</h3>
+                <div className="flex items-center justify-between mb-3 border-b border-slate-100 pb-3">
+                  <div>
+                    <span className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
+                      Admissions Rubric Score
+                    </span>
+                    <h3 className="text-sm font-bold text-slate-900 mt-0.5">
+                      Committee Evaluation
+                    </h3>
                   </div>
-                  <div className="px-2.5 py-1 rounded-lg bg-brand-blue text-white font-bold text-base shadow-xs">
-                    {report.score} <span className="text-[11px] font-normal text-white/80">/ 100</span>
+
+                  <div className="flex items-baseline gap-1 bg-slate-900 text-white px-3 py-1.5 rounded-lg shadow-xs">
+                    <span className="text-2xl font-black">{report.score}</span>
+                    <span className="text-[10px] font-semibold text-white/80">/ 100</span>
                   </div>
                 </div>
 

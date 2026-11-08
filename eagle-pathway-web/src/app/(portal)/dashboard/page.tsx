@@ -52,8 +52,18 @@ export default function DashboardPage() {
 
   useEffect(() => {
     async function loadDashboardData() {
+      if (!user?.id) return;
       try {
         if (isTutor) {
+          // Resolve Tutor profile ID (tutors.id)
+          const { data: tutorProfile } = await supabase
+            .from('tutors')
+            .select('id')
+            .eq('user_id', user.id)
+            .maybeSingle();
+
+          const resolvedTutorId = tutorProfile?.id || user.id;
+
           // Load Tutor Data
           const [jobsRes, bookingsRes, schedRes] = await Promise.all([
             supabase
@@ -65,7 +75,7 @@ export default function DashboardPage() {
             supabase
               .from('bookings')
               .select('*, student:users(*)')
-              .eq('tutor_id', user?.id)
+              .or(`tutor_id.eq.${resolvedTutorId},tutor_id.eq.${user.id}`)
               .order('session_date', { ascending: true })
               .limit(5),
             supabase
@@ -81,16 +91,28 @@ export default function DashboardPage() {
 
           if (bookingsRes.data) {
             const completed = bookingsRes.data.filter((b: any) => b.status === 'completed');
-            const total = completed.reduce((sum: number, b: any) => sum + (Number(b.total_amount) || 0), 0);
+            const total = completed.reduce((sum: number, b: any) => sum + (Number(b.total_amount || b.amount) || 0), 0);
             const hours = completed.reduce((sum: number, b: any) => sum + (Number(b.duration_hours) || 1), 0);
             setTutorEarnings({ total, hours });
           }
         } else if (isParent) {
           // Load Parent Data
-          const { data: links } = await supabase
+          let links: any[] | null = null;
+          const { data: primaryLinks, error: linkErr } = await supabase
             .from('parent_student_links')
-            .select('student_id, student:users!parent_student_links_student_id_fkey(*)')
+            .select('student_id, student:users!student_id(*)')
             .eq('parent_id', user?.id);
+
+          if (!linkErr && primaryLinks) {
+            links = primaryLinks;
+          } else {
+            // Fallback for explicit constraint name if defined
+            const { data: fallbackLinks } = await supabase
+              .from('parent_student_links')
+              .select('student_id, student:users!parent_student_links_student_id_fkey(*)')
+              .eq('parent_id', user?.id);
+            links = fallbackLinks;
+          }
 
           const kids = (links || []).map((l: any) => l.student).filter(Boolean);
           setLinkedChildren(kids);
@@ -105,7 +127,7 @@ export default function DashboardPage() {
                 .limit(4),
               supabase
                 .from('bookings')
-                .select('*, tutor:tutors(*)')
+                .select('*, tutor:tutors(*, user:users(*))')
                 .eq('student_id', kids[0].id)
                 .limit(4),
             ]);

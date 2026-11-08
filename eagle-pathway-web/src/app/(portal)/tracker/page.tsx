@@ -20,6 +20,7 @@ import {
   MoreVertical,
 } from 'lucide-react';
 import { formatDate } from '@/lib/date';
+import { TrackerBoardSkeleton } from '@/components/ui/Skeletons';
 
 const COLUMNS = [
   { id: 'draft', title: 'Draft / In Progress', color: 'bg-slate-100 text-slate-700', border: 'border-slate-300' },
@@ -40,20 +41,33 @@ export default function ApplicationsTrackerPage() {
   const [newStatus, setNewStatus] = useState<any>('draft');
   const [newDeadline, setNewDeadline] = useState('');
   const [newNotes, setNewNotes] = useState('');
+  const [scholarshipOptions, setScholarshipOptions] = useState<any[]>([]);
+  const [selectedScholarshipId, setSelectedScholarshipId] = useState<string>('');
   const [modalLoading, setModalLoading] = useState(false);
+  const [modalError, setModalError] = useState<string | null>(null);
 
   useEffect(() => {
     async function fetchApplications() {
       if (!user?.id) return;
       try {
-        const { data, error } = await supabase
-          .from('applications')
-          .select('*, scholarship:scholarships(*)')
-          .eq('student_id', user.id)
-          .order('updated_at', { ascending: false });
+        const [{ data, error }, { data: sList }] = await Promise.all([
+          supabase
+            .from('applications')
+            .select('*, scholarship:scholarships(*)')
+            .eq('student_id', user.id)
+            .order('updated_at', { ascending: false }),
+          supabase
+            .from('scholarships')
+            .select('id, name, country')
+            .order('name'),
+        ]);
 
         if (error) throw error;
         setApplications((data as any) || []);
+        if (sList && sList.length > 0) {
+          setScholarshipOptions(sList);
+          setSelectedScholarshipId(sList[0].id);
+        }
       } catch (err) {
         console.warn('Fetch applications error:', err);
       } finally {
@@ -66,7 +80,14 @@ export default function ApplicationsTrackerPage() {
 
   const handleCreateApplication = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user || !newTitle.trim()) return;
+    setModalError(null);
+    if (!user) return;
+
+    const targetScholId = selectedScholarshipId || scholarshipOptions[0]?.id;
+    if (!targetScholId) {
+      setModalError('No active scholarship program selected.');
+      return;
+    }
 
     setModalLoading(true);
     try {
@@ -74,11 +95,12 @@ export default function ApplicationsTrackerPage() {
         .from('applications')
         .insert({
           student_id: user.id,
+          scholarship_id: targetScholId,
+          package_tier: 'standard',
           status: newStatus,
-          notes: newNotes.trim() || newTitle.trim(),
-          applied_date: new Date().toISOString(),
+          sop_content: newNotes.trim() || (newTitle.trim() ? `Notes: ${newTitle.trim()}` : undefined),
         })
-        .select()
+        .select('*, scholarship:scholarships(*)')
         .single();
 
       if (error) throw error;
@@ -86,8 +108,9 @@ export default function ApplicationsTrackerPage() {
       setShowModal(false);
       setNewTitle('');
       setNewNotes('');
-    } catch (err) {
+    } catch (err: any) {
       console.warn('Create application error:', err);
+      setModalError('Failed to save application to tracker. Please try again.');
     } finally {
       setModalLoading(false);
     }
@@ -155,10 +178,7 @@ export default function ApplicationsTrackerPage() {
       </div>
 
       {loading ? (
-        <div className="py-20 flex flex-col items-center justify-center gap-3">
-          <div className="w-8 h-8 border-3 border-brand-blue/20 border-t-brand-blue rounded-full animate-spin" />
-          <p className="text-xs text-slate-500 font-medium">Loading applications...</p>
-        </div>
+        <TrackerBoardSkeleton />
       ) : applications.length === 0 ? (
         <div className="py-16 text-center bg-white rounded-xl border border-slate-200/80 p-8 space-y-3 shadow-xs">
           <Briefcase size={36} className="mx-auto text-slate-300" />
@@ -309,24 +329,46 @@ export default function ApplicationsTrackerPage() {
               </p>
             </div>
 
+            {modalError && (
+              <div className="p-2.5 rounded-lg bg-rose-50 border border-rose-200 text-rose-700 text-xs">
+                {modalError}
+              </div>
+            )}
+
             <form onSubmit={handleCreateApplication} className="space-y-3.5 pt-1">
               <div>
                 <label className="block text-[11px] font-semibold text-slate-600 uppercase tracking-wider mb-1">
-                  Program or University Name
+                  Target Scholarship Program
+                </label>
+                <select
+                  value={selectedScholarshipId}
+                  onChange={(e) => setSelectedScholarshipId(e.target.value)}
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-blue/20"
+                >
+                  {scholarshipOptions.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.name} ({s.country || 'Global'})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-600 uppercase tracking-wider mb-1">
+                  Application Title / Custom Track Name
                 </label>
                 <input
                   type="text"
                   value={newTitle}
                   onChange={(e) => setNewTitle(e.target.value)}
-                  placeholder="e.g. Oxford Rhodes Scholarship or Harvard Admissions"
-                  required
+                  placeholder="e.g. Oxford Rhodes Scholarship or Fall 2026 Intake"
                   className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-blue/20"
                 />
               </div>
 
               <div>
                 <label className="block text-[11px] font-semibold text-slate-600 uppercase tracking-wider mb-1">
-                  Initial Status
+                  Initial Pipeline Stage
                 </label>
                 <select
                   value={newStatus}
@@ -335,14 +377,14 @@ export default function ApplicationsTrackerPage() {
                 >
                   <option value="draft">Draft / Preparing Documents</option>
                   <option value="submitted">Submitted</option>
-                  <option value="under_review">Under Review</option>
-                  <option value="accepted">Accepted</option>
+                  <option value="under_review">Under Review / Interview</option>
+                  <option value="accepted">Accepted / Enrolled</option>
                 </select>
               </div>
 
               <div>
                 <label className="block text-[11px] font-semibold text-slate-600 uppercase tracking-wider mb-1">
-                  Notes &amp; Deadlines (Optional)
+                  Application Notes &amp; Deadlines (Optional)
                 </label>
                 <textarea
                   value={newNotes}

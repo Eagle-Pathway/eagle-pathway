@@ -21,8 +21,11 @@ import {
   BookmarkCheck,
   Bookmark,
   Share2,
+  ArrowRight,
+  Loader2,
 } from 'lucide-react';
 import { formatDate, differenceInDays } from '@/lib/date';
+import { DetailHeroSkeleton } from '@/components/ui/Skeletons';
 
 export default function ScholarshipDetailPage() {
   const params = useParams();
@@ -34,6 +37,7 @@ export default function ScholarshipDetailPage() {
   const [loading, setLoading] = useState(true);
   const [isSaved, setIsSaved] = useState(false);
   const [hasApplied, setHasApplied] = useState(false);
+  const [addingToTracker, setAddingToTracker] = useState(false);
   const [actionSuccess, setActionSuccess] = useState<string | null>(null);
 
   useEffect(() => {
@@ -105,30 +109,36 @@ export default function ScholarshipDetailPage() {
       router.push('/login');
       return;
     }
-    if (hasApplied) return;
+    if (hasApplied) {
+      router.push('/tracker');
+      return;
+    }
 
+    setAddingToTracker(true);
     try {
       const { error } = await supabase.from('applications').insert({
         student_id: user.id,
         scholarship_id: scholarshipId,
+        package_tier: 'standard',
         status: 'draft',
-        applied_date: new Date().toISOString(),
-        notes: `Application for ${scholarship?.name || (scholarship as any)?.title}`,
+        sop_content: `Targeting ${scholarship?.name || 'International Scholarship'}`,
       });
       if (error) throw error;
       setHasApplied(true);
-      setActionSuccess('Added to your Applications Tracker! Track your progress from the Applications tab.');
-      setTimeout(() => setActionSuccess(null), 4000);
-    } catch (err) {
+      router.push('/tracker');
+    } catch (err: any) {
       console.warn('Add application error:', err);
+      setActionSuccess('Failed to add to tracker. Please check your connection.');
+      setTimeout(() => setActionSuccess(null), 3000);
+    } finally {
+      setAddingToTracker(false);
     }
   };
 
   if (loading) {
     return (
-      <div className="py-24 flex flex-col items-center justify-center gap-3">
-        <div className="w-8 h-8 border-3 border-brand-blue/20 border-t-brand-blue rounded-full animate-spin" />
-        <p className="text-xs text-slate-500 font-semibold">Loading scholarship details...</p>
+      <div className="py-6">
+        <DetailHeroSkeleton />
       </div>
     );
   }
@@ -240,14 +250,27 @@ export default function ScholarshipDetailPage() {
           <div className="flex items-center gap-2">
             <button
               onClick={handleAddToTracker}
-              disabled={hasApplied}
-              className={`px-3.5 py-2 rounded-xl text-xs font-semibold transition-all shadow-xs ${
+              disabled={addingToTracker}
+              className={`px-3.5 py-2 rounded-xl text-xs font-semibold transition-all shadow-xs flex items-center gap-1.5 ${
                 hasApplied
-                  ? 'bg-emerald-100 text-emerald-800 cursor-default'
+                  ? 'bg-emerald-50 text-emerald-800 border border-emerald-200/70 hover:bg-emerald-100 cursor-pointer'
                   : 'bg-brand-blue hover:bg-brand-blue/90 text-white'
               }`}
             >
-              {hasApplied ? 'In Application Tracker ✓' : '+ Add to Tracker'}
+              {addingToTracker ? (
+                <>
+                  <Loader2 size={13} className="animate-spin" />
+                  <span>Adding...</span>
+                </>
+              ) : hasApplied ? (
+                <>
+                  <CheckCircle2 size={13} className="text-emerald-600" />
+                  <span>In Application Tracker</span>
+                  <ArrowRight size={13} className="text-emerald-700 ml-0.5" />
+                </>
+              ) : (
+                <span>+ Add to Tracker</span>
+              )}
             </button>
           </div>
         </div>
@@ -273,29 +296,46 @@ export default function ScholarshipDetailPage() {
           </div>
         )}
 
-        {/* External Link Action */}
+        {/* External Link & Tracker Actions */}
         <div className="pt-6 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-4">
           <p className="text-xs text-slate-500">
             Official instructions, application portals, and university submission guidelines.
           </p>
-          {scholarship.application_url ? (
-            <a
-              href={scholarship.application_url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-brand-blue text-white font-semibold text-xs shadow-xs hover:bg-brand-blue/90 flex items-center justify-center gap-2 transition-all"
-            >
-              <span>Visit Official Application Portal</span>
-              <ExternalLink size={14} />
-            </a>
-          ) : (
+          <div className="flex flex-wrap items-center gap-2.5 w-full sm:w-auto">
+            {scholarship.application_url && (
+              <a
+                href={scholarship.application_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full sm:w-auto px-4 py-2.5 rounded-xl border border-slate-200 hover:border-slate-300 bg-white text-slate-700 font-semibold text-xs shadow-xs flex items-center justify-center gap-2 transition-all hover:bg-slate-50"
+              >
+                <span>Official Application Portal</span>
+                <ExternalLink size={14} className="text-slate-400" />
+              </a>
+            )}
             <button
               onClick={handleAddToTracker}
-              className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-brand-blue text-white font-semibold text-xs shadow-xs hover:bg-brand-blue/90"
+              disabled={addingToTracker}
+              className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-brand-blue text-white font-semibold text-xs shadow-xs hover:bg-brand-blue/90 flex items-center justify-center gap-2 transition-all cursor-pointer"
             >
-              <span>Start Application in Tracker</span>
+              {addingToTracker ? (
+                <>
+                  <Loader2 size={14} className="animate-spin" />
+                  <span>Adding to Tracker...</span>
+                </>
+              ) : hasApplied ? (
+                <>
+                  <span>Open in Application Tracker</span>
+                  <ArrowRight size={14} />
+                </>
+              ) : (
+                <>
+                  <span>Start Application in Tracker</span>
+                  <ArrowRight size={14} />
+                </>
+              )}
             </button>
-          )}
+          </div>
         </div>
       </div>
     </div>

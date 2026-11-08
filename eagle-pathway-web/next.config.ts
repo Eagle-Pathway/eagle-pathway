@@ -3,6 +3,7 @@ process.env.NEXT_IGNORE_INCORRECT_LOCKFILE = "1";
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  devIndicators: false,
   transpilePackages: ["@eagle-pathway/shared"],
   images: {
     remotePatterns: [

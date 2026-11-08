@@ -15,6 +15,8 @@ import {
   Loader2,
 } from 'lucide-react';
 import { formatDate } from '@/lib/date';
+import { TutorJobSkeleton } from '@/components/ui/Skeletons';
+import { getErrorMessage } from '@/utils/errorHandler';
 
 interface TutorJob {
   id: string;
@@ -41,6 +43,7 @@ export default function TutorJobsPage() {
   const [applyingJobId, setApplyingJobId] = useState<string | null>(null);
   const [proposalNotes, setProposalNotes] = useState('');
   const [applySuccess, setApplySuccess] = useState<string | null>(null);
+  const [applyError, setApplyError] = useState<string | null>(null);
   const [applyLoading, setApplyLoading] = useState(false);
 
   useEffect(() => {
@@ -69,21 +72,40 @@ export default function TutorJobsPage() {
     if (!applyingJobId || !user) return;
 
     setApplyLoading(true);
+    setApplyError(null);
+    setApplySuccess(null);
+
     try {
-      const { error } = await supabase.from('tutor_job_applications').insert({
-        job_id: applyingJobId,
-        tutor_user_id: user.id,
+      const payload = {
+        job_post_id: applyingJobId,
+        applicant_id: user.id,
         notes: proposalNotes.trim() || 'I am interested in taking on this tutoring request.',
         status: 'pending',
-      });
+      };
 
-      if (error) throw error;
+      const { error } = await supabase.from('tutor_job_applications').insert(payload);
+      if (error) {
+        // Fallback retry for legacy database instances
+        if (error.code === 'PGRST204' || error.message?.includes('column')) {
+          const { error: fallbackErr } = await supabase.from('tutor_job_applications').insert({
+            job_id: applyingJobId,
+            tutor_user_id: user.id,
+            notes: proposalNotes.trim() || 'I am interested in taking on this tutoring request.',
+            status: 'pending',
+          });
+          if (fallbackErr) throw fallbackErr;
+        } else {
+          throw error;
+        }
+      }
+
       setApplySuccess('Your tutoring proposal has been submitted to the student!');
       setApplyingJobId(null);
       setProposalNotes('');
       setTimeout(() => setApplySuccess(null), 4000);
     } catch (err: any) {
       console.warn('Apply proposal error:', err);
+      setApplyError(getErrorMessage(err, 'Failed to submit proposal. Please try again.'));
     } finally {
       setApplyLoading(false);
     }
@@ -119,10 +141,7 @@ export default function TutorJobsPage() {
       )}
 
       {loading ? (
-        <div className="py-20 flex flex-col items-center justify-center gap-3">
-          <div className="w-8 h-8 border-3 border-brand-blue/20 border-t-brand-blue rounded-full animate-spin" />
-          <p className="text-xs text-slate-500 font-medium">Loading open tutoring requests...</p>
-        </div>
+        <TutorJobSkeleton />
       ) : jobs.length === 0 ? (
         <div className="py-16 text-center bg-white rounded-xl border border-slate-200/80 p-8 space-y-3 shadow-xs">
           <ClipboardList size={36} className="mx-auto text-slate-300" />
@@ -211,6 +230,13 @@ export default function TutorJobsPage() {
                 Introduce yourself, highlight your teaching experience, and proposed schedule.
               </p>
             </div>
+
+            {applyError && (
+              <div className="p-3 rounded-lg bg-rose-50 border border-rose-200 text-xs text-rose-700 flex items-center gap-2">
+                <AlertCircle size={14} className="flex-shrink-0" />
+                <span>{applyError}</span>
+              </div>
+            )}
 
             <form onSubmit={handleApplyProposal} className="space-y-3.5 pt-1">
               <div>

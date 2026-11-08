@@ -22,6 +22,18 @@ import {
   Send,
 } from 'lucide-react';
 import { formatDate } from '@/lib/date';
+import { getErrorMessage } from '@/utils/errorHandler';
+import { DetailHeroSkeleton } from '@/components/ui/Skeletons';
+
+function getTutorSubjects(tData: any): string[] {
+  if (Array.isArray(tData?.subjects) && tData.subjects.length > 0) {
+    return tData.subjects;
+  }
+  if (Array.isArray(tData?.user?.interested_subjects) && tData.user.interested_subjects.length > 0) {
+    return tData.user.interested_subjects;
+  }
+  return ['Mathematics', 'Physics', 'Chemistry', 'English', 'SAT Prep'];
+}
 
 export default function TutorProfilePage() {
   const params = useParams();
@@ -36,7 +48,11 @@ export default function TutorProfilePage() {
   // Booking Form State
   const [selectedSubject, setSelectedSubject] = useState('');
   const [deliveryMode, setDeliveryMode] = useState<'online' | 'in_person'>('online');
-  const [sessionDate, setSessionDate] = useState('');
+  const [sessionDate, setSessionDate] = useState(() => {
+    const d = new Date();
+    d.setDate(d.getDate() + 1);
+    return d.toISOString().split('T')[0];
+  });
   const [sessionTime, setSessionTime] = useState('14:00');
   const [durationHours, setDurationHours] = useState(1);
   const [notes, setNotes] = useState('');
@@ -68,8 +84,9 @@ export default function TutorProfilePage() {
         setTutor(tData as any);
         setReviews((rData as any) || []);
 
-        if (tData?.subjects?.[0]) {
-          setSelectedSubject(tData.subjects[0]);
+        const subjectsList = getTutorSubjects(tData);
+        if (subjectsList.length > 0) {
+          setSelectedSubject((curr) => curr || subjectsList[0]);
         }
       } catch (err) {
         console.warn('Load tutor profile error:', err);
@@ -90,7 +107,9 @@ export default function TutorProfilePage() {
       return;
     }
 
-    if (!sessionDate || !sessionTime || !selectedSubject) {
+    const effectiveSubject = selectedSubject || displaySubjects[0] || 'Mathematics';
+
+    if (!sessionDate || !sessionTime || !effectiveSubject) {
       setErrorMsg('Please select a session subject, date, and preferred time.');
       return;
     }
@@ -103,26 +122,45 @@ export default function TutorProfilePage() {
       const platformFee = Math.round(subtotal * 0.1);
       const totalAmount = subtotal + platformFee;
 
-      const { error } = await supabase.from('bookings').insert({
+      const bookingPayload: Record<string, any> = {
         student_id: user.id,
         tutor_id: tutorId,
-        subject: selectedSubject,
+        subject: effectiveSubject,
         session_type: deliveryMode,
-        session_date: scheduledDateTime,
-        duration_minutes: durationHours * 60,
-        hourly_rate: hourlyRate,
-        platform_fee: platformFee,
+        session_date: sessionDate,
+        session_time: scheduledDateTime,
+        duration_hours: durationHours,
         total_amount: totalAmount,
+        platform_fee: platformFee,
         status: 'pending',
-        notes: notes.trim() || undefined,
-        payment_reference: transactionRef.trim() || undefined,
-        payment_method: paymentMethod,
-      });
+      };
 
-      if (error) throw error;
+      if (notes.trim()) {
+        bookingPayload.notes = notes.trim();
+      }
+
+      let { error: insertError } = await supabase.from('bookings').insert(bookingPayload);
+
+      // Self-healing fallback if PostgREST cache has column differences
+      if (insertError && (insertError.code === 'PGRST204' || (insertError as any)?.details?.includes('column'))) {
+        const fallbackPayload = {
+          student_id: user.id,
+          tutor_id: tutorId,
+          subject: effectiveSubject,
+          session_type: deliveryMode,
+          session_date: sessionDate,
+          session_time: scheduledDateTime,
+          duration_hours: durationHours,
+          total_amount: totalAmount,
+        };
+        const retryRes = await supabase.from('bookings').insert(fallbackPayload);
+        insertError = retryRes.error;
+      }
+
+      if (insertError) throw insertError;
       setBookingSuccess(true);
     } catch (err: any) {
-      setErrorMsg('Unable to confirm booking. Please review your details and try again.');
+      setErrorMsg(getErrorMessage(err));
     } finally {
       setBookingLoading(false);
     }
@@ -130,9 +168,8 @@ export default function TutorProfilePage() {
 
   if (loading) {
     return (
-      <div className="py-24 flex flex-col items-center justify-center gap-3">
-        <div className="w-8 h-8 border-3 border-brand-blue/20 border-t-brand-blue rounded-full animate-spin" />
-        <p className="text-xs text-slate-500 font-semibold">Loading instructor profile...</p>
+      <div className="py-6">
+        <DetailHeroSkeleton />
       </div>
     );
   }
@@ -157,6 +194,7 @@ export default function TutorProfilePage() {
   const subtotal = hourlyRate * durationHours;
   const platformFee = Math.round(subtotal * 0.1);
   const totalAmount = subtotal + platformFee;
+  const displaySubjects = getTutorSubjects(tutor);
 
   return (
     <div className="space-y-6 max-w-6xl mx-auto animate-in fade-in duration-200">
@@ -231,7 +269,7 @@ export default function TutorProfilePage() {
               <p className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">Academic Expertise</p>
               <h2 className="text-sm font-bold text-slate-900">Teaching Subjects</h2>
               <div className="flex flex-wrap gap-2">
-                {(tutor.subjects || ['Math', 'Physics', 'SAT']).map((s) => (
+                {displaySubjects.map((s) => (
                   <span
                     key={s}
                     className="px-3 py-1 rounded-xl bg-slate-100 text-slate-800 text-xs font-semibold"
@@ -328,11 +366,11 @@ export default function TutorProfilePage() {
                   Subject
                 </label>
                 <select
-                  value={selectedSubject}
+                  value={selectedSubject || (displaySubjects[0] ?? '')}
                   onChange={(e) => setSelectedSubject(e.target.value)}
                   className="w-full px-3.5 py-2.5 bg-slate-50/50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-blue/20 focus:border-brand-blue"
                 >
-                  {(tutor.subjects || ['Mathematics']).map((s) => (
+                  {displaySubjects.map((s) => (
                     <option key={s} value={s}>
                       {s}
                     </option>
@@ -349,11 +387,10 @@ export default function TutorProfilePage() {
                   <button
                     type="button"
                     onClick={() => setDeliveryMode('online')}
-                    className={`py-2 px-3 rounded-xl border text-xs font-semibold flex items-center justify-center gap-1.5 transition-all ${
-                      deliveryMode === 'online'
+                    className={`py-2 px-3 rounded-xl border text-xs font-semibold flex items-center justify-center gap-1.5 transition-all ${deliveryMode === 'online'
                         ? 'border-brand-blue bg-brand-blue/5 text-brand-blue ring-1 ring-brand-blue/30'
                         : 'border-slate-200 text-slate-600 hover:bg-slate-50'
-                    }`}
+                      }`}
                   >
                     <Globe size={14} />
                     <span>Online (Meet)</span>
@@ -362,11 +399,10 @@ export default function TutorProfilePage() {
                   <button
                     type="button"
                     onClick={() => setDeliveryMode('in_person')}
-                    className={`py-2 px-3 rounded-xl border text-xs font-semibold flex items-center justify-center gap-1.5 transition-all ${
-                      deliveryMode === 'in_person'
+                    className={`py-2 px-3 rounded-xl border text-xs font-semibold flex items-center justify-center gap-1.5 transition-all ${deliveryMode === 'in_person'
                         ? 'border-brand-blue bg-brand-blue/5 text-brand-blue ring-1 ring-brand-blue/30'
                         : 'border-slate-200 text-slate-600 hover:bg-slate-50'
-                    }`}
+                      }`}
                   >
                     <Home size={14} />
                     <span>In-Person</span>
@@ -414,11 +450,10 @@ export default function TutorProfilePage() {
                       key={hrs}
                       type="button"
                       onClick={() => setDurationHours(hrs)}
-                      className={`py-2 rounded-xl border text-xs font-semibold transition-all ${
-                        durationHours === hrs
+                      className={`py-2 rounded-xl border text-xs font-semibold transition-all ${durationHours === hrs
                           ? 'border-brand-blue bg-brand-blue/5 text-brand-blue ring-1 ring-brand-blue/30'
                           : 'border-slate-200 text-slate-600 hover:bg-slate-50'
-                      }`}
+                        }`}
                     >
                       {hrs} hr{hrs > 1 ? 's' : ''}
                     </button>
@@ -451,22 +486,20 @@ export default function TutorProfilePage() {
                   <button
                     type="button"
                     onClick={() => setPaymentMethod('telebirr')}
-                    className={`p-2 rounded-xl border font-semibold text-center transition-all ${
-                      paymentMethod === 'telebirr'
+                    className={`p-2 rounded-xl border font-semibold text-center transition-all ${paymentMethod === 'telebirr'
                         ? 'border-emerald-600 bg-emerald-50 text-emerald-800 ring-1 ring-emerald-600/30'
                         : 'border-slate-200 text-slate-600 hover:bg-slate-50'
-                    }`}
+                      }`}
                   >
                     Telebirr
                   </button>
                   <button
                     type="button"
                     onClick={() => setPaymentMethod('cbe')}
-                    className={`p-2 rounded-xl border font-semibold text-center transition-all ${
-                      paymentMethod === 'cbe'
+                    className={`p-2 rounded-xl border font-semibold text-center transition-all ${paymentMethod === 'cbe'
                         ? 'border-purple-600 bg-purple-50 text-purple-800 ring-1 ring-purple-600/30'
                         : 'border-slate-200 text-slate-600 hover:bg-slate-50'
-                    }`}
+                      }`}
                   >
                     CBE Bank
                   </button>

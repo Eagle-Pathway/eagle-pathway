@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/store/useAuthStore';
 import { validatePasswordStrength } from '@eagle-pathway/shared';
+import { getErrorMessage } from '@/utils/errorHandler';
 import { Settings2, Shield, User as UserIcon, Lock, Loader2, CheckCircle2, LogOut, Eye, EyeOff, Check, X } from 'lucide-react';
 
 export default function SettingsPage() {
@@ -77,7 +78,7 @@ export default function SettingsPage() {
 
       setProfileMsg({ type: 'success', text: 'Profile updated successfully!' });
     } catch (err: any) {
-      setProfileMsg({ type: 'error', text: err.message || 'Failed to update profile' });
+      setProfileMsg({ type: 'error', text: getErrorMessage(err) });
     } finally {
       setSavingProfile(false);
     }

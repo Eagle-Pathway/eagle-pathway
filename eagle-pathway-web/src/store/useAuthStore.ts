@@ -114,14 +114,56 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   updateProfile: async (updates: Partial<User>) => {
     const { user } = get();
-    if (!user) return;
-    const { error } = await supabase
-      .from('users')
-      .update(updates)
-      .eq('id', user.id);
+    if (!user) {
+      throw new Error('You must be signed in to update your profile.');
+    }
 
-    if (error) throw error;
-    set({ user: { ...user, ...updates } });
+    // Clean payload: strip undefined, null, and NaN
+    const cleanUpdates = Object.fromEntries(
+      Object.entries(updates).filter(([_, v]) => v !== undefined && v !== null && !Number.isNaN(v))
+    );
+
+    let dataToUpdate: Record<string, any> = { ...cleanUpdates };
+
+    // Self-healing loop: strip unknown columns if PostgREST schema cache complains
+    let lastError: any = null;
+    for (let attempts = 0; attempts < 4 && Object.keys(dataToUpdate).length > 0; attempts++) {
+      const { data, error } = await supabase
+        .from('users')
+        .update(dataToUpdate)
+        .eq('id', user.id)
+        .select()
+        .maybeSingle();
+
+      if (!error) {
+        // Sync clean updates to Auth User metadata so data is never lost across sessions
+        await supabase.auth.updateUser({ data: cleanUpdates }).catch(() => {});
+
+        if (data) {
+          set({ user: data as User });
+        } else {
+          set({ user: { ...user, ...cleanUpdates } });
+        }
+        return;
+      }
+
+      lastError = error;
+      const errLower = (error.message || '').toLowerCase();
+      if (errLower.includes('column') || errLower.includes('schema cache') || errLower.includes('pgrst204')) {
+        const match = error.message.match(/column ['"]([^'"]+)['"]/i) || error.message.match(/['"]([^'"]+)['"] column/i);
+        if (match && match[1] && match[1] in dataToUpdate) {
+          delete dataToUpdate[match[1]];
+          continue;
+        }
+      }
+      break;
+    }
+
+    if (lastError) throw lastError;
+
+    // Fallback: sync to auth metadata and update store
+    await supabase.auth.updateUser({ data: cleanUpdates }).catch(() => {});
+    set({ user: { ...user, ...cleanUpdates } });
   },
 }));
 

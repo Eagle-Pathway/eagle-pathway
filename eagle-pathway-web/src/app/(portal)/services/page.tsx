@@ -16,6 +16,7 @@ import {
   ShieldCheck,
   ChevronRight,
 } from 'lucide-react';
+import { getErrorMessage } from '@/utils/errorHandler';
 
 const SERVICES = [
   {
@@ -79,19 +80,34 @@ export default function ServicesPage() {
     setLoading(true);
     setErrorMsg('');
     try {
-      const { error } = await supabase.from('service_requests').insert({
+      const payload = {
         user_id: user?.id || null,
-        service_id: selectedService?.id,
-        service_name: selectedService?.title,
-        full_name: fullName.trim(),
-        phone: phone.trim(),
-        email: email.trim(),
-        notes: notes.trim(),
+        service_type: selectedService?.title || 'General Advisory',
+        recipient_name: fullName.trim() || user?.full_name || 'Scholar Client',
+        reason: `Phone: ${phone.trim()}${email ? ` | Email: ${email.trim()}` : ''}`,
+        additional_details: notes.trim() || `Advisory package: ${selectedService?.title || 'Advisory'}`,
         status: 'pending',
-      });
+      };
+
+      const { error } = await supabase.from('service_requests').insert(payload);
 
       if (error) {
-        console.warn('Service insert note:', error.message);
+        // Fallback retry for legacy database instances
+        if (error.code === 'PGRST204' || error.message?.includes('column')) {
+          const { error: fallbackErr } = await supabase.from('service_requests').insert({
+            user_id: user?.id || null,
+            service_id: selectedService?.id,
+            service_name: selectedService?.title,
+            full_name: fullName.trim(),
+            phone: phone.trim(),
+            email: email.trim(),
+            notes: notes.trim(),
+            status: 'pending',
+          });
+          if (fallbackErr) throw fallbackErr;
+        } else {
+          throw error;
+        }
       }
 
       setSuccess(true);
@@ -101,8 +117,8 @@ export default function ServicesPage() {
         setNotes('');
       }, 2500);
     } catch (err: any) {
-      console.error(err);
-      setErrorMsg('Failed to submit request. Please try again.');
+      console.warn('Service insert error:', err);
+      setErrorMsg(getErrorMessage(err, 'Failed to submit advisory request. Please try again.'));
     } finally {
       setLoading(false);
     }

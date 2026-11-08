@@ -15,6 +15,7 @@ import {
   Save,
   KeyRound,
 } from 'lucide-react';
+import { getErrorMessage } from '@/utils/errorHandler';
 
 export default function SettingsPage() {
   const { user, signOut, updateProfile } = useAuthStore();
@@ -24,6 +25,7 @@ export default function SettingsPage() {
   const [phone, setPhone] = useState(user?.phone || '');
   const [profileSaving, setProfileSaving] = useState(false);
   const [profileSuccess, setProfileSuccess] = useState(false);
+  const [profileError, setProfileError] = useState('');
 
   // Password Form
   const [newPassword, setNewPassword] = useState('');
@@ -40,6 +42,7 @@ export default function SettingsPage() {
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     setProfileSaving(true);
+    setProfileError('');
     try {
       await updateProfile({
         full_name: fullName.trim(),
@@ -47,9 +50,9 @@ export default function SettingsPage() {
       });
       setProfileSuccess(true);
       setTimeout(() => setProfileSuccess(false), 2500);
-    } catch (err) {
-      console.error(err);
-      alert('Failed to update profile details.');
+    } catch (err: any) {
+      console.warn('Profile update error:', err);
+      setProfileError(getErrorMessage(err, 'Failed to update profile details. Please try again.'));
     } finally {
       setProfileSaving(false);
     }
@@ -81,7 +84,8 @@ export default function SettingsPage() {
       setConfirmPassword('');
       setTimeout(() => setPasswordSuccess(false), 2500);
     } catch (err: any) {
-      setPasswordError(err.message || 'Failed to update password.');
+      console.warn('Password update error:', err);
+      setPasswordError(getErrorMessage(err, 'Failed to update password. Please check your inputs and try again.'));
     } finally {
       setPasswordLoading(false);
     }
@@ -113,6 +117,13 @@ export default function SettingsPage() {
             </span>
           )}
         </div>
+
+        {profileError && (
+          <div className="p-3 rounded-lg bg-rose-50 border border-rose-200 text-xs text-rose-700 flex items-center gap-2">
+            <AlertCircle size={14} className="flex-shrink-0" />
+            <span>{profileError}</span>
+          </div>
+        )}
 
         <form onSubmit={handleUpdateProfile} className="space-y-4 text-xs">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

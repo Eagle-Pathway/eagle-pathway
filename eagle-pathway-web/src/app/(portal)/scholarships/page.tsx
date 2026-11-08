@@ -16,6 +16,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { formatDate, differenceInDays } from '@/lib/date';
+import { ScholarshipCardSkeleton } from '@/components/ui/Skeletons';
 
 export default function ScholarshipsPage() {
   const [scholarships, setScholarships] = useState<Scholarship[]>([]);
@@ -108,7 +109,7 @@ export default function ScholarshipsPage() {
         </div>
         <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded bg-blue-50 text-brand-blue text-[11px] font-semibold border border-blue-200/60 self-start sm:self-auto">
           <GraduationCap size={14} />
-          <span>{filtered.length} Opportunities Available</span>
+          <span>{loading ? 'Finding opportunities...' : `${filtered.length} Opportunities Available`}</span>
         </div>
       </div>
 
@@ -171,9 +172,10 @@ export default function ScholarshipsPage() {
 
       {/* Grid of Scholarships */}
       {loading ? (
-        <div className="py-20 flex flex-col items-center justify-center gap-3">
-          <div className="w-8 h-8 border-3 border-brand-blue/20 border-t-brand-blue rounded-full animate-spin" />
-          <p className="text-xs text-slate-500 font-medium">Loading scholarship opportunities...</p>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {[1, 2, 3, 4, 5, 6].map((i) => (
+            <ScholarshipCardSkeleton key={i} />
+          ))}
         </div>
       ) : filtered.length === 0 ? (
         <div className="py-16 text-center bg-white rounded-xl border border-slate-200/80 p-8 space-y-3 shadow-xs">

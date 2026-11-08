@@ -35,7 +35,7 @@ export default function PortalLayout({
       try {
         const [{ count: msgCount }, { count: notifCount }] = await Promise.all([
           supabase
-            .from('chat_messages')
+            .from('messages')
             .select('*', { count: 'exact', head: true })
             .eq('recipient_id', user.id)
             .eq('is_read', false),
@@ -56,7 +56,7 @@ export default function PortalLayout({
 
     const channel = supabase
       .channel(`portal-badges-${user.id}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'chat_messages' }, () => fetchBadges())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'messages' }, () => fetchBadges())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'notifications' }, () => fetchBadges())
       .subscribe();
 

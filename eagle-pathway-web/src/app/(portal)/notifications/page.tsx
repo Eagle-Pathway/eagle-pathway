@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/store/useAuthStore';
 import {
@@ -10,8 +11,10 @@ import {
   Briefcase,
   Sparkles,
   CheckCheck,
+  ChevronRight,
 } from 'lucide-react';
 import { formatDate } from '@/lib/date';
+import { NotificationSkeleton } from '@/components/ui/Skeletons';
 
 interface NotificationItem {
   id: string;
@@ -90,10 +93,7 @@ export default function NotificationsPage() {
       </div>
 
       {loading ? (
-        <div className="py-20 flex flex-col items-center justify-center gap-3">
-          <div className="w-8 h-8 border-3 border-brand-blue/20 border-t-brand-blue rounded-full animate-spin" />
-          <p className="text-xs text-slate-500 font-semibold">Loading notifications...</p>
-        </div>
+        <NotificationSkeleton />
       ) : notifications.length === 0 ? (
         <div className="py-16 text-center bg-white rounded-xl border border-slate-200/80 p-8 shadow-xs space-y-3">
           <Bell size={36} className="mx-auto text-slate-300" />
@@ -105,14 +105,15 @@ export default function NotificationsPage() {
       ) : (
         <div className="bg-white rounded-xl border border-slate-200/80 divide-y divide-slate-100 shadow-xs overflow-hidden">
           {notifications.map((n) => (
-            <div
+            <Link
               key={n.id}
-              className={`p-4 sm:p-5 flex items-start gap-3.5 transition-colors ${
-                !n.is_read ? 'bg-brand-blue/5' : 'hover:bg-slate-50/60'
+              href={`/notifications/${n.id}`}
+              className={`p-4 sm:p-5 flex items-start gap-3.5 transition-all group hover:bg-slate-50/80 cursor-pointer ${
+                !n.is_read ? 'bg-brand-blue/5 border-l-4 border-l-brand-blue' : ''
               }`}
             >
               <div
-                className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 font-bold ${
+                className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 font-bold transition-transform group-hover:scale-105 ${
                   !n.is_read ? 'bg-brand-blue text-white shadow-xs' : 'bg-slate-100 text-slate-500'
                 }`}
               >
@@ -120,15 +121,20 @@ export default function NotificationsPage() {
               </div>
 
               <div className="flex-1 min-w-0 space-y-1">
-                <div className="flex items-center justify-between">
-                  <h4 className="text-xs font-bold text-slate-900">{n.title}</h4>
-                  <span className="text-[10px] text-slate-400 font-medium">
-                    {n.created_at ? formatDate(new Date(n.created_at), 'MMM d, h:mm a') : 'Recent'}
-                  </span>
+                <div className="flex items-center justify-between gap-2">
+                  <h4 className="text-xs font-bold text-slate-900 group-hover:text-brand-blue transition-colors">
+                    {n.title}
+                  </h4>
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <span className="text-[10px] text-slate-400 font-medium">
+                      {n.created_at ? formatDate(new Date(n.created_at), 'MMM d, h:mm a') : 'Recent'}
+                    </span>
+                    <ChevronRight size={14} className="text-slate-300 group-hover:text-brand-blue group-hover:translate-x-0.5 transition-all" />
+                  </div>
                 </div>
-                <p className="text-xs text-slate-600 leading-relaxed">{n.body}</p>
+                <p className="text-xs text-slate-600 leading-relaxed line-clamp-2">{n.body}</p>
               </div>
-            </div>
+            </Link>
           ))}
         </div>
       )}

@@ -17,6 +17,17 @@ import {
   Globe,
   Home,
 } from 'lucide-react';
+import { TutorCardSkeleton } from '@/components/ui/Skeletons';
+
+function getTutorSubjects(tData: any): string[] {
+  if (Array.isArray(tData?.subjects) && tData.subjects.length > 0) {
+    return tData.subjects;
+  }
+  if (Array.isArray(tData?.user?.interested_subjects) && tData.user.interested_subjects.length > 0) {
+    return tData.user.interested_subjects;
+  }
+  return ['Mathematics', 'Physics', 'English'];
+}
 
 export default function TutorsPage() {
   const [tutors, setTutors] = useState<Tutor[]>([]);
@@ -51,7 +62,7 @@ export default function TutorsPage() {
   const subjects = useMemo(() => {
     const set = new Set<string>();
     tutors.forEach((t) => {
-      (t.subjects || []).forEach((s) => set.add(s));
+      getTutorSubjects(t).forEach((s) => set.add(s));
     });
     return Array.from(set).sort();
   }, [tutors]);
@@ -60,15 +71,17 @@ export default function TutorsPage() {
     return tutors.filter((t) => {
       const name = t.user?.full_name?.toLowerCase() || '';
       const bio = t.bio?.toLowerCase() || '';
+      const tutorSubs = getTutorSubjects(t);
+
       const matchesSearch =
         !searchQuery.trim() ||
         name.includes(searchQuery.toLowerCase()) ||
         bio.includes(searchQuery.toLowerCase()) ||
-        (t.subjects || []).some((s) => s.toLowerCase().includes(searchQuery.toLowerCase()));
+        tutorSubs.some((s) => s.toLowerCase().includes(searchQuery.toLowerCase()));
 
       const matchesSubject =
         selectedSubject === 'all' ||
-        (t.subjects || []).some((s) => s.toLowerCase() === selectedSubject.toLowerCase());
+        tutorSubs.some((s) => s.toLowerCase() === selectedSubject.toLowerCase());
 
       const matchesMode =
         selectedMode === 'all' ||
@@ -97,7 +110,7 @@ export default function TutorsPage() {
         </div>
         <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded bg-amber-50 text-amber-800 text-[11px] font-semibold border border-amber-200/60 self-start sm:self-auto">
           <Star size={13} className="fill-amber-500 text-amber-500" />
-          <span>{filtered.length} Verified Instructors</span>
+          <span>{loading ? 'Finding verified faculty...' : `${filtered.length} Verified Instructors`}</span>
         </div>
       </div>
 
@@ -142,9 +155,10 @@ export default function TutorsPage() {
 
       {/* Tutors Grid */}
       {loading ? (
-        <div className="py-20 flex flex-col items-center justify-center gap-3">
-          <div className="w-8 h-8 border-3 border-brand-blue/20 border-t-brand-blue rounded-full animate-spin" />
-          <p className="text-xs text-slate-500 font-medium">Loading verified tutors...</p>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {[1, 2, 3, 4, 5, 6].map((i) => (
+            <TutorCardSkeleton key={i} />
+          ))}
         </div>
       ) : filtered.length === 0 ? (
         <div className="py-16 text-center bg-white rounded-xl border border-slate-200/80 p-8 space-y-3 shadow-xs">
@@ -208,7 +222,7 @@ export default function TutorsPage() {
                     Subjects Taught
                   </p>
                   <div className="flex flex-wrap gap-1">
-                    {(t.subjects || ['Math', 'Physics']).map((s) => (
+                    {getTutorSubjects(t).map((s) => (
                       <span
                         key={s}
                         className="px-2 py-0.5 rounded bg-slate-50 border border-slate-100 text-slate-700 text-[11px] font-medium"
