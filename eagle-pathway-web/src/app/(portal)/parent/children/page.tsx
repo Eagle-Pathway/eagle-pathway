@@ -49,12 +49,23 @@ export default function ParentChildrenPage() {
     async function loadChildren() {
       if (!user?.id) return;
       try {
-        const { data: links, error: linkErr } = await supabase
+        let links: any[] | null = null;
+        const { data: primaryLinks, error: linkErr } = await supabase
           .from('parent_student_links')
           .select('student_id, student:users!student_id(*)')
           .eq('parent_id', user.id);
 
-        if (!linkErr && links && links.length > 0) {
+        if (!linkErr && primaryLinks) {
+          links = primaryLinks;
+        } else {
+          const { data: fallbackLinks } = await supabase
+            .from('parent_student_links')
+            .select('student_id, student:users!parent_student_links_student_id_fkey(*)')
+            .eq('parent_id', user.id);
+          links = fallbackLinks;
+        }
+
+        if (links && links.length > 0) {
           const formatted: LinkedChild[] = links
             .map((l: any) => l.student)
             .filter(Boolean);

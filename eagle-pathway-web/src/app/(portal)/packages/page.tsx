@@ -11,7 +11,9 @@ import {
   ArrowRight,
   Send,
   Loader2,
+  AlertCircle,
 } from 'lucide-react';
+import { getErrorMessage } from '@/utils/errorHandler';
 
 interface Tier {
   id: string;
@@ -75,23 +77,45 @@ export default function CareerPackagesPage() {
   const [notes, setNotes] = useState('');
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
 
   const handleInquirySubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedTier || !user) return;
 
     setLoading(true);
+    setErrorMsg('');
     try {
-      await supabase.from('service_requests').insert({
+      const payload = {
         user_id: user.id,
         service_type: selectedTier.name,
-        contact_phone: phoneNumber || user.phone || '',
-        notes: `Inquiry for ${selectedTier.name} (${selectedTier.price}). Details: ${notes}`,
+        recipient_name: user.full_name || 'Scholar Client',
+        reason: `Phone: ${phoneNumber || user.phone || 'N/A'}`,
+        additional_details: `Inquiry for ${selectedTier.name} (${selectedTier.price}). Target & Details: ${notes.trim() || 'General Consultation'}`,
         status: 'pending',
-      });
+      };
+
+      const { error } = await supabase.from('service_requests').insert(payload);
+
+      if (error) {
+        // Fallback retry for legacy database instances
+        if (error.code === 'PGRST204' || error.message?.includes('column')) {
+          const { error: fallbackErr } = await supabase.from('service_requests').insert({
+            user_id: user.id,
+            service_type: selectedTier.name,
+            notes: `Phone: ${phoneNumber || user.phone || 'N/A'} | Inquiry for ${selectedTier.name} (${selectedTier.price}). Details: ${notes}`,
+            status: 'pending',
+          });
+          if (fallbackErr) throw fallbackErr;
+        } else {
+          throw error;
+        }
+      }
+
       setSubmitted(true);
-    } catch (err) {
+    } catch (err: any) {
       console.warn('Package inquiry error:', err);
+      setErrorMsg(getErrorMessage(err, 'Failed to submit inquiry. Please try again.'));
     } finally {
       setLoading(false);
     }
@@ -202,6 +226,13 @@ export default function CareerPackagesPage() {
               </div>
             ) : (
               <form onSubmit={handleInquirySubmit} className="space-y-4">
+                {errorMsg && (
+                  <div className="p-3 rounded-lg bg-rose-50 border border-rose-200 text-xs text-rose-700 flex items-center gap-2">
+                    <AlertCircle size={14} className="flex-shrink-0" />
+                    <span>{errorMsg}</span>
+                  </div>
+                )}
+
                 <p className="text-xs text-slate-500">
                   Tier Price: <strong className="text-slate-900 font-bold">{selectedTier.price}</strong>. Enter your phone number below, and an advisor will contact you directly.
                 </p>
