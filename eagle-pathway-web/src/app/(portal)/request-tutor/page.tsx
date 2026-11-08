@@ -19,6 +19,7 @@ import {
   ChevronLeft,
 } from 'lucide-react';
 import Link from 'next/link';
+import { getErrorMessage } from '@/utils/errorHandler';
 
 const POPULAR_SUBJECTS = [
   'Math (Algebra/Calculus)',
@@ -114,20 +115,24 @@ export default function RequestTutorPage() {
     setLoading(true);
 
     try {
+      const daysCount = selectedDays.length > 0 ? selectedDays.length : 3;
+      const preferredDaysStr = selectedDays.length > 0 ? `Preferred Days: ${selectedDays.join(', ')}` : '';
+      const combinedNotes = [notes.trim(), preferredDaysStr].filter(Boolean).join(' | ');
+
       const payload = {
-        requester_id: user?.id || null,
-        requester_name: requesterName.trim(),
-        phone: phone.trim(),
-        grade_level: grade,
-        delivery_mode: deliveryMode,
-        location: deliveryMode === 'Online' ? 'Online' : area.trim(),
+        posted_by: user?.id || null,
+        requester_name: requesterName.trim() || user?.full_name || 'Parent/Student',
+        requester_phone: phone.trim(),
+        grade: grade.trim(),
+        mode: deliveryMode.toLowerCase() === 'online' ? 'online' : 'in-person',
+        place: deliveryMode === 'Online' ? 'Online' : area.trim() || 'Addis Ababa',
         subjects: selectedSubjects,
-        preferred_days: selectedDays,
-        hours_per_session: Number(hoursPerSession) || 2,
-        preferred_time: startTime,
-        budget_per_hour: Number(hourlyBudget) || 500,
+        session_hours: Number(hoursPerSession) || 2,
+        days_per_week: daysCount,
+        start_time: startTime || '4:00 PM',
+        hourly_rate: Number(hourlyBudget) || 500,
         gender_preference: genderPreference,
-        notes: notes.trim(),
+        notes: combinedNotes || null,
         status: 'open',
       };
 
@@ -137,11 +142,31 @@ export default function RequestTutorPage() {
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        // Fallback retry for minimal database instances
+        if (error.code === 'PGRST204' || error.message?.includes('column')) {
+          const fallbackPayload = {
+            place: deliveryMode === 'Online' ? 'Online' : area.trim() || 'Addis Ababa',
+            grade: grade.trim(),
+            subjects: selectedSubjects,
+            notes: `${requesterName.trim()} (${phone.trim()}) - Rate: ${hourlyBudget} ETB/hr - ${combinedNotes}`,
+            status: 'open',
+          };
+          const { error: fallbackErr } = await supabase
+            .from('tutor_job_posts')
+            .insert(fallbackPayload)
+            .select()
+            .single();
+          if (fallbackErr) throw fallbackErr;
+        } else {
+          throw error;
+        }
+      }
+
       setSuccess(true);
     } catch (err: any) {
       console.error('Submit tutor request error:', err);
-      setErrorMsg('Failed to post request. Please check your connection and try again.');
+      setErrorMsg(getErrorMessage(err, 'Failed to post request. Please check your inputs and try again.'));
     } finally {
       setLoading(false);
     }
