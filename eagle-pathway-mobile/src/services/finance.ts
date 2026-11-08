@@ -46,7 +46,25 @@ export const financeService = {
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) {
+      if (error.code === 'PGRST204' || error.message?.includes('column')) {
+        const { data: fallbackData, error: fallbackErr } = await supabase
+          .from('tutor_payouts')
+          .insert({
+            tutor_id: params.tutorId,
+            amount: params.amount,
+            bank_name: params.bankName,
+            account_number: params.accountNumber,
+            reference: `Account: ${params.accountName}`,
+            status: 'pending'
+          })
+          .select()
+          .single();
+        if (fallbackErr) throw fallbackErr;
+        return fallbackData as PayoutRequest;
+      }
+      throw error;
+    }
     return data as PayoutRequest;
   },
 

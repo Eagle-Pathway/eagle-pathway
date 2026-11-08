@@ -136,11 +136,9 @@ export default function RequestTutorPage() {
         status: 'open',
       };
 
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('tutor_job_posts')
-        .insert(payload)
-        .select()
-        .single();
+        .insert(payload);
 
       if (error) {
         // Fallback retry for minimal database instances
@@ -154,9 +152,7 @@ export default function RequestTutorPage() {
           };
           const { error: fallbackErr } = await supabase
             .from('tutor_job_posts')
-            .insert(fallbackPayload)
-            .select()
-            .single();
+            .insert(fallbackPayload);
           if (fallbackErr) throw fallbackErr;
         } else {
           throw error;

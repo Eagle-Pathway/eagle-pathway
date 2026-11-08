@@ -215,7 +215,7 @@ export const tutorsService = {
     platformFee: number;
     studentName?: string;
   }): Promise<Booking> {
-    const { data, error } = await supabase
+    let { data, error } = await supabase
       .from('bookings')
       .insert({
         student_id: booking.studentId,
@@ -232,6 +232,29 @@ export const tutorsService = {
       })
       .select('*, tutor:tutors(*, user:users(*))')
       .single();
+
+    if (error && (error.code === 'PGRST204' || error.message?.includes('column'))) {
+      const fallbackRes = await supabase
+        .from('bookings')
+        .insert({
+          student_id: booking.studentId,
+          tutor_id: booking.tutorId,
+          subject: booking.subject,
+          session_date: booking.sessionDate,
+          session_time: booking.sessionTime,
+          duration_hours: booking.durationHours,
+          session_type: booking.sessionType,
+          notes: booking.notes,
+          amount: booking.totalAmount,
+          platform_fee: booking.platformFee,
+          status: 'pending',
+        })
+        .select('*, tutor:tutors(*, user:users(*))')
+        .single();
+      data = fallbackRes.data;
+      error = fallbackRes.error;
+    }
+
     if (error) throw error;
 
     // Fire-and-forget: notify tutor about new booking

@@ -177,6 +177,7 @@ export default function ChatPage() {
       setMessages((prev) => [...prev, data as any]);
     } catch (err) {
       console.warn('Send message error:', err);
+      setInputText(content);
     }
   };
 

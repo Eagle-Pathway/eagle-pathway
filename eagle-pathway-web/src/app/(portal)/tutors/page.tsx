@@ -83,10 +83,12 @@ export default function TutorsPage() {
         selectedSubject === 'all' ||
         tutorSubs.some((s) => s.toLowerCase() === selectedSubject.toLowerCase());
 
+      const isOnline = t.is_online !== false;
+      const isInPerson = Boolean(t.is_in_person || (t as any).delivery_mode === 'in-person' || (t as any).delivery_mode === 'both');
       const matchesMode =
         selectedMode === 'all' ||
-        (selectedMode === 'online' && t.is_online) ||
-        (selectedMode === 'in_person' && t.is_in_person);
+        (selectedMode === 'online' && isOnline) ||
+        (selectedMode === 'in_person' && isInPerson);
 
       return matchesSearch && matchesSubject && matchesMode;
     });

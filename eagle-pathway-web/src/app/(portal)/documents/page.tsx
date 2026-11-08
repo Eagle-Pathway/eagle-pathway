@@ -14,6 +14,7 @@ import {
   Loader2,
   X,
 } from 'lucide-react';
+import { getErrorMessage } from '@/utils/errorHandler';
 
 interface UserDoc {
   id: string;
@@ -122,7 +123,7 @@ export default function DocumentVaultPage() {
       setUploadSuccess(`Successfully uploaded "${file.name}" to your Document Vault.`);
       setTimeout(() => setUploadSuccess(null), 4000);
     } catch (err: any) {
-      setUploadError(err.message || 'Failed to upload document. Please check your network and try again.');
+      setUploadError(getErrorMessage(err, 'Failed to upload document. Please check your network and try again.'));
     } finally {
       setUploading(false);
       e.target.value = '';

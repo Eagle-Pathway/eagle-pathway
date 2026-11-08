@@ -142,8 +142,8 @@ export default function TutorProfilePage() {
       let { error: insertError } = await supabase.from('bookings').insert(bookingPayload);
 
       // Self-healing fallback if PostgREST cache has column differences
-      if (insertError && (insertError.code === 'PGRST204' || (insertError as any)?.details?.includes('column'))) {
-        const fallbackPayload = {
+      if (insertError && (insertError.code === 'PGRST204' || (insertError as any)?.details?.includes('column') || insertError.message?.includes('column'))) {
+        const fallbackPayload: Record<string, any> = {
           student_id: user.id,
           tutor_id: tutorId,
           subject: effectiveSubject,
@@ -152,7 +152,14 @@ export default function TutorProfilePage() {
           session_time: scheduledDateTime,
           duration_hours: durationHours,
           total_amount: totalAmount,
+          status: 'pending',
         };
+
+        if (insertError.message?.includes('total_amount')) {
+          delete fallbackPayload.total_amount;
+          fallbackPayload.amount = totalAmount;
+        }
+
         const retryRes = await supabase.from('bookings').insert(fallbackPayload);
         insertError = retryRes.error;
       }
