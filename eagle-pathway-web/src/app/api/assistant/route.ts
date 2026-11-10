@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 
 const GROQ_API_KEY = process.env.GROQ_API_KEY;
+const GROQ_MODEL = process.env.GROQ_MODEL || 'openai/gpt-oss-120b';
 
 export async function POST(req: Request) {
   try {
@@ -20,27 +21,33 @@ Tone: Professional, encouraging, highly structured, clear, and actionable. Use b
 Role Context: The current user is a ${userRole}. Tailor your advice specifically to their perspective.`;
 
     if (GROQ_API_KEY) {
-      const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${GROQ_API_KEY}`,
-        },
-        body: JSON.stringify({
-          model: 'llama-3.3-70b-versatile',
-          messages: [
-            { role: 'system', content: systemPrompt },
-            ...messages.map((m: any) => ({ role: m.role, content: m.content })),
-          ],
-          temperature: 0.6,
-          max_tokens: 1024,
-        }),
-      });
+      try {
+        const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${GROQ_API_KEY}`,
+          },
+          body: JSON.stringify({
+            model: GROQ_MODEL,
+            messages: [
+              { role: 'system', content: systemPrompt },
+              ...messages.map((m: any) => ({ role: m.role, content: m.content })),
+            ],
+            temperature: 0.6,
+            max_tokens: 1024,
+          }),
+        });
 
-      if (groqRes.ok) {
-        const data = await groqRes.json();
-        const reply = data.choices?.[0]?.message?.content || 'I am here to assist your academic journey.';
-        return NextResponse.json({ reply, content: reply });
+        if (groqRes.ok) {
+          const data = await groqRes.json();
+          const reply = data.choices?.[0]?.message?.content || 'I am here to assist your academic journey.';
+          return NextResponse.json({ reply, content: reply });
+        } else {
+          console.error('Groq Assistant API error:', groqRes.status, await groqRes.text());
+        }
+      } catch (apiErr) {
+        console.error('Groq Assistant API exception:', apiErr);
       }
     }
 

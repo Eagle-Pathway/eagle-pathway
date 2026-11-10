@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 
 const GROQ_API_KEY = process.env.GROQ_API_KEY;
+const GROQ_MODEL = process.env.GROQ_MODEL || 'openai/gpt-oss-120b';
 
 export async function POST(req: Request) {
   try {
@@ -32,31 +33,37 @@ You MUST respond strictly with a valid JSON object matching this TypeScript stru
 Do not include markdown code block wrappers if possible, return raw parseable JSON.`;
 
     if (GROQ_API_KEY) {
-      const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${GROQ_API_KEY}`,
-        },
-        body: JSON.stringify({
-          model: 'llama-3.3-70b-versatile',
-          response_format: { type: 'json_object' },
-          messages: [
-            { role: 'system', content: systemPrompt },
-            { role: 'user', content: `Statement of Purpose text:\n\n${sopContent}` },
-          ],
-          temperature: 0.3,
-          max_tokens: 1500,
-        }),
-      });
+      try {
+        const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${GROQ_API_KEY}`,
+          },
+          body: JSON.stringify({
+            model: GROQ_MODEL,
+            response_format: { type: 'json_object' },
+            messages: [
+              { role: 'system', content: systemPrompt },
+              { role: 'user', content: `Statement of Purpose text:\n\n${sopContent}` },
+            ],
+            temperature: 0.3,
+            max_tokens: 1500,
+          }),
+        });
 
-      if (groqRes.ok) {
-        const data = await groqRes.json();
-        const rawJson = data.choices?.[0]?.message?.content;
-        if (rawJson) {
-          const parsed = JSON.parse(rawJson);
-          return NextResponse.json(parsed);
+        if (groqRes.ok) {
+          const data = await groqRes.json();
+          const rawJson = data.choices?.[0]?.message?.content;
+          if (rawJson) {
+            const parsed = JSON.parse(rawJson);
+            return NextResponse.json(parsed);
+          }
+        } else {
+          console.error('Groq SOP Review API error:', groqRes.status, await groqRes.text());
         }
+      } catch (apiErr) {
+        console.error('Groq SOP Review API exception:', apiErr);
       }
     }
 

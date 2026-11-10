@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 
 const GROQ_API_KEY = process.env.GROQ_API_KEY;
+const GROQ_MODEL = process.env.GROQ_MODEL || 'openai/gpt-oss-120b';
 
 export async function POST(req: Request) {
   try {
@@ -22,29 +23,35 @@ Rules:
 4. Output cleanly in formatted markdown paragraphs.`;
 
     if (GROQ_API_KEY) {
-      const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${GROQ_API_KEY}`,
-        },
-        body: JSON.stringify({
-          model: 'llama-3.3-70b-versatile',
-          messages: [
-            { role: 'system', content: systemPrompt },
-            { role: 'user', content: 'Please generate the Statement of Purpose draft now.' },
-          ],
-          temperature: 0.6,
-          max_tokens: 1200,
-        }),
-      });
+      try {
+        const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${GROQ_API_KEY}`,
+          },
+          body: JSON.stringify({
+            model: GROQ_MODEL,
+            messages: [
+              { role: 'system', content: systemPrompt },
+              { role: 'user', content: 'Please generate the Statement of Purpose draft now.' },
+            ],
+            temperature: 0.6,
+            max_tokens: 1200,
+          }),
+        });
 
-      if (groqRes.ok) {
-        const data = await groqRes.json();
-        const draft = data.choices?.[0]?.message?.content;
-        if (draft) {
-          return NextResponse.json({ draft });
+        if (groqRes.ok) {
+          const data = await groqRes.json();
+          const draft = data.choices?.[0]?.message?.content;
+          if (draft) {
+            return NextResponse.json({ draft });
+          }
+        } else {
+          console.error('Groq Magic Draft API error:', groqRes.status, await groqRes.text());
         }
+      } catch (apiErr) {
+        console.error('Groq Magic Draft API exception:', apiErr);
       }
     }
 
