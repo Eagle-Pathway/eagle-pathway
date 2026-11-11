@@ -23,7 +23,8 @@ import {
   BookOpen,
   ChevronLeft,
   ChevronRight,
-  ClipboardList
+  ClipboardList,
+  Building2
 } from 'lucide-react';
 
 export default function Sidebar() {
@@ -34,6 +35,7 @@ export default function Sidebar() {
   const [pendingFinanceCount, setPendingFinanceCount] = useState(0);
   const [pendingTutorCount, setPendingTutorCount] = useState(0);
   const [pendingDocCount, setPendingDocCount] = useState(0);
+  const [pendingCareerAppCount, setPendingCareerAppCount] = useState(0);
 
   async function fetchOperationalCounts() {
     if (!user) return;
@@ -43,17 +45,20 @@ export default function Sidebar() {
         { count: financeCount },
         { count: pendingTutorTotal },
         { count: docCount },
+        { count: careerAppsCount },
       ] = await Promise.all([
         supabase.from('messages').select('*', { count: 'exact', head: true }).eq('recipient_id', user.id).eq('is_read', false),
         supabase.from('payments').select('*', { count: 'exact', head: true }).in('verification_status', ['manual_review', 'pending_verification']),
         supabase.from('tutors').select('*', { count: 'exact', head: true }).eq('is_verified', false),
         supabase.from('documents').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
+        supabase.from('job_applications').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
       ]);
 
       setUnreadCount(msgCount || 0);
       setPendingFinanceCount(financeCount || 0);
       setPendingTutorCount(pendingTutorTotal || 0);
       setPendingDocCount(docCount || 0);
+      setPendingCareerAppCount(careerAppsCount || 0);
     } catch (e) {
       console.warn('Sidebar operational counts fetch fallback:', e);
     }
@@ -70,6 +75,7 @@ export default function Sidebar() {
         .on('postgres_changes', { event: '*', schema: 'public', table: 'tutor_applications' }, () => fetchOperationalCounts())
         .on('postgres_changes', { event: '*', schema: 'public', table: 'tutors' }, () => fetchOperationalCounts())
         .on('postgres_changes', { event: '*', schema: 'public', table: 'documents' }, () => fetchOperationalCounts())
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'job_applications' }, () => fetchOperationalCounts())
         .subscribe();
 
       const handleChatRead = () => fetchOperationalCounts();
@@ -90,6 +96,7 @@ export default function Sidebar() {
     { name: 'Users', href: '/users', icon: Users },
     { name: 'Tutor Approvals', href: '/tutors', icon: UserCheck, badge: pendingTutorCount, badgeColor: 'bg-amber-500' },
     { name: 'Tutor Jobs', href: '/tutor-jobs', icon: ClipboardList },
+    { name: 'Careers & Hiring', href: '/careers', icon: Building2, badge: pendingCareerAppCount, badgeColor: 'bg-indigo-500' },
     { name: 'Documents', href: '/documents', icon: FileText, badge: pendingDocCount, badgeColor: 'bg-blue-500' },
     { name: 'Applications', href: '/applications', icon: Briefcase },
     { name: 'Scholarships', href: '/scholarships', icon: GraduationCap },
