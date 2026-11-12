@@ -15,40 +15,79 @@ export async function POST(req: NextRequest) {
 
     // 0. GET ALL USERS WITH LIVE SUSPENSION & ARCHIVED STATUS
     if (action === 'get_all_users') {
-      const [{ data: dbUsers, error: dbErr }, { data: authData, error: authErr }] = await Promise.all([
-        supabaseAdmin.from('users').select('*').order('created_at', { ascending: false }),
-        supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 1000 }),
-      ]);
+      const fetchAllDbUsers = async () => {
+        const all: any[] = [];
+        let from = 0;
+        const batchSize = 1000;
+        while (true) {
+          const { data, error } = await supabaseAdmin
+            .from('users')
+            .select('*')
+            .order('created_at', { ascending: false })
+            .range(from, from + batchSize - 1);
+          if (error) throw error;
+          if (!data || data.length === 0) break;
+          all.push(...data);
+          if (data.length < batchSize) break;
+          from += batchSize;
+        }
+        return all;
+      };
 
-      if (dbErr) {
-        return NextResponse.json({ error: dbErr.message }, { status: 500 });
-      }
+      const fetchAllAuthUsers = async () => {
+        const all: any[] = [];
+        let page = 1;
+        const perPage = 1000;
+        while (true) {
+          const { data, error } = await supabaseAdmin.auth.admin.listUsers({ page, perPage });
+          if (error) {
+            console.error('Error listing auth users page', page, error);
+            break;
+          }
+          if (!data?.users || data.users.length === 0) break;
+          all.push(...data.users);
+          if (data.users.length < perPage) break;
+          page++;
+        }
+        return all;
+      };
 
-      // Map auth metadata (banned status, is_deleted, previous_role)
-      const authUserMap = new Map<string, any>();
-      if (authData?.users) {
-        for (const u of authData.users) {
+      try {
+        const [dbUsers, authUsers] = await Promise.all([
+          fetchAllDbUsers(),
+          fetchAllAuthUsers(),
+        ]);
+
+        // Deduplicate database users by ID to guard against concurrent signup pagination shifts
+        const uniqueDbUsers = Array.from(new Map(dbUsers.map((u: any) => [u.id, u])).values());
+
+        // Map auth metadata (banned status, is_deleted, previous_role)
+        const authUserMap = new Map<string, any>();
+        for (const u of authUsers) {
           authUserMap.set(u.id, u);
         }
+
+        const usersWithStatus = uniqueDbUsers.map((u: any) => {
+          const authUser = authUserMap.get(u.id);
+          const isBanned = !!(authUser?.banned_until && new Date(authUser.banned_until) > new Date());
+          const isDeleted = !!(authUser?.user_metadata?.is_deleted || u.role === 'archived');
+          const deletedAt = authUser?.user_metadata?.deleted_at || null;
+
+          return {
+            ...u,
+            is_suspended: isBanned && !isDeleted,
+            is_deleted: isDeleted,
+            deleted_at: deletedAt,
+            previous_role: authUser?.user_metadata?.previous_role || u.role || 'student',
+            last_sign_in_at: authUser?.last_sign_in_at || null,
+          };
+        });
+
+        return NextResponse.json({ users: usersWithStatus });
+      } catch (err: any) {
+        console.error('Error fetching all users in admin action:', err);
+        return NextResponse.json({ error: err.message || 'Failed to fetch users' }, { status: 500 });
       }
-
-      const usersWithStatus = (dbUsers || []).map((u: any) => {
-        const authUser = authUserMap.get(u.id);
-        const isBanned = !!(authUser?.banned_until && new Date(authUser.banned_until) > new Date());
-        const isDeleted = !!(authUser?.user_metadata?.is_deleted || u.role === 'archived');
-        const deletedAt = authUser?.user_metadata?.deleted_at || null;
-
-        return {
-          ...u,
-          is_suspended: isBanned && !isDeleted,
-          is_deleted: isDeleted,
-          deleted_at: deletedAt,
-          previous_role: authUser?.user_metadata?.previous_role || u.role || 'student',
-          last_sign_in_at: authUser?.last_sign_in_at || null,
-        };
-      });
-
-      return NextResponse.json({ users: usersWithStatus });
     }
 
     if (!userId) {

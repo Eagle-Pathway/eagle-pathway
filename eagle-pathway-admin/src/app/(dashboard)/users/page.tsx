@@ -61,12 +61,34 @@ export default function UsersPage() {
       if (res.ok && json.users) {
         setUsers(json.users);
       } else {
-        const { data } = await supabase.from('users').select('*').order('created_at', { ascending: false });
-        if (data) setUsers(data);
+        const fallbackUsers: User[] = [];
+        let from = 0;
+        while (true) {
+          const { data } = await supabase.from('users').select('*').order('created_at', { ascending: false }).range(from, from + 999);
+          if (!data || data.length === 0) break;
+          fallbackUsers.push(...(data as User[]));
+          if (data.length < 1000) break;
+          from += 1000;
+        }
+        if (fallbackUsers.length > 0) {
+          const deduped = Array.from(new Map(fallbackUsers.map((u) => [u.id, u])).values());
+          setUsers(deduped);
+        }
       }
     } catch {
-      const { data } = await supabase.from('users').select('*').order('created_at', { ascending: false });
-      if (data) setUsers(data);
+      const fallbackUsers: User[] = [];
+      let from = 0;
+      while (true) {
+        const { data } = await supabase.from('users').select('*').order('created_at', { ascending: false }).range(from, from + 999);
+        if (!data || data.length === 0) break;
+        fallbackUsers.push(...(data as User[]));
+        if (data.length < 1000) break;
+        from += 1000;
+      }
+      if (fallbackUsers.length > 0) {
+        const deduped = Array.from(new Map(fallbackUsers.map((u) => [u.id, u])).values());
+        setUsers(deduped);
+      }
     } finally {
       setLoading(false);
     }
