@@ -33,24 +33,32 @@ export async function GET(req: NextRequest) {
     // 2. Fetch application counts per career
     const { data: appCounts, error: countErr } = await supabaseAdmin
       .from('job_applications')
-      .select('career_id');
+      .select('career_id, job_title');
 
-    const countsMap = new Map<string, number>();
-    if (!countErr && appCounts) {
-      for (const app of appCounts) {
-        if (app.career_id) {
-          countsMap.set(app.career_id, (countsMap.get(app.career_id) || 0) + 1);
+    const formatted = (careers || []).map((c: any) => {
+      let count = 0;
+      if (appCounts) {
+        for (const app of appCounts) {
+          if (app.career_id === c.id) {
+            count++;
+          } else if (
+            !app.career_id &&
+            app.job_title &&
+            c.title &&
+            app.job_title.toLowerCase().trim() === c.title.toLowerCase().trim()
+          ) {
+            count++;
+          }
         }
       }
-    }
-
-    const formatted = (careers || []).map((c: any) => ({
-      ...c,
-      responsibilities: Array.isArray(c.responsibilities) ? c.responsibilities : [],
-      requirements: Array.isArray(c.requirements) ? c.requirements : [],
-      benefits: Array.isArray(c.benefits) ? c.benefits : [],
-      applications_count: countsMap.get(c.id) || 0,
-    }));
+      return {
+        ...c,
+        responsibilities: Array.isArray(c.responsibilities) ? c.responsibilities : [],
+        requirements: Array.isArray(c.requirements) ? c.requirements : [],
+        benefits: Array.isArray(c.benefits) ? c.benefits : [],
+        applications_count: count,
+      };
+    });
 
     return NextResponse.json({ careers: formatted });
   } catch (err: any) {

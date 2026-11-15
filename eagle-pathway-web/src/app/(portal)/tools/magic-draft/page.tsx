@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuthStore } from '@/store/useAuthStore';
 import {
   Sparkles,
@@ -49,15 +49,38 @@ const DOCUMENT_TYPES: { id: DocumentType; title: string; subtitle: string; icon:
   },
 ];
 
-export default function MagicDraftPage() {
+function MagicDraftInner() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { user } = useAuthStore();
 
-  const [documentType, setDocumentType] = useState<DocumentType>('sop');
-  const [scholarshipName, setScholarshipName] = useState('Turkiye Burslari / Stipendium Hungaricum');
-  const [country, setCountry] = useState('Turkey / Hungary / Europe');
-  const [degreeLevel, setDegreeLevel] = useState("Master's Degree (MSc/MA)");
-  const [fieldOfStudy, setFieldOfStudy] = useState('Computer Science & Software Engineering');
+  const qType = searchParams.get('type') as DocumentType | null;
+  const qName = searchParams.get('scholarshipName') || searchParams.get('name');
+  const qCountry = searchParams.get('country');
+  const qDegree = searchParams.get('degree') || searchParams.get('degreeLevel');
+  const qField = searchParams.get('field') || searchParams.get('fieldOfStudy');
+
+  const [documentType, setDocumentType] = useState<DocumentType>(
+    qType && ['sop', 'study_plan', 'recommendation_brief', 'professor_outreach'].includes(qType)
+      ? qType
+      : 'sop'
+  );
+  const [scholarshipName, setScholarshipName] = useState(
+    qName || 'Turkiye Burslari / Stipendium Hungaricum'
+  );
+  const [country, setCountry] = useState(qCountry || 'Turkey / Hungary / Europe');
+  const [degreeLevel, setDegreeLevel] = useState(qDegree || "Master's Degree (MSc/MA)");
+  const [fieldOfStudy, setFieldOfStudy] = useState(qField || 'Computer Science & Software Engineering');
+
+  useEffect(() => {
+    if (qType && ['sop', 'study_plan', 'recommendation_brief', 'professor_outreach'].includes(qType)) {
+      setDocumentType(qType);
+    }
+    if (qName) setScholarshipName(qName);
+    if (qCountry) setCountry(qCountry);
+    if (qDegree) setDegreeLevel(qDegree);
+    if (qField) setFieldOfStudy(qField);
+  }, [qType, qName, qCountry, qDegree, qField]);
   const [researchTopic, setResearchTopic] = useState('Distributed Machine Learning for Rural Healthcare Logistics');
   const [targetProfessorName, setTargetProfessorName] = useState('Prof. Dr. Michael Weber');
   const [keyAccomplishments, setKeyAccomplishments] = useState(
@@ -400,5 +423,19 @@ export default function MagicDraftPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function MagicDraftPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="py-16 text-center text-xs text-slate-500">
+          Loading Multi-Document Application Studio...
+        </div>
+      }
+    >
+      <MagicDraftInner />
+    </Suspense>
   );
 }

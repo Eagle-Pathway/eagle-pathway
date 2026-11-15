@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useAuthStore } from '@/store/useAuthStore';
 import { supabase } from '@/lib/supabase';
 import {
@@ -51,21 +52,32 @@ interface SopReport {
   inline_comments: InlineComment[];
 }
 
-export default function SopReviewerPage() {
+function SopReviewerInner() {
+  const searchParams = useSearchParams();
+  const queryScholarship = searchParams.get('scholarshipName') || searchParams.get('name');
+  const queryAppId = searchParams.get('appId');
+
   const { user } = useAuthStore();
   const [content, setContent] = useState('');
-  const [scholarshipName, setScholarshipName] = useState('Turkiye Burslari / Stipendium Hungaricum');
+  const [scholarshipName, setScholarshipName] = useState(
+    queryScholarship || 'Turkiye Burslari / Stipendium Hungaricum'
+  );
   const [isReviewing, setIsReviewing] = useState(false);
   const [report, setReport] = useState<SopReport | null>(null);
   const [savedNotice, setSavedNotice] = useState(false);
   const [sopNotice, setSopNotice] = useState<string | null>(null);
-  const [targetApplicationId, setTargetApplicationId] = useState('');
+  const [targetApplicationId, setTargetApplicationId] = useState(queryAppId || '');
   const [applications, setApplications] = useState<any[]>([]);
   const [appliedQuotes, setAppliedQuotes] = useState<Set<string>>(new Set());
 
   // Word & Char counter
   const wordCount = content.trim() ? content.trim().split(/\s+/).length : 0;
   const charCount = content.length;
+
+  useEffect(() => {
+    if (queryScholarship) setScholarshipName(queryScholarship);
+    if (queryAppId) setTargetApplicationId(queryAppId);
+  }, [queryScholarship, queryAppId]);
 
   useEffect(() => {
     async function loadApps() {
@@ -538,5 +550,19 @@ export default function SopReviewerPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function SopReviewerPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="py-16 text-center text-xs text-slate-500">
+          Loading Admissions Board Red-Teamer...
+        </div>
+      }
+    >
+      <SopReviewerInner />
+    </Suspense>
   );
 }

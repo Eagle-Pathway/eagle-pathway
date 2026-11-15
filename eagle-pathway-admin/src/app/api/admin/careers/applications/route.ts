@@ -21,7 +21,18 @@ export async function GET(req: NextRequest) {
       .order('created_at', { ascending: false });
 
     if (careerId && careerId !== 'all') {
-      query = query.eq('career_id', careerId);
+      const { data: career } = await supabaseAdmin
+        .from('careers')
+        .select('id, title')
+        .eq('id', careerId)
+        .maybeSingle();
+
+      if (career?.title) {
+        const cleanTitle = career.title.trim().replace(/,/g, '');
+        query = query.or(`career_id.eq.${careerId},job_title.ilike.%${cleanTitle}%`);
+      } else {
+        query = query.eq('career_id', careerId);
+      }
     }
 
     if (status && status !== 'all') {

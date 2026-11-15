@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { useAuthStore } from '@/store/useAuthStore';
+import { MarkdownMessage } from '@/components/MarkdownMessage';
 import {
   Sparkles,
   Send,
@@ -193,12 +194,12 @@ export default function AssistantPage() {
               </div>
 
               <div
-                className={`group relative rounded-xl p-3.5 text-xs leading-relaxed shadow-xs ${isUser
+                className={`group relative rounded-2xl p-4 text-xs leading-relaxed shadow-xs ${isUser
                   ? 'bg-brand-blue text-white rounded-tr-none'
-                  : 'bg-slate-50/80 border border-slate-200/70 text-slate-800 rounded-tl-none whitespace-pre-line'
+                  : 'bg-white border border-slate-200/80 text-slate-800 rounded-tl-none shadow-2xs'
                   }`}
               >
-                <div>{m.content}</div>
+                <MarkdownMessage content={m.content} isUser={isUser} />
 
                 <div
                   className={`flex items-center justify-between gap-3 mt-1.5 pt-1 text-[10px] ${isUser ? 'text-white/60' : 'text-slate-400'

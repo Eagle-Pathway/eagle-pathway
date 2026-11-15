@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useAuthStore } from '@/store/useAuthStore';
 import {
   Sparkles,
@@ -40,10 +41,21 @@ interface QuestionFeedback {
   followUpQuestion?: string | null;
 }
 
-export default function MockInterviewPage() {
+function MockInterviewInner() {
+  const searchParams = useSearchParams();
+  const queryScholarship = searchParams.get('scholarshipName') || searchParams.get('name');
+
   const { user } = useAuthStore();
-  const [scholarshipName, setScholarshipName] = useState('Turkiye Burslari / Stipendium Hungaricum');
+  const [scholarshipName, setScholarshipName] = useState(
+    queryScholarship || 'Turkiye Burslari / Stipendium Hungaricum'
+  );
   const [phase, setPhase] = useState<'intro' | 'interview' | 'done'>('intro');
+
+  useEffect(() => {
+    if (queryScholarship) {
+      setScholarshipName(queryScholarship);
+    }
+  }, [queryScholarship]);
 
   const [questions, setQuestions] = useState<string[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -757,5 +769,19 @@ export default function MockInterviewPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function MockInterviewPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="py-16 text-center text-xs text-slate-500">
+          Loading Adaptive Committee Mock Interviewer...
+        </div>
+      }
+    >
+      <MockInterviewInner />
+    </Suspense>
   );
 }

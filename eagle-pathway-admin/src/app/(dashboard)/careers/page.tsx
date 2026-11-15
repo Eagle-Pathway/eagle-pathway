@@ -48,6 +48,7 @@ export default function CareersManagementPage() {
 
   // Applications state
   const [applications, setApplications] = useState<JobApplication[]>([]);
+  const [globalAppStats, setGlobalAppStats] = useState({ total: 0, pending: 0, reviewing: 0, offered: 0 });
   const [loadingApplications, setLoadingApplications] = useState(true);
   const [applicationSearch, setApplicationSearch] = useState('');
   const [careerFilter, setCareerFilter] = useState('all');
@@ -121,9 +122,28 @@ export default function CareersManagementPage() {
     }
   };
 
+  const fetchGlobalStats = async () => {
+    try {
+      const { data } = await supabase
+        .from('job_applications')
+        .select('status');
+      if (data) {
+        setGlobalAppStats({
+          total: data.length,
+          pending: data.filter((a) => a.status === 'pending').length,
+          reviewing: data.filter((a) => a.status === 'reviewing' || a.status === 'interviewed').length,
+          offered: data.filter((a) => a.status === 'offered').length,
+        });
+      }
+    } catch (e) {
+      console.warn('Failed to fetch global app stats:', e);
+    }
+  };
+
   useEffect(() => {
     fetchCareers();
     fetchApplications();
+    fetchGlobalStats();
   }, []);
 
   useEffect(() => {
@@ -225,10 +245,17 @@ export default function CareersManagementPage() {
 
   // Metrics
   const activeCareersCount = careers.filter((c) => c.is_active).length;
-  const totalAppsCount = applications.length;
-  const pendingAppsCount = applications.filter((a) => a.status === 'pending').length;
-  const interviewingCount = applications.filter((a) => a.status === 'interviewed' || a.status === 'reviewing').length;
-  const offeredCount = applications.filter((a) => a.status === 'offered').length;
+  const isFiltered = careerFilter !== 'all' || statusFilter !== 'all' || !!applicationSearch.trim();
+  const totalAppsCount = isFiltered ? applications.length : (globalAppStats.total || applications.length);
+  const pendingAppsCount = isFiltered
+    ? applications.filter((a) => a.status === 'pending').length
+    : (globalAppStats.pending || applications.filter((a) => a.status === 'pending').length);
+  const interviewingCount = isFiltered
+    ? applications.filter((a) => a.status === 'interviewed' || a.status === 'reviewing').length
+    : (globalAppStats.reviewing || applications.filter((a) => a.status === 'interviewed' || a.status === 'reviewing').length);
+  const offeredCount = isFiltered
+    ? applications.filter((a) => a.status === 'offered').length
+    : (globalAppStats.offered || applications.filter((a) => a.status === 'offered').length);
 
   return (
     <div className="p-6 md:p-8 space-y-6 max-w-7xl mx-auto">
