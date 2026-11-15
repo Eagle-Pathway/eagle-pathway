@@ -28,11 +28,42 @@ export async function GET(req: NextRequest) {
         .maybeSingle();
 
       if (career?.title) {
-        const cleanTitle = career.title.trim().replace(/,/g, '');
-        query = query.or(`career_id.eq.${careerId},job_title.ilike.%${cleanTitle}%`);
-      } else {
-        query = query.eq('career_id', careerId);
+        // Auto-heal: Link unlinked applications to this career based on title
+        await supabaseAdmin
+          .from('job_applications')
+          .update({ career_id: careerId })
+          .is('career_id', null)
+          .ilike('job_title', career.title.trim());
+
+        const { data: unlinked } = await supabaseAdmin
+          .from('job_applications')
+          .select('id, job_title')
+          .is('career_id', null);
+
+        if (unlinked && unlinked.length > 0) {
+          const lowerCareerTitle = career.title.toLowerCase().trim();
+          const toLinkIds = unlinked
+            .filter((u: any) => {
+              if (!u.job_title) return false;
+              const appTitle = u.job_title.toLowerCase().trim();
+              return (
+                appTitle === lowerCareerTitle ||
+                lowerCareerTitle.includes(appTitle) ||
+                appTitle.includes(lowerCareerTitle)
+              );
+            })
+            .map((u: any) => u.id);
+
+          if (toLinkIds.length > 0) {
+            await supabaseAdmin
+              .from('job_applications')
+              .update({ career_id: careerId })
+              .in('id', toLinkIds);
+          }
+        }
       }
+
+      query = query.eq('career_id', careerId);
     }
 
     if (status && status !== 'all') {
@@ -50,7 +81,22 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: appErr.message }, { status: 500 });
     }
 
-    return NextResponse.json({ applications: applications || [] });
+    // Compute global application metrics safely via service role
+    const { data: allApps } = await supabaseAdmin
+      .from('job_applications')
+      .select('status');
+
+    const stats = {
+      total: allApps?.length || 0,
+      pending: allApps?.filter((a: any) => a.status === 'pending').length || 0,
+      reviewing: allApps?.filter((a: any) => a.status === 'reviewing' || a.status === 'interviewed').length || 0,
+      offered: allApps?.filter((a: any) => a.status === 'offered').length || 0,
+    };
+
+    return NextResponse.json({
+      applications: applications || [],
+      stats,
+    });
   } catch (err: any) {
     console.error('GET /api/admin/careers/applications error:', err);
     return NextResponse.json({ error: err.message || 'Internal server error' }, { status: 500 });

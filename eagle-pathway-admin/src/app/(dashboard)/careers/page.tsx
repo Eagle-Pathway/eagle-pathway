@@ -109,6 +109,9 @@ export default function CareersManagementPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to fetch applications');
       setApplications(data.applications || []);
+      if (data.stats) {
+        setGlobalAppStats(data.stats);
+      }
     } catch (err: any) {
       console.error('Fetch applications error:', err);
       // Fallback: direct Supabase query
@@ -124,16 +127,18 @@ export default function CareersManagementPage() {
 
   const fetchGlobalStats = async () => {
     try {
-      const { data } = await supabase
-        .from('job_applications')
-        .select('status');
-      if (data) {
-        setGlobalAppStats({
-          total: data.length,
-          pending: data.filter((a) => a.status === 'pending').length,
-          reviewing: data.filter((a) => a.status === 'reviewing' || a.status === 'interviewed').length,
-          offered: data.filter((a) => a.status === 'offered').length,
-        });
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      if (!token) return;
+
+      const res = await fetch('/api/admin/careers/applications', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (data?.stats) {
+        setGlobalAppStats(data.stats);
       }
     } catch (e) {
       console.warn('Failed to fetch global app stats:', e);

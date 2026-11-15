@@ -177,8 +177,8 @@ export function MarkdownMessage({ content, isUser = false }: MarkdownMessageProp
       continue;
     }
 
-    // 2. Horizontal Rule: --- or ***
-    if (/^(---|---|\*\*\*)$/.test(trimmed)) {
+    // 2. Horizontal Rule: --- or *** or ___
+    if (/^([-*_])\s*(\1\s*){2,}$/.test(trimmed)) {
       elements.push(
         <hr
           key={elementKey++}

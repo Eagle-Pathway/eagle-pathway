@@ -3,6 +3,7 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useAuthStore } from '@/store/useAuthStore';
+import { supabase } from '@/lib/supabase';
 import {
   Sparkles,
   HelpCircle,
@@ -46,10 +47,37 @@ function MockInterviewInner() {
   const queryScholarship = searchParams.get('scholarshipName') || searchParams.get('name');
 
   const { user } = useAuthStore();
+  const [scholarshipOptions, setScholarshipOptions] = useState<
+    { id: string; name: string; country?: string }[]
+  >([]);
+  const [selectedProgramMode, setSelectedProgramMode] = useState<'dropdown' | 'custom'>('dropdown');
   const [scholarshipName, setScholarshipName] = useState(
-    queryScholarship || 'Turkiye Burslari / Stipendium Hungaricum'
+    queryScholarship || 'Turkiye Burslari'
   );
   const [phase, setPhase] = useState<'intro' | 'interview' | 'done'>('intro');
+
+  useEffect(() => {
+    async function loadScholarships() {
+      try {
+        const { data } = await supabase
+          .from('scholarships')
+          .select('id, name, country')
+          .order('name', { ascending: true });
+        if (data && data.length > 0) {
+          setScholarshipOptions(data);
+          if (!queryScholarship) {
+            setScholarshipName(data[0].name);
+          } else {
+            const exists = data.some((s) => s.name.toLowerCase() === queryScholarship.toLowerCase());
+            if (!exists) setSelectedProgramMode('custom');
+          }
+        }
+      } catch (err) {
+        console.warn('Failed to load scholarships for Mock Interview:', err);
+      }
+    }
+    loadScholarships();
+  }, [queryScholarship]);
 
   useEffect(() => {
     if (queryScholarship) {
@@ -322,17 +350,69 @@ function MockInterviewInner() {
             </p>
           </div>
 
-          <div className="text-left space-y-1 max-w-md mx-auto">
-            <label className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider">
-              Select or Enter Target Scholarship
-            </label>
-            <input
-              type="text"
-              value={scholarshipName}
-              onChange={(e) => setScholarshipName(e.target.value)}
-              placeholder="e.g. Turkiye Burslari, DAAD Germany, Fulbright, Stipendium Hungaricum"
-              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-brand-blue/20 font-medium"
-            />
+          <div className="text-left space-y-1.5 max-w-md mx-auto">
+            <div className="flex items-center justify-between">
+              <label className="text-[11px] font-semibold text-slate-600 uppercase tracking-wider">
+                Target Scholarship Program *
+              </label>
+              {selectedProgramMode === 'custom' ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedProgramMode('dropdown');
+                    if (scholarshipOptions.length > 0) {
+                      setScholarshipName(scholarshipOptions[0].name);
+                    }
+                  }}
+                  className="text-[10px] text-brand-blue hover:underline font-semibold"
+                >
+                  ← Pick from list
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setSelectedProgramMode('custom')}
+                  className="text-[10px] text-slate-400 hover:text-brand-blue hover:underline"
+                >
+                  Type custom
+                </button>
+              )}
+            </div>
+
+            {selectedProgramMode === 'dropdown' ? (
+              <select
+                value={scholarshipName}
+                onChange={(e) => {
+                  if (e.target.value === '__custom__') {
+                    setSelectedProgramMode('custom');
+                    setScholarshipName('');
+                  } else {
+                    setScholarshipName(e.target.value);
+                  }
+                }}
+                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 font-semibold focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-brand-blue/20"
+              >
+                {scholarshipOptions.length === 0 ? (
+                  <option value={scholarshipName}>{scholarshipName}</option>
+                ) : (
+                  scholarshipOptions.map((s) => (
+                    <option key={s.id} value={s.name}>
+                      {s.name} ({s.country || 'Global'})
+                    </option>
+                  ))
+                )}
+                <option value="__custom__">➕ Other / Custom Program (type manually)...</option>
+              </select>
+            ) : (
+              <input
+                type="text"
+                value={scholarshipName}
+                onChange={(e) => setScholarshipName(e.target.value)}
+                placeholder="e.g. Turkiye Burslari, DAAD Germany, Fulbright, Stipendium Hungaricum"
+                autoFocus
+                className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-brand-blue/20 font-medium"
+              />
+            )}
           </div>
 
           <button

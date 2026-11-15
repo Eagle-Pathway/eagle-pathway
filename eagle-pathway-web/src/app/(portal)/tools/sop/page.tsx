@@ -59,8 +59,12 @@ function SopReviewerInner() {
 
   const { user } = useAuthStore();
   const [content, setContent] = useState('');
+  const [scholarshipOptions, setScholarshipOptions] = useState<
+    { id: string; name: string; country?: string }[]
+  >([]);
+  const [selectedProgramMode, setSelectedProgramMode] = useState<'dropdown' | 'custom'>('dropdown');
   const [scholarshipName, setScholarshipName] = useState(
-    queryScholarship || 'Turkiye Burslari / Stipendium Hungaricum'
+    queryScholarship || 'Turkiye Burslari'
   );
   const [isReviewing, setIsReviewing] = useState(false);
   const [report, setReport] = useState<SopReport | null>(null);
@@ -73,6 +77,29 @@ function SopReviewerInner() {
   // Word & Char counter
   const wordCount = content.trim() ? content.trim().split(/\s+/).length : 0;
   const charCount = content.length;
+
+  useEffect(() => {
+    async function loadScholarships() {
+      try {
+        const { data } = await supabase
+          .from('scholarships')
+          .select('id, name, country')
+          .order('name', { ascending: true });
+        if (data && data.length > 0) {
+          setScholarshipOptions(data);
+          if (!queryScholarship) {
+            setScholarshipName(data[0].name);
+          } else {
+            const exists = data.some((s) => s.name.toLowerCase() === queryScholarship.toLowerCase());
+            if (!exists) setSelectedProgramMode('custom');
+          }
+        }
+      } catch (err) {
+        console.warn('Failed to load scholarships for SOP:', err);
+      }
+    }
+    loadScholarships();
+  }, [queryScholarship]);
 
   useEffect(() => {
     if (queryScholarship) setScholarshipName(queryScholarship);
@@ -226,16 +253,68 @@ function SopReviewerInner() {
           <div className="bg-white rounded-xl border border-slate-200/80 p-4 md:p-5 shadow-xs space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pb-2 border-b border-slate-100">
               <div>
-                <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">
-                  Target Scholarship / Program
-                </label>
-                <input
-                  type="text"
-                  value={scholarshipName}
-                  onChange={(e) => setScholarshipName(e.target.value)}
-                  placeholder="e.g. DAAD Germany, Chevening, Fulbright, Turkiye Burslari"
-                  className="w-full px-3 py-1.5 bg-slate-50/70 border border-slate-200 rounded-lg text-xs font-medium text-slate-900 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-brand-blue/20"
-                />
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
+                    Target Scholarship / Program
+                  </label>
+                  {selectedProgramMode === 'custom' ? (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedProgramMode('dropdown');
+                        if (scholarshipOptions.length > 0) {
+                          setScholarshipName(scholarshipOptions[0].name);
+                        }
+                      }}
+                      className="text-[10px] text-brand-blue hover:underline font-semibold"
+                    >
+                      ← From list
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setSelectedProgramMode('custom')}
+                      className="text-[10px] text-slate-400 hover:text-brand-blue hover:underline"
+                    >
+                      Type custom
+                    </button>
+                  )}
+                </div>
+
+                {selectedProgramMode === 'dropdown' ? (
+                  <select
+                    value={scholarshipName}
+                    onChange={(e) => {
+                      if (e.target.value === '__custom__') {
+                        setSelectedProgramMode('custom');
+                        setScholarshipName('');
+                      } else {
+                        setScholarshipName(e.target.value);
+                      }
+                    }}
+                    className="w-full px-3 py-1.5 bg-slate-50/70 border border-slate-200 rounded-lg text-xs font-semibold text-slate-900 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-brand-blue/20"
+                  >
+                    {scholarshipOptions.length === 0 ? (
+                      <option value={scholarshipName}>{scholarshipName}</option>
+                    ) : (
+                      scholarshipOptions.map((s) => (
+                        <option key={s.id} value={s.name}>
+                          {s.name} ({s.country || 'Global'})
+                        </option>
+                      ))
+                    )}
+                    <option value="__custom__">➕ Other / Custom Program (type manually)...</option>
+                  </select>
+                ) : (
+                  <input
+                    type="text"
+                    value={scholarshipName}
+                    onChange={(e) => setScholarshipName(e.target.value)}
+                    placeholder="e.g. DAAD Germany, Chevening, Fulbright, Turkiye Burslari"
+                    autoFocus
+                    className="w-full px-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs font-medium text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-brand-blue/20"
+                  />
+                )}
               </div>
 
               {applications.length > 0 && (

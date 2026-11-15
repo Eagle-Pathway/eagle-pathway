@@ -3,6 +3,7 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuthStore } from '@/store/useAuthStore';
+import { supabase } from '@/lib/supabase';
 import {
   Sparkles,
   Wand2,
@@ -19,6 +20,7 @@ import {
   GraduationCap,
 } from 'lucide-react';
 import Link from 'next/link';
+import { MarkdownMessage } from '@/components/MarkdownMessage';
 
 type DocumentType = 'sop' | 'study_plan' | 'recommendation_brief' | 'professor_outreach';
 
@@ -65,12 +67,44 @@ function MagicDraftInner() {
       ? qType
       : 'sop'
   );
+  const [scholarshipOptions, setScholarshipOptions] = useState<
+    { id: string; name: string; country?: string; degree?: string }[]
+  >([]);
+  const [selectedProgramMode, setSelectedProgramMode] = useState<'dropdown' | 'custom'>('dropdown');
   const [scholarshipName, setScholarshipName] = useState(
-    qName || 'Turkiye Burslari / Stipendium Hungaricum'
+    qName || 'Turkiye Burslari'
   );
-  const [country, setCountry] = useState(qCountry || 'Turkey / Hungary / Europe');
+  const [country, setCountry] = useState(qCountry || 'Turkey / Europe');
   const [degreeLevel, setDegreeLevel] = useState(qDegree || "Master's Degree (MSc/MA)");
   const [fieldOfStudy, setFieldOfStudy] = useState(qField || 'Computer Science & Software Engineering');
+
+  // Load verified scholarship programs from database
+  useEffect(() => {
+    async function loadScholarships() {
+      try {
+        const { data } = await supabase
+          .from('scholarships')
+          .select('id, name, country, degree')
+          .order('name', { ascending: true });
+
+        if (data && data.length > 0) {
+          setScholarshipOptions(data);
+          if (!qName) {
+            setScholarshipName(data[0].name);
+            if (data[0].country) setCountry(data[0].country);
+          } else {
+            const exists = data.some((s) => s.name.toLowerCase() === qName.toLowerCase());
+            if (!exists) {
+              setSelectedProgramMode('custom');
+            }
+          }
+        }
+      } catch (err) {
+        console.warn('Failed to load scholarships list:', err);
+      }
+    }
+    loadScholarships();
+  }, [qName]);
 
   useEffect(() => {
     if (qType && ['sop', 'study_plan', 'recommendation_brief', 'professor_outreach'].includes(qType)) {
@@ -81,6 +115,30 @@ function MagicDraftInner() {
     if (qDegree) setDegreeLevel(qDegree);
     if (qField) setFieldOfStudy(qField);
   }, [qType, qName, qCountry, qDegree, qField]);
+
+  const handleSelectProgram = (val: string) => {
+    if (val === '__custom__') {
+      setSelectedProgramMode('custom');
+      setScholarshipName('');
+      return;
+    }
+    setSelectedProgramMode('dropdown');
+    setScholarshipName(val);
+    const matched = scholarshipOptions.find((s) => s.name === val);
+    if (matched?.country) {
+      setCountry(matched.country);
+    }
+    if (matched?.degree) {
+      const d = matched.degree.toLowerCase();
+      if (d.includes('master')) {
+        setDegreeLevel("Master's Degree (MSc/MA)");
+      } else if (d.includes('phd') || d.includes('doctor')) {
+        setDegreeLevel('Doctorate / PhD');
+      } else if (d.includes('bachelor')) {
+        setDegreeLevel("Bachelor's Degree (BSc/BA)");
+      }
+    }
+  };
   const [researchTopic, setResearchTopic] = useState('Distributed Machine Learning for Rural Healthcare Logistics');
   const [targetProfessorName, setTargetProfessorName] = useState('Prof. Dr. Michael Weber');
   const [keyAccomplishments, setKeyAccomplishments] = useState(
@@ -226,17 +284,63 @@ function MagicDraftInner() {
 
           <form onSubmit={handleGenerate} className="space-y-3.5">
             <div>
-              <label className="block text-[11px] font-semibold text-slate-600 uppercase tracking-wider mb-1">
-                Target Scholarship / Program *
-              </label>
-              <input
-                type="text"
-                value={scholarshipName}
-                onChange={(e) => setScholarshipName(e.target.value)}
-                placeholder="e.g. Turkiye Burslari, DAAD, Stipendium Hungaricum, CSC"
-                required
-                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-brand-blue/20 font-medium"
-              />
+              <div className="flex items-center justify-between mb-1">
+                <label className="block text-[11px] font-semibold text-slate-600 uppercase tracking-wider">
+                  Target Scholarship / Program *
+                </label>
+                {selectedProgramMode === 'custom' ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedProgramMode('dropdown');
+                      if (scholarshipOptions.length > 0) {
+                        handleSelectProgram(scholarshipOptions[0].name);
+                      }
+                    }}
+                    className="text-[10px] text-brand-blue hover:underline font-semibold"
+                  >
+                    ← Pick from scholarships list
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setSelectedProgramMode('custom')}
+                    className="text-[10px] text-slate-400 hover:text-brand-blue hover:underline"
+                  >
+                    Type custom program
+                  </button>
+                )}
+              </div>
+
+              {selectedProgramMode === 'dropdown' ? (
+                <select
+                  value={scholarshipName}
+                  onChange={(e) => handleSelectProgram(e.target.value)}
+                  required
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-900 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-brand-blue/20 font-semibold"
+                >
+                  {scholarshipOptions.length === 0 ? (
+                    <option value={scholarshipName}>{scholarshipName}</option>
+                  ) : (
+                    scholarshipOptions.map((s) => (
+                      <option key={s.id} value={s.name}>
+                        {s.name} ({s.country || 'Global'})
+                      </option>
+                    ))
+                  )}
+                  <option value="__custom__">➕ Other / Custom Program (type manually)...</option>
+                </select>
+              ) : (
+                <input
+                  type="text"
+                  value={scholarshipName}
+                  onChange={(e) => setScholarshipName(e.target.value)}
+                  placeholder="e.g. Oxford Rhodes Scholarship, Chevening, or custom university"
+                  required
+                  autoFocus
+                  className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs text-slate-900 focus:outline-hidden focus:ring-2 focus:ring-brand-blue/20 font-medium"
+                />
+              )}
             </div>
 
             <div className="grid grid-cols-2 gap-2.5">
@@ -392,8 +496,8 @@ function MagicDraftInner() {
             </div>
 
             {draft ? (
-              <div className="p-4 bg-slate-50/60 border border-slate-200/70 rounded-xl text-xs md:text-sm text-slate-800 leading-relaxed font-sans whitespace-pre-line max-h-[520px] overflow-y-auto">
-                {draft}
+              <div className="p-4 bg-slate-50/60 border border-slate-200/70 rounded-xl text-xs md:text-sm text-slate-800 leading-relaxed font-sans max-h-[520px] overflow-y-auto">
+                <MarkdownMessage content={draft} />
               </div>
             ) : (
               <div className="py-24 text-center space-y-3">
