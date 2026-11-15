@@ -56,7 +56,8 @@ function sourceStatusTone(sourceStatus?: Scholarship['source_status']) {
 }
 
 export function ScholarshipDetailScreen() {
-  const { scholarshipId } = useLocalSearchParams<{ scholarshipId: string }>();
+  const params = useLocalSearchParams<{ scholarshipId?: string; id?: string }>();
+  const scholarshipId = params.scholarshipId || params.id;
   const { savedScholarshipIds, toggleSaveScholarship } = useScholarshipStore();
   const { user } = useAuthStore();
   const [scholarship, setScholarship] = useState<Scholarship | null>(null);

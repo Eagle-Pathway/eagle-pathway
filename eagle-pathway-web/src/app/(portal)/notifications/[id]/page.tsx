@@ -151,7 +151,18 @@ export default function NotificationDetailPage() {
   let actionLabel = 'Explore Opportunity';
 
   if (notification.data?.url) {
-    actionUrl = notification.data.url;
+    let rawUrl = String(notification.data.url).trim();
+    if (rawUrl.includes('/scholarship-detail')) {
+      const match = rawUrl.match(/[?&](?:id|scholarshipId)=([^&]+)/);
+      rawUrl = match ? `/scholarships/${match[1]}` : '/scholarships';
+    } else if (rawUrl.includes('/application-detail')) {
+      rawUrl = '/tracker';
+    } else if (rawUrl.includes('/tutor-job-detail')) {
+      rawUrl = '/tutor-jobs';
+    } else if (rawUrl.startsWith('/(tabs)/')) {
+      rawUrl = rawUrl.replace('/(tabs)/', '/');
+    }
+    actionUrl = rawUrl;
     actionLabel = 'Open Destination';
   }
 

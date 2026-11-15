@@ -16,7 +16,17 @@ export function resolveNotificationRoute(
   const directUrl = payload.url || payload.path || payload.pathname;
   if (typeof directUrl === 'string' && directUrl.trim()) {
     const cleanUrl = directUrl.trim();
-    // Parse query params if present (e.g. /scholarship-detail?scholarshipId=123)
+
+    // Map canonical web scholarship path (/scholarships/:id) into mobile screen
+    const webScholarshipMatch = cleanUrl.match(/^\/scholarships\/([^/?#]+)/);
+    if (webScholarshipMatch) {
+      return {
+        pathname: '/scholarship-detail',
+        params: { scholarshipId: webScholarshipMatch[1] },
+      };
+    }
+
+    // Parse query params if present (e.g. /scholarship-detail?scholarshipId=123 or ?id=123)
     if (cleanUrl.includes('?')) {
       const [pathname, queryString] = cleanUrl.split('?');
       const params: Record<string, string> = {};
@@ -25,6 +35,12 @@ export function resolveNotificationRoute(
         const [k, v] = pair.split('=');
         if (k) params[decodeURIComponent(k)] = decodeURIComponent(v || '');
       }
+
+      // If mobile scholarship-detail received id param, populate scholarshipId
+      if (pathname.includes('scholarship-detail') && params.id && !params.scholarshipId) {
+        params.scholarshipId = params.id;
+      }
+
       return { pathname, params };
     }
     return { pathname: cleanUrl };
@@ -40,7 +56,7 @@ export function resolveNotificationRoute(
   }
 
   // 3. Scholarship Notifications
-  const scholarshipId = payload.scholarship_id || payload.scholarshipId;
+  const scholarshipId = payload.scholarship_id || payload.scholarshipId || payload.id;
   if (notifType.includes('scholarship') || scholarshipId) {
     if (scholarshipId) {
       return {

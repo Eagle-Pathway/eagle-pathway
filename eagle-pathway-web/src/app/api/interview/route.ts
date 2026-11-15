@@ -33,20 +33,42 @@ function evaluateHeuristically(question: string, answer: string, scholarshipName
   if (hasRedFlag || (!hasAcademicFocus && wordCount < 35)) {
     return {
       score: hasRedFlag ? 2 : 3,
+      verdict: 'Disqualification Risk',
+      pillars: {
+        academicRigor: hasRedFlag ? 1 : 2,
+        homeCountryImpact: 1,
+        leadershipEvidence: 1,
+        culturalAlignment: hasRedFlag ? 2 : 3,
+      },
+      redFlagWarning: hasRedFlag
+        ? 'Your answer cited casual personal or romantic motivations instead of academic mission. Selection committees disqualify non-academic motivations immediately.'
+        : 'Answer is too brief and lacks concrete academic substance.',
       strengths: 'You expressed an informal personal thought, but this answer lacks academic intent.',
       improvements:
         'Scholarship selection committees strictly evaluate academic merit, leadership, and public impact. Citing personal relationships, travel desires, or casual reasons results in immediate disqualification. Reframe your answer around your field of study, research goals, and how this destination advances your long-term contribution to your community.',
       sampleAnswer: `I selected ${scholarshipName || 'this scholarship'} because its advanced academic curriculum and renowned research faculties in my discipline directly complement my undergraduate studies, allowing me to gain specialized knowledge that I plan to bring back to solve critical developmental challenges in my home country.`,
+      followUpQuestion: `How specifically does your proposed field of study at ${scholarshipName || 'our institution'} contribute to technological or social advancement in your home country?`,
     };
   }
 
-  const score = Math.min(8, Math.max(4, Math.round(4 + wordCount / 40)));
+  const score = Math.min(9, Math.max(4, Math.round(4 + wordCount / 40)));
+  const verdict = score >= 8 ? 'Likely Award' : score >= 6 ? 'Competitive Contender' : 'Borderline / Needs Work';
+
   return {
     score,
+    verdict,
+    pillars: {
+      academicRigor: Math.min(10, Math.max(3, Math.round(score + (hasAcademicFocus ? 1 : -1)))),
+      homeCountryImpact: Math.min(10, Math.max(3, score)),
+      leadershipEvidence: Math.min(10, Math.max(3, score - 1)),
+      culturalAlignment: Math.min(10, Math.max(4, score)),
+    },
+    redFlagWarning: null,
     strengths: 'You articulated a perspective on the question and provided initial context.',
     improvements:
       'Structure your response using the STAR method (Situation, Task, Action, Result). Anchor your reasoning in specific faculty research, course modules, or developmental goals in your home country.',
     sampleAnswer: `I chose ${scholarshipName || 'this scholarship'} because of its unique focus on high-impact practical research, which directly aligns with my goal of modernizing key infrastructure and mentoring young scholars in my home nation.`,
+    followUpQuestion: `Can you cite one specific laboratory, course module, or faculty member associated with ${scholarshipName || 'this scholarship'} that you intend to collaborate with?`,
   };
 }
 
@@ -117,31 +139,45 @@ Respond strictly with a JSON object:
       }
 
       const systemPrompt = `You are the Selection Committee Chair and Senior Interview Evaluator for the scholarship "${scholarshipName || 'International Scholarship'}".
-You are evaluating a candidate's verbal or written interview response with extreme academic rigor, just like an authentic scholarship board.
+You are evaluating an applicant's verbal or written interview response with extreme academic rigor, just like an authentic international scholarship panel (e.g., Turkiye Burslari, DAAD, Stipendium Hungaricum, Fulbright, Chevening).
 
 Question: "${question}"
 Candidate Answer: "${answer}"
 Target Scholarship: "${scholarshipName || 'International Scholarship'}"
 
 Scoring Rubric (Strict 1-10 Scale):
-- 1 to 2 / 10: Unacceptable, inappropriate, casual slang, purely personal or trivial motivations (e.g. romantic interests, meeting friends, vacation, wanting money without academic cause, refusing to address the prompt).
-- 3 to 4 / 10: Very weak, superficial, lacks academic focus, or fails to answer the specific question asked.
-- 5 to 6 / 10: Average or generic answer. Has some relevance but lacks concrete personal evidence, institutional depth, or leadership impact.
-- 7 to 8 / 10: Strong candidate answer. Clear academic drive, relevant examples, good alignment with the scholarship.
+- 1 to 2 / 10: Disqualification Risk. Casual slang, inappropriate, purely personal or romantic motivations (e.g. visiting a girlfriend/boyfriend, meeting friends, vacation, needing money without academic cause).
+- 3 to 4 / 10: Very weak / superficial. Lacks academic focus, or fails to address the core prompt.
+- 5 to 6 / 10: Average or generic. Has some relevance but lacks concrete personal evidence, institutional depth, or verified leadership impact.
+- 7 to 8 / 10: Competitive candidate. Clear academic drive, relevant examples, good alignment with the scholarship.
 - 9 to 10 / 10: Exceptional. Compelling narrative, verifiable impact, explicit academic vision, and flawless representation.
 
+Pillars (1-10 each):
+1. academicRigor: Demonstrates deep knowledge of their field, curriculum alignment, or research intent.
+2. homeCountryImpact: Concrete plan to transfer knowledge back to solve challenges in their home country.
+3. leadershipEvidence: Real examples of overcoming hardship, initiative, or community mentorship.
+4. culturalAlignment: Readiness to adapt and represent their nation abroad as an ambassador.
+
 Rules:
-1. If the candidate's answer is casual, romantic, frivolous, or non-academic, you MUST award a score of 1 or 2. Do NOT be polite or overly flattering.
-2. "strengths": Be honest. If the answer was weak or off-topic, state clearly that no substantive academic strength was demonstrated.
-3. "improvements": Provide direct, actionable critique explaining why an international scholarship panel would reject or accept this answer, and how to redirect it academically.
-4. "sampleAnswer": Provide a 2-3 sentence, highly tailored model answer addressing THIS EXACT QUESTION for THIS SPECIFIC SCHOLARSHIP.
+1. If the candidate's answer is casual, romantic, frivolous, or non-academic, overall score MUST be 1 or 2, and "redFlagWarning" must explain why.
+2. "followUpQuestion": Generate 1 sharp, probing follow-up question the committee chair would ask next to challenge their depth or press on a vague claim.
+3. "sampleAnswer": Provide a 2-3 sentence, highly tailored model answer addressing THIS EXACT QUESTION for THIS SPECIFIC SCHOLARSHIP.
 
 Respond strictly with valid JSON:
 {
   "score": number,
+  "verdict": "Likely Award" | "Competitive Contender" | "Borderline / Needs Work" | "Disqualification Risk",
+  "pillars": {
+    "academicRigor": number,
+    "homeCountryImpact": number,
+    "leadershipEvidence": number,
+    "culturalAlignment": number
+  },
   "strengths": "1-2 concise sentences",
   "improvements": "1-2 concise sentences",
-  "sampleAnswer": "2-3 concise sentences"
+  "sampleAnswer": "2-3 concise sentences",
+  "followUpQuestion": "1 challenging follow-up question",
+  "redFlagWarning": string | null
 }`;
 
       if (GROQ_API_KEY) {
@@ -157,7 +193,7 @@ Respond strictly with valid JSON:
               response_format: { type: 'json_object' },
               messages: [{ role: 'system', content: systemPrompt }],
               temperature: 0.3,
-              max_tokens: 600,
+              max_tokens: 700,
             }),
           });
 
@@ -165,11 +201,22 @@ Respond strictly with valid JSON:
             const data = await groqRes.json();
             const parsed = JSON.parse(data.choices?.[0]?.message?.content || '{}');
             if (typeof parsed.score === 'number') {
+              const score = Math.min(10, Math.max(1, Math.round(parsed.score)));
+              const fallbackVerdict = score >= 8 ? 'Likely Award' : score >= 6 ? 'Competitive Contender' : score >= 4 ? 'Borderline / Needs Work' : 'Disqualification Risk';
               return NextResponse.json({
-                score: Math.min(10, Math.max(1, Math.round(parsed.score))),
+                score,
+                verdict: parsed.verdict || fallbackVerdict,
+                pillars: {
+                  academicRigor: parsed.pillars?.academicRigor ?? score,
+                  homeCountryImpact: parsed.pillars?.homeCountryImpact ?? score,
+                  leadershipEvidence: parsed.pillars?.leadershipEvidence ?? score,
+                  culturalAlignment: parsed.pillars?.culturalAlignment ?? score,
+                },
+                redFlagWarning: parsed.redFlagWarning || null,
                 strengths: parsed.strengths || 'Answer reviewed.',
                 improvements: parsed.improvements || 'Focus on academic alignment.',
                 sampleAnswer: parsed.sampleAnswer || 'Provide a structured, evidence-based answer.',
+                followUpQuestion: parsed.followUpQuestion || null,
               });
             }
           } else {

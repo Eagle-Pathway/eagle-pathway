@@ -14,9 +14,34 @@ import {
   DollarSign,
   ArrowRight,
   Sparkles,
+  Target,
+  Compass,
+  Check,
+  RotateCw,
+  X,
+  Shield,
+  Rocket,
+  FileCheck,
 } from 'lucide-react';
 import { formatDate, differenceInDays } from '@/lib/date';
 import { ScholarshipCardSkeleton } from '@/components/ui/Skeletons';
+
+interface MatchItem {
+  id: string;
+  name: string;
+  country: string;
+  funding_type: string;
+  matchScore: number;
+  strategicRationale: string;
+}
+
+interface StrategyResult {
+  strategicOverview: string;
+  reach: MatchItem[];
+  target: MatchItem[];
+  safety: MatchItem[];
+  actionPlan: string[];
+}
 
 export default function ScholarshipsPage() {
   const [scholarships, setScholarships] = useState<Scholarship[]>([]);
@@ -27,6 +52,16 @@ export default function ScholarshipsPage() {
   const [selectedCountry, setSelectedCountry] = useState('all');
   const [selectedLevel, setSelectedLevel] = useState('all');
   const [selectedFunding, setSelectedFunding] = useState('all');
+
+  // AI Strategist Matcher State
+  const [showStrategistModal, setShowStrategistModal] = useState(false);
+  const [gpa, setGpa] = useState('3.7');
+  const [field, setField] = useState('Computer Science & Engineering');
+  const [degreeLevel, setDegreeLevel] = useState("Master's");
+  const [englishLevel, setEnglishLevel] = useState('Proficient / English Medium');
+  const [researchGoals, setResearchGoals] = useState('Applying machine learning to improve regional agricultural and healthcare supply chains in Ethiopia.');
+  const [isMatching, setIsMatching] = useState(false);
+  const [strategyResult, setStrategyResult] = useState<StrategyResult | null>(null);
 
   useEffect(() => {
     async function fetchScholarships() {
@@ -91,6 +126,34 @@ export default function ScholarshipsPage() {
     });
   }, [scholarships, searchQuery, selectedCountry, selectedLevel, selectedFunding]);
 
+  const handleRunStrategyMatch = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsMatching(true);
+    try {
+      const res = await fetch('/api/scholarships/match', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          studentProfile: {
+            gpa,
+            field,
+            degreeLevel,
+            englishLevel,
+            researchGoals,
+          },
+        }),
+      });
+      if (!res.ok) throw new Error('Failed to generate match');
+      const data: StrategyResult = await res.json();
+      setStrategyResult(data);
+    } catch (err) {
+      console.error(err);
+      alert('Could not generate strategy match. Please try again.');
+    } finally {
+      setIsMatching(false);
+    }
+  };
+
   return (
     <div className="space-y-6 pb-16">
       {/* Header */}
@@ -107,9 +170,21 @@ export default function ScholarshipsPage() {
             Discover verified scholarships, fellowships, and university financial aid awards worldwide.
           </p>
         </div>
-        <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded bg-blue-50 text-brand-blue text-[11px] font-semibold border border-blue-200/60 self-start sm:self-auto">
-          <GraduationCap size={14} />
-          <span>{loading ? 'Finding opportunities...' : `${filtered.length} Opportunities Available`}</span>
+
+        {/* Action Buttons */}
+        <div className="flex items-center gap-2.5 self-start sm:self-auto">
+          <button
+            onClick={() => setShowStrategistModal(true)}
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-xs font-semibold shadow-xs transition-all cursor-pointer"
+          >
+            <Sparkles size={14} className="text-amber-300" />
+            <span>Run AI Strategy Match</span>
+          </button>
+
+          <div className="inline-flex items-center gap-2 px-2.5 py-1.5 rounded-xl bg-blue-50 text-brand-blue text-[11px] font-semibold border border-blue-200/60">
+            <GraduationCap size={14} />
+            <span>{loading ? 'Finding opportunities...' : `${filtered.length} Opportunities`}</span>
+          </div>
         </div>
       </div>
 
@@ -124,7 +199,7 @@ export default function ScholarshipsPage() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search by scholarship title, university, country, or major..."
-              className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs placeholder-slate-400 text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-blue/20 focus:border-brand-blue transition-all"
+              className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs placeholder-slate-400 text-slate-900 focus:bg-white focus:outline-hidden focus:ring-2 focus:ring-brand-blue/20 focus:border-brand-blue transition-all"
             />
           </div>
 
@@ -132,7 +207,7 @@ export default function ScholarshipsPage() {
           <select
             value={selectedCountry}
             onChange={(e) => setSelectedCountry(e.target.value)}
-            className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-blue/20"
+            className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-700 focus:outline-hidden focus:ring-2 focus:ring-brand-blue/20"
           >
             <option value="all">All Countries</option>
             {countries.map((c) => (
@@ -146,7 +221,7 @@ export default function ScholarshipsPage() {
           <select
             value={selectedLevel}
             onChange={(e) => setSelectedLevel(e.target.value)}
-            className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-blue/20"
+            className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-700 focus:outline-hidden focus:ring-2 focus:ring-brand-blue/20"
           >
             <option value="all">All Degree Levels</option>
             {levels.map((lvl) => (
@@ -160,7 +235,7 @@ export default function ScholarshipsPage() {
           <select
             value={selectedFunding}
             onChange={(e) => setSelectedFunding(e.target.value)}
-            className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-brand-blue/20"
+            className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-700 focus:outline-hidden focus:ring-2 focus:ring-brand-blue/20"
           >
             <option value="all">All Funding Types</option>
             <option value="fully">Fully Funded</option>
@@ -260,6 +335,293 @@ export default function ScholarshipsPage() {
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* Autonomous Admissions Strategist Modal */}
+      {showStrategistModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs animate-in fade-in duration-200 overflow-y-auto">
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-xl w-full max-w-3xl max-h-[90vh] overflow-y-auto my-6">
+            {/* Modal Header */}
+            <div className="p-5 border-b border-slate-100 flex items-center justify-between sticky top-0 bg-white/95 backdrop-blur-xs z-10">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center">
+                  <Sparkles size={16} />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-slate-900">Autonomous Admissions Strategist</h3>
+                  <p className="text-[11px] text-slate-500">
+                    Match your academic profile into Reach, Target, and Safety tiers with an action plan.
+                  </p>
+                </div>
+              </div>
+
+              <button
+                onClick={() => {
+                  setShowStrategistModal(false);
+                  setStrategyResult(null);
+                }}
+                className="p-1 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-6">
+              {!strategyResult ? (
+                /* Profile Input Form */
+                <form onSubmit={handleRunStrategyMatch} className="space-y-4">
+                  <div className="p-3 bg-blue-50/60 border border-blue-200/80 rounded-xl text-xs text-blue-900">
+                    Confirm your academic metrics below to simulate admissions committee matching algorithms.
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 mb-1">
+                        Cumulative GPA / Academic Standing
+                      </label>
+                      <input
+                        type="text"
+                        value={gpa}
+                        onChange={(e) => setGpa(e.target.value)}
+                        placeholder="e.g. 3.7 / 4.0 or 88%"
+                        className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-300 bg-white focus:outline-hidden focus:ring-2 focus:ring-brand-blue/20 text-slate-900"
+                        required
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 mb-1">
+                        Field of Study / Major
+                      </label>
+                      <input
+                        type="text"
+                        value={field}
+                        onChange={(e) => setField(e.target.value)}
+                        placeholder="e.g. Computer Science, Public Health, Economics"
+                        className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-300 bg-white focus:outline-hidden focus:ring-2 focus:ring-brand-blue/20 text-slate-900"
+                        required
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 mb-1">
+                        Target Degree Level
+                      </label>
+                      <select
+                        value={degreeLevel}
+                        onChange={(e) => setDegreeLevel(e.target.value)}
+                        className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-300 bg-white focus:outline-hidden focus:ring-2 focus:ring-brand-blue/20 text-slate-900"
+                      >
+                        <option value="Bachelor's">Bachelor&apos;s (Undergraduate)</option>
+                        <option value="Master's">Master&apos;s (Graduate)</option>
+                        <option value="PhD">PhD / Doctorate</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 mb-1">
+                        English Language Proficiency
+                      </label>
+                      <select
+                        value={englishLevel}
+                        onChange={(e) => setEnglishLevel(e.target.value)}
+                        className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-300 bg-white focus:outline-hidden focus:ring-2 focus:ring-brand-blue/20 text-slate-900"
+                      >
+                        <option value="Proficient / English Medium">English Medium Instruction / Waiver</option>
+                        <option value="IELTS 7.0+ / TOEFL 100+">IELTS 7.0+ / TOEFL 100+</option>
+                        <option value="IELTS 6.0 - 6.5 / Duolingo 110+">IELTS 6.0 - 6.5 / Duolingo 110+</option>
+                        <option value="Will take test / Need Waiver">Need Waiver or Plan to Take Test</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">
+                      Proposed Research / Career Mission in Ethiopia (Optional)
+                    </label>
+                    <textarea
+                      rows={3}
+                      value={researchGoals}
+                      onChange={(e) => setResearchGoals(e.target.value)}
+                      placeholder="Brief 1-2 sentences on what problem you wish to solve with your degree..."
+                      className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-300 bg-white focus:outline-hidden focus:ring-2 focus:ring-brand-blue/20 text-slate-900 leading-relaxed"
+                    />
+                  </div>
+
+                  <div className="pt-2 flex justify-end">
+                    <button
+                      type="submit"
+                      disabled={isMatching}
+                      className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-xs font-semibold shadow-xs flex items-center justify-center gap-2 transition-all disabled:opacity-50"
+                    >
+                      {isMatching ? (
+                        <>
+                          <RotateCw size={14} className="animate-spin" />
+                          <span>Generating Strategic Dossier...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Sparkles size={14} className="text-amber-300" />
+                          <span>Generate Admissions Strategy Dossier</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </form>
+              ) : (
+                /* Strategy Dossier Result */
+                <div className="space-y-6 animate-in fade-in duration-200">
+                  {/* Strategic Overview Card */}
+                  <div className="p-4 bg-indigo-50/70 border border-indigo-200/80 rounded-xl space-y-1.5">
+                    <div className="flex items-center gap-2 text-indigo-950 font-bold text-xs uppercase tracking-wider">
+                      <Compass size={14} className="text-indigo-600" />
+                      <span>Executive Admissions Positioning</span>
+                    </div>
+                    <p className="text-xs text-indigo-950 leading-relaxed font-medium">
+                      {strategyResult.strategicOverview}
+                    </p>
+                  </div>
+
+                  {/* Reach Tier */}
+                  {strategyResult.reach && strategyResult.reach.length > 0 && (
+                    <div className="space-y-2.5">
+                      <div className="flex items-center gap-2">
+                        <Rocket size={15} className="text-purple-600" />
+                        <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
+                          Reach Programs &bull; Prestige &amp; High Reward
+                        </h4>
+                      </div>
+                      <div className="grid grid-cols-1 gap-2.5">
+                        {strategyResult.reach.map((item, idx) => (
+                          <div key={idx} className="p-3.5 rounded-xl bg-purple-50/40 border border-purple-200/70 space-y-1.5 text-xs">
+                            <div className="flex items-center justify-between">
+                              <span className="font-bold text-slate-900">{item.name}</span>
+                              <span className="px-2 py-0.5 rounded-full bg-purple-100 text-purple-800 font-bold text-[10px]">
+                                {item.matchScore}% Match
+                              </span>
+                            </div>
+                            <div className="text-[11px] text-slate-500 flex gap-2">
+                              <span>📍 {item.country}</span>
+                              <span>•</span>
+                              <span>💰 {item.funding_type}</span>
+                            </div>
+                            <p className="text-slate-700 text-[11px] leading-relaxed italic bg-white/70 p-2 rounded-lg border border-purple-100">
+                              {item.strategicRationale}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Target Tier */}
+                  {strategyResult.target && strategyResult.target.length > 0 && (
+                    <div className="space-y-2.5">
+                      <div className="flex items-center gap-2">
+                        <Target size={15} className="text-blue-600" />
+                        <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
+                          Target Programs &bull; High Probability Profile Fit
+                        </h4>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                        {strategyResult.target.map((item, idx) => (
+                          <div key={idx} className="p-3.5 rounded-xl bg-blue-50/40 border border-blue-200/70 space-y-1.5 text-xs flex flex-col justify-between">
+                            <div>
+                              <div className="flex items-center justify-between mb-1">
+                                <span className="font-bold text-slate-900 line-clamp-1">{item.name}</span>
+                                <span className="px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 font-bold text-[10px] shrink-0">
+                                  {item.matchScore}% Match
+                                </span>
+                              </div>
+                              <div className="text-[11px] text-slate-500 flex gap-2 mb-1.5">
+                                <span>📍 {item.country}</span>
+                                <span>•</span>
+                                <span>💰 {item.funding_type}</span>
+                              </div>
+                              <p className="text-slate-700 text-[11px] leading-relaxed italic bg-white/70 p-2 rounded-lg border border-blue-100">
+                                {item.strategicRationale}
+                              </p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Safety Tier */}
+                  {strategyResult.safety && strategyResult.safety.length > 0 && (
+                    <div className="space-y-2.5">
+                      <div className="flex items-center gap-2">
+                        <Shield size={15} className="text-emerald-600" />
+                        <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
+                          Safety Programs &bull; Guaranteed High-Odds Funding
+                        </h4>
+                      </div>
+                      <div className="grid grid-cols-1 gap-2.5">
+                        {strategyResult.safety.map((item, idx) => (
+                          <div key={idx} className="p-3.5 rounded-xl bg-emerald-50/40 border border-emerald-200/70 space-y-1.5 text-xs">
+                            <div className="flex items-center justify-between">
+                              <span className="font-bold text-slate-900">{item.name}</span>
+                              <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-bold text-[10px]">
+                                {item.matchScore}% Match
+                              </span>
+                            </div>
+                            <div className="text-[11px] text-slate-500 flex gap-2">
+                              <span>📍 {item.country}</span>
+                              <span>•</span>
+                              <span>💰 {item.funding_type}</span>
+                            </div>
+                            <p className="text-slate-700 text-[11px] leading-relaxed italic bg-white/70 p-2 rounded-lg border border-emerald-100">
+                              {item.strategicRationale}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* 30-Day Action Checklist */}
+                  {strategyResult.actionPlan && strategyResult.actionPlan.length > 0 && (
+                    <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-2.5">
+                      <div className="flex items-center gap-2 text-slate-900 font-bold text-xs uppercase tracking-wider">
+                        <FileCheck size={15} className="text-emerald-600" />
+                        <span>High-Priority Next 30-Day Admissions Checklist</span>
+                      </div>
+                      <ul className="space-y-1.5 text-xs text-slate-700">
+                        {strategyResult.actionPlan.map((step, idx) => (
+                          <li key={idx} className="flex items-start gap-2">
+                            <CheckCircle2 size={14} className="text-emerald-600 shrink-0 mt-0.5" />
+                            <span>{step}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {/* Reset Button */}
+                  <div className="pt-2 flex justify-between items-center border-t border-slate-100">
+                    <button
+                      onClick={() => setStrategyResult(null)}
+                      className="px-3 py-1.5 text-xs font-semibold text-slate-600 hover:text-slate-900 underline"
+                    >
+                      ← Re-calibrate Academic Metrics
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        setShowStrategistModal(false);
+                        setStrategyResult(null);
+                      }}
+                      className="px-4 py-2 rounded-xl bg-slate-900 text-white text-xs font-semibold hover:bg-slate-800 transition-colors"
+                    >
+                      Close Strategy Dossier
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       )}
     </div>

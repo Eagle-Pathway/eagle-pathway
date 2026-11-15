@@ -21,6 +21,22 @@ describe('resolveNotificationRoute', () => {
       });
     });
 
+    it('normalizes ?id query param on scholarship-detail to scholarshipId', () => {
+      const route = resolveNotificationRoute({ url: '/scholarship-detail?id=sch-456' });
+      expect(route).toEqual({
+        pathname: '/scholarship-detail',
+        params: { id: 'sch-456', scholarshipId: 'sch-456' },
+      });
+    });
+
+    it('translates canonical web scholarship path (/scholarships/:id) into mobile route', () => {
+      const route = resolveNotificationRoute({ url: '/scholarships/sch-789' });
+      expect(route).toEqual({
+        pathname: '/scholarship-detail',
+        params: { scholarshipId: 'sch-789' },
+      });
+    });
+
     it('resolves path or pathname properties', () => {
       const route = resolveNotificationRoute({ path: '/documents' });
       expect(route).toEqual({ pathname: '/documents' });
