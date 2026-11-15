@@ -5,6 +5,11 @@ import { useSearchParams } from 'next/navigation';
 import { useAuthStore } from '@/store/useAuthStore';
 import { supabase } from '@/lib/supabase';
 import {
+  fetchScholarshipCatalog,
+  DEFAULT_SCHOLARSHIPS,
+  ScholarshipOption,
+} from '@/lib/scholarshipCatalog';
+import {
   Sparkles,
   FileText,
   CheckCircle2,
@@ -59,12 +64,10 @@ function SopReviewerInner() {
 
   const { user } = useAuthStore();
   const [content, setContent] = useState('');
-  const [scholarshipOptions, setScholarshipOptions] = useState<
-    { id: string; name: string; country?: string }[]
-  >([]);
+  const [scholarshipOptions, setScholarshipOptions] = useState<ScholarshipOption[]>(DEFAULT_SCHOLARSHIPS);
   const [selectedProgramMode, setSelectedProgramMode] = useState<'dropdown' | 'custom'>('dropdown');
   const [scholarshipName, setScholarshipName] = useState(
-    queryScholarship || 'Turkiye Burslari'
+    queryScholarship || DEFAULT_SCHOLARSHIPS[0].name
   );
   const [isReviewing, setIsReviewing] = useState(false);
   const [report, setReport] = useState<SopReport | null>(null);
@@ -80,22 +83,15 @@ function SopReviewerInner() {
 
   useEffect(() => {
     async function loadScholarships() {
-      try {
-        const { data } = await supabase
-          .from('scholarships')
-          .select('id, name, country')
-          .order('name', { ascending: true });
-        if (data && data.length > 0) {
-          setScholarshipOptions(data);
-          if (!queryScholarship) {
-            setScholarshipName(data[0].name);
-          } else {
-            const exists = data.some((s) => s.name.toLowerCase() === queryScholarship.toLowerCase());
-            if (!exists) setSelectedProgramMode('custom');
-          }
+      const catalog = await fetchScholarshipCatalog(supabase);
+      if (catalog && catalog.length > 0) {
+        setScholarshipOptions(catalog);
+        if (!queryScholarship) {
+          setScholarshipName(catalog[0].name);
+        } else {
+          const exists = catalog.some((s) => s.name.toLowerCase() === queryScholarship.toLowerCase());
+          if (!exists) setSelectedProgramMode('custom');
         }
-      } catch (err) {
-        console.warn('Failed to load scholarships for SOP:', err);
       }
     }
     loadScholarships();

@@ -21,6 +21,11 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { MarkdownMessage } from '@/components/MarkdownMessage';
+import {
+  fetchScholarshipCatalog,
+  DEFAULT_SCHOLARSHIPS,
+  ScholarshipOption,
+} from '@/lib/scholarshipCatalog';
 
 type DocumentType = 'sop' | 'study_plan' | 'recommendation_brief' | 'professor_outreach';
 
@@ -67,40 +72,30 @@ function MagicDraftInner() {
       ? qType
       : 'sop'
   );
-  const [scholarshipOptions, setScholarshipOptions] = useState<
-    { id: string; name: string; country?: string; degree?: string }[]
-  >([]);
+  const [scholarshipOptions, setScholarshipOptions] = useState<ScholarshipOption[]>(DEFAULT_SCHOLARSHIPS);
   const [selectedProgramMode, setSelectedProgramMode] = useState<'dropdown' | 'custom'>('dropdown');
   const [scholarshipName, setScholarshipName] = useState(
-    qName || 'Turkiye Burslari'
+    qName || DEFAULT_SCHOLARSHIPS[0].name
   );
-  const [country, setCountry] = useState(qCountry || 'Turkey / Europe');
+  const [country, setCountry] = useState(qCountry || DEFAULT_SCHOLARSHIPS[0].country || 'Turkey');
   const [degreeLevel, setDegreeLevel] = useState(qDegree || "Master's Degree (MSc/MA)");
   const [fieldOfStudy, setFieldOfStudy] = useState(qField || 'Computer Science & Software Engineering');
 
-  // Load verified scholarship programs from database
+  // Load verified scholarship programs from database merged with global catalog
   useEffect(() => {
     async function loadScholarships() {
-      try {
-        const { data } = await supabase
-          .from('scholarships')
-          .select('id, name, country, degree')
-          .order('name', { ascending: true });
-
-        if (data && data.length > 0) {
-          setScholarshipOptions(data);
-          if (!qName) {
-            setScholarshipName(data[0].name);
-            if (data[0].country) setCountry(data[0].country);
-          } else {
-            const exists = data.some((s) => s.name.toLowerCase() === qName.toLowerCase());
-            if (!exists) {
-              setSelectedProgramMode('custom');
-            }
+      const catalog = await fetchScholarshipCatalog(supabase);
+      if (catalog && catalog.length > 0) {
+        setScholarshipOptions(catalog);
+        if (!qName) {
+          setScholarshipName(catalog[0].name);
+          if (catalog[0].country) setCountry(catalog[0].country);
+        } else {
+          const exists = catalog.some((s) => s.name.toLowerCase() === qName.toLowerCase());
+          if (!exists) {
+            setSelectedProgramMode('custom');
           }
         }
-      } catch (err) {
-        console.warn('Failed to load scholarships list:', err);
       }
     }
     loadScholarships();
