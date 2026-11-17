@@ -45,6 +45,7 @@ export default function CareersManagementPage() {
   const [loadingCareers, setLoadingCareers] = useState(true);
   const [careerSearch, setCareerSearch] = useState('');
   const [departmentFilter, setDepartmentFilter] = useState('all');
+  const [jobStatusFilter, setJobStatusFilter] = useState<'all' | 'active' | 'closed'>('all');
 
   // Applications state
   const [applications, setApplications] = useState<JobApplication[]>([]);
@@ -157,8 +158,9 @@ export default function CareersManagementPage() {
     }
   }, [careerFilter, statusFilter]);
 
-  // Toggle Career Active Status
+  // Toggle Career Active / Closed Status
   const handleToggleActive = async (career: Career) => {
+    const nextActive = !career.is_active;
     try {
       const {
         data: { session },
@@ -171,18 +173,18 @@ export default function CareersManagementPage() {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ is_active: !career.is_active }),
+        body: JSON.stringify({ is_active: nextActive }),
       });
 
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to toggle status');
 
       setCareers((prev) =>
-        prev.map((c) => (c.id === career.id ? { ...c, is_active: !career.is_active } : c))
+        prev.map((c) => (c.id === career.id ? { ...c, is_active: nextActive } : c))
       );
       toast(
         'success',
-        `Role "${career.title}" is now ${!career.is_active ? 'Active' : 'Draft / Inactive'}.`
+        `Role "${career.title}" is now ${nextActive ? 'Active (accepting applications)' : 'Closed (applications disabled)'}.`
       );
     } catch (err: any) {
       console.error('Toggle active error:', err);
@@ -235,9 +237,14 @@ export default function CareersManagementPage() {
 
       const matchesDept = departmentFilter === 'all' || c.department === departmentFilter;
 
-      return matchesSearch && matchesDept;
+      const matchesStatus =
+        jobStatusFilter === 'all' ||
+        (jobStatusFilter === 'active' && c.is_active) ||
+        (jobStatusFilter === 'closed' && !c.is_active);
+
+      return matchesSearch && matchesDept && matchesStatus;
     });
-  }, [careers, careerSearch, departmentFilter]);
+  }, [careers, careerSearch, departmentFilter, jobStatusFilter]);
 
   // Unique departments for filter
   const departmentsList = useMemo(() => {
@@ -405,6 +412,16 @@ export default function CareersManagementPage() {
                 ))}
               </select>
 
+              <select
+                value={jobStatusFilter}
+                onChange={(e) => setJobStatusFilter(e.target.value as any)}
+                className="px-3 py-2 text-xs rounded-xl border border-slate-200 bg-slate-50/50 focus:outline-hidden focus:ring-2 focus:ring-blue-500/20 text-slate-800 font-medium"
+              >
+                <option value="all">All Statuses</option>
+                <option value="active">🟢 Active Only</option>
+                <option value="closed">🔴 Closed Only</option>
+              </select>
+
               <button
                 onClick={fetchCareers}
                 className="p-2 text-slate-400 hover:text-slate-600 rounded-xl hover:bg-slate-100 transition-colors"
@@ -516,15 +533,25 @@ export default function CareersManagementPage() {
 
                         <td className="py-3.5 px-4 text-center">
                           <button
+                            type="button"
                             onClick={() => handleToggleActive(career)}
-                            className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold border transition-all ${
+                            title={
                               career.is_active
-                                ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100'
-                                : 'bg-slate-100 text-slate-600 border-slate-200 hover:bg-slate-200'
+                                ? 'Status: Active. Click to close this job opening (disables applications).'
+                                : 'Status: Closed. Click to reopen this job opening (accepts applications).'
+                            }
+                            className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border transition-all shadow-2xs hover:scale-105 active:scale-95 ${
+                              career.is_active
+                                ? 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100 hover:border-emerald-300'
+                                : 'bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100 hover:border-rose-300'
                             }`}
                           >
-                            {career.is_active ? <Eye size={12} /> : <EyeOff size={12} />}
-                            {career.is_active ? 'Active' : 'Draft'}
+                            <span
+                              className={`w-2 h-2 rounded-full ${
+                                career.is_active ? 'bg-emerald-500 animate-pulse' : 'bg-rose-400'
+                              }`}
+                            />
+                            <span>{career.is_active ? 'Active' : 'Closed'}</span>
                           </button>
                         </td>
 

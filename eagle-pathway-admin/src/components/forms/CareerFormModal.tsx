@@ -746,11 +746,18 @@ export default function CareerFormModal({
                   className="w-4 h-4 text-blue-600 rounded-sm border-slate-300 focus:ring-blue-500 cursor-pointer"
                 />
                 <div>
-                  <span className="text-xs font-semibold text-slate-800 block">
-                    Active (Publicly Visible)
+                  <span className="text-xs font-semibold text-slate-800 flex items-center gap-1.5">
+                    <span
+                      className={`w-2 h-2 rounded-full ${
+                        isActive ? 'bg-emerald-500 animate-pulse' : 'bg-rose-400'
+                      }`}
+                    />
+                    {isActive ? 'Active (Open for applications)' : 'Closed (Hidden from listings)'}
                   </span>
                   <span className="text-[11px] text-slate-500">
-                    Candidates can see and apply for this opening.
+                    {isActive
+                      ? 'Candidates can view this opening and submit applications on /careers.'
+                      : 'Opening is marked closed. Applications are disabled and form is hidden.'}
                   </span>
                 </div>
               </label>
