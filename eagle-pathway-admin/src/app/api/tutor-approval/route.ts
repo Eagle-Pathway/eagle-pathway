@@ -17,16 +17,29 @@ export async function POST(request: NextRequest) {
 
     const adminSupabase = getStrictAdminClient();
 
-    let { error: upsertErr } = await adminSupabase
+    // Preserve the tutor's custom hourly rate — never overwrite self-configured pricing
+    const { data: existingTutor } = await adminSupabase
       .from('tutors')
-      .upsert(
-        { 
-          user_id: userId, 
+      .select('id, hourly_rate')
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    let upsertErr;
+    if (existingTutor) {
+      const res = await adminSupabase
+        .from('tutors')
+        .update({ is_verified: isVerified })
+        .eq('user_id', userId);
+      upsertErr = res.error;
+    } else {
+      const res = await adminSupabase
+        .from('tutors')
+        .insert({
+          user_id: userId,
           is_verified: isVerified,
-          hourly_rate: 400
-        }, 
-        { onConflict: 'user_id' }
-      );
+        });
+      upsertErr = res.error;
+    }
 
     if (upsertErr) {
       console.error('Tutor approval API upsert error:', upsertErr);

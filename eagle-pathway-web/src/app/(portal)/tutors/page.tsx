@@ -203,10 +203,10 @@ export default function TutorsPage() {
                     <div className="flex items-center gap-2 text-xs text-slate-500 mt-0.5">
                       <div className="flex items-center gap-1 text-amber-500 font-semibold">
                         <Star size={12} className="fill-amber-400 text-amber-400" />
-                        <span>{(t.rating || 4.9).toFixed(1)}</span>
+                        <span>{(t.rating || 5.0).toFixed(1)}</span>
                       </div>
                       <span>•</span>
-                      <span>{t.total_sessions || 15}+ sessions</span>
+                      <span>{t.total_sessions ? `${t.total_sessions} sessions` : 'New Tutor'}</span>
                     </div>
                   </div>
                 </div>

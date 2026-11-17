@@ -198,6 +198,15 @@ export default function ProfilePage() {
       return;
     }
 
+    if (isTutor) {
+      const parsedRate = parseFloat(hourlyRate.trim());
+      if (!hourlyRate.trim() || isNaN(parsedRate) || parsedRate <= 0) {
+        setSaveError('Hourly tutoring rate is required. Please set your rate per hour in ETB (e.g. 500).');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        return;
+      }
+    }
+
     setSaving(true);
     try {
       const payload: Record<string, any> = {
@@ -235,7 +244,7 @@ export default function ProfilePage() {
 
       // Update Tutors Table for Educators
       if (isTutor) {
-        const parsedRate = Math.max(50, Math.round(parseFloat(hourlyRate.trim()) || 400));
+        const parsedRate = Math.round(parseFloat(hourlyRate.trim()));
         const tutorPayload: Record<string, any> = {
           user_id: user.id,
           hourly_rate: parsedRate,
@@ -346,9 +355,16 @@ export default function ProfilePage() {
             <div>
               <p className="text-sm font-bold text-slate-900">{fullName || 'Eagle Scholar'}</p>
               <p className="text-xs text-slate-500">{user?.email}</p>
-              <span className="inline-block mt-1 px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700 text-[10px] font-bold uppercase tracking-wider">
-                Role: {role}
-              </span>
+              <div className="flex flex-wrap items-center gap-2 mt-1">
+                <span className="inline-block px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700 text-[10px] font-bold uppercase tracking-wider">
+                  Role: {role}
+                </span>
+                {isTutor && hourlyRate && (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-[10px] font-bold border border-emerald-200">
+                    💰 {hourlyRate} ETB / hr
+                  </span>
+                )}
+              </div>
             </div>
           </div>
 
@@ -599,25 +615,31 @@ export default function ProfilePage() {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1.5">
-                    Hourly Tutoring Rate (ETB / hr) *
-                  </label>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <label className="text-[11px] font-semibold text-slate-700 uppercase tracking-wider">
+                      Hourly Tutoring Rate (ETB / hr) <span className="text-rose-500 font-bold">*</span>
+                    </label>
+                    <span className="text-[10px] font-semibold text-brand-blue bg-blue-50 px-2 py-0.5 rounded border border-blue-100">
+                      Required
+                    </span>
+                  </div>
                   <div className="relative">
-                    <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400">
+                    <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-500">
                       ETB
                     </span>
                     <input
                       type="number"
                       min="50"
                       step="50"
+                      required
                       value={hourlyRate}
                       onChange={(e) => setHourlyRate(e.target.value)}
                       placeholder="e.g. 500"
                       className="w-full pl-14 pr-4 py-2.5 bg-slate-50/50 border border-slate-200 rounded-xl text-xs font-bold text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-blue/20 focus:border-brand-blue transition-all"
                     />
                   </div>
-                  <p className="text-[10px] text-slate-400 mt-1">
-                    This amount is displayed directly to students on your profile card and during session booking.
+                  <p className="text-[10px] text-slate-500 mt-1">
+                    Your hourly rate is completely up to you. It is displayed directly on your public profile and used for session bookings.
                   </p>
                 </div>
 

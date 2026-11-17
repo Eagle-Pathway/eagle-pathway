@@ -261,6 +261,10 @@ export function EditProfileScreen() {
       if (!formData.telegram_username?.toString().trim()) {
         newErrors.telegram_username = 'Telegram username is required';
       }
+      const parsedRate = parseFloat(formData.hourly_rate?.toString().trim() || '');
+      if (!formData.hourly_rate?.toString().trim() || isNaN(parsedRate) || parsedRate <= 0) {
+        newErrors.hourly_rate = 'Hourly tutoring rate is required (e.g. 500 ETB)';
+      }
     }
 
     if (Object.keys(newErrors).length > 0) {
@@ -314,7 +318,7 @@ export function EditProfileScreen() {
       await withTimeout(updateProfile(updates));
 
       if (isTutor && user?.id) {
-        const parsedRate = Math.max(50, Math.round(parseFloat(formData.hourly_rate) || 400));
+        const parsedRate = Math.round(parseFloat(formData.hourly_rate));
         const tutorPayload: any = {
           user_id: user.id,
           hourly_rate: parsedRate,

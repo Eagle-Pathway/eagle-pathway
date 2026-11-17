@@ -15,7 +15,8 @@ import {
   CheckCircle2,
   AlertCircle,
   LayoutGrid,
-  List
+  List,
+  ChevronDown
 } from 'lucide-react';
 
 interface Application {
@@ -425,7 +426,7 @@ export default function ApplicationsPage() {
                           setSelectedApp(app);
                           setNotesInput(app.notes || '');
                         }}
-                        className="bg-white p-4 rounded-xl shadow-xs border border-slate-200/80 hover:border-slate-300 hover:shadow-xs transition-all group cursor-grab active:cursor-grabbing w-full space-y-2.5"
+                        className="bg-white p-4 rounded-xl shadow-xs border border-slate-200/80 hover:border-slate-300 hover:shadow-xs transition-all group cursor-grab active:cursor-grabbing w-full space-y-2.5 overflow-hidden"
                       >
                         < div className="flex justify-between items-start">
                           <span className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${app.package_tier === 'premium' ? 'bg-amber-50 text-amber-700 border border-amber-200/60' : 'bg-slate-100 text-slate-600'
@@ -441,8 +442,8 @@ export default function ApplicationsPage() {
                           </p>
                         </div>
 
-                        <div className="flex items-center justify-between pt-2.5 border-t border-slate-100">
-                          <div className="flex -space-x-1.5">
+                        <div className="flex items-center justify-between pt-2.5 border-t border-slate-100 gap-2">
+                          <div className="flex -space-x-1.5 flex-shrink-0">
                             <div className="h-6 w-6 rounded-full bg-brand-gold/15 text-brand-gold ring-1 ring-brand-gold/30 flex items-center justify-center text-[10px] font-bold">
                               {app.student?.full_name?.charAt(0)}
                             </div>
@@ -457,17 +458,19 @@ export default function ApplicationsPage() {
                             )}
                           </div>
 
-                          <div className="flex items-center gap-1.5">
+                          <div className="relative min-w-0 max-w-[110px] flex-1">
                             <select
-                              className="text-[10px] font-semibold bg-transparent text-slate-500 hover:text-brand-blue cursor-pointer border-none p-0 focus:ring-0"
+                              className="w-full text-[10px] font-semibold bg-slate-50 hover:bg-slate-100/90 text-slate-600 hover:text-brand-blue border border-slate-200/80 rounded-md py-1 pl-2 pr-5 cursor-pointer focus:outline-none focus:ring-1 focus:ring-brand-blue truncate appearance-none transition-colors"
                               onChange={(e) => handleAssignConsultant(app.id, e.target.value)}
                               value={app.consultant_id || ''}
+                              title={app.consultant?.full_name ? `Assigned to: ${app.consultant.full_name}` : 'Assign Consultant'}
                             >
                               <option value="">Assign</option>
                               {consultants.map(c => (
                                 <option key={c.id} value={c.id}>{c.full_name}</option>
                               ))}
                             </select>
+                            <ChevronDown className="w-2.5 h-2.5 text-slate-400 absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none" />
                           </div>
                         </div>
 

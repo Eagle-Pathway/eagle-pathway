@@ -234,7 +234,7 @@ export default function TutorProfilePage() {
               </div>
 
               <div className="space-y-1.5 flex-1">
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <h1 className="text-xl md:text-2xl font-bold text-slate-900 tracking-tight">
                     {tutor.user?.full_name || 'Verified Tutor'}
                   </h1>
@@ -242,16 +242,19 @@ export default function TutorProfilePage() {
                     <ShieldCheck size={13} className="text-brand-blue" />
                     <span>Verified Educator</span>
                   </span>
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-800 text-[11px] font-bold border border-emerald-200 shadow-xs">
+                    💰 {hourlyRate} ETB / hr
+                  </span>
                 </div>
 
                 <div className="flex items-center gap-3 text-xs text-slate-600">
                   <div className="flex items-center gap-1 text-amber-500 font-semibold">
                     <Star size={13} className="fill-amber-400 text-amber-400" />
-                    <span>{(tutor.rating || 4.9).toFixed(1)}</span>
+                    <span>{(tutor.rating || 5.0).toFixed(1)}</span>
                     <span className="text-slate-400 font-normal">({reviews.length} reviews)</span>
                   </div>
                   <span>•</span>
-                  <span>{tutor.total_sessions || 15}+ sessions conducted</span>
+                  <span>{tutor.total_sessions ? `${tutor.total_sessions} sessions conducted` : 'New Tutor'}</span>
                 </div>
 
                 {tutor.education && (
