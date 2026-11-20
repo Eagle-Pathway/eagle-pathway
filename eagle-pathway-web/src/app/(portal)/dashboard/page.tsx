@@ -690,8 +690,12 @@ export default function DashboardPage() {
                 Application Deadline Approaching: {urgentDeadlineScholarship.name}
               </div>
               <div className="text-[11px] text-amber-700 mt-0.5">
-                Closes in {differenceInDays(urgentDeadlineScholarship.deadline!)} days (
-                {formatDate(urgentDeadlineScholarship.deadline!)}).
+                {differenceInDays(urgentDeadlineScholarship.deadline!) === 0
+                  ? 'Closes today! '
+                  : differenceInDays(urgentDeadlineScholarship.deadline!) === 1
+                  ? 'Closes tomorrow! '
+                  : `Closes in ${differenceInDays(urgentDeadlineScholarship.deadline!)} days `}
+                ({formatDate(urgentDeadlineScholarship.deadline!)}).
               </div>
             </div>
           </div>

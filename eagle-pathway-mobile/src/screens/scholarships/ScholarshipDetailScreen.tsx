@@ -14,6 +14,7 @@ import { scholarshipsService } from '@/services/scholarships';
 import { useScholarshipStore } from '@/store/scholarshipStore';
 import { useAuthStore } from '@/store/authStore';
 import { analyzeEligibility } from '@/utils/eligibility';
+import { daysUntil } from '@/utils/deadlines';
 import { showError } from '@/utils/errorHandler';
 import type { Scholarship } from '@/types';
 import { Ionicons } from '@expo/vector-icons';
@@ -186,7 +187,19 @@ export function ScholarshipDetailScreen() {
         <Text style={sdStyles.name}>{scholarship.name}</Text>
         <Text style={sdStyles.org}>{scholarship.organization}</Text>
         <View style={sdStyles.pills}>
-          <View style={[sdStyles.pill, { backgroundColor: Colors.redLight }]}><Text style={[sdStyles.pillText, { color: Colors.red }]}>Deadline: {format(new Date(scholarship.deadline), 'MMM d, yyyy')}</Text></View>
+          {(() => {
+            const daysLeft = scholarship.deadline ? daysUntil(scholarship.deadline) : NaN;
+            const isClosed = !Number.isNaN(daysLeft) && daysLeft < 0;
+            return (
+              <View style={[sdStyles.pill, { backgroundColor: isClosed ? '#F3F4F6' : Colors.redLight }]}>
+                <Text style={[sdStyles.pillText, { color: isClosed ? '#64748B' : Colors.red, fontWeight: 'bold' }]}>
+                  {isClosed
+                    ? `Closed (${format(new Date(scholarship.deadline), 'MMM d, yyyy')})`
+                    : `Deadline: ${format(new Date(scholarship.deadline), 'MMM d, yyyy')}`}
+                </Text>
+              </View>
+            );
+          })()}
           {scholarship.degree_levels.map(d => (
             <View key={d} style={[sdStyles.pill, { backgroundColor: 'rgba(255,255,255,0.12)' }]}><Text style={[sdStyles.pillText, { color: 'rgba(255,255,255,0.9)' }]}>{d.charAt(0).toUpperCase() + d.slice(1)}</Text></View>
           ))}

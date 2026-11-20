@@ -23,7 +23,7 @@ import {
   Rocket,
   FileCheck,
 } from 'lucide-react';
-import { formatDate, differenceInDays } from '@/lib/date';
+import { formatDate, differenceInDays, getDeadlineStatus } from '@/lib/date';
 import { ScholarshipCardSkeleton } from '@/components/ui/Skeletons';
 
 interface MatchItem {
@@ -274,7 +274,7 @@ export default function ScholarshipsPage() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filtered.map((s) => {
-            const daysLeft = s.deadline ? differenceInDays(s.deadline) : null;
+            const deadlineStatus = s.deadline ? getDeadlineStatus(s.deadline) : null;
             return (
               <div
                 key={s.id}
@@ -315,9 +315,17 @@ export default function ScholarshipsPage() {
 
                 <div className="pt-3 mt-4 border-t border-slate-100 flex items-center justify-between">
                   <div className="text-[11px] text-slate-500">
-                    {daysLeft !== null && daysLeft >= 0 ? (
-                      <span className={`font-semibold ${daysLeft <= 14 ? 'text-amber-600' : 'text-slate-600'}`}>
-                        {daysLeft} days left
+                    {deadlineStatus ? (
+                      <span className={`font-semibold ${
+                        deadlineStatus.isPassed
+                          ? 'text-rose-600'
+                          : deadlineStatus.urgency === 'critical'
+                          ? 'text-rose-600'
+                          : deadlineStatus.urgency === 'soon'
+                          ? 'text-amber-600'
+                          : 'text-slate-600'
+                      }`}>
+                        {deadlineStatus.isPassed ? 'Closed' : deadlineStatus.label}
                       </span>
                     ) : (
                       <span>Rolling deadline</span>

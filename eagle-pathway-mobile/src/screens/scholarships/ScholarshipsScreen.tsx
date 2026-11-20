@@ -237,6 +237,7 @@ export function ScholarshipCard({ scholarship: s, isSaved, onSave }: { scholarsh
   const freshness = freshnessTone(s.source_status);
   const daysLeft = s.deadline ? daysUntil(s.deadline) : NaN;
   const isUrgent = !Number.isNaN(daysLeft) && daysLeft >= 0 && daysLeft <= 14;
+  const isClosed = !Number.isNaN(daysLeft) && daysLeft < 0;
 
   return (
     <ScaleBounce
@@ -296,10 +297,10 @@ export function ScholarshipCard({ scholarship: s, isSaved, onSave }: { scholarsh
         <View style={styles.cardFooter}>
           <View style={styles.metaRow}>
             {s.deadline && (
-              <View style={[styles.metaPill, { backgroundColor: isUrgent ? Colors.redLight : '#FEF3C7' }]}>
-                <Ionicons name={isUrgent ? "flame" : "time-outline"} size={12} color={isUrgent ? Colors.red : '#D97706'} style={{ marginRight: 4 }} />
-                <Text style={[styles.metaText, { color: isUrgent ? Colors.red : '#D97706', fontWeight: 'bold' }]}>
-                  {!Number.isNaN(daysLeft) && daysLeft >= 0 ? deadlineLabel(daysLeft) : format(new Date(s.deadline), 'MMM d')}
+              <View style={[styles.metaPill, { backgroundColor: isClosed ? '#F1F5F9' : isUrgent ? Colors.redLight : '#FEF3C7' }]}>
+                <Ionicons name={isClosed ? "close-circle-outline" : isUrgent ? "flame" : "time-outline"} size={12} color={isClosed ? '#64748B' : isUrgent ? Colors.red : '#D97706'} style={{ marginRight: 4 }} />
+                <Text style={[styles.metaText, { color: isClosed ? '#64748B' : isUrgent ? Colors.red : '#D97706', fontWeight: 'bold' }]}>
+                  {!Number.isNaN(daysLeft) ? deadlineLabel(daysLeft) : format(new Date(s.deadline), 'MMM d')}
                 </Text>
               </View>
             )}

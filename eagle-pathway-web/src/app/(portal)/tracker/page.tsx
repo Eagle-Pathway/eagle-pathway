@@ -27,7 +27,7 @@ import {
   Check,
   TrendingUp,
 } from 'lucide-react';
-import { formatDate, differenceInDays } from '@/lib/date';
+import { formatDate, differenceInDays, getDeadlineStatus } from '@/lib/date';
 import { TrackerBoardSkeleton } from '@/components/ui/Skeletons';
 
 const COLUMNS = [
@@ -395,7 +395,7 @@ export default function ApplicationsTrackerPage() {
                     const readinessScore = calculateReadiness(app);
                     const tone = getReadinessTone(readinessScore);
                     const deadline = app.scholarship?.deadline;
-                    const daysRemaining = deadline ? differenceInDays(deadline) : null;
+                    const deadlineStatus = deadline ? getDeadlineStatus(deadline) : null;
 
                     return (
                       <div
@@ -428,18 +428,20 @@ export default function ApplicationsTrackerPage() {
                             <span>{readinessScore}% Ready</span>
                           </button>
 
-                          {daysRemaining !== null ? (
+                          {deadlineStatus ? (
                             <span
                               className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
-                                daysRemaining <= 7
+                                deadlineStatus.isPassed
                                   ? 'bg-rose-50 text-rose-700 border border-rose-200/70'
-                                  : daysRemaining <= 30
+                                  : deadlineStatus.urgency === 'critical'
+                                  ? 'bg-rose-50 text-rose-700 border border-rose-200/70'
+                                  : deadlineStatus.urgency === 'soon'
                                   ? 'bg-amber-50 text-amber-700 border border-amber-200/70'
                                   : 'bg-slate-100 text-slate-600'
                               }`}
                             >
                               <Clock size={10} className="inline mr-1" />
-                              {daysRemaining > 0 ? `${daysRemaining}d left` : daysRemaining === 0 ? 'Today!' : 'Closed'}
+                              {deadlineStatus.shortLabel}
                             </span>
                           ) : (
                             <span className="text-[10px] text-slate-400 font-medium">Ongoing</span>
@@ -612,7 +614,7 @@ export default function ApplicationsTrackerPage() {
         const tone = getReadinessTone(readinessScore);
         const completedMilestoneIds = milestonesByApp[app.id] || [];
         const deadline = app.scholarship?.deadline;
-        const daysRemaining = deadline ? differenceInDays(deadline) : null;
+        const deadlineStatus = deadline ? getDeadlineStatus(deadline) : null;
 
         return (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs animate-in fade-in duration-150">
@@ -650,10 +652,14 @@ export default function ApplicationsTrackerPage() {
                     <p className="text-xs text-slate-300 max-w-sm leading-relaxed">
                       Complete all 6 international deliverables to maximize selection board competitiveness before submitting.
                     </p>
-                    {daysRemaining !== null && (
-                      <div className="text-xs font-semibold text-amber-300 pt-1 flex items-center justify-center sm:justify-start gap-1">
+                    {deadline && (
+                      <div className={`text-xs font-semibold pt-1 flex items-center justify-center sm:justify-start gap-1.5 ${
+                        deadlineStatus?.isPassed ? 'text-rose-400' : 'text-amber-300'
+                      }`}>
                         <Clock size={13} />
-                        <span>Deadline: {formatDate(deadline!)} ({daysRemaining} days remaining)</span>
+                        <span>
+                          Deadline: {formatDate(deadline)} {deadlineStatus ? `· ${deadlineStatus.label}` : ''}
+                        </span>
                       </div>
                     )}
                   </div>

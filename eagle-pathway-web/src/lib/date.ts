@@ -44,3 +44,62 @@ export function differenceInDays(targetDate: string | Date, fromDate: string | D
   return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 }
 
+export interface DeadlineStatus {
+  days: number;
+  isPassed: boolean;
+  isToday: boolean;
+  label: string; // e.g. "81 days remaining", "Due today (Final day!)", "Closed (Passed 81 days ago)"
+  shortLabel: string; // e.g. "81d left", "Today!", "Closed"
+  urgency: 'overdue' | 'critical' | 'soon' | 'normal';
+}
+
+export function getDeadlineStatus(deadline: string | Date | null | undefined, fromDate: string | Date = new Date()): DeadlineStatus | null {
+  if (!deadline) return null;
+  const days = differenceInDays(deadline, fromDate);
+  if (Number.isNaN(days)) return null;
+
+  if (days < 0) {
+    const passedDays = Math.abs(days);
+    return {
+      days,
+      isPassed: true,
+      isToday: false,
+      label: `Closed (Passed ${passedDays} ${passedDays === 1 ? 'day' : 'days'} ago)`,
+      shortLabel: 'Closed',
+      urgency: 'overdue',
+    };
+  }
+
+  if (days === 0) {
+    return {
+      days: 0,
+      isPassed: false,
+      isToday: true,
+      label: 'Due today (Final day!)',
+      shortLabel: 'Today!',
+      urgency: 'critical',
+    };
+  }
+
+  if (days === 1) {
+    return {
+      days: 1,
+      isPassed: false,
+      isToday: false,
+      label: '1 day remaining',
+      shortLabel: '1d left',
+      urgency: 'critical',
+    };
+  }
+
+  return {
+    days,
+    isPassed: false,
+    isToday: false,
+    label: `${days} days remaining`,
+    shortLabel: `${days}d left`,
+    urgency: days <= 7 ? 'critical' : days <= 30 ? 'soon' : 'normal',
+  };
+}
+
+

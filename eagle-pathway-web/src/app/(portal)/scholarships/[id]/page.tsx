@@ -24,7 +24,7 @@ import {
   ArrowRight,
   Loader2,
 } from 'lucide-react';
-import { formatDate, differenceInDays } from '@/lib/date';
+import { formatDate, differenceInDays, getDeadlineStatus } from '@/lib/date';
 import { DetailHeroSkeleton } from '@/components/ui/Skeletons';
 
 export default function ScholarshipDetailPage() {
@@ -160,8 +160,8 @@ export default function ScholarshipDetailPage() {
     );
   }
 
-  const daysLeft = scholarship.deadline
-    ? differenceInDays(new Date(scholarship.deadline), new Date())
+  const deadlineStatus = scholarship.deadline
+    ? getDeadlineStatus(scholarship.deadline)
     : null;
 
   return (
@@ -239,9 +239,11 @@ export default function ScholarshipDetailPage() {
                   ? formatDate(new Date(scholarship.deadline), 'MMMM d, yyyy')
                   : 'Open Rolling Admissions'}
               </p>
-              {daysLeft !== null && (
-                <p className="text-[11px] text-amber-800 font-medium mt-0.5">
-                  {daysLeft > 0 ? `${daysLeft} calendar days remaining to apply` : 'Applications closing very soon'}
+              {deadlineStatus && (
+                <p className={`text-[11px] font-medium mt-0.5 ${
+                  deadlineStatus.isPassed ? 'text-rose-700 font-semibold' : 'text-amber-800'
+                }`}>
+                  {deadlineStatus.label}
                 </p>
               )}
             </div>
