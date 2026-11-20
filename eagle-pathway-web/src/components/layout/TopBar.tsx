@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { useAuthStore } from '@/store/useAuthStore';
 import { Search, Bell, Menu, Sparkles, User, LogOut, ChevronDown } from 'lucide-react';
 
@@ -13,14 +13,20 @@ interface TopBarProps {
 
 export default function TopBar({ onMobileMenuToggle, unreadNotifications = 0 }: TopBarProps) {
   const router = useRouter();
+  const pathname = usePathname();
   const { user, signOut } = useAuthStore();
   const [searchQuery, setSearchQuery] = useState('');
   const [showProfileMenu, setShowProfileMenu] = useState(false);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!searchQuery.trim()) return;
-    router.push(`/scholarships?q=${encodeURIComponent(searchQuery.trim())}`);
+    const q = searchQuery.trim();
+    if (!q) return;
+    if (pathname.startsWith('/tutors') || q.toLowerCase().includes('tutor') || q.toLowerCase().includes('astegni')) {
+      router.push(`/tutors?q=${encodeURIComponent(q)}`);
+    } else {
+      router.push(`/scholarships?q=${encodeURIComponent(q)}`);
+    }
   };
 
   const role = user?.role || 'student';

@@ -98,6 +98,9 @@ function MockInterviewInner() {
   const [followUpAnswer, setFollowUpAnswer] = useState('');
   const [loadingFollowUp, setLoadingFollowUp] = useState(false);
 
+  // Error Banner State
+  const [errorBanner, setErrorBanner] = useState<string | null>(null);
+
   // Copy transcript state
   const [copiedTranscript, setCopiedTranscript] = useState(false);
 
@@ -120,6 +123,7 @@ function MockInterviewInner() {
 
   const handleStartInterview = async () => {
     setLoadingQuestions(true);
+    setErrorBanner(null);
     if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
       window.speechSynthesis.cancel();
       setIsSpeaking(false);
@@ -150,7 +154,7 @@ function MockInterviewInner() {
       }
     } catch (err) {
       console.error(err);
-      alert('Could not start mock interview. Please try again.');
+      setErrorBanner('Could not start mock interview right now. Please try again.');
     } finally {
       setLoadingQuestions(false);
     }
@@ -158,11 +162,12 @@ function MockInterviewInner() {
 
   const handleEvaluateAnswer = async () => {
     if (!currentAnswer.trim()) {
-      alert('Please type your response before submitting for evaluation.');
+      setErrorBanner('Please type or record your response before submitting for evaluation.');
       return;
     }
 
     setLoadingFeedback(true);
+    setErrorBanner(null);
     try {
       const res = await fetch('/api/interview', {
         method: 'POST',
@@ -184,7 +189,7 @@ function MockInterviewInner() {
       setFollowUpAnswer('');
     } catch (err) {
       console.error(err);
-      alert('Failed to evaluate response. Please try again.');
+      setErrorBanner('Failed to evaluate response. Please try again.');
     } finally {
       setLoadingFeedback(false);
     }
@@ -193,6 +198,7 @@ function MockInterviewInner() {
   const handleDefendFollowUp = async () => {
     if (!followUpAnswer.trim()) return;
     setLoadingFollowUp(true);
+    setErrorBanner(null);
     try {
       const combined = `${currentAnswer}\n\n[Committee Follow-Up Defense]: ${followUpAnswer.trim()}`;
       const res = await fetch('/api/interview', {
@@ -216,7 +222,7 @@ function MockInterviewInner() {
       setFollowUpAnswer('');
     } catch (err) {
       console.error(err);
-      alert('Failed to evaluate committee follow-up response.');
+      setErrorBanner('Failed to evaluate committee follow-up response. Please try again.');
     } finally {
       setLoadingFollowUp(false);
     }
@@ -330,6 +336,18 @@ function MockInterviewInner() {
           </p>
         </div>
       </div>
+
+      {errorBanner && (
+        <div className="p-3.5 bg-rose-50 border border-rose-200 rounded-xl flex items-center justify-between text-xs text-rose-700 animate-in fade-in">
+          <span>{errorBanner}</span>
+          <button
+            onClick={() => setErrorBanner(null)}
+            className="text-rose-400 hover:text-rose-600 ml-3 font-semibold"
+          >
+            ✕
+          </button>
+        </div>
+      )}
 
       {phase === 'intro' && (
         <div className="bg-white rounded-xl border border-slate-200/80 p-6 md:p-8 shadow-xs text-center max-w-xl mx-auto space-y-5">

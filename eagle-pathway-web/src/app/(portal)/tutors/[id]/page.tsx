@@ -117,7 +117,7 @@ export default function TutorProfilePage() {
     setBookingLoading(true);
     try {
       const scheduledDateTime = new Date(`${sessionDate}T${sessionTime}:00`).toISOString();
-      const hourlyRate = tutor?.hourly_rate || 350;
+      const hourlyRate = tutor?.hourly_rate || 400;
       const subtotal = hourlyRate * durationHours;
       const platformFee = Math.round(subtotal * 0.1);
       const totalAmount = subtotal + platformFee;
@@ -197,7 +197,7 @@ export default function TutorProfilePage() {
     );
   }
 
-  const hourlyRate = tutor.hourly_rate || 350;
+  const hourlyRate = tutor.hourly_rate || 400;
   const subtotal = hourlyRate * durationHours;
   const platformFee = Math.round(subtotal * 0.1);
   const totalAmount = subtotal + platformFee;

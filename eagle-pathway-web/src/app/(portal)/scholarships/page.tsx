@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, Suspense } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import type { Scholarship } from '@eagle-pathway/shared';
 import {
@@ -43,12 +44,15 @@ interface StrategyResult {
   actionPlan: string[];
 }
 
-export default function ScholarshipsPage() {
+function ScholarshipsContent() {
+  const searchParams = useSearchParams();
+  const queryParam = searchParams.get('q') || searchParams.get('query') || '';
+
   const [scholarships, setScholarships] = useState<Scholarship[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Filters
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState(queryParam);
   const [selectedCountry, setSelectedCountry] = useState('all');
   const [selectedLevel, setSelectedLevel] = useState('all');
   const [selectedFunding, setSelectedFunding] = useState('all');
@@ -62,6 +66,14 @@ export default function ScholarshipsPage() {
   const [researchGoals, setResearchGoals] = useState('Applying machine learning to improve regional agricultural and healthcare supply chains in Ethiopia.');
   const [isMatching, setIsMatching] = useState(false);
   const [strategyResult, setStrategyResult] = useState<StrategyResult | null>(null);
+  const [strategistError, setStrategistError] = useState<string | null>(null);
+
+  // Keep search in sync with URL query param from TopBar
+  useEffect(() => {
+    if (queryParam) {
+      setSearchQuery(queryParam);
+    }
+  }, [queryParam]);
 
   useEffect(() => {
     async function fetchScholarships() {
@@ -129,6 +141,8 @@ export default function ScholarshipsPage() {
   const handleRunStrategyMatch = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsMatching(true);
+    setStrategyResult(null);
+    setStrategistError(null);
     try {
       const res = await fetch('/api/scholarships/match', {
         method: 'POST',
@@ -148,7 +162,7 @@ export default function ScholarshipsPage() {
       setStrategyResult(data);
     } catch (err) {
       console.error(err);
-      alert('Could not generate strategy match. Please try again.');
+      setStrategistError('Could not generate strategy match right now. Please check your inputs and try again.');
     } finally {
       setIsMatching(false);
     }
@@ -379,6 +393,11 @@ export default function ScholarshipsPage() {
               {!strategyResult ? (
                 /* Profile Input Form */
                 <form onSubmit={handleRunStrategyMatch} className="space-y-4">
+                  {strategistError && (
+                    <div className="p-3 bg-rose-50 border border-rose-200 text-rose-700 rounded-xl text-xs font-medium">
+                      {strategistError}
+                    </div>
+                  )}
                   <div className="p-3 bg-blue-50/60 border border-blue-200/80 rounded-xl text-xs text-blue-900">
                     Confirm your academic metrics below to simulate admissions committee matching algorithms.
                   </div>
@@ -633,5 +652,23 @@ export default function ScholarshipsPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function ScholarshipsPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="space-y-6 pb-16">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+              <ScholarshipCardSkeleton key={i} />
+            ))}
+          </div>
+        </div>
+      }
+    >
+      <ScholarshipsContent />
+    </Suspense>
   );
 }

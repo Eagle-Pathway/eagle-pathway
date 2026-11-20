@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, Suspense } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import type { Tutor } from '@eagle-pathway/shared';
 import {
@@ -26,17 +27,26 @@ function getTutorSubjects(tData: any): string[] {
   if (Array.isArray(tData?.user?.interested_subjects) && tData.user.interested_subjects.length > 0) {
     return tData.user.interested_subjects;
   }
-  return ['Mathematics', 'Physics', 'English'];
+  return ['General Tutoring'];
 }
 
-export default function TutorsPage() {
+function TutorsContent() {
+  const searchParams = useSearchParams();
+  const queryParam = searchParams.get('q') || searchParams.get('query') || '';
+
   const [tutors, setTutors] = useState<Tutor[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Filters
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState(queryParam);
   const [selectedSubject, setSelectedSubject] = useState('all');
   const [selectedMode, setSelectedMode] = useState('all');
+
+  useEffect(() => {
+    if (queryParam) {
+      setSearchQuery(queryParam);
+    }
+  }, [queryParam]);
 
   useEffect(() => {
     async function fetchTutors() {
@@ -274,5 +284,23 @@ export default function TutorsPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function TutorsPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="space-y-6 pb-16">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+              <TutorCardSkeleton key={i} />
+            ))}
+          </div>
+        </div>
+      }
+    >
+      <TutorsContent />
+    </Suspense>
   );
 }

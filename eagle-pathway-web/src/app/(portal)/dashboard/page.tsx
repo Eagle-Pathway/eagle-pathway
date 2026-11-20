@@ -850,18 +850,22 @@ export default function DashboardPage() {
                   <div>
                     <h4 className="font-semibold text-xs text-slate-900">{t.user?.full_name || 'Educator'}</h4>
                     <p className="text-[11px] text-slate-500 line-clamp-1">
-                      {t.subjects?.join(', ') || 'Math, Physics, English'}
+                      {t.subjects && t.subjects.length > 0 ? t.subjects.join(', ') : 'Flexible / Multi-subject'}
                     </p>
                     <div className="flex items-center gap-1 text-[10px] text-amber-500 font-bold mt-0.5">
                       <Star size={11} fill="currentColor" />
-                      <span>{t.rating || '4.9'}</span>
-                      <span className="text-slate-400 font-normal">({t.total_reviews || 15} reviews)</span>
+                      <span>{Number(t.rating || 5.0).toFixed(1)}</span>
+                      {t.total_reviews && t.total_reviews > 0 ? (
+                        <span className="text-slate-400 font-normal">({t.total_reviews} reviews)</span>
+                      ) : (
+                        <span className="text-slate-400 font-normal">(Verified Educator)</span>
+                      )}
                     </div>
                   </div>
                 </div>
 
                 <div className="text-right flex-shrink-0">
-                  <span className="font-bold text-xs text-slate-900">{t.hourly_rate || 500} ETB</span>
+                  <span className="font-bold text-xs text-slate-900">{t.hourly_rate ? `${t.hourly_rate} ETB` : 'Flexible'}</span>
                   <span className="text-[10px] text-slate-400 block">/ hour</span>
                 </div>
               </Link>

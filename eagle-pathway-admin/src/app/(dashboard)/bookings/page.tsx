@@ -474,7 +474,7 @@ export default function BookingsPage() {
                                                     {/* Price / Fee */}
                                                     <td className="px-6 py-4 whitespace-nowrap">
                                                       <div className="text-sm font-bold text-gray-900">
-                                                        {price > 0 ? `${price.toLocaleString()} ETB` : '400 ETB'}
+                                                        {price > 0 ? `${price.toLocaleString()} ETB` : 'Flexible / Pending'}
                                                       </div>
                                                       {booking.session_type && (
                                                         <div className="text-[11px] text-gray-400 capitalize flex items-center mt-0.5">
@@ -590,7 +590,7 @@ export default function BookingsPage() {
                                             </div>
                                             <div className="text-right">
                                               <span className="text-[11px] font-bold text-brand-blue uppercase tracking-wider block">Session Price</span>
-                                              <span className="text-sm font-bold text-emerald-600">{price > 0 ? `${price.toLocaleString()} ETB` : '400 ETB'}</span>
+                                              <span className="text-sm font-bold text-emerald-600">{price > 0 ? `${price.toLocaleString()} ETB` : 'Flexible / Pending'}</span>
                                             </div>
                                           </div>
 

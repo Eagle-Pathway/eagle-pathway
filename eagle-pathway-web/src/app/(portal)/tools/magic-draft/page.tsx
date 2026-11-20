@@ -143,10 +143,12 @@ function MagicDraftInner() {
   const [generating, setGenerating] = useState(false);
   const [draft, setDraft] = useState('');
   const [copied, setCopied] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const handleGenerate = async (e: React.FormEvent) => {
     e.preventDefault();
     setGenerating(true);
+    setErrorMsg(null);
     try {
       const res = await fetch('/api/magic-draft', {
         method: 'POST',
@@ -172,7 +174,7 @@ function MagicDraftInner() {
       setDraft(data.draft || '');
     } catch (err) {
       console.error(err);
-      alert('Could not generate document. Please try again.');
+      setErrorMsg('Could not generate document right now. Please try again.');
     } finally {
       setGenerating(false);
     }
@@ -278,6 +280,18 @@ function MagicDraftInner() {
           </div>
 
           <form onSubmit={handleGenerate} className="space-y-3.5">
+            {errorMsg && (
+              <div className="p-3 bg-rose-50 border border-rose-200 text-rose-700 rounded-xl text-xs font-medium flex items-center justify-between">
+                <span>{errorMsg}</span>
+                <button
+                  type="button"
+                  onClick={() => setErrorMsg(null)}
+                  className="text-rose-400 hover:text-rose-600 ml-2 font-bold"
+                >
+                  ✕
+                </button>
+              </div>
+            )}
             <div>
               <div className="flex items-center justify-between mb-1">
                 <label className="block text-[11px] font-semibold text-slate-600 uppercase tracking-wider">
