@@ -46,7 +46,7 @@ export default function TutorsScreen() {
           setIsOffline(true);
           return;
         }
-      } catch {}
+      } catch { }
       setError(true);
     } finally {
       setLoading(false);
@@ -65,7 +65,7 @@ export default function TutorsScreen() {
     const exp = (t.bio || t.user?.teaching_experience || '').toLowerCase();
     const allSubjects = (t.subjects || []).concat(t.user?.interested_subjects || []).map(sub => sub.toLowerCase());
 
-    const matchesSearch = !s || 
+    const matchesSearch = !s ||
       fullName.includes(s) ||
       uni.includes(s) ||
       city.includes(s) ||
@@ -135,8 +135,8 @@ export default function TutorsScreen() {
           style={styles.requestBtn}
           activeOpacity={0.85}
         >
-          <Ionicons name="sparkles" size={13} color={Colors.white} style={{ marginRight: 4 }} />
-          <Text style={styles.requestBtnText}>Request Tutor</Text>
+          <Ionicons name="person-add-outline" size={13} color={Colors.white} style={{ marginRight: 4 }} />
+          <Text style={styles.requestBtnText}>Hire a Tutor</Text>
         </TouchableOpacity>
       </View>
 
@@ -160,10 +160,10 @@ export default function TutorsScreen() {
       </View>
 
       {/* Mode filters */}
-      <ScrollView 
-        horizontal 
-        showsHorizontalScrollIndicator={false} 
-        style={[styles.filterScroll2, { flexGrow: 0 }]} 
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={[styles.filterScroll2, { flexGrow: 0 }]}
         contentContainerStyle={{ paddingHorizontal: Spacing.xl, gap: Spacing.sm, alignItems: 'center' }}
       >
         {MODES.map(m => (
@@ -188,24 +188,46 @@ export default function TutorsScreen() {
         </View>
       )}
 
-      {/* Prominent Request 1-on-1 Banner */}
-      <TouchableOpacity
-        style={styles.customBanner}
-        onPress={() => router.push('/request-tutor' as any)}
-        activeOpacity={0.88}
-      >
-        <View style={styles.customBannerIcon}>
-          <Ionicons name="sparkles" size={18} color="#FFFFFF" />
-        </View>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.customBannerTitle}>Can't find your exact match?</Text>
-          <Text style={styles.customBannerSub}>Submit a 1-minute custom request &amp; let tutors apply directly.</Text>
-        </View>
-        <View style={styles.customBannerBtn}>
-          <Text style={styles.customBannerBtnText}>Request</Text>
-          <Ionicons name="arrow-forward" size={11} color="#2563EB" />
-        </View>
-      </TouchableOpacity>
+      {/* Prominent Banners: Parent Hire & Educator Onboarding */}
+      <View style={styles.bannersContainer}>
+        {/* Parent Request 1-on-1 Banner */}
+        <TouchableOpacity
+          style={styles.customBanner}
+          onPress={() => router.push('/request-tutor' as any)}
+          activeOpacity={0.88}
+        >
+          <View style={styles.customBannerIcon}>
+            <Ionicons name="sparkles" size={18} color="#FFFFFF" />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.customBannerTitle}>Need a Private Tutor?</Text>
+            <Text style={styles.customBannerSub}>Post your student's needs in 60s &amp; match with top tutors.</Text>
+          </View>
+          <View style={styles.customBannerBtn}>
+            <Text style={styles.customBannerBtnText}>Hire Tutor</Text>
+            <Ionicons name="arrow-forward" size={11} color="#2563EB" />
+          </View>
+        </TouchableOpacity>
+
+        {/* Educator / Tutor Application Banner */}
+        <TouchableOpacity
+          style={styles.teachBanner}
+          onPress={() => router.push('/apply-job' as any)}
+          activeOpacity={0.88}
+        >
+          <View style={styles.teachBannerIcon}>
+            <Ionicons name="school" size={18} color="#059669" />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.teachBannerTitle}>Want to Teach? Become a Tutor</Text>
+            <Text style={styles.teachBannerSub}>Join Eagle Pathway to teach 1-on-1 and earn top hourly rates.</Text>
+          </View>
+          <View style={styles.teachBannerBtn}>
+            <Text style={styles.teachBannerBtnText}>Apply</Text>
+            <Ionicons name="arrow-forward" size={11} color="#059669" />
+          </View>
+        </TouchableOpacity>
+      </View>
 
       {error && tutors.length === 0 ? (
         <ErrorState subtitle="We couldn't load tutors. Check your connection and retry." onRetry={load} style={{ padding: Spacing.xl }} />
@@ -214,7 +236,7 @@ export default function TutorsScreen() {
           icon="school-outline"
           title="No tutors found"
           subtitle="Try adjusting your search or post a custom 1-on-1 tutoring request."
-          actionLabel="Request a Tutor"
+          actionLabel="Hire a Private Tutor"
           onAction={() => router.push('/request-tutor' as any)}
           style={{ padding: Spacing.xl }}
         />
@@ -226,9 +248,9 @@ export default function TutorsScreen() {
           contentContainerStyle={{ paddingBottom: 120 }}
           showsVerticalScrollIndicator={false}
           refreshControl={<RefreshControl refreshing={loading} onRefresh={load} tintColor={Colors.blue} />}
-          initialNumToRender={8} 
-          maxToRenderPerBatch={8} 
-          windowSize={5} 
+          initialNumToRender={8}
+          maxToRenderPerBatch={8}
+          windowSize={5}
           removeClippedSubviews={true}
         />
       )}
@@ -336,12 +358,12 @@ function TutorCard({ tutor }: { tutor: Tutor }) {
 }
 
 const styles = StyleSheet.create({
-  header: { 
-    flexDirection: 'row', 
-    justifyContent: 'space-between', 
-    alignItems: 'center', 
-    paddingHorizontal: Spacing.xl, 
-    paddingTop: Spacing.md, 
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: Spacing.xl,
+    paddingTop: Spacing.md,
     paddingBottom: Spacing.xs,
     gap: Spacing.md,
   },
@@ -365,29 +387,29 @@ const styles = StyleSheet.create({
     fontSize: Typography.xs,
   },
   searchBar: {
-    marginHorizontal: Spacing.xl, 
-    marginTop: Spacing.md, 
+    marginHorizontal: Spacing.xl,
+    marginTop: Spacing.md,
     marginBottom: 4,
     backgroundColor: '#FFFFFF',
-    borderRadius: Radius.xl, 
-    borderWidth: 1.5, 
+    borderRadius: Radius.xl,
+    borderWidth: 1.5,
     borderColor: '#E2E8F0',
-    flexDirection: 'row', 
+    flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: Spacing.md, 
-    paddingVertical: 9, 
+    paddingHorizontal: Spacing.md,
+    paddingVertical: 9,
     gap: Spacing.sm,
   },
   searchInput: { flex: 1, fontSize: Typography.sm, color: '#0F172A' },
   filterScroll2: { marginTop: Spacing.xs, marginBottom: Spacing.sm },
   chip: {
-    borderWidth: 1.5, 
+    borderWidth: 1.5,
     borderColor: '#E2E8F0',
-    borderRadius: Radius.full, 
-    paddingHorizontal: 16, 
+    borderRadius: Radius.full,
+    paddingHorizontal: 16,
     paddingVertical: 6,
-    backgroundColor: '#FFFFFF', 
-    alignItems: 'center', 
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
     justifyContent: 'center',
     minHeight: 34,
   },
@@ -396,9 +418,12 @@ const styles = StyleSheet.create({
   chipText: { fontSize: Typography.xs, fontWeight: Typography.semibold, color: '#64748B' },
   chipTextActive: { color: '#2563EB', fontWeight: Typography.bold },
 
-  customBanner: {
+  bannersContainer: {
     marginHorizontal: Spacing.xl,
     marginBottom: Spacing.md,
+    gap: Spacing.sm,
+  },
+  customBanner: {
     backgroundColor: '#0D2051',
     borderRadius: Radius.xl,
     padding: Spacing.md,
@@ -440,14 +465,56 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: Typography.bold,
   },
+  teachBanner: {
+    backgroundColor: '#F0FDF4',
+    borderRadius: Radius.xl,
+    padding: Spacing.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.md,
+    borderWidth: 1,
+    borderColor: '#BBF7D0',
+  },
+  teachBannerIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    backgroundColor: '#DCFCE7',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  teachBannerTitle: {
+    color: '#166534',
+    fontSize: Typography.sm,
+    fontWeight: Typography.bold,
+  },
+  teachBannerSub: {
+    color: '#15803D',
+    fontSize: 11,
+    marginTop: 1,
+  },
+  teachBannerBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    backgroundColor: '#16A34A',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: Radius.md,
+  },
+  teachBannerBtnText: {
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontWeight: Typography.bold,
+  },
 
   tutorCard: {
-    marginHorizontal: Spacing.xl, 
+    marginHorizontal: Spacing.xl,
     marginBottom: Spacing.md,
-    backgroundColor: '#FFFFFF', 
+    backgroundColor: '#FFFFFF',
     borderRadius: Radius['2xl'],
-    padding: Spacing.lg, 
-    borderWidth: 1.5, 
+    padding: Spacing.lg,
+    borderWidth: 1.5,
     borderColor: '#E2E8F0',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
@@ -468,20 +535,20 @@ const styles = StyleSheet.create({
   tag: { backgroundColor: '#F1F5F9', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
   tagText: { fontSize: 11, color: '#475569', fontWeight: Typography.medium },
   tutorActions: { flexDirection: 'row', gap: Spacing.sm },
-  btnBook: { 
-    flex: 1, 
-    backgroundColor: '#2563EB', 
-    borderRadius: Radius.lg, 
-    paddingVertical: 10, 
+  btnBook: {
+    flex: 1,
+    backgroundColor: '#2563EB',
+    borderRadius: Radius.lg,
+    paddingVertical: 10,
     alignItems: 'center',
   },
   btnBookText: { color: Colors.white, fontWeight: Typography.bold, fontSize: Typography.sm },
-  btnMsg: { 
-    width: 42, 
-    height: 42, 
-    backgroundColor: '#EFF6FF', 
-    borderRadius: Radius.lg, 
-    alignItems: 'center', 
+  btnMsg: {
+    width: 42,
+    height: 42,
+    backgroundColor: '#EFF6FF',
+    borderRadius: Radius.lg,
+    alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
     borderColor: '#BFDBFE',

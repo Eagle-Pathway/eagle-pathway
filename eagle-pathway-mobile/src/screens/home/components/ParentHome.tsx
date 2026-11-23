@@ -142,7 +142,7 @@ export const ParentHome: React.FC<ParentHomeProps> = ({
           {/* 4 Clean Quick Action Cards */}
           <View style={styles.quickCards}>
             {[
-              { label: 'Request Tutor', sub: 'Post in 60s', icon: 'create-outline' as const, route: '/request-tutor' },
+              { label: 'Hire a Tutor', sub: 'Post in 60s', icon: 'create-outline' as const, route: '/request-tutor' },
               { label: 'Find Tutor', sub: 'Verified list', icon: 'school-outline' as const, route: '/(tabs)/tutors' },
               { label: 'Scholarships', sub: 'Global funds', icon: 'ribbon-outline' as const, route: '/(tabs)/scholarships' },
               { label: 'Link Child', sub: 'Track progress', icon: 'people-outline' as const, action: () => toast.info('Link Student', 'Ask your child to open Profile → Link Parent and enter your phone number.') },
@@ -182,7 +182,7 @@ export const ParentHome: React.FC<ParentHomeProps> = ({
               onPress={() => router.push('/request-tutor')}
               activeOpacity={0.88}
             >
-              <Text style={styles.tutorRequestBtnText}>Request Tutor for Child</Text>
+              <Text style={styles.tutorRequestBtnText}>Hire Tutor for Child</Text>
               <Ionicons name="arrow-forward" size={14} color="#FFFFFF" />
             </TouchableOpacity>
           </View>

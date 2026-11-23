@@ -54,7 +54,7 @@ export function ProfileScreen() {
     try {
       const result = await scholarshipsService.pickDocument();
       if (result.canceled || !result.assets?.[0] || !user) return;
-      
+
       setUploading(true);
       const asset = result.assets[0];
       await uploadAvatar(asset.uri, asset.name || 'avatar.jpg');
@@ -114,35 +114,37 @@ export function ProfileScreen() {
     route?: string;
     onPress?: () => void;
   }> = [
-    ...(role === 'tutor'
-      ? [
+      ...(role === 'tutor'
+        ? [
           { iconName: 'briefcase-outline' as const, label: 'Tutor Jobs', badge: openJobsCount > 0 ? `${openJobsCount} open` : null, bgColor: '#FFF7ED', iconColor: Colors.orange, route: '/tutor-jobs' },
           { iconName: 'document-text-outline' as const, label: 'My Applications', badge: null, bgColor: '#F0FDF4', iconColor: Colors.green, route: '/my-applications' },
         ]
-      : []),
-    { iconName: 'bar-chart-outline' as const, label: 'My Progress', badge: null, bgColor: '#EFF6FF', iconColor: Colors.blue, route: '/progress' },
-    { iconName: 'school-outline' as const, label: 'Scholarship Apps', badge: `${applications.filter(a => !['accepted','rejected'].includes(a.status)).length} Active`, bgColor: '#FEFCE8', iconColor: Colors.goldDark, route: '/tracker' },
-    { iconName: 'folder-open-outline' as const, label: 'Documents', badge: documents.filter(d => d.status !== 'approved').length > 0 ? 'Action needed' : null, bgColor: '#F0FDF4', iconColor: Colors.green, route: '/documents' },
-    { iconName: 'mail-outline' as const, label: 'Recommendation Letters', badge: null, bgColor: '#EFF6FF', iconColor: Colors.blue, route: '/recommendations' },
-    { iconName: 'trophy-outline' as const, label: 'Success Stories', badge: null, bgColor: '#FEFCE8', iconColor: Colors.goldDark, route: '/success-stories' },
-    { iconName: 'book-outline' as const, label: 'Resources', badge: null, bgColor: '#EFF6FF', iconColor: Colors.blue, route: '/resources' },
-    { iconName: 'calendar-outline' as const, label: 'My Bookings', badge: null, bgColor: '#F3F4F6', iconColor: Colors.textSecondary, route: '/(tabs)/bookings' },
-    { iconName: 'notifications-outline' as const, label: 'Notifications', badge: unreadCount > 0 ? `${unreadCount} New` : null, bgColor: '#EFF6FF', iconColor: Colors.blue, route: '/notifications' },
-    { iconName: 'star-outline' as const, label: 'Rate Eagle Pathway', badge: 'Play Store', bgColor: '#FEF3C7', iconColor: Colors.goldDark, onPress: () => rateAppService.openPlayStore() },
-    { iconName: 'settings-outline' as const, label: 'Settings', badge: null, bgColor: '#F3F4F6', iconColor: Colors.textSecondary, route: '/settings' },
-  ];
+        : [
+          { iconName: 'school-outline' as const, label: 'Become an Eagle Tutor', badge: 'Apply to Teach', bgColor: '#ECFDF5', iconColor: '#059669', route: '/apply-job' },
+        ]),
+      { iconName: 'bar-chart-outline' as const, label: 'My Progress', badge: null, bgColor: '#EFF6FF', iconColor: Colors.blue, route: '/progress' },
+      { iconName: 'school-outline' as const, label: 'Scholarship Apps', badge: `${applications.filter(a => !['accepted', 'rejected'].includes(a.status)).length} Active`, bgColor: '#FEFCE8', iconColor: Colors.goldDark, route: '/tracker' },
+      { iconName: 'folder-open-outline' as const, label: 'Documents', badge: documents.filter(d => d.status !== 'approved').length > 0 ? 'Action needed' : null, bgColor: '#F0FDF4', iconColor: Colors.green, route: '/documents' },
+      { iconName: 'mail-outline' as const, label: 'Recommendation Letters', badge: null, bgColor: '#EFF6FF', iconColor: Colors.blue, route: '/recommendations' },
+      { iconName: 'trophy-outline' as const, label: 'Success Stories', badge: null, bgColor: '#FEFCE8', iconColor: Colors.goldDark, route: '/success-stories' },
+      { iconName: 'book-outline' as const, label: 'Resources', badge: null, bgColor: '#EFF6FF', iconColor: Colors.blue, route: '/resources' },
+      { iconName: 'calendar-outline' as const, label: 'My Bookings', badge: null, bgColor: '#F3F4F6', iconColor: Colors.textSecondary, route: '/(tabs)/bookings' },
+      { iconName: 'notifications-outline' as const, label: 'Notifications', badge: unreadCount > 0 ? `${unreadCount} New` : null, bgColor: '#EFF6FF', iconColor: Colors.blue, route: '/notifications' },
+      { iconName: 'star-outline' as const, label: 'Rate Eagle Pathway', badge: 'Play Store', bgColor: '#FEF3C7', iconColor: Colors.goldDark, onPress: () => rateAppService.openPlayStore() },
+      { iconName: 'settings-outline' as const, label: 'Settings', badge: null, bgColor: '#F3F4F6', iconColor: Colors.textSecondary, route: '/settings' },
+    ];
 
   return (
     <SafeAreaView style={CommonStyles.screenBg} edges={['top', 'bottom']}>
       <View style={profStyles.hero}>
         <TouchableOpacity onPress={handlePickAvatar} disabled={uploading} activeOpacity={0.8}>
-          <Avatar 
-            initials={initials} 
+          <Avatar
+            initials={initials}
             imageUri={user?.avatar_url}
-            size={90} 
-            borderRadius={30} 
-            color={Colors.gold} 
-            style={{ marginBottom: Spacing.md, borderWidth: 3, borderColor: 'rgba(255,255,255,0.3)' }} 
+            size={90}
+            borderRadius={30}
+            color={Colors.gold}
+            style={{ marginBottom: Spacing.md, borderWidth: 3, borderColor: 'rgba(255,255,255,0.3)' }}
           />
           <View style={profStyles.editBadge}>
             {uploading ? (
@@ -162,8 +164,8 @@ export function ProfileScreen() {
           <View style={profStyles.badge}><Text style={profStyles.badgeText}>{user?.email || user?.phone || ''}</Text></View>
         </View>
 
-        <TouchableOpacity 
-          style={profStyles.editProfileBtn} 
+        <TouchableOpacity
+          style={profStyles.editProfileBtn}
           onPress={() => router.push('/profile/edit')}
           activeOpacity={0.8}
         >
@@ -184,13 +186,13 @@ export function ProfileScreen() {
                   {role === 'student' ? 'Link Your Parent' : 'Link Your Child'}
                 </Text>
                 <Text style={profStyles.referralSub}>
-                  {role === 'student' 
-                    ? 'Let your parents track your scholarship progress.' 
+                  {role === 'student'
+                    ? 'Let your parents track your scholarship progress.'
                     : 'Track your child\'s applications and help them succeed.'}
                 </Text>
               </View>
             </View>
-            
+
             <View style={{ padding: Spacing.lg, paddingTop: 0 }}>
               <View style={{ flexDirection: 'row', gap: Spacing.sm }}>
                 <TextInput
@@ -201,8 +203,8 @@ export function ProfileScreen() {
                   keyboardType="phone-pad"
                   placeholderTextColor={Colors.textSecondary}
                 />
-                <TouchableOpacity 
-                  style={[profStyles.linkBtnSmall, isLinking && { opacity: 0.7 }]} 
+                <TouchableOpacity
+                  style={[profStyles.linkBtnSmall, isLinking && { opacity: 0.7 }]}
                   onPress={handleLinkAction}
                   disabled={isLinking}
                 >

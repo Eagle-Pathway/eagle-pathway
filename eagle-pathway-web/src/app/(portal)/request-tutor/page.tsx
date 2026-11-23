@@ -240,12 +240,32 @@ export default function RequestTutorPage() {
             <span>Academic Concierge</span>
           </div>
           <h1 className="text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
-            <span>Request a Verified 1-on-1 Tutor</span>
+            <span>Hire a Verified 1-on-1 Tutor (Parents &amp; Students)</span>
           </h1>
           <p className="text-xs text-slate-500 mt-0.5">
-            Tell us your subject needs, schedule, and budget. We match you with top-rated STEM, English, and National Exam educators.
+            Tell us your student's subject needs, grade level, and schedule. We match your student with top-rated STEM, English, and National Exam educators.
           </p>
         </div>
+      </div>
+
+      {/* Educator / Tutor Redirection Notice */}
+      <div className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-800 flex items-start justify-between gap-3 shadow-xs">
+        <div className="flex items-start gap-2.5">
+          <BookOpen size={16} className="text-emerald-600 flex-shrink-0 mt-0.5" />
+          <div>
+            <p className="font-semibold text-emerald-900">Are you a Tutor or Teacher looking to teach?</p>
+            <p className="text-emerald-700 mt-0.5">
+              This form is strictly for parents and students hiring a tutor. If you want to offer tutoring, please view open jobs or register as an instructor.
+            </p>
+          </div>
+        </div>
+        <Link
+          href="/tutor-jobs"
+          className="flex-shrink-0 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-medium text-xs transition-colors inline-flex items-center gap-1 shadow-xs"
+        >
+          <span>Tutor Jobs</span>
+          <ArrowRight size={12} />
+        </Link>
       </div>
 
       {errorMsg && (

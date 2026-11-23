@@ -367,7 +367,7 @@ export const StudentHome: React.FC<StudentHomeProps> = ({
               onPress={() => router.push('/request-tutor')}
               activeOpacity={0.88}
             >
-              <Text style={styles.tutorRequestBtnText}>Request Tutor</Text>
+              <Text style={styles.tutorRequestBtnText}>Hire a Tutor</Text>
               <Ionicons name="arrow-forward" size={14} color="#FFFFFF" />
             </TouchableOpacity>
           </View>

@@ -115,7 +115,7 @@ export function RequestTutorScreen() {
 
       toast.success(
         'Request Submitted! 🎉',
-        'Our Eagle Tutorials team will call you shortly to verify your request and connect you with the best tutor!'
+        'Our Eagle Tutorials team will call you shortly to confirm your student tutoring request and match you with the best instructor!'
       );
       router.back();
     } catch (err: any) {
@@ -133,13 +133,34 @@ export function RequestTutorScreen() {
           <Ionicons name="arrow-back" size={24} color={Colors.text} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>
-          {targetTutor ? `Request ${targetTutor.user?.full_name || 'Tutor'}` : 'Request a Tutor'}
+          {targetTutor ? `Request ${targetTutor.user?.full_name || 'Tutor'}` : 'Hire a Tutor (Parents & Students)'}
         </Text>
         <View style={{ width: 40 }} />
       </View>
 
       <KeyboardAwareScreen>
         <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+          {/* Educator / Tutor Redirection Notice */}
+          <TouchableOpacity
+            style={styles.tutorNotice}
+            onPress={() => router.replace('/apply-job' as any)}
+            activeOpacity={0.88}
+          >
+            <View style={styles.tutorNoticeIcon}>
+              <Ionicons name="school" size={20} color="#059669" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.tutorNoticeTitle}>Are you a Tutor looking to teach?</Text>
+              <Text style={styles.tutorNoticeSub}>
+                This form is strictly for parents &amp; students hiring a tutor. Tutors should apply through our educator portal.
+              </Text>
+              <View style={styles.tutorNoticeLinkRow}>
+                <Text style={styles.tutorNoticeLink}>Apply to Teach Here</Text>
+                <Ionicons name="arrow-forward" size={13} color="#059669" />
+              </View>
+            </View>
+          </TouchableOpacity>
+
           {targetTutor ? (
             <View style={styles.directCard}>
               <Ionicons name="person-circle" size={36} color={Colors.blue} />
@@ -151,16 +172,19 @@ export function RequestTutorScreen() {
           ) : (
             <View style={styles.bannerCard}>
               <Ionicons name="sparkles" size={24} color={Colors.gold} />
-              <Text style={styles.bannerText}>
-                Tell us your schedule and subjects. Our team will verify your request and match you with the top verified tutor!
-              </Text>
+              <View style={{ flex: 1, marginLeft: Spacing.sm }}>
+                <Text style={styles.bannerHeader}>Parent &amp; Student Request Form</Text>
+                <Text style={styles.bannerText}>
+                  Tell us your student's grade, schedule, and subjects. Our team will verify your request by phone and match you with a verified 1-on-1 tutor!
+                </Text>
+              </View>
             </View>
           )}
 
           {/* Contact Details */}
-          <Text style={styles.sectionHeader}>1. Contact Information</Text>
+          <Text style={styles.sectionHeader}>1. Parent / Student Contact</Text>
           <View style={styles.card}>
-            <Text style={styles.label}>Your Phone Number (For Verification Call) *</Text>
+            <Text style={styles.label}>Phone Number (For Parent Verification Call) *</Text>
             <TextInput
               style={styles.input}
               placeholder="0911223344"
@@ -170,10 +194,10 @@ export function RequestTutorScreen() {
               placeholderTextColor={Colors.textSecondary}
             />
 
-            <Text style={[styles.label, { marginTop: 12 }]}>Your Name</Text>
+            <Text style={[styles.label, { marginTop: 12 }]}>Parent / Student Full Name</Text>
             <TextInput
               style={styles.input}
-              placeholder="Parent / Student Name"
+              placeholder="E.g. Abebech Tadesse"
               value={requesterName}
               onChangeText={setRequesterName}
               placeholderTextColor={Colors.textSecondary}
@@ -181,25 +205,26 @@ export function RequestTutorScreen() {
           </View>
 
           {/* Location & Grade */}
-          <Text style={styles.sectionHeader}>2. Place & Grade Level</Text>
+          <Text style={styles.sectionHeader}>2. Place &amp; Student Grade Level</Text>
           <View style={styles.card}>
-            <Text style={styles.label}>Place / Neighborhood *</Text>
+            <Text style={styles.label}>Tutoring Location / Neighborhood *</Text>
             <TextInput
               style={styles.input}
-              placeholder="E.g., Kality Maremiya/Gebriel, Bole, CMC"
+              placeholder="E.g., Kality Maremiya/Gebriel, Bole, CMC, or Online"
               value={place}
               onChangeText={setPlace}
               placeholderTextColor={Colors.textSecondary}
             />
 
-            <Text style={[styles.label, { marginTop: 12 }]}>Student Grade Level *</Text>
+            <Text style={[styles.label, { marginTop: 12 }]}>Student's Current Grade Level *</Text>
             <TextInput
               style={styles.input}
-              placeholder="E.g., Grade 11 Level, Grade 9, University"
+              placeholder="E.g., Grade 9, Grade 11 Prep, University Freshman"
               value={grade}
               onChangeText={setGrade}
               placeholderTextColor={Colors.textSecondary}
             />
+            <Text style={styles.helperText}>Enter the grade level of the student who needs tutoring.</Text>
 
             <Text style={[styles.label, { marginTop: 12 }]}>Delivery Mode</Text>
             <View style={styles.modeRow}>
@@ -214,12 +239,12 @@ export function RequestTutorScreen() {
               ))}
             </View>
 
-            <Text style={[styles.label, { marginTop: 12 }]}>Who Can Apply (Gender Preference)</Text>
+            <Text style={[styles.label, { marginTop: 12 }]}>Preferred Tutor Gender</Text>
             <View style={styles.modeRow}>
               {([
-                { id: 'both', label: 'Both M & F' },
-                { id: 'female', label: 'Female Only' },
-                { id: 'male', label: 'Male Only' },
+                { id: 'both', label: 'No Preference' },
+                { id: 'female', label: 'Female Preferred' },
+                { id: 'male', label: 'Male Preferred' },
               ] as const).map(g => (
                 <TouchableOpacity
                   key={g.id}
@@ -233,10 +258,10 @@ export function RequestTutorScreen() {
           </View>
 
           {/* Schedule & Rate */}
-          <Text style={styles.sectionHeader}>3. Schedule & Days of Week</Text>
+          <Text style={styles.sectionHeader}>3. Schedule &amp; Budget</Text>
           <View style={styles.card}>
             <Text style={styles.label}>
-              Select Days of Week {selectedDays.length > 0 && `(${selectedDays.length} days/week)`}
+              Days of Week Student is Available {selectedDays.length > 0 && `(${selectedDays.length} days/week)`}
             </Text>
             <View style={styles.daysRow}>
               {DAYS_LIST.map(d => {
@@ -277,19 +302,21 @@ export function RequestTutorScreen() {
             </View>
 
             <View style={{ marginTop: 12 }}>
-              <Text style={styles.label}>Hourly Budget / Rate (ETB) *</Text>
+              <Text style={styles.label}>Your Hourly Budget for Tutor (ETB/hr) *</Text>
               <TextInput
                 style={styles.input}
                 value={hourlyRate}
                 onChangeText={setHourlyRate}
                 keyboardType="numeric"
+                placeholder="E.g., 500"
                 placeholderTextColor={Colors.textSecondary}
               />
+              <Text style={styles.helperText}>How much are you willing to pay per tutoring hour?</Text>
             </View>
           </View>
 
           {/* Subjects */}
-          <Text style={styles.sectionHeader}>4. Subjects Needed *</Text>
+          <Text style={styles.sectionHeader}>4. Subjects Student Needs Help In *</Text>
           <View style={styles.card}>
             {/* Custom Subject Write-in */}
             <View style={styles.customSubRow}>
@@ -347,7 +374,7 @@ export function RequestTutorScreen() {
 
           {/* Submit Button */}
           <Button
-            title={loading ? 'Submitting Request...' : 'Submit Tutor Request'}
+            title={loading ? 'Submitting Request...' : 'Submit Student Tutoring Request'}
             onPress={handleSubmit}
             disabled={loading}
             style={{ marginTop: Spacing.xl, marginBottom: Spacing['3xl'] }}
@@ -380,9 +407,51 @@ const styles = StyleSheet.create({
   content: {
     padding: Spacing.lg,
   },
-  bannerCard: {
+  tutorNotice: {
     flexDirection: 'row',
     alignItems: 'center',
+    backgroundColor: '#ECFDF5',
+    padding: Spacing.md,
+    borderRadius: Radius.lg,
+    marginBottom: Spacing.md,
+    borderWidth: 1.5,
+    borderColor: '#A7F3D0',
+    gap: Spacing.sm,
+  },
+  tutorNoticeIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 10,
+    backgroundColor: '#D1FAE5',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  tutorNoticeTitle: {
+    fontSize: Typography.sm,
+    fontWeight: Typography.bold,
+    color: '#065F46',
+  },
+  tutorNoticeSub: {
+    fontSize: 11,
+    color: '#047857',
+    marginTop: 2,
+    lineHeight: 16,
+  },
+  tutorNoticeLinkRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 5,
+    gap: 4,
+  },
+  tutorNoticeLink: {
+    fontSize: 12,
+    fontWeight: Typography.bold,
+    color: '#059669',
+    textDecorationLine: 'underline',
+  },
+  bannerCard: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
     backgroundColor: Colors.blueLight,
     padding: Spacing.md,
     borderRadius: Radius.lg,
@@ -390,12 +459,22 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Colors.blue,
   },
-  bannerText: {
+  bannerHeader: {
     fontSize: Typography.sm,
+    fontWeight: Typography.bold,
     color: Colors.text,
-    flex: 1,
-    marginLeft: Spacing.sm,
-    fontWeight: Typography.semibold,
+    marginBottom: 2,
+  },
+  bannerText: {
+    fontSize: Typography.xs,
+    color: Colors.text,
+    lineHeight: 18,
+  },
+  helperText: {
+    fontSize: 11,
+    color: Colors.textSecondary,
+    marginTop: 4,
+    fontStyle: 'italic',
   },
   directCard: {
     flexDirection: 'row',
