@@ -113,7 +113,7 @@ function ScholarshipsContent() {
   }, [scholarships]);
 
   const filtered = useMemo(() => {
-    return scholarships.filter((s) => {
+    const list = scholarships.filter((s) => {
       const title = s.name || (s as any).title || '';
       const org = s.organization || (s as any).host_institution || '';
       const matchesSearch =
@@ -135,6 +135,39 @@ function ScholarshipsContent() {
         s.funding_type?.toLowerCase().includes(selectedFunding.toLowerCase());
 
       return matchesSearch && matchesCountry && matchesLevel && matchesFunding;
+    });
+
+    const isClosed = (s: Scholarship) => {
+      if ((s as any).application_status === 'closed') return true;
+      if (!s.deadline) return false;
+      const status = getDeadlineStatus(s.deadline);
+      return Boolean(status?.isPassed);
+    };
+
+    return list.sort((a, b) => {
+      const aClosed = isClosed(a);
+      const bClosed = isClosed(b);
+
+      if (aClosed !== bClosed) {
+        return aClosed ? 1 : -1; // Open scholarships first, closed scholarships below
+      }
+
+      const aTime = a.deadline ? new Date(a.deadline).getTime() : NaN;
+      const bTime = b.deadline ? new Date(b.deadline).getTime() : NaN;
+
+      if (!aClosed) {
+        // Both open: soonest upcoming deadline first, rolling (no deadline) last
+        if (!isNaN(aTime) && !isNaN(bTime)) return aTime - bTime;
+        if (!isNaN(aTime)) return -1;
+        if (!isNaN(bTime)) return 1;
+        return (a.name || '').localeCompare(b.name || '');
+      } else {
+        // Both closed: most recently expired first
+        if (!isNaN(aTime) && !isNaN(bTime)) return bTime - aTime;
+        if (!isNaN(aTime)) return -1;
+        if (!isNaN(bTime)) return 1;
+        return (a.name || '').localeCompare(b.name || '');
+      }
     });
   }, [scholarships, searchQuery, selectedCountry, selectedLevel, selectedFunding]);
 
@@ -289,10 +322,13 @@ function ScholarshipsContent() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {filtered.map((s) => {
             const deadlineStatus = s.deadline ? getDeadlineStatus(s.deadline) : null;
+            const isClosedCard = (s as any).application_status === 'closed' || Boolean(deadlineStatus?.isPassed);
             return (
               <div
                 key={s.id}
-                className="bg-white rounded-xl border border-slate-200/80 p-4 md:p-5 shadow-xs hover:border-slate-300 hover:shadow-xs transition-all flex flex-col justify-between group"
+                className={`bg-white rounded-xl border border-slate-200/80 p-4 md:p-5 shadow-xs hover:border-slate-300 hover:shadow-xs transition-all flex flex-col justify-between group ${
+                  isClosedCard ? 'opacity-70 bg-slate-50/50' : ''
+                }`}
               >
                 <div>
                   <div className="flex items-center justify-between mb-2">
@@ -329,17 +365,17 @@ function ScholarshipsContent() {
 
                 <div className="pt-3 mt-4 border-t border-slate-100 flex items-center justify-between">
                   <div className="text-[11px] text-slate-500">
-                    {deadlineStatus ? (
+                    {isClosedCard ? (
+                      <span className="font-semibold text-rose-600">Closed</span>
+                    ) : deadlineStatus ? (
                       <span className={`font-semibold ${
-                        deadlineStatus.isPassed
-                          ? 'text-rose-600'
-                          : deadlineStatus.urgency === 'critical'
+                        deadlineStatus.urgency === 'critical'
                           ? 'text-rose-600'
                           : deadlineStatus.urgency === 'soon'
                           ? 'text-amber-600'
                           : 'text-slate-600'
                       }`}>
-                        {deadlineStatus.isPassed ? 'Closed' : deadlineStatus.label}
+                        {deadlineStatus.label}
                       </span>
                     ) : (
                       <span>Rolling deadline</span>

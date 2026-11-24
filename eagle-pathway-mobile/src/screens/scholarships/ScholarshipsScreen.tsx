@@ -76,25 +76,51 @@ export default function ScholarshipsScreen({ hideBack = false }: { hideBack?: bo
     });
   };
 
-  const filtered = (scholarships || []).filter(s => {
-    const matchSearch = !search || (s.name || '').toLowerCase().includes(search.toLowerCase()) || (s.country || '').toLowerCase().includes(search.toLowerCase());
-    
-    if (showSavedOnly && !savedScholarshipIds.includes(s.id)) {
-      return false;
-    }
+  const filtered = (scholarships || [])
+    .filter(s => {
+      const matchSearch = !search || (s.name || '').toLowerCase().includes(search.toLowerCase()) || (s.country || '').toLowerCase().includes(search.toLowerCase());
+      
+      if (showSavedOnly && !savedScholarshipIds.includes(s.id)) {
+        return false;
+      }
 
-    if (selectedFilters.includes('All') || selectedFilters.length === 0) {
-      return matchSearch;
-    }
+      if (selectedFilters.includes('All') || selectedFilters.length === 0) {
+        return matchSearch;
+      }
 
-    const degreeFilters = selectedFilters.filter(f => f !== 'Fully Funded');
-    const hasFullyFundedFilter = selectedFilters.includes('Fully Funded');
+      const degreeFilters = selectedFilters.filter(f => f !== 'Fully Funded');
+      const hasFullyFundedFilter = selectedFilters.includes('Fully Funded');
 
-    const matchDegree = degreeFilters.length === 0 || (s.degree_levels && s.degree_levels.some(d => degreeFilters.some(df => df.toLowerCase() === d.toLowerCase())));
-    const matchFunding = !hasFullyFundedFilter || s.funding_type === 'fully_funded';
+      const matchDegree = degreeFilters.length === 0 || (s.degree_levels && s.degree_levels.some(d => degreeFilters.some(df => df.toLowerCase() === d.toLowerCase())));
+      const matchFunding = !hasFullyFundedFilter || s.funding_type === 'fully_funded';
 
-    return matchSearch && matchDegree && matchFunding;
-  });
+      return matchSearch && matchDegree && matchFunding;
+    })
+    .sort((a, b) => {
+      const aDays = a.deadline ? daysUntil(a.deadline) : NaN;
+      const bDays = b.deadline ? daysUntil(b.deadline) : NaN;
+      const aClosed = (a as any).application_status === 'closed' || (!Number.isNaN(aDays) && aDays < 0);
+      const bClosed = (b as any).application_status === 'closed' || (!Number.isNaN(bDays) && bDays < 0);
+
+      if (aClosed !== bClosed) {
+        return aClosed ? 1 : -1; // Open scholarships first, closed scholarships below
+      }
+
+      const aTime = a.deadline ? new Date(a.deadline).getTime() : NaN;
+      const bTime = b.deadline ? new Date(b.deadline).getTime() : NaN;
+
+      if (!aClosed) {
+        if (!isNaN(aTime) && !isNaN(bTime)) return aTime - bTime;
+        if (!isNaN(aTime)) return -1;
+        if (!isNaN(bTime)) return 1;
+        return (a.name || '').localeCompare(b.name || '');
+      } else {
+        if (!isNaN(aTime) && !isNaN(bTime)) return bTime - aTime;
+        if (!isNaN(aTime)) return -1;
+        if (!isNaN(bTime)) return 1;
+        return (a.name || '').localeCompare(b.name || '');
+      }
+    });
 
   return (
     <SafeAreaView style={CommonStyles.screenBg} edges={hideBack ? ['bottom'] : ['top', 'bottom']}>
@@ -237,7 +263,7 @@ export function ScholarshipCard({ scholarship: s, isSaved, onSave }: { scholarsh
   const freshness = freshnessTone(s.source_status);
   const daysLeft = s.deadline ? daysUntil(s.deadline) : NaN;
   const isUrgent = !Number.isNaN(daysLeft) && daysLeft >= 0 && daysLeft <= 14;
-  const isClosed = !Number.isNaN(daysLeft) && daysLeft < 0;
+  const isClosed = (s as any).application_status === 'closed' || (!Number.isNaN(daysLeft) && daysLeft < 0);
 
   return (
     <ScaleBounce

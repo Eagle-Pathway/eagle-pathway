@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useAuthStore } from '@/store/useAuthStore';
 import { supabase } from '@/lib/supabase';
 import {
@@ -70,7 +71,10 @@ const TIERS: Tier[] = [
   },
 ];
 
-export default function CareerPackagesPage() {
+function PackagesContent() {
+  const searchParams = useSearchParams();
+  const targetScholarship = searchParams?.get('scholarshipName') || '';
+
   const { user } = useAuthStore();
   const [selectedTier, setSelectedTier] = useState<Tier | null>(null);
   const [phoneNumber, setPhoneNumber] = useState('');
@@ -78,6 +82,12 @@ export default function CareerPackagesPage() {
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+
+  useEffect(() => {
+    if (targetScholarship) {
+      setNotes(`Target Scholarship: ${targetScholarship}`);
+    }
+  }, [targetScholarship]);
 
   const handleInquirySubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -132,6 +142,18 @@ export default function CareerPackagesPage() {
         <p className="text-xs text-slate-500 mt-1">
           Accelerate your acceptance rates with 1-on-1 guidance from international alumni, certified essay editors, and expert test instructors.
         </p>
+
+        {targetScholarship && (
+          <div className="mt-3.5 p-3.5 rounded-xl bg-blue-50 border border-blue-200/80 flex items-center justify-between text-xs text-brand-blue">
+            <div className="flex items-center gap-2">
+              <Sparkles size={16} className="text-brand-gold flex-shrink-0" />
+              <span>
+                Applying with Eagle Pathway for: <strong className="text-slate-900">{targetScholarship}</strong>
+              </span>
+            </div>
+            <span className="text-[11px] font-semibold text-slate-500 hidden sm:inline">Select your assistance package below</span>
+          </div>
+        )}
       </div>
 
       {/* Tier Grid */}
@@ -287,6 +309,14 @@ export default function CareerPackagesPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function CareerPackagesPage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-center text-xs text-slate-400">Loading admissions packages...</div>}>
+      <PackagesContent />
+    </Suspense>
   );
 }
 

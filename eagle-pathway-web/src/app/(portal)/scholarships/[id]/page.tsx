@@ -40,6 +40,14 @@ export default function ScholarshipDetailPage() {
   const [addingToTracker, setAddingToTracker] = useState(false);
   const [actionSuccess, setActionSuccess] = useState<string | null>(null);
 
+  const officialPortalUrl = (() => {
+    if (scholarship?.application_url?.trim()) return scholarship.application_url.trim();
+    if (scholarship?.website_url?.trim()) return scholarship.website_url.trim();
+    if (scholarship?.source_url?.trim()) return scholarship.source_url.trim();
+    const match = (scholarship?.description || '').match(/https?:\/\/[^\s"'<>]+/);
+    return match ? match[0] : null;
+  })();
+
   useEffect(() => {
     async function loadDetail() {
       if (!scholarshipId) return;
@@ -298,43 +306,66 @@ export default function ScholarshipDetailPage() {
           </div>
         )}
 
-        {/* External Link & Tracker Actions */}
-        <div className="pt-6 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <p className="text-xs text-slate-500">
-            Official instructions, application portals, and university submission guidelines.
-          </p>
-          <div className="flex flex-wrap items-center gap-2.5 w-full sm:w-auto">
-            {scholarship.application_url && (
+        {/* Application Action Bar - Full Parity with Mobile */}
+        <div className="pt-6 border-t border-slate-100 flex flex-col md:flex-row items-center justify-between gap-4">
+          <div>
+            <h4 className="text-xs font-bold text-slate-900">Ready to Apply?</h4>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Submit directly on the university portal, or apply with Eagle Pathway's dedicated admissions team.
+            </p>
+          </div>
+          <div className="flex flex-col sm:flex-row items-center gap-2.5 w-full md:w-auto">
+            {officialPortalUrl ? (
               <a
-                href={scholarship.application_url}
+                href={officialPortalUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-full sm:w-auto px-4 py-2.5 rounded-xl border border-slate-200 hover:border-slate-300 bg-white text-slate-700 font-semibold text-xs shadow-xs flex items-center justify-center gap-2 transition-all hover:bg-slate-50"
+                className="w-full sm:w-auto px-5 py-2.5 rounded-xl border border-slate-300 hover:border-slate-400 bg-white text-slate-800 font-bold text-xs shadow-xs flex items-center justify-center gap-2 transition-all hover:bg-slate-50 cursor-pointer"
               >
-                <span>Official Application Portal</span>
-                <ExternalLink size={14} className="text-slate-400" />
+                <span>Apply by Yourself</span>
+                <ExternalLink size={14} className="text-slate-500" />
               </a>
+            ) : (
+              <button
+                type="button"
+                onClick={() => alert('Official portal link is currently being updated. Please check the program description or contact support.')}
+                className="w-full sm:w-auto px-5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-slate-500 font-medium text-xs flex items-center justify-center gap-1.5 cursor-not-allowed"
+              >
+                <span>Apply by Yourself</span>
+                <ExternalLink size={14} className="text-slate-400" />
+              </button>
             )}
+
+            <Link
+              href={`/packages?scholarshipId=${scholarship.id}&scholarshipName=${encodeURIComponent(scholarship.name)}`}
+              className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-brand-blue text-white font-bold text-xs shadow-xs hover:bg-brand-blue/90 flex items-center justify-center gap-2 transition-all cursor-pointer text-center"
+            >
+              <Sparkles size={14} className="text-amber-300" />
+              <span>Apply with Eagle Pathway</span>
+            </Link>
+
             <button
               onClick={handleAddToTracker}
               disabled={addingToTracker}
-              className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-brand-blue text-white font-semibold text-xs shadow-xs hover:bg-brand-blue/90 flex items-center justify-center gap-2 transition-all cursor-pointer"
+              className={`w-full sm:w-auto px-4 py-2.5 rounded-xl text-xs font-semibold shadow-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                hasApplied
+                  ? 'bg-emerald-50 text-emerald-800 border border-emerald-200/70 hover:bg-emerald-100'
+                  : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+              }`}
             >
               {addingToTracker ? (
                 <>
-                  <Loader2 size={14} className="animate-spin" />
-                  <span>Adding to Tracker...</span>
+                  <Loader2 size={13} className="animate-spin" />
+                  <span>Adding...</span>
                 </>
               ) : hasApplied ? (
                 <>
-                  <span>Open in Application Tracker</span>
-                  <ArrowRight size={14} />
+                  <CheckCircle2 size={13} className="text-emerald-600" />
+                  <span>In Tracker</span>
+                  <ArrowRight size={13} className="text-emerald-700 ml-0.5" />
                 </>
               ) : (
-                <>
-                  <span>Start Application in Tracker</span>
-                  <ArrowRight size={14} />
-                </>
+                <span>+ Tracker</span>
               )}
             </button>
           </div>
