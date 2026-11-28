@@ -17,6 +17,7 @@ export default function TopBar({ onMobileMenuToggle, unreadNotifications = 0 }: 
   const { user, signOut } = useAuthStore();
   const [searchQuery, setSearchQuery] = useState('');
   const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [avatarError, setAvatarError] = useState(false);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -98,11 +99,13 @@ export default function TopBar({ onMobileMenuToggle, unreadNotifications = 0 }: 
             onClick={() => setShowProfileMenu(!showProfileMenu)}
             className="flex items-center gap-2 p-1 rounded-xl hover:bg-gray-100 transition-colors"
           >
-            <div className="h-8 w-8 rounded-full bg-brand-gold/20 flex items-center justify-center flex-shrink-0">
-              {user?.avatar_url ? (
+            <div className="h-8 w-8 rounded-full bg-brand-gold/20 flex items-center justify-center flex-shrink-0 overflow-hidden">
+              {user?.avatar_url && !avatarError ? (
                 <img
                   src={user.avatar_url}
                   alt={user.full_name || 'User'}
+                  referrerPolicy="no-referrer"
+                  onError={() => setAvatarError(true)}
                   className="w-full h-full object-cover rounded-full"
                 />
               ) : (

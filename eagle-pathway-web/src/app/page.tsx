@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
@@ -36,6 +36,16 @@ export default function LandingPage() {
   const { isAuthenticated } = useAuthStore();
   const [activeTab, setActiveTab] = useState<'students' | 'tutors' | 'parents'>('students');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  // If redirected from OAuth with ?code= or ?error= to root landing page, forward directly to /auth/callback
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.location.search) {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('code') || params.get('error') || params.get('error_description')) {
+        router.replace(`/auth/callback${window.location.search}`);
+      }
+    }
+  }, [router]);
 
   // Hero Search State
   const [heroSearchType, setHeroSearchType] = useState<'scholarships' | 'tutors'>('scholarships');

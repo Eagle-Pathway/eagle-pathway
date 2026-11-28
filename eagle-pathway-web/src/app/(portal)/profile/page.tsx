@@ -69,6 +69,7 @@ const SESSION_FORMAT_OPTIONS = [
 
 export default function ProfilePage() {
   const { user, updateProfile } = useAuthStore();
+  const [avatarError, setAvatarError] = useState(false);
 
   // Common Fields
   const [fullName, setFullName] = useState('');
@@ -341,10 +342,12 @@ export default function ProfilePage() {
 
           <div className="flex items-center gap-5">
             <div className="w-16 h-16 rounded-full bg-slate-900 text-white flex items-center justify-center font-bold text-base shadow-xs overflow-hidden flex-shrink-0">
-              {user?.avatar_url ? (
+              {user?.avatar_url && !avatarError ? (
                 <img
                   src={user.avatar_url}
                   alt={user.full_name || 'User'}
+                  referrerPolicy="no-referrer"
+                  onError={() => setAvatarError(true)}
                   className="w-full h-full object-cover"
                 />
               ) : (

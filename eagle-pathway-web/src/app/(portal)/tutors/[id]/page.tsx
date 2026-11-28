@@ -226,6 +226,7 @@ export default function TutorProfilePage() {
                   <img
                     src={tutor.user.avatar_url}
                     alt={tutor.user.full_name || 'Tutor'}
+                    referrerPolicy="no-referrer"
                     className="w-full h-full object-cover"
                   />
                 ) : (

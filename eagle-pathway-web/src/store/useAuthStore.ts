@@ -9,6 +9,7 @@ interface AuthState {
   isAuthenticated: boolean;
   initAuth: () => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
+  signInWithGoogle: (role?: UserRole) => Promise<void>;
   signUp: (email: string, password: string, fullName: string, phone: string, role: UserRole) => Promise<void>;
   signOut: () => Promise<void>;
   loadProfile: (userId: string) => Promise<void>;
@@ -54,10 +55,106 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
       if (error) throw error;
       if (data) {
+        // Sync Google avatar if profile has none
+        const { session } = get();
+        const googleAvatar = session?.user?.user_metadata?.avatar_url || session?.user?.user_metadata?.picture;
+        if (googleAvatar && !data.avatar_url) {
+          try {
+            await supabase.from('users').update({ avatar_url: googleAvatar }).eq('id', userId);
+          } catch {}
+          data.avatar_url = googleAvatar;
+        }
         set({ user: data as User, isAuthenticated: true });
+        return;
+      }
+
+      // If user profile is missing in public.users, initialize from session user metadata (Google OAuth sign-in)
+      const currentSession = get().session || (await supabase.auth.getSession()).data.session;
+      if (currentSession?.user) {
+        const u = currentSession.user;
+        const metadata = u.user_metadata || {};
+
+        let storedRole: UserRole = 'student';
+        if (typeof window !== 'undefined') {
+          try {
+            const r = localStorage.getItem('eagle_oauth_role') as UserRole;
+            if (r) {
+              storedRole = r;
+              localStorage.removeItem('eagle_oauth_role');
+            }
+          } catch {}
+        }
+
+        const role: UserRole = (metadata.role as UserRole) || storedRole || 'student';
+        const fullName = metadata.full_name || metadata.name || u.email?.split('@')[0] || 'Eagle User';
+        const avatarUrl = metadata.avatar_url || metadata.picture || null;
+
+        const newProfile = {
+          id: userId,
+          full_name: fullName,
+          email: u.email || '',
+          phone: metadata.phone || null,
+          role,
+          roles: [role],
+          active_role: role,
+          avatar_url: avatarUrl,
+          signup_source: 'google_oauth',
+        };
+
+        const { data: created, error: createError } = await supabase
+          .from('users')
+          .upsert(newProfile, { onConflict: 'id', ignoreDuplicates: true })
+          .select()
+          .maybeSingle();
+
+        if (!createError && created) {
+          // Record in user_roles as well
+          try {
+            await supabase.from('user_roles').upsert(
+              { user_id: userId, role },
+              { onConflict: 'user_id,role', ignoreDuplicates: true }
+            );
+          } catch {}
+
+          set({ user: created as User, isAuthenticated: true });
+        } else {
+          set({ user: newProfile as unknown as User, isAuthenticated: true });
+        }
       }
     } catch (e) {
       console.warn('Load profile error:', e);
+    }
+  },
+
+  signInWithGoogle: async (role?: UserRole) => {
+    set({ isLoading: true });
+    try {
+      if (typeof window !== 'undefined' && role) {
+        try {
+          localStorage.setItem('eagle_oauth_role', role);
+        } catch {}
+      }
+      const redirectTo = typeof window !== 'undefined'
+        ? `${window.location.origin}/auth/callback`
+        : undefined;
+
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'select_account',
+          },
+        },
+      });
+
+      if (error) throw error;
+      if (data?.url && typeof window !== 'undefined') {
+        window.location.href = data.url;
+      }
+    } finally {
+      set({ isLoading: false });
     }
   },
 
